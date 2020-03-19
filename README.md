@@ -21,9 +21,6 @@ Lastly, I've added tooltips to the price values, so that you can see when the pr
 * GE limit history to show how many items you can buy before reaching the limit and when the limit ends.
 
 ## Support
-If you have any suggestions or need help with the plugin, please message me through the issue tab or my Github. You can also message me online. (RSN: Beliael)
-
-And, of course, any contributions are appreciated as well. :)
-
+This is my first RuneLite project/contribution and there are guaranteed to be mistakes. But I am determined to imporove and better my skills therefore, if you notice any bugs, have any suggestions or want to contribute to the plugin, I would appreciate it a lot if you opened an issue here or online. (RSN: Beliael) 🙂
 
 
