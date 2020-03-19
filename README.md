@@ -1,7 +1,7 @@
 # Flipping Utilities plugin for RuneLite
 This external plugin seeks to help users with flipping in OSRS. It provides the latest prices and calculates profits according to the user's marginchecks.
 
-Disclaimer: This is not an OSBuddy Exchange replacement, as it does not send or receive price data from other users.
+**Disclaimer: This is not an OSBuddy Exchange replacement, as it does not send or receive price data from other users.**
 
 ## How it works
 The plugin is designed to be "hands-free". This means you can just margin check an item you want to flip and the plugin will detect, store and display prices along with calculating the profits and return on investments (ROI).
