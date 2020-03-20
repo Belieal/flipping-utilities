@@ -26,7 +26,6 @@
 
 package com.flippingutilities;
 
-
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.callback.ClientThread;
@@ -57,8 +56,7 @@ import java.awt.image.BufferedImage;
 import java.time.Instant;
 
 @Slf4j
-public class FlippingItemPanel extends JPanel
-{
+public class FlippingItemPanel extends JPanel {
 	
 	private static final ImageIcon OPEN_ICON;
 	private static final ImageIcon CLOSE_ICON;

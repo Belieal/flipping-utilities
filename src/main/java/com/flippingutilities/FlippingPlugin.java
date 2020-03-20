@@ -73,8 +73,7 @@ import java.util.stream.Collectors;
 		description = "Provides utilities for GE flipping"
 )
 
-public class FlippingPlugin extends Plugin
-{
+public class FlippingPlugin extends Plugin {
 	//Limit the amount of trades every item holds.
 	private static final int TRADE_HISTORY_MAX_SIZE = 20;
 	//Limit the amount of items stored.
