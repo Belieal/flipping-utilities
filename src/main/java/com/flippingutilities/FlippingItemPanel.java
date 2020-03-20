@@ -54,7 +54,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
-import java.time.Duration;
 import java.time.Instant;
 
 @Slf4j
@@ -88,6 +87,8 @@ public class FlippingItemPanel extends JPanel
 	private final int GELimit;
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
+	private int latestBuyTimeAgo;
+	private int latestSellTimeAgo;
 	
 	@Setter
 	private boolean activeTimer;
@@ -318,11 +319,11 @@ public class FlippingItemPanel extends JPanel
 		final String latestSellString = formatTimeText(latestSellTime);
 		
 		//As the config unit is in minutes.
-		int latestBuyDuration = latestBuyTime != null ? (int) Duration.between(latestBuyTime, Instant.now()).toMinutes() : 0;
-		int latestSellDuration = latestSellTime != null ? (int) Duration.between(latestSellTime, Instant.now()).toMinutes() : 0;
+		latestBuyTimeAgo = latestBuyTime != null ? (int) (Instant.now().getEpochSecond() - latestBuyTime.getEpochSecond()) : 0;
+		latestSellTimeAgo = latestSellTime != null ? (int) (Instant.now().getEpochSecond() - latestSellTime.getEpochSecond()) : 0;
 		
 		//Check if, according to the user-defined settings, prices are outdated, else set default color.
-		if (latestBuyDuration > plugin.getConfig().outOfDateWarning()) {
+		if (latestBuyTimeAgo != 0 && latestBuyTimeAgo / 60 > plugin.getConfig().outOfDateWarning()) {
 			SwingUtilities.invokeLater(() -> {
 				buyPriceVal.setForeground(OUTDATED_COLOR);
 				buyPriceVal.setToolTipText(OUTDATED_STRING + latestBuyString);
@@ -336,7 +337,7 @@ public class FlippingItemPanel extends JPanel
 			
 		}
 		//Sell value
-		if (latestSellDuration > plugin.getConfig().outOfDateWarning()) {
+		if (latestSellTimeAgo != 0 && latestSellTimeAgo / 60 > plugin.getConfig().outOfDateWarning()) {
 			SwingUtilities.invokeLater(() -> {
 				sellPriceVal.setForeground(OUTDATED_COLOR);
 				sellPriceVal.setToolTipText(OUTDATED_STRING + latestSellString);
@@ -355,18 +356,19 @@ public class FlippingItemPanel extends JPanel
 	//If there's a method somewhere that does this already, please tell me. :)
 	private String formatTimeText(Instant timeInstant) {
 		if (timeInstant != null) {
-			int timeDuration = (int) Duration.between(timeInstant, Instant.now()).toSeconds();
-			String result = timeDuration + ((timeDuration == 1) ? " second old" : " seconds old");
 			
-			if (timeDuration > 60) {
-				//Seconds to minutes.
-				int timeDurationMinutes = timeDuration / 60;
-				result = timeDurationMinutes + ((timeDurationMinutes == 1) ? " minute old" : " minutes old");
+			int timeAgo = (int) (Instant.now().getEpochSecond() - timeInstant.getEpochSecond());
+			String result = timeAgo + ((timeAgo == 1) ? " second old" : " seconds old");
+			if (timeAgo > 60) {
 				
-				if (timeDurationMinutes > 60) {
+				//Seconds to minutes.
+				int timeAgoMinutes = timeAgo / 60;
+				result = timeAgoMinutes + ((timeAgoMinutes == 1) ? " minute old" : " minutes old");
+				if (timeAgoMinutes > 60) {
+					
 					//Minutes to hours
-					int timeDurationHours = timeDurationMinutes / 60;
-					result = timeDurationHours + ((timeDurationHours == 1) ? " hour old" : " hours old");
+					int timeAgoHours = timeAgoMinutes / 60;
+					result = timeAgoHours + ((timeAgoHours == 1) ? " hour old" : " hours old");
 				}
 			}
 			return result;

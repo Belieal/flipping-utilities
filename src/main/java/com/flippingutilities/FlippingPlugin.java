@@ -61,9 +61,11 @@ import javax.swing.SwingUtilities;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @PluginDescriptor(
@@ -218,23 +220,28 @@ public class FlippingPlugin extends Plugin
 	
 	//Adds GE trade data to the trades list.
 	public void addTrade(GrandExchangeTrade trade) {
-		tradesList.stream()
-				.filter(t -> t.getItemId() == trade.getItemId())
-				.findFirst()
-				.ifPresentOrElse(item -> {
-							log.info("Found a match, updating item.");
-							//Found a match, update the existing flipping item.
-							updateFlip(item, trade);
-							
-							//Move item to top
-							tradesList.remove(item);
-							tradesList.add(0, item);
-						},
-						//No match found, create a new flipping item.
-						() -> {
-							log.info("No matching trade found, adding new one.");
-							addToTradesList(trade);
-						});
+		if (tradesList == null) {
+			addToTradesList(trade);
+			return;
+		}
+		//Check if item is already present
+		final List<FlippingItem> matchingItems = tradesList.stream()
+				.filter((item) -> item.getItemId() == trade.getItemId())
+				.collect(Collectors.toList());
+		
+		//No match found
+		if (matchingItems.size() == 0) {
+			addToTradesList(trade);
+		} else {
+			//Found a match, update the existing flipping item.
+			updateFlip(matchingItems.get(0), trade);
+			
+			//Move item to top
+			tradesList.remove(matchingItems.get(0));
+			tradesList.add(0, matchingItems.get(0));
+		}
+		
+		
 	}
 	
 	//Constructs a FlippingItem and adds it to the tradeList.
