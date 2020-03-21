@@ -116,17 +116,12 @@ public class FlippingItemPanel extends JPanel
 		this.flippingItem = flippingItem;
 		this.buyPrice = this.flippingItem.getLatestBuyPrice();
 		this.sellPrice = this.flippingItem.getLatestSellPrice();
-		this.profitEach = sellPrice - buyPrice;
-		this.ROI = calculateROI();
 		this.plugin = plugin;
 
 		final int itemID = flippingItem.getItemId();
 		GELimit = flippingItem.getTotalGELimit();
 
-		/* Assume one less traded item than limit as one was spent in margin checking the item.
-		If the user wants, we calculate the total profit while taking into account
-		the margin check loss. */
-		this.profitTotal = (GELimit == 0) ? 0 : (GELimit - 1) * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+		updateProfits();
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -306,7 +301,11 @@ public class FlippingItemPanel extends JPanel
 	public void updateProfits()
 	{
 		this.profitEach = sellPrice - buyPrice;
-		this.profitTotal = GELimit != 0 ? GELimit * profitEach : 0;
+
+		/* Assume one less traded item than limit as one was spent in margin checking the item.
+		If the user wants, we calculate the total profit while taking into account
+		the margin check loss. */
+		this.profitTotal = (GELimit == 0) ? 0 : (GELimit - 1) * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
 		this.ROI = calculateROI();
 	}
 
