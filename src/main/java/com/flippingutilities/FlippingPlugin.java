@@ -110,8 +110,10 @@ public class FlippingPlugin extends Plugin
 	private ItemManager itemManager;
 
 	private FlippingPanel panel;
+
+	//Stores all bought or sold trades.
 	@Getter
-	private ArrayList<FlippingItem> tradesList;
+	private ArrayList<FlippingItem> tradesList = new ArrayList<>();
 
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
@@ -132,9 +134,6 @@ public class FlippingPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
-
-		//Stores all bought or sold trades.
-		tradesList = new ArrayList<>();
 
 		clientThread.invokeLater(() ->
 		{
@@ -290,7 +289,9 @@ public class FlippingPlugin extends Plugin
 		Instant tradeBuyTime = !trade.isBuy() ? trade.getTime() : null;
 		Instant tradeSellTime = trade.isBuy() ? trade.getTime() : null;
 
-		tradesList.add(0, new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime));
+		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime);
+
+		tradesList.add(0, flippingItem);
 
 		//Make sure we don't have too many trades at once.
 		if (tradesList.size() > TRADES_LIST_MAX_SIZE)
@@ -404,6 +405,12 @@ public class FlippingPlugin extends Plugin
 	{
 		log.debug("Loading flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
+
+		if (json == null)
+		{
+			return;
+		}
+
 		try
 		{
 			final Gson gson = new Gson();
