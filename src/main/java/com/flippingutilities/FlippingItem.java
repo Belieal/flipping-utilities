@@ -26,13 +26,12 @@
 
 package com.flippingutilities;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.http.api.ge.GrandExchangeTrade;
-
-import java.time.Instant;
-import java.util.ArrayList;
 
 @AllArgsConstructor
 public class FlippingItem
@@ -58,17 +57,18 @@ public class FlippingItem
 	@Getter
 	@Setter
 	private int latestSellPrice;
-	
+
 	@Getter
 	@Setter
 	private Instant latestBuyTime;
-	
+
 	@Getter
 	@Setter
 	private Instant latestSellTime;
-	
-	public void addTradeHistory(final GrandExchangeTrade trade) {
+
+	public void addTradeHistory(final GrandExchangeTrade trade)
+	{
 		tradeHistory.add(trade);
 	}
-	
+
 }
