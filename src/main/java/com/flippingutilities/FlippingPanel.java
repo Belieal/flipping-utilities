@@ -95,6 +95,7 @@ public class FlippingPanel extends PluginPanel
 
 	//So we can keep track what items are shown on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
+	@Getter
 	private ArrayList<FlippingItemPanel> preHighlightList = new ArrayList<>();
 
 
@@ -215,53 +216,56 @@ public class FlippingPanel extends PluginPanel
 			cardLayout.show(centerPanel, ITEMS_PANEL);
 		}
 
+
 		SwingUtilities.invokeLater(() ->
 		{
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
-
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
-				clientThread.invokeLater(() ->
 				{
-					activePanels.add(newPanel);
-					newPanel.buildPanelValues();
-					newPanel.checkOutdatedPriceTimes();
-					newPanel.setActiveTimer(true);
-				});
-
-				//Collapse when clicking the top panel of an item.
-				newPanel.topPanel.addMouseListener(new MouseAdapter()
-				{
-					@Override
-					public void mousePressed(MouseEvent e)
+					FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
+					clientThread.invokeLater(() ->
 					{
-						if (e.getButton() == MouseEvent.BUTTON1)
+						activePanels.add(newPanel);
+						newPanel.buildPanelValues();
+						newPanel.updateGELimits();
+						newPanel.checkOutdatedPriceTimes();
+						newPanel.setActiveTimer(true);
+					});
+
+					//Collapse when clicking the top panel of an item.
+					newPanel.topPanel.addMouseListener(new MouseAdapter()
+					{
+						@Override
+						public void mousePressed(MouseEvent e)
 						{
-							if (newPanel.isCollapsed())
+							if (e.getButton() == MouseEvent.BUTTON1)
 							{
-								newPanel.expand();
-							}
-							else
-							{
-								newPanel.collapse();
+								if (newPanel.isCollapsed())
+								{
+									newPanel.expand();
+								}
+								else
+								{
+									newPanel.collapse();
+								}
 							}
 						}
+					});
+					if (index++ > 0)
+					{
+						JPanel marginWrapper = new JPanel(new BorderLayout());
+						marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+						marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
+						marginWrapper.add(newPanel, BorderLayout.NORTH);
+						flippingItemsPanel.add(marginWrapper, constraints);
 					}
-				});
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					flippingItemsPanel.add(marginWrapper, constraints);
+					else
+					{
+						flippingItemsPanel.add(newPanel, constraints);
+					}
+					constraints.gridy++;
 				}
-				else
-				{
-					flippingItemsPanel.add(newPanel, constraints);
-				}
-				constraints.gridy++;
 			}
 		});
 	}
@@ -350,6 +354,14 @@ public class FlippingPanel extends PluginPanel
 		for (FlippingItemPanel panel : activePanels)
 		{
 			panel.setActiveTimer(false);
+		}
+	}
+
+	public void updateGELimit()
+	{
+		for (FlippingItemPanel activePanel : activePanels)
+		{
+			activePanel.updateGELimits();
 		}
 	}
 }

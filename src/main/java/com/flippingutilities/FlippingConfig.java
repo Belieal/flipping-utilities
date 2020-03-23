@@ -37,7 +37,7 @@ public interface FlippingConfig extends Config
 	@ConfigItem(
 		keyName = "storeTradeHistory",
 		name = "Store session trade history locally",
-		description = "Store your trade history to have your previous trade data show up on new game sessions."
+		description = "Store your trade history to have your previous trade data show up on new game sessions"
 	)
 	default boolean storeTradeHistory()
 	{
@@ -58,7 +58,7 @@ public interface FlippingConfig extends Config
 	@ConfigItem(
 		keyName = "roiGradientMax",
 		name = "Set ROI gradient range limit",
-		description = "Set the limit of the range before the gradient is bright green."
+		description = "Set the limit of the range before the gradient is bright green"
 	)
 	@Units(Units.PERCENT)
 	default int roiGradientMax()

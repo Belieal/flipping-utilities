@@ -31,29 +31,34 @@ import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.http.api.ge.GrandExchangeTrade;
 
+@Slf4j
 @AllArgsConstructor
 public class FlippingItem
 {
-	
-	/* This is to be used in a future trade history / statistics feature */
+	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
+
 	@Getter
 	private ArrayList<GrandExchangeTrade> tradeHistory;
-	
+
 	@Getter
 	private final int itemId;
-	
+
 	@Getter
 	private final String itemName;
-	
+
 	@Getter
 	private final int totalGELimit;
-	
+
+	@Getter
+	private int remainingGELimit;
+
 	@Getter
 	@Setter
 	private int latestBuyPrice;
-	
+
 	@Getter
 	@Setter
 	private int latestSellPrice;
@@ -66,9 +71,47 @@ public class FlippingItem
 	@Setter
 	private Instant latestSellTime;
 
+	@Getter
+	private Instant geLimitResetTime;
+
 	public void addTradeHistory(final GrandExchangeTrade trade)
 	{
 		tradeHistory.add(trade);
 	}
 
+	public void updateGELimitReset()
+	{
+		if (tradeHistory != null)
+		{
+			GrandExchangeTrade oldestTrade = null;
+			remainingGELimit = totalGELimit;
+
+			//Check for the oldest trade within the last 4 hours.
+			for (GrandExchangeTrade trade : tradeHistory)
+			{
+				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
+				{
+					oldestTrade = trade;
+					remainingGELimit -= trade.getQuantity();
+				}
+			}
+
+			//No buy trade found in the last 4 hours.
+			if (oldestTrade == null)
+			{
+				geLimitResetTime = null;
+			}
+			else
+			{
+				geLimitResetTime = oldestTrade.getTime().plusSeconds(GE_RESET_TIME_SECONDS);
+			}
+
+		}
+		else
+		{
+			//No previous trade history; assume no trades made.
+			geLimitResetTime = null;
+			remainingGELimit = totalGELimit;
+		}
+	}
 }

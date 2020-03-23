@@ -51,6 +51,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
 import net.runelite.client.callback.ClientThread;
@@ -119,6 +120,10 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private int prevHighlight;
 
+	//To make sure we only record an offer once.
+	GrandExchangeOffer savedOffer;
+	int savedOfferSlot;
+
 	@Override
 	protected void startUp()
 	{
@@ -153,6 +158,10 @@ public class FlippingPlugin extends Plugin
 			{
 				if (tradesList != null)
 				{
+					for (FlippingItem flippingItem : tradesList)
+					{
+						flippingItem.updateGELimitReset();
+					}
 					panel.rebuildFlippingPanel(tradesList);
 				}
 			})));
@@ -160,7 +169,11 @@ public class FlippingPlugin extends Plugin
 		});
 
 		//Ensures the panel timers are updated at 10 times per second.
-		timeUpdateFuture = executor.scheduleAtFixedRate(() -> panel.updateTimes(), 100, 100, TimeUnit.MILLISECONDS);
+		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
+		{
+			panel.updateTimes();
+			updateGELimitRemaining();
+		}, 100, 100, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -204,12 +217,13 @@ public class FlippingPlugin extends Plugin
 		});
 	}
 
-	//When flipping via margin checking, we look for the highest instant buy price
+	//When flipping via margin checking, we look for the lowest instant buy price
 	// to determine what our sell price should be to undercut existing offers, and vice versa for our buy price.
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		if (newOfferEvent.getOffer().getItemId() == 0)
+		//Check for login screen and empty offers.
+		if (newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
 		{
 			return;
 		}
@@ -217,20 +231,46 @@ public class FlippingPlugin extends Plugin
 		final GrandExchangeOffer newOffer = newOfferEvent.getOffer();
 		final GrandExchangeOfferState newOfferState = newOffer.getState();
 
+		if ((newOfferState != GrandExchangeOfferState.BOUGHT && newOfferState != GrandExchangeOfferState.SOLD
+			&& newOfferState != GrandExchangeOfferState.CANCELLED_BUY) || newOffer.getQuantitySold() == 0)
+		{
+			return;
+		}
+
+		//Cancelled buy offers updates 4 times for some reason.
+		if (newOfferState == GrandExchangeOfferState.CANCELLED_BUY)
+		{
+			if (savedOffer != null && savedOffer.getState() == newOfferState && savedOfferSlot == newOfferEvent.getSlot())
+			{
+				return;
+			}
+
+			savedOffer = newOffer;
+			savedOfferSlot = newOfferEvent.getSlot();
+		}
+
+		//Offer is a margin check.
 		//May change this in the future to be able to update prices independent of quantity.
 		//Perhaps some way of timing the state change from buying to bought such that we know it was "instantly" bought/sold?
 		if ((newOfferState == GrandExchangeOfferState.BOUGHT || newOfferState == GrandExchangeOfferState.SOLD) && newOffer.getQuantitySold() == 1)
 		{
-			addTrade(tradeConstructor(newOffer));
+			addFlipTrade(tradeConstructor(newOffer));
 			panel.rebuildFlippingPanel(tradesList);
-			updateConfig();
 		}
+		//Record the trade to keep track of GE limit.
+		else if (newOffer.getQuantitySold() > 0 && newOfferState != GrandExchangeOfferState.SOLD)
+		{
+			addFlipTrade(tradeConstructor(newOffer));
+		}
+
+		updateConfig();
+		panel.updateGELimit();
 	}
 
 	private GrandExchangeTrade tradeConstructor(GrandExchangeOffer offer)
 	{
 		GrandExchangeTrade result = new GrandExchangeTrade();
-		result.setBuy(offer.getState() == GrandExchangeOfferState.BOUGHT);
+		result.setBuy(offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY);
 		result.setItemId(offer.getItemId());
 		result.setPrice(offer.getSpent() / offer.getQuantitySold());
 		result.setQuantity(offer.getQuantitySold());
@@ -240,7 +280,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Adds GE trade data to the trades list.
-	public void addTrade(GrandExchangeTrade trade)
+	public void addFlipTrade(GrandExchangeTrade trade)
 	{
 		if (tradesList == null)
 		{
@@ -248,26 +288,30 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 		//Check if item is already present
-		final List<FlippingItem> matchingItems = tradesList.stream()
+		final List<FlippingItem> matchingItem = tradesList.stream()
 			.filter((item) -> item.getItemId() == trade.getItemId())
 			.collect(Collectors.toList());
 
 		//No match found
-		if (matchingItems.size() == 0)
+		if (matchingItem.size() == 0)
 		{
 			addToTradesList(trade);
 		}
-		else
+		else if (trade.getQuantity() == 1)
 		{
 			//Found a match, update the existing flipping item.
-			updateFlip(matchingItems.get(0), trade);
+			updateFlip(matchingItem.get(0), trade);
 
 			//Move item to top
-			tradesList.remove(matchingItems.get(0));
-			tradesList.add(0, matchingItems.get(0));
+			tradesList.remove(matchingItem.get(0));
+			tradesList.add(0, matchingItem.get(0));
 		}
-
-
+		else
+		{
+			//Trade isn't a margin check, exclude updating prices.
+			matchingItem.get(0).addTradeHistory(trade);
+			matchingItem.get(0).updateGELimitReset();
+		}
 	}
 
 	//Constructs a FlippingItem and adds it to the tradeList.
@@ -283,17 +327,29 @@ public class FlippingPlugin extends Plugin
 			add(trade);
 		}};
 
-		int tradeBuyPrice = !trade.isBuy() ? trade.getPrice() : 0;
-		int tradeSellPrice = trade.isBuy() ? trade.getPrice() : 0;
+		int tradeBuyPrice = 0;
+		int tradeSellPrice = 0;
 
-		Instant tradeBuyTime = !trade.isBuy() ? trade.getTime() : null;
-		Instant tradeSellTime = trade.isBuy() ? trade.getTime() : null;
+		Instant tradeBuyTime = null;
+		Instant tradeSellTime = null;
 
-		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime);
+		if (trade.getQuantity() == 1)
+		{
+			tradeBuyPrice = !trade.isBuy() ? trade.getPrice() : 0;
+			tradeSellPrice = trade.isBuy() ? trade.getPrice() : 0;
+
+			tradeBuyTime = !trade.isBuy() ? trade.getTime() : null;
+			tradeSellTime = trade.isBuy() ? trade.getTime() : null;
+		}
+
+		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, 0,
+			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null);
+
+		flippingItem.updateGELimitReset();
 
 		tradesList.add(0, flippingItem);
 
-		//Make sure we don't have too many trades at once.
+		//Make sure we don't have too much data.
 		if (tradesList.size() > TRADES_LIST_MAX_SIZE)
 		{
 			tradesList.remove(tradesList.size() - 1);
@@ -324,6 +380,7 @@ public class FlippingPlugin extends Plugin
 			flippingItem.setLatestBuyPrice(tradePrice);
 			flippingItem.setLatestBuyTime(tradeTime);
 		}
+		flippingItem.updateGELimitReset();
 		//TODO: Add quantity of remaining GE limit.
 	}
 
@@ -376,10 +433,29 @@ public class FlippingPlugin extends Plugin
 		panel.highlightItem(currentGEItemId);
 	}
 
+	private void updateGELimitRemaining()
+	{
+		long unitTime = Instant.now().toEpochMilli() / 100;
+
+		if (unitTime % 50 == 0)
+		{
+			for (FlippingItem flippingItem : tradesList)
+			{
+				panel.updateGELimit();
+			}
+		}
+	}
+
 	//Functionality to the top right reset button.
 	public void resetTradeHistory()
 	{
+		for (FlippingItem trade : tradesList)
+		{
+			trade = null;
+		}
 		tradesList.clear();
+		panel.getPreHighlightList().clear();
+		panel.setItemHighlighted(false);
 		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
 		panel.cardLayout.show(panel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
 		panel.rebuildFlippingPanel(tradesList);
@@ -403,7 +479,7 @@ public class FlippingPlugin extends Plugin
 	//Loads previous session data to tradeList.
 	public void loadConfig()
 	{
-		log.debug("Loading flipping config");
+		log.info("Loading flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
 
 		if (json == null)
@@ -422,7 +498,7 @@ public class FlippingPlugin extends Plugin
 		}
 		catch (Exception e)
 		{
-			log.debug("Error loading flipping data: " + e);
+			log.info("Error loading flipping data: " + e);
 		}
 	}
 
