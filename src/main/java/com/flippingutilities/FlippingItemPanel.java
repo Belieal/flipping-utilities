@@ -146,13 +146,19 @@ public class FlippingItemPanel extends JPanel
 		JLabel itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
 		itemName.setForeground(Color.WHITE);
-		itemName.setFont(FontManager.getRunescapeBoldFont());
+		//Make sure the item name fits
+		if (itemName.getText().length() > 25)
+		{
+			itemName.setFont(FontManager.getRunescapeFont());
+		}
+		else
+		{
+			itemName.setFont(FontManager.getRunescapeBoldFont());
+		}
 
 		topPanel.setBackground(background.darker());
 		topPanel.add(itemIcon, BorderLayout.WEST);
 		topPanel.add(itemName, BorderLayout.CENTER);
-		//Pad east to make name line up with horizontal center of the whole panel.
-		//Will probably replace this with an arrow to indicate collapsibility.
 		topPanel.add(arrowIcon, BorderLayout.EAST);
 		topPanel.setBorder(new EmptyBorder(2, 0, 2, 0));
 

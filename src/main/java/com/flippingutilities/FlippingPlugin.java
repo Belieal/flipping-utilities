@@ -381,7 +381,6 @@ public class FlippingPlugin extends Plugin
 			flippingItem.setLatestBuyTime(tradeTime);
 		}
 		flippingItem.updateGELimitReset();
-		//TODO: Add quantity of remaining GE limit.
 	}
 
 	@Provides

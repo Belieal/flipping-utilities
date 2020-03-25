@@ -359,9 +359,12 @@ public class FlippingPanel extends PluginPanel
 
 	public void updateGELimit()
 	{
-		for (FlippingItemPanel activePanel : activePanels)
+		SwingUtilities.invokeLater(() ->
 		{
-			activePanel.updateGELimits();
-		}
+			for (FlippingItemPanel activePanel : activePanels)
+			{
+				activePanel.updateGELimits();
+			}
+		});
 	}
 }

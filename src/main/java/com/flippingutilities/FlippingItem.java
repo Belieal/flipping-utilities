@@ -91,7 +91,11 @@ public class FlippingItem
 			{
 				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
 				{
-					oldestTrade = trade;
+					//Check if trade is older than oldest trade.
+					if (oldestTrade == null || oldestTrade.getTime().getEpochSecond() > trade.getTime().getEpochSecond())
+					{
+						oldestTrade = trade;
+					}
 					remainingGELimit -= trade.getQuantity();
 				}
 			}
