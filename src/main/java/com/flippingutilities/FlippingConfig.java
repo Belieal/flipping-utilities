@@ -75,4 +75,14 @@ public interface FlippingConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "twelveHourFormat",
+		name = "12 hour format",
+		description = "Shows times in a 12 hour format (AM/PM)"
+	)
+	default boolean twelveHourFormat()
+	{
+		return true;
+	}
 }

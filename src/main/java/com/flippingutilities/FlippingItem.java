@@ -103,6 +103,7 @@ public class FlippingItem
 			//No buy trade found in the last 4 hours.
 			if (oldestTrade == null)
 			{
+				remainingGELimit = totalGELimit;
 				geLimitResetTime = null;
 			}
 			else
@@ -117,5 +118,12 @@ public class FlippingItem
 			geLimitResetTime = null;
 			remainingGELimit = totalGELimit;
 		}
+	}
+
+	public void resetGELimit()
+	{
+		tradeHistory.clear();
+		remainingGELimit = totalGELimit;
+		geLimitResetTime = null;
 	}
 }

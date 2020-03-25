@@ -513,6 +513,7 @@ public class FlippingPlugin extends Plugin
 				case ("outOfDateWarning"):
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
+				case ("twelveHourFormat"):
 					panel.rebuildFlippingPanel(tradesList);
 					break;
 				default:

@@ -34,7 +34,7 @@ import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -146,15 +146,8 @@ public class FlippingItemPanel extends JPanel
 		JLabel itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
 		itemName.setForeground(Color.WHITE);
-		//Make sure the item name fits
-		if (itemName.getText().length() > 25)
-		{
-			itemName.setFont(FontManager.getRunescapeFont());
-		}
-		else
-		{
-			itemName.setFont(FontManager.getRunescapeBoldFont());
-		}
+		itemName.setFont(FontManager.getRunescapeBoldFont());
+		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 
 		topPanel.setBackground(background.darker());
 		topPanel.add(itemIcon, BorderLayout.WEST);
@@ -331,8 +324,8 @@ public class FlippingItemPanel extends JPanel
 		Instant latestSellTime = flippingItem.getLatestSellTime();
 
 		//Update price texts with the string formatter
-		final String latestBuyString = formatPriceTimeText(latestBuyTime, true) + " old";
-		final String latestSellString = formatPriceTimeText(latestSellTime, true) + " old";
+		final String latestBuyString = formatPriceTimeText(latestBuyTime) + " old";
+		final String latestSellString = formatPriceTimeText(latestSellTime) + " old";
 
 		//As the config unit is in minutes.
 		final int latestBuyTimeAgo = latestBuyTime != null ? (int) (Instant.now().getEpochSecond() - latestBuyTime.getEpochSecond()) : 0;
@@ -381,40 +374,25 @@ public class FlippingItemPanel extends JPanel
 	//Helper to construct the price time tooltip string.
 	//If there's a method somewhere that does this already, please tell me. :)
 	//TODO: Refactor using something other than Instant (LocalTime?)
-	private String formatPriceTimeText(Instant timeInstant, boolean calculateTimeSince)
+	private String formatPriceTimeText(Instant timeInstant)
 	{
 		if (timeInstant != null)
 		{
-			int timeAgo;
 			//Time since trade was done.
-			if (calculateTimeSince)
-			{
-				timeAgo = (int) (Instant.now().getEpochSecond() - timeInstant.getEpochSecond());
-			}
-			//Time till reset is over.
-			else
-			{
-				timeAgo = (int) (timeInstant.getEpochSecond() - Instant.now().getEpochSecond());
-			}
-			String result = timeAgo + ((timeAgo == 1) ? " second" : " seconds");
+			long timeAgo = (Instant.now().getEpochSecond() - timeInstant.getEpochSecond());
+
+			String result = timeAgo + (timeAgo == 1 ? " second" : " seconds");
 			if (timeAgo > 60)
 			{
 				//Seconds to minutes.
-				int timeAgoMinutes = timeAgo / 60;
-				if (calculateTimeSince)
-				{
-					result = timeAgoMinutes + ((timeAgoMinutes == 1) ? " minute" : " minutes");
-				}
-				else
-				{
-					//GE limit is HH:MM:SS.
-					result = timeAgoMinutes / 60 + ":" + timeAgoMinutes % 60 + " hours";
-				}
-				if (timeAgoMinutes > 60 && calculateTimeSince)
+				long timeAgoMinutes = timeAgo / 60;
+				result = timeAgoMinutes + (timeAgoMinutes == 1 ? " minute" : " minutes");
+
+				if (timeAgoMinutes > 60)
 				{
 					//Minutes to hours
-					int timeAgoHours = timeAgoMinutes / 60;
-					result = timeAgoHours + ((timeAgoHours == 1) ? " hour" : " hours");
+					long timeAgoHours = timeAgoMinutes / 60;
+					result = timeAgoHours + (timeAgoHours == 1 ? " hour" : " hours");
 				}
 			}
 			return result;
@@ -425,19 +403,44 @@ public class FlippingItemPanel extends JPanel
 		}
 	}
 
-	public void updateGELimits()
+	private String formatGELimitResetTime(Instant time)
 	{
-		limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGELimit()));
-		if (flippingItem.getGeLimitResetTime() != null)
+		DateTimeFormatter timeFormatter;
+		if (plugin.getConfig().twelveHourFormat())
 		{
-			String timeString = formatPriceTimeText(flippingItem.getGeLimitResetTime(), false);
-			//TODO: Add 12 hour option.
-			limitLabel.setToolTipText("<html>" + "Time until GE limit is reset: " + timeString + "."
-				+ "<br>This will be at " + flippingItem.getGeLimitResetTime().atZone(ZoneId.systemDefault()).toLocalTime().truncatedTo(ChronoUnit.MINUTES) + ".<html>");
+			timeFormatter = DateTimeFormatter.ofPattern("hh:mm a").withZone(ZoneId.systemDefault());
 		}
 		else
 		{
-			limitLabel.setToolTipText("None bought in the past 4 hours.");
+			timeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
 		}
+		return timeFormatter.format(time);
+	}
+
+	public void updateGELimits()
+	{
+		SwingUtilities.invokeLater(() ->
+		{
+			if (flippingItem.getGeLimitResetTime() != null && flippingItem.getGeLimitResetTime().isBefore(Instant.now()))
+			{
+				flippingItem.resetGELimit();
+			}
+
+			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGELimit()));
+			if (flippingItem.getGeLimitResetTime() == null)
+			{
+				limitLabel.setToolTipText("None has been bought in the past 4 hours.");
+			}
+			else
+			{
+				final long remainingSeconds = flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
+				final long remainingMinutes = remainingSeconds / 60 % 60;
+				final long remainingHours = remainingSeconds / 3600 % 24;
+				String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes) + (remainingHours > 1 ? "hours" : "hour");
+
+				limitLabel.setToolTipText("<html>" + "GE limit is reset in " + timeString + "."
+					+ "<br>This will be at " + formatGELimitResetTime(flippingItem.getGeLimitResetTime()) + ".<html>");
+			}
+		});
 	}
 }
