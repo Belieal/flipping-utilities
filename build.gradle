@@ -19,7 +19,7 @@ dependencies {
 
 	testImplementation 'junit:junit:4.12'
 	testImplementation 'org.slf4j:slf4j-simple:1.7.12'
-	testImplementation 'net.runelite:client:1.6.9'
+	testImplementation 'net.runelite:client:1.6.10'
 }
 
 group = 'com.flippingutilities'
