@@ -29,3 +29,4 @@ v1.0 - Plugin added!
 
 v1.1 - GE limit tracking added.
 
+v1.1.1 - 12 hour format for clocks and various bug fixes.
