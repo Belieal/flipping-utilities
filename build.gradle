@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-	compileOnly 'net.runelite:client:1.6.9'
+	compileOnly 'net.runelite:client:1.6.10'
 	compileOnly 'org.slf4j:slf4j-api:1.7.25'
 
 	compileOnly 'org.projectlombok:lombok:1.18.4'
