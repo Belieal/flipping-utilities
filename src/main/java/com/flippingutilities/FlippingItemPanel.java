@@ -293,6 +293,11 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.add(rightValuesPanel, BorderLayout.EAST);
 		itemInfo.setBorder(ITEM_INFO_BORDER);
 
+		buildPanelValues();
+		updateGELimits();
+		checkOutdatedPriceTimes();
+		setActiveTimer(true);
+
 		add(topPanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 	}

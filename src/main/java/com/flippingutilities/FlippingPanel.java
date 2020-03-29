@@ -222,42 +222,33 @@ public class FlippingPanel extends PluginPanel
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
+				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
+				activePanels.add(newPanel);
+				newPanel.clearButton.addMouseListener(new MouseAdapter()
 				{
-					FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
-					clientThread.invokeLater(() ->
+					@Override
+					public void mouseClicked(MouseEvent e)
 					{
-						activePanels.add(newPanel);
-						newPanel.buildPanelValues();
-						newPanel.updateGELimits();
-						newPanel.checkOutdatedPriceTimes();
-						newPanel.setActiveTimer(true);
-						newPanel.clearButton.addMouseListener(new MouseAdapter()
+						if (e.getButton() == MouseEvent.BUTTON1)
 						{
-							@Override
-							public void mouseClicked(MouseEvent e)
-							{
-								if (e.getButton() == MouseEvent.BUTTON1)
-								{
-									deletePanel(newPanel);
-								}
-							}
-						});
-					});
+							deletePanel(newPanel);
+						}
+					}
+				});
 
-					if (index++ > 0)
-					{
-						JPanel marginWrapper = new JPanel(new BorderLayout());
-						marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-						marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-						marginWrapper.add(newPanel, BorderLayout.NORTH);
-						flippingItemsPanel.add(marginWrapper, constraints);
-					}
-					else
-					{
-						flippingItemsPanel.add(newPanel, constraints);
-					}
-					constraints.gridy++;
+				if (index++ > 0)
+				{
+					JPanel marginWrapper = new JPanel(new BorderLayout());
+					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
+					marginWrapper.add(newPanel, BorderLayout.NORTH);
+					flippingItemsPanel.add(marginWrapper, constraints);
 				}
+				else
+				{
+					flippingItemsPanel.add(newPanel, constraints);
+				}
+				constraints.gridy++;
 			}
 		});
 	}
