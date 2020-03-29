@@ -31,6 +31,8 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -38,6 +40,7 @@ import java.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -63,6 +66,7 @@ public class FlippingItemPanel extends JPanel
 
 	private static final ImageIcon OPEN_ICON;
 	private static final ImageIcon CLOSE_ICON;
+	private static final ImageIcon DELETE_ICON;
 
 	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final String NUM_FORMAT = "%,d";
@@ -79,6 +83,9 @@ public class FlippingItemPanel extends JPanel
 		final BufferedImage openIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
 		CLOSE_ICON = new ImageIcon(openIcon);
 		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
+
+		final BufferedImage deleteIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
+		DELETE_ICON = new ImageIcon(deleteIcon);
 	}
 
 	private int buyPrice;
@@ -106,6 +113,7 @@ public class FlippingItemPanel extends JPanel
 	JLabel limitLabel = new JLabel();
 	JLabel ROILabel = new JLabel();
 	JLabel arrowIcon = new JLabel(OPEN_ICON);
+	JButton clearButton = new JButton(DELETE_ICON);
 
 	/* Panels */
 	JPanel topPanel = new JPanel(new BorderLayout());
@@ -142,6 +150,22 @@ public class FlippingItemPanel extends JPanel
 		arrowIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		arrowIcon.setPreferredSize(ICON_SIZE);
 
+		/* Clear button */
+		clearButton.setPreferredSize(ICON_SIZE);
+		clearButton.setFont(FontManager.getRunescapeBoldFont());
+		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		clearButton.setBorder(null);
+		clearButton.setBorderPainted(false);
+		clearButton.setContentAreaFilled(false);
+		clearButton.setVisible(false);
+
+
+		JPanel itemClearPanel = new JPanel(new BorderLayout());
+		itemClearPanel.setBackground(background.darker());
+
+		itemClearPanel.add(itemIcon, BorderLayout.WEST);
+		itemClearPanel.add(clearButton, BorderLayout.EAST);
+
 		/* Item name panel */
 		JLabel itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
@@ -150,10 +174,48 @@ public class FlippingItemPanel extends JPanel
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 
 		topPanel.setBackground(background.darker());
-		topPanel.add(itemIcon, BorderLayout.WEST);
+		topPanel.add(itemClearPanel, BorderLayout.WEST);
 		topPanel.add(itemName, BorderLayout.CENTER);
 		topPanel.add(arrowIcon, BorderLayout.EAST);
-		topPanel.setBorder(new EmptyBorder(2, 0, 2, 0));
+		topPanel.setBorder(new EmptyBorder(2, 1, 2, 1));
+		topPanel.addMouseListener(new MouseAdapter()
+		{
+
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1 && !itemClearPanel.contains(e.getPoint()))
+				{
+					if (isCollapsed())
+					{
+						expand();
+					}
+					else
+					{
+						collapse();
+					}
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				itemIcon.setVisible(false);
+				clearButton.setVisible(true);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				//Mouse is hovering over icon
+				if (topPanel.contains(e.getPoint()))
+				{
+					return;
+				}
+				clearButton.setVisible(false);
+				itemIcon.setVisible(true);
+			}
+		});
 
 		/* Prices and profits info */
 		leftInfoTextPanel.setBackground(background);

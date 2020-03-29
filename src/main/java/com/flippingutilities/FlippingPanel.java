@@ -231,27 +231,19 @@ public class FlippingPanel extends PluginPanel
 						newPanel.updateGELimits();
 						newPanel.checkOutdatedPriceTimes();
 						newPanel.setActiveTimer(true);
-					});
-
-					//Collapse when clicking the top panel of an item.
-					newPanel.topPanel.addMouseListener(new MouseAdapter()
-					{
-						@Override
-						public void mousePressed(MouseEvent e)
+						newPanel.clearButton.addMouseListener(new MouseAdapter()
 						{
-							if (e.getButton() == MouseEvent.BUTTON1)
+							@Override
+							public void mouseClicked(MouseEvent e)
 							{
-								if (newPanel.isCollapsed())
+								if (e.getButton() == MouseEvent.BUTTON1)
 								{
-									newPanel.expand();
-								}
-								else
-								{
-									newPanel.collapse();
+									deletePanel(newPanel);
 								}
 							}
-						}
+						});
 					});
+
 					if (index++ > 0)
 					{
 						JPanel marginWrapper = new JPanel(new BorderLayout());
@@ -297,7 +289,7 @@ public class FlippingPanel extends PluginPanel
 		{
 			return;
 		}
-		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanelFromItemId(itemId));
+		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
 		if (!itemToHighlight.isEmpty())
 		{
 			preHighlightList.addAll(activePanels);
@@ -327,7 +319,7 @@ public class FlippingPanel extends PluginPanel
 		plugin.setPrevHighlight(0);
 	}
 
-	public ArrayList<FlippingItem> findItemPanelFromItemId(int itemId)
+	public ArrayList<FlippingItem> findItemPanel(int itemId)
 	{
 		ArrayList<FlippingItem> result = new ArrayList<>();
 
@@ -366,5 +358,18 @@ public class FlippingPanel extends PluginPanel
 				activePanel.updateGELimits();
 			}
 		});
+	}
+
+	public void deletePanel(FlippingItemPanel itemPanel)
+	{
+		if (!activePanels.contains(itemPanel))
+		{
+			return;
+		}
+		ArrayList<FlippingItem> tradeList = plugin.getTradesList();
+		tradeList.remove(itemPanel.getFlippingItem());
+
+		rebuildFlippingPanel(tradeList);
+		plugin.updateConfig();
 	}
 }
