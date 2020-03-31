@@ -74,6 +74,10 @@ public class FlippingItem
 	@Getter
 	private Instant geLimitResetTime;
 
+	@Getter
+	@Setter
+	private boolean isFrozen;
+
 	public void addTradeHistory(final GrandExchangeTrade trade)
 	{
 		tradeHistory.add(trade);

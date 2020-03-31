@@ -343,7 +343,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, 0,
-			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null);
+			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false);
 
 		flippingItem.updateGELimitReset();
 
@@ -370,15 +370,16 @@ public class FlippingPlugin extends Plugin
 			flippingItem.getTradeHistory().remove(flippingItem.getTradeHistory().size() - 1);
 		}
 		//Bought
-		if (tradeBuyState)
-		{
-			flippingItem.setLatestSellPrice(tradePrice);
-			flippingItem.setLatestSellTime(tradeTime);
-		}
-		else
-		{
-			flippingItem.setLatestBuyPrice(tradePrice);
-			flippingItem.setLatestBuyTime(tradeTime);
+		if (!flippingItem.isFrozen()) {
+			if (tradeBuyState)
+			{
+				flippingItem.setLatestSellPrice(tradePrice);
+				flippingItem.setLatestSellTime(tradeTime);
+			}
+			else {
+				flippingItem.setLatestBuyPrice(tradePrice);
+				flippingItem.setLatestBuyTime(tradeTime);
+			}
 		}
 		flippingItem.updateGELimitReset();
 	}
