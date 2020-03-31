@@ -204,7 +204,6 @@ public class FlippingPanel extends PluginPanel
 			return;
 		}
 		//Reset active panel list.
-		stopTimerUpdates(activePanels);
 		activePanels.clear();
 
 		if (flippingItems.size() == 0)
@@ -328,15 +327,6 @@ public class FlippingPanel extends PluginPanel
 		for (FlippingItemPanel activePanel : activePanels)
 		{
 			activePanel.checkOutdatedPriceTimes();
-		}
-	}
-
-	//Not sure if this is necessary, but just in case it hinders performance.
-	private void stopTimerUpdates(ArrayList<FlippingItemPanel> activePanels)
-	{
-		for (FlippingItemPanel panel : activePanels)
-		{
-			panel.setActiveTimer(false);
 		}
 	}
 

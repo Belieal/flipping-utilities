@@ -375,13 +375,15 @@ public class FlippingPlugin extends Plugin
 			flippingItem.getTradeHistory().remove(flippingItem.getTradeHistory().size() - 1);
 		}
 		//Bought
-		if (!flippingItem.isFrozen()) {
+		if (!flippingItem.isFrozen())
+		{
 			if (tradeBuyState)
 			{
 				flippingItem.setLatestSellPrice(tradePrice);
 				flippingItem.setLatestSellTime(tradeTime);
 			}
-			else {
+			else
+			{
 				flippingItem.setLatestBuyPrice(tradePrice);
 				flippingItem.setLatestBuyTime(tradeTime);
 			}

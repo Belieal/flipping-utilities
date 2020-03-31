@@ -50,7 +50,6 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
@@ -97,9 +96,6 @@ public class FlippingItemPanel extends JPanel
 	@Getter
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
-
-	@Setter
-	private boolean activeTimer;
 
 	@Inject
 	private FlippingConfig config;
@@ -326,7 +322,6 @@ public class FlippingItemPanel extends JPanel
 		buildPanelValues();
 		updateGELimits();
 		checkOutdatedPriceTimes();
-		setActiveTimer(true);
 
 		add(topPanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
@@ -418,11 +413,6 @@ public class FlippingItemPanel extends JPanel
 	//Checks if prices are outdated and updates the tooltip.
 	public void checkOutdatedPriceTimes()
 	{
-		if (!activeTimer)
-		{
-			//Panel is dead.
-			return;
-		}
 		//Update time of latest price update.
 		Instant latestBuyTime = flippingItem.getLatestBuyTime();
 		Instant latestSellTime = flippingItem.getLatestSellTime();
