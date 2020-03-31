@@ -45,8 +45,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
+import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
@@ -84,6 +86,7 @@ public class FlippingPlugin extends Plugin
 
 	private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
 	private static final int GE_BACK_BUTTON_WIDGET_ID = 30474244;
+	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
 	public static final String CONFIG_KEY = "items";
@@ -111,6 +114,8 @@ public class FlippingPlugin extends Plugin
 	private ItemManager itemManager;
 
 	private FlippingPanel panel;
+	private FlippingItemWidget flippingWidget;
+	private int lastTick;
 
 	//Stores all bought or sold trades.
 	@Getter
@@ -520,5 +525,80 @@ public class FlippingPlugin extends Plugin
 					break;
 			}
 		}
+	}
+
+	@Subscribe
+	public void onVarClientIntChanged(VarClientIntChanged event)
+	{
+		//Check that it was the chat input that got enabled.
+		if (event.getIndex() != VarClientInt.INPUT_TYPE.getIndex()
+			|| client.getWidget(WidgetInfo.CHATBOX_TITLE) == null
+			|| client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) != 7)
+		{
+			return;
+		}
+
+		clientThread.invokeLater(() ->
+		{
+			if (flippingWidget == null)
+			{
+				flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+			}
+
+			FlippingItem selectedItem = null;
+			//Check that if we've recorded any data for the item.
+			for (FlippingItem item : tradesList)
+			{
+				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
+				{
+					selectedItem = item;
+					break;
+				}
+			}
+
+			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
+			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+			if (chatInputText.equals("How many do you wish to buy?"))
+			{
+				//No recorded data; default to total GE limit
+				if (selectedItem == null)
+				{
+					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
+					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
+					flippingWidget.showWidget("setQuantity", itemGELimit);
+				}
+				else
+				{
+					flippingWidget.showWidget("setQuantity", selectedItem.getRemainingGELimit());
+				}
+			}
+			else if (chatInputText.equals("Set a price for each item:"))
+			{
+				if (offerText.equals("Buy offer"))
+				{
+					//No recorded data; hide the widget
+					if (selectedItem == null || selectedItem.getLatestBuyPrice() == 0)
+					{
+						flippingWidget.showWidget("reset", 0);
+					}
+					else
+					{
+						flippingWidget.showWidget("setBuyPrice", selectedItem.getLatestBuyPrice());
+					}
+				}
+				else if (offerText.equals("Sell offer"))
+				{
+					//No recorded data; hide the widget
+					if (selectedItem == null || selectedItem.getLatestSellPrice() == 0)
+					{
+						flippingWidget.showWidget("reset", 0);
+					}
+					else
+					{
+						flippingWidget.showWidget("setSellPrice", selectedItem.getLatestSellPrice());
+					}
+				}
+			}
+		});
 	}
 }

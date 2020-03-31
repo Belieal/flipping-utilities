@@ -367,8 +367,15 @@ public class FlippingItemPanel extends JPanel
 		/*
 		If the user wants, we calculate the total profit while taking into account
 		the margin check loss. */
-		this.profitTotal = (flippingItem.getRemainingGELimit() == 0) ? 0
-			: flippingItem.getRemainingGELimit() * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+		if (plugin.getConfig().geLimitProfit())
+		{
+			this.profitTotal = (flippingItem.getRemainingGELimit() == 0) ? 0
+				: flippingItem.getRemainingGELimit() * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+		}
+		else
+		{
+			this.profitTotal = flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+		}
 		this.ROI = calculateROI();
 	}
 

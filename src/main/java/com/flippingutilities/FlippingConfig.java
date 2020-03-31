@@ -85,4 +85,14 @@ public interface FlippingConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "remainingGELimitProfit",
+		name = "Calculate total profit from remaining GE limit",
+		description = "If unchecked, the total profit will be calculated from total GE limit."
+	)
+	default boolean geLimitProfit()
+	{
+		return false;
+	}
 }
