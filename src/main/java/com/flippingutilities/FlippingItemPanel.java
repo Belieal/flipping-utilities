@@ -41,6 +41,7 @@ import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -114,12 +115,13 @@ public class FlippingItemPanel extends JPanel
 	JLabel ROILabel = new JLabel();
 	JLabel arrowIcon = new JLabel(OPEN_ICON);
 	JButton clearButton = new JButton(DELETE_ICON);
+	JCheckBox marginFreezer = new JCheckBox();
 
 	/* Panels */
 	JPanel topPanel = new JPanel(new BorderLayout());
 	JPanel itemInfo = new JPanel(new BorderLayout());
-	JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
-	JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
+	JPanel leftInfoTextPanel = new JPanel(new GridLayout(8, 1));
+	JPanel rightValuesPanel = new JPanel(new GridLayout(8, 1));
 
 	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager, final FlippingItem flippingItem)
 	{
@@ -158,6 +160,31 @@ public class FlippingItemPanel extends JPanel
 		clearButton.setBorderPainted(false);
 		clearButton.setContentAreaFilled(false);
 		clearButton.setVisible(false);
+
+		/* Margin freezer */
+		marginFreezer.setBorder(BorderFactory.createEmptyBorder());
+		marginFreezer.setBackground(ColorScheme.LIGHT_GRAY_COLOR);
+		marginFreezer.setToolTipText("freeze margin");
+		marginFreezer.setSelected(flippingItem.isFrozen());
+		marginFreezer.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					if (flippingItem.isFrozen())
+					{
+
+						flippingItem.setFrozen(false);
+					}
+					else
+					{
+						flippingItem.setFrozen(true);
+					}
+				}
+			}
+		});
 
 
 		JPanel itemClearPanel = new JPanel(new BorderLayout());
@@ -261,10 +288,12 @@ public class FlippingItemPanel extends JPanel
 		JLabel padLabel2 = new JLabel(" ");
 		JLabel padLabel3 = new JLabel(" ");
 		JLabel padLabel4 = new JLabel(" ");
+		JLabel padLabel5 = new JLabel(" ");
 
 		/* Left info labels */
 		leftInfoTextPanel.add(buyPriceText);
 		leftInfoTextPanel.add(sellPriceText);
+		leftInfoTextPanel.add(marginFreezer);
 		leftInfoTextPanel.add(padLabel1);
 		leftInfoTextPanel.add(profitEachText);
 		leftInfoTextPanel.add(profitTotalText);
@@ -273,12 +302,13 @@ public class FlippingItemPanel extends JPanel
 		rightValuesPanel.add(buyPriceVal);
 		rightValuesPanel.add(sellPriceVal);
 		rightValuesPanel.add(padLabel2);
+		rightValuesPanel.add(padLabel3);
 		rightValuesPanel.add(profitEachVal);
 		rightValuesPanel.add(profitTotalVal);
 
 		//Separate prices and profit with GE limit and ROI.
-		leftInfoTextPanel.add(padLabel3);
-		rightValuesPanel.add(padLabel4);
+		leftInfoTextPanel.add(padLabel4);
+		rightValuesPanel.add(padLabel5);
 
 		/* GE limits and ROI labels */
 		leftInfoTextPanel.add(limitLabel);
