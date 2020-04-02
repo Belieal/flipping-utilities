@@ -101,11 +101,6 @@ public class FlippingItemPanel extends JPanel
 	@Setter
 	private boolean activeTimer;
 
-	@Inject
-	private FlippingConfig config;
-	@Inject
-	private ClientThread clientThread;
-
 	/* Labels */
 	JLabel buyPriceVal = new JLabel();
 	JLabel sellPriceVal = new JLabel();

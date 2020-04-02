@@ -95,8 +95,6 @@ public class FlippingPanel extends PluginPanel
 
 	//So we can keep track what items are shown on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
-	@Getter
-	private ArrayList<FlippingItemPanel> preHighlightList = new ArrayList<>();
 
 
 	@Inject
@@ -283,7 +281,6 @@ public class FlippingPanel extends PluginPanel
 		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
 		if (!itemToHighlight.isEmpty())
 		{
-			preHighlightList.addAll(activePanels);
 			rebuildFlippingPanel(itemToHighlight);
 			itemHighlighted = true;
 		}
@@ -298,15 +295,8 @@ public class FlippingPanel extends PluginPanel
 			return;
 		}
 
-		ArrayList<FlippingItem> itemsToAdd = new ArrayList<>();
-		for (FlippingItemPanel itemPanel : preHighlightList)
-		{
-			itemsToAdd.add(itemPanel.getFlippingItem());
-		}
-
-		rebuildFlippingPanel(itemsToAdd);
+		rebuildFlippingPanel(plugin.getTradesList());
 		itemHighlighted = false;
-		preHighlightList.clear();
 		plugin.setPrevHighlight(0);
 	}
 
