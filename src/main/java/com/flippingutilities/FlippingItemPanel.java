@@ -247,7 +247,7 @@ public class FlippingItemPanel extends JPanel
 		JLabel buyPriceText = new JLabel("Buy price each: ");
 		JLabel sellPriceText = new JLabel("Sell price each: ");
 		JLabel profitEachText = new JLabel("Profit each: ");
-		JLabel profitTotalText = new JLabel("Total profit: ");
+		JLabel profitTotalText = new JLabel("Potential profit: ");
 
 		/* Right labels */
 		buyPriceVal.setHorizontalAlignment(JLabel.RIGHT);
