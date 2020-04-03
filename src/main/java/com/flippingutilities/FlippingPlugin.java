@@ -138,7 +138,7 @@ public class FlippingPlugin extends Plugin
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Plugin")
-			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/util/graphIconGreen.png"))
+			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
 			.priority(3)
 			.panel(panel)
 			.build();
