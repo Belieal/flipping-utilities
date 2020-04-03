@@ -138,7 +138,7 @@ public class FlippingPlugin extends Plugin
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Plugin")
-			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
+			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/util/graphIconGreen.png"))
 			.priority(3)
 			.panel(panel)
 			.build();
@@ -386,6 +386,12 @@ public class FlippingPlugin extends Plugin
 				flippingItem.setLatestBuyTime(tradeTime);
 			}
 		}
+
+		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
+    //freeze config option has been selected, freeze the item's margin.
+		if (!(flippingItem.getLatestBuyPrice()==0) && !(flippingItem.getLatestSellPrice()==0) && config.autoFreezeMargin())  {
+        flippingItem.setFrozen(true);
+    }
 		flippingItem.updateGELimitReset();
 	}
 
