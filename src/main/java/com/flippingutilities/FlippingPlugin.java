@@ -454,12 +454,7 @@ public class FlippingPlugin extends Plugin
 	//Functionality to the top right reset button.
 	public void resetTradeHistory()
 	{
-		for (FlippingItem trade : tradesList)
-		{
-			trade = null;
-		}
 		tradesList.clear();
-		panel.getPreHighlightList().clear();
 		panel.setItemHighlighted(false);
 		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
 		panel.cardLayout.show(panel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
