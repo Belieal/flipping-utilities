@@ -541,10 +541,9 @@ public class FlippingPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			if (flippingWidget == null)
-			{
-				flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
-			}
+
+			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
