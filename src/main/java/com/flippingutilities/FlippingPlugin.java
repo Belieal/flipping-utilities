@@ -32,7 +32,9 @@ import com.google.inject.Provides;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -125,9 +127,8 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private int prevHighlight;
 
-	//To make sure we only record an offer once.
-	GrandExchangeOffer savedOffer;
-	int savedOfferSlot;
+  //will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
+	private Map<Integer, GrandExchangeOffer> lastOffers = new HashMap<>();
 
 	@Override
 	protected void startUp()
@@ -222,37 +223,69 @@ public class FlippingPlugin extends Plugin
 		});
 	}
 
+  /**
+   * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled sell
+   * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
+   * buying/selling event and a bought/sold event). This screens out the unwanted events/duplicate
+	 * events
+   *
+   * @param newOfferEvent
+   * @return a boolean representing whether the offer should be passed on or discarded
+   */
+	public boolean isBadEvent(GrandExchangeOfferChanged newOfferEvent) {
+	  GrandExchangeOffer newOffer = newOfferEvent.getOffer();
+    int newOfferSlot = newOfferEvent.getSlot();
+
+    //Check for login screen and empty offers.
+    if (newOffer.getQuantitySold() ==0 || newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null) {
+      return true;
+    }
+
+    //if its the last selling/buying event, as evidenced by the quantity sold/bought being
+    //equal to the total quantity of the offer, record it but return true so it doesn't go through
+    //as the next event will be a BOUGHT/SOLD event, and only that should go through.
+    if ((newOffer.getState() == GrandExchangeOfferState.BUYING || newOffer.getState() == GrandExchangeOfferState.SELLING) && newOffer.getQuantitySold() == newOffer.getTotalQuantity()) {
+      lastOffers.put(newOfferSlot, newOffer);
+      return true;
+    }
+
+
+    //if there is a last seen offer for that slot
+	  if (lastOffers.containsKey(newOfferSlot)) {
+
+	    GrandExchangeOffer lastOfferForSlot = lastOffers.get(newOfferSlot);
+
+      //if its a duplicate as the last seen event
+	    if (lastOfferForSlot.getState().equals(newOffer.getState()) && lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold()) {
+	      return true; //its a bad event!
+      }
+
+      else {
+        //update hashmap to include latest offer
+        lastOffers.put(newOfferSlot, newOffer);
+        return false; //not a bad event
+      }
+    }
+    //if there isn't a last seen offer for that slot
+    else {
+      //put the offer in the hashmap with the corresponding slot
+      lastOffers.put(newOfferSlot, newOffer);
+      return false;
+    }
+  }
+
 	//When flipping via margin checking, we look for the lowest instant buy price
 	// to determine what our sell price should be to undercut existing offers, and vice versa for our buy price.
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		//Check for login screen and empty offers.
-		if (newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
-		{
-			return;
-		}
+
+	  if (isBadEvent(newOfferEvent)) {
+	    return;
+    }
 
 		final GrandExchangeOffer newOffer = newOfferEvent.getOffer();
-		final GrandExchangeOfferState newOfferState = newOffer.getState();
-
-		if ((newOfferState != GrandExchangeOfferState.BOUGHT && newOfferState != GrandExchangeOfferState.SOLD
-			&& newOfferState != GrandExchangeOfferState.CANCELLED_BUY) || newOffer.getQuantitySold() == 0)
-		{
-			return;
-		}
-
-		//Cancelled buy offers updates 4 times for some reason.
-		if (newOfferState == GrandExchangeOfferState.CANCELLED_BUY)
-		{
-			if (savedOffer != null && savedOffer.getState() == newOfferState && savedOfferSlot == newOfferEvent.getSlot())
-			{
-				return;
-			}
-
-			savedOffer = newOffer;
-			savedOfferSlot = newOfferEvent.getSlot();
-		}
+    final GrandExchangeOfferState newOfferState = newOffer.getState();
 
 		//Offer is a margin check.
 		//May change this in the future to be able to update prices independent of quantity.
@@ -262,8 +295,8 @@ public class FlippingPlugin extends Plugin
 			addFlipTrade(tradeConstructor(newOffer));
 			panel.rebuildFlippingPanel(tradesList);
 		}
-		//Record the trade to keep track of GE limit.
-		else if (newOffer.getQuantitySold() > 0 && newOfferState != GrandExchangeOfferState.SOLD)
+		//If the new offer is of state BOUGHT Record the trade to keep track of GE limit.
+		else if (newOffer.getQuantitySold() > 0 && newOfferState == GrandExchangeOfferState.BOUGHT)
 		{
 			addFlipTrade(tradeConstructor(newOffer));
 		}
