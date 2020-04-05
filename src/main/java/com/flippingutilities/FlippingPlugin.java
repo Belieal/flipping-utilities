@@ -386,6 +386,14 @@ public class FlippingPlugin extends Plugin
 				flippingItem.setLatestBuyTime(tradeTime);
 			}
 		}
+
+		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
+		//freeze config option has been selected, freeze the item's margin.
+		if (!(flippingItem.getLatestBuyPrice()==0) && !(flippingItem.getLatestSellPrice()==0) && config.autoFreezeMargin())
+		{
+			flippingItem.setFrozen(true);
+		}
+
 		flippingItem.updateGELimitReset();
 	}
 
