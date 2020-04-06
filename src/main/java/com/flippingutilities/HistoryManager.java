@@ -131,7 +131,7 @@ public class HistoryManager
 	 * @return the amount of money spent on the offer list, up to the amount of items specified by the
 	 * limit
 	 */
-	public int getValueOfTrades(List<OfferInfo> tradeList, int itemLimit)
+	private int getValueOfTrades(List<OfferInfo> tradeList, int itemLimit)
 	{
 		int itemsSeen = 0;
 		int moneySpent = 0;
