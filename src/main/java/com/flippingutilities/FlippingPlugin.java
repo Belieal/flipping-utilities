@@ -133,7 +133,7 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		panel = new FlippingPanel(this, itemManager, clientThread);
+		panel = new FlippingPanel(this, itemManager, clientThread, executor);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
@@ -391,7 +391,7 @@ public class FlippingPlugin extends Plugin
 
 		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
 		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.getLatestBuyPrice()==0) && !(flippingItem.getLatestSellPrice()==0) && config.autoFreezeMargin())
+		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0) && config.autoFreezeMargin())
 		{
 			flippingItem.setFrozen(true);
 		}
