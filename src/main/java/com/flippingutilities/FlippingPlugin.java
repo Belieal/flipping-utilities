@@ -32,7 +32,9 @@ import com.google.inject.Provides;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -125,9 +127,9 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private int prevHighlight;
 
-	//To make sure we only record an offer once.
-	GrandExchangeOffer savedOffer;
-	int savedOfferSlot;
+
+	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
+	private Map<Integer, GrandExchangeOffer> lastOffers = new HashMap<>();
 
 	@Override
 	protected void startUp()
@@ -222,13 +224,71 @@ public class FlippingPlugin extends Plugin
 		});
 	}
 
+	/**
+	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled sell
+	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
+	 * buying/selling event and a bought/sold event). This screens out the unwanted events/duplicate
+	 * events
+	 *
+	 * @param newOfferEvent
+	 * @return a boolean representing whether the offer should be passed on or discarded
+	 */
+	public boolean isBadEvent(GrandExchangeOfferChanged newOfferEvent)
+	{
+		GrandExchangeOffer newOffer = newOfferEvent.getOffer();
+		int newOfferSlot = newOfferEvent.getSlot();
+
+		//Check for login screen and empty offers.
+		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
+		{
+			return true;
+		}
+
+		//if its the last selling/buying event, as evidenced by the quantity sold/bought being
+		//equal to the total quantity of the offer, record it but return true so it doesn't go through
+		//as the next event will be a BOUGHT/SOLD event, and only that should go through.
+		if ((newOffer.getState() == GrandExchangeOfferState.BUYING || newOffer.getState() == GrandExchangeOfferState.SELLING) && newOffer.getQuantitySold() == newOffer.getTotalQuantity())
+		{
+			lastOffers.put(newOfferSlot, newOffer);
+			return true;
+		}
+
+
+		//if there is a last seen offer for that slot
+		if (lastOffers.containsKey(newOfferSlot))
+		{
+
+			GrandExchangeOffer lastOfferForSlot = lastOffers.get(newOfferSlot);
+
+			//if its a duplicate as the last seen event
+			if (lastOfferForSlot.getState().equals(newOffer.getState()) && lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold())
+			{
+				return true; //its a bad event!
+			}
+
+			else
+			{
+				//update hashmap to include latest offer
+				lastOffers.put(newOfferSlot, newOffer);
+				return false; //not a bad event
+			}
+		}
+		//if there isn't a last seen offer for that slot
+		else
+		{
+			//put the offer in the hashmap with the corresponding slot
+			lastOffers.put(newOfferSlot, newOffer);
+			return false;
+		}
+	}
+
 	//When flipping via margin checking, we look for the lowest instant buy price
 	// to determine what our sell price should be to undercut existing offers, and vice versa for our buy price.
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		//Check for login screen and empty offers.
-		if (newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
+
+		if (isBadEvent(newOfferEvent))
 		{
 			return;
 		}
@@ -236,52 +296,40 @@ public class FlippingPlugin extends Plugin
 		final GrandExchangeOffer newOffer = newOfferEvent.getOffer();
 		final GrandExchangeOfferState newOfferState = newOffer.getState();
 
-		if ((newOfferState != GrandExchangeOfferState.BOUGHT && newOfferState != GrandExchangeOfferState.SOLD
-			&& newOfferState != GrandExchangeOfferState.CANCELLED_BUY) || newOffer.getQuantitySold() == 0)
-		{
-			return;
-		}
-
-		//Cancelled buy offers updates 4 times for some reason.
-		if (newOfferState == GrandExchangeOfferState.CANCELLED_BUY)
-		{
-			if (savedOffer != null && savedOffer.getState() == newOfferState && savedOfferSlot == newOfferEvent.getSlot())
-			{
-				return;
-			}
-
-			savedOffer = newOffer;
-			savedOfferSlot = newOfferEvent.getSlot();
-		}
-
 		//Offer is a margin check.
 		//May change this in the future to be able to update prices independent of quantity.
 		//Perhaps some way of timing the state change from buying to bought such that we know it was "instantly" bought/sold?
 		if ((newOfferState == GrandExchangeOfferState.BOUGHT || newOfferState == GrandExchangeOfferState.SOLD) && newOffer.getQuantitySold() == 1)
 		{
-			addFlipTrade(tradeConstructor(newOffer));
+			addFlipTrade(tradeConstructor(newOfferEvent));
 			panel.rebuildFlippingPanel(tradesList);
 		}
-		//Record the trade to keep track of GE limit.
-		else if (newOffer.getQuantitySold() > 0 && newOfferState != GrandExchangeOfferState.SOLD)
+		//If the new offer is of state BOUGHT Record the trade to keep track of GE limit.
+		else if (newOffer.getQuantitySold() > 0 && newOfferState == GrandExchangeOfferState.BOUGHT)
 		{
-			addFlipTrade(tradeConstructor(newOffer));
+			addFlipTrade(tradeConstructor(newOfferEvent));
 		}
 
 		updateConfig();
 		panel.updateGELimit();
 	}
 
-	private GrandExchangeTrade tradeConstructor(GrandExchangeOffer offer)
+	private GrandExchangeTrade tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
 	{
-		GrandExchangeTrade result = new GrandExchangeTrade();
-		result.setBuy(offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY);
-		result.setItemId(offer.getItemId());
-		result.setPrice(offer.getSpent() / offer.getQuantitySold());
-		result.setQuantity(offer.getQuantitySold());
-		result.setTime(Instant.now());
+		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
-		return result;
+		OfferInfo offerInfo = new OfferInfo();
+		offerInfo.setBuy(
+			offer.getState() == GrandExchangeOfferState.BOUGHT ||
+				offer.getState() == GrandExchangeOfferState.CANCELLED_BUY ||
+				offer.getState() == GrandExchangeOfferState.BUYING);
+		offerInfo.setItemId(offer.getItemId());
+		offerInfo.setPrice(offer.getSpent() / offer.getQuantitySold());
+		offerInfo.setQuantity(offer.getQuantitySold());
+		offerInfo.setTime(Instant.now());
+		offerInfo.setSlot(newOfferEvent.getSlot());
+		offerInfo.setState(offer.getState());
+		return offerInfo;
 	}
 
 	//Adds GE trade data to the trades list.
@@ -348,7 +396,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, 0,
-			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false);
+			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false, new HistoryManager());
 
 		flippingItem.updateGELimitReset();
 
@@ -375,13 +423,15 @@ public class FlippingPlugin extends Plugin
 			flippingItem.getTradeHistory().remove(flippingItem.getTradeHistory().size() - 1);
 		}
 		//Bought
-		if (!flippingItem.isFrozen()) {
+		if (!flippingItem.isFrozen())
+		{
 			if (tradeBuyState)
 			{
 				flippingItem.setLatestSellPrice(tradePrice);
 				flippingItem.setLatestSellTime(tradeTime);
 			}
-			else {
+			else
+			{
 				flippingItem.setLatestBuyPrice(tradePrice);
 				flippingItem.setLatestBuyTime(tradeTime);
 			}
@@ -389,7 +439,7 @@ public class FlippingPlugin extends Plugin
 
 		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
 		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.getLatestBuyPrice()==0) && !(flippingItem.getLatestSellPrice()==0) && config.autoFreezeMargin())
+		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0) && config.autoFreezeMargin())
 		{
 			flippingItem.setFrozen(true);
 		}
