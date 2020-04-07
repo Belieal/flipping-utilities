@@ -37,7 +37,6 @@ import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -50,9 +49,7 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -73,6 +70,7 @@ public class FlippingItemPanel extends JPanel
 	private static final String NUM_FORMAT = "%,d";
 	private static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	private static final Color PROFIT_COLOR = new Color(255, 175, 55);
+	private static final Color FROZEN_COLOR = new Color(0, 193, 255);
 	private static final String OUTDATED_STRING = "Price is outdated. ";
 
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
@@ -98,9 +96,6 @@ public class FlippingItemPanel extends JPanel
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
 
-	@Setter
-	private boolean activeTimer;
-
 	/* Labels */
 	JLabel buyPriceVal = new JLabel();
 	JLabel sellPriceVal = new JLabel();
@@ -115,8 +110,8 @@ public class FlippingItemPanel extends JPanel
 	/* Panels */
 	JPanel topPanel = new JPanel(new BorderLayout());
 	JPanel itemInfo = new JPanel(new BorderLayout());
-	JPanel leftInfoTextPanel = new JPanel(new GridLayout(8, 1));
-	JPanel rightValuesPanel = new JPanel(new GridLayout(8, 1));
+	JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
+	JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
 
 	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager, final FlippingItem flippingItem)
 	{
@@ -156,32 +151,6 @@ public class FlippingItemPanel extends JPanel
 		clearButton.setContentAreaFilled(false);
 		clearButton.setVisible(false);
 
-		/* Margin freezer */
-		marginFreezer.setBorder(BorderFactory.createEmptyBorder());
-		marginFreezer.setBackground(ColorScheme.LIGHT_GRAY_COLOR);
-		marginFreezer.setToolTipText("freeze margin");
-		marginFreezer.setSelected(flippingItem.isFrozen());
-		marginFreezer.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (e.getButton() == MouseEvent.BUTTON1)
-				{
-					if (flippingItem.isFrozen())
-					{
-
-						flippingItem.setFrozen(false);
-					}
-					else
-					{
-						flippingItem.setFrozen(true);
-					}
-				}
-			}
-		});
-
-
 		JPanel itemClearPanel = new JPanel(new BorderLayout());
 		itemClearPanel.setBackground(background.darker());
 
@@ -191,9 +160,32 @@ public class FlippingItemPanel extends JPanel
 		/* Item name panel */
 		JLabel itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
-		itemName.setForeground(Color.WHITE);
+		itemName.setForeground(flippingItem.isFrozen() ? FROZEN_COLOR : Color.WHITE);
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
+
+		//Margin freezing controller
+		itemName.setToolTipText("Right-click to freeze item's margin");
+		itemName.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (SwingUtilities.isRightMouseButton(e))
+				{
+					if (flippingItem.isFrozen())
+					{
+						flippingItem.setFrozen(false);
+						itemName.setForeground(Color.WHITE);
+					}
+					else
+					{
+						flippingItem.setFrozen(true);
+						itemName.setForeground(FROZEN_COLOR);
+					}
+				}
+			}
+		});
 
 		topPanel.setBackground(background.darker());
 		topPanel.add(itemClearPanel, BorderLayout.WEST);
@@ -283,12 +275,10 @@ public class FlippingItemPanel extends JPanel
 		JLabel padLabel2 = new JLabel(" ");
 		JLabel padLabel3 = new JLabel(" ");
 		JLabel padLabel4 = new JLabel(" ");
-		JLabel padLabel5 = new JLabel(" ");
 
 		/* Left info labels */
 		leftInfoTextPanel.add(buyPriceText);
 		leftInfoTextPanel.add(sellPriceText);
-		leftInfoTextPanel.add(marginFreezer);
 		leftInfoTextPanel.add(padLabel1);
 		leftInfoTextPanel.add(profitEachText);
 		leftInfoTextPanel.add(profitTotalText);
@@ -297,13 +287,12 @@ public class FlippingItemPanel extends JPanel
 		rightValuesPanel.add(buyPriceVal);
 		rightValuesPanel.add(sellPriceVal);
 		rightValuesPanel.add(padLabel2);
-		rightValuesPanel.add(padLabel3);
 		rightValuesPanel.add(profitEachVal);
 		rightValuesPanel.add(profitTotalVal);
 
 		//Separate prices and profit with GE limit and ROI.
-		leftInfoTextPanel.add(padLabel4);
-		rightValuesPanel.add(padLabel5);
+		leftInfoTextPanel.add(padLabel3);
+		rightValuesPanel.add(padLabel4);
 
 		/* GE limits and ROI labels */
 		leftInfoTextPanel.add(limitLabel);
@@ -321,7 +310,6 @@ public class FlippingItemPanel extends JPanel
 		buildPanelValues();
 		updateGELimits();
 		checkOutdatedPriceTimes();
-		setActiveTimer(true);
 
 		add(topPanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
@@ -413,11 +401,6 @@ public class FlippingItemPanel extends JPanel
 	//Checks if prices are outdated and updates the tooltip.
 	public void checkOutdatedPriceTimes()
 	{
-		if (!activeTimer)
-		{
-			//Panel is dead.
-			return;
-		}
 		//Update time of latest price update.
 		Instant latestBuyTime = flippingItem.getLatestBuyTime();
 		Instant latestSellTime = flippingItem.getLatestSellTime();
