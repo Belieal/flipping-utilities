@@ -149,7 +149,7 @@ public class FlippingPanel extends PluginPanel
 
 		//Search bar beneath the title.
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 35));
+		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
 		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
@@ -331,10 +331,15 @@ public class FlippingPanel extends PluginPanel
 	{
 		ArrayList<FlippingItem> result = new ArrayList<>();
 
-		activePanels.stream()
-			.filter(t -> t.getFlippingItem().getItemId() == itemId)
-			.findFirst()
-			.ifPresent(t -> result.add(t.getFlippingItem()));
+		for (FlippingItem item : plugin.getTradesList())
+		{
+			if (item.getItemId() == itemId)
+			{
+				result.add(item);
+				//We only expect one result
+				break;
+			}
+		}
 
 		return result;
 	}
@@ -375,7 +380,7 @@ public class FlippingPanel extends PluginPanel
 	//Searches the active item panels for matching item names.
 	private void updateSearch()
 	{
-		String lookup = searchBar.getText();
+		String lookup = searchBar.getText().toLowerCase();
 
 		//Just so we don't mess with the highlight.
 		if (isItemHighlighted())
@@ -392,12 +397,12 @@ public class FlippingPanel extends PluginPanel
 		}
 
 		ArrayList<FlippingItem> result = new ArrayList<>();
-		for (FlippingItemPanel panel : activePanels)
+		for (FlippingItem item : plugin.getTradesList())
 		{
 			//Contains makes it a little more forgiving when searching.
-			if (panel.getFlippingItem().getItemName().contains(lookup))
+			if (item.getItemName().toLowerCase().contains(lookup))
 			{
-				result.add(panel.getFlippingItem());
+				result.add(item);
 			}
 		}
 
