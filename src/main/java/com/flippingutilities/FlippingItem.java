@@ -78,6 +78,18 @@ public class FlippingItem
 	@Setter
 	private boolean isFrozen;
 
+	private HistoryManager history;
+
+	public void updateHistory(GrandExchangeTrade newTrade)
+	{
+		history.updateHistory((OfferInfo) newTrade);
+	}
+
+	public int currentProfit(Instant earliestTime)
+	{
+		return history.currentProfit(earliestTime);
+	}
+
 	public void addTradeHistory(final GrandExchangeTrade trade)
 	{
 		tradeHistory.add(trade);

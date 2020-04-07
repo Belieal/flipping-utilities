@@ -81,7 +81,6 @@ import net.runelite.http.api.item.ItemStats;
 
 public class FlippingPlugin extends Plugin
 {
-
 	//Limit the amount of trades every item holds.
 	private static final int TRADE_HISTORY_MAX_SIZE = 20;
 	//Limit the amount of items stored.
@@ -136,7 +135,7 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		panel = new FlippingPanel(this, itemManager, clientThread, executor);
+		panel = new FlippingPanel(this, itemManager, clientThread);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
@@ -226,11 +225,12 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled
-	 * sell spawns two identical events. And when you fully buy/sell item, it also spawns two events
-	 * (a buying/selling event and a bought/sold event). This screens out the unwanted
-	 * events/duplicate events
+	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled sell
+	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
+	 * buying/selling event and a bought/sold event). This screens out the unwanted events/duplicate
+	 * events
 	 *
+	 * @param newOfferEvent
 	 * @return a boolean representing whether the offer should be passed on or discarded
 	 */
 	public boolean isBadEvent(GrandExchangeOfferChanged newOfferEvent)
@@ -239,8 +239,7 @@ public class FlippingPlugin extends Plugin
 		int newOfferSlot = newOfferEvent.getSlot();
 
 		//Check for login screen and empty offers.
-		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0
-			|| client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
+		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
 		{
 			return true;
 		}
@@ -248,13 +247,12 @@ public class FlippingPlugin extends Plugin
 		//if its the last selling/buying event, as evidenced by the quantity sold/bought being
 		//equal to the total quantity of the offer, record it but return true so it doesn't go through
 		//as the next event will be a BOUGHT/SOLD event, and only that should go through.
-		if ((newOffer.getState() == GrandExchangeOfferState.BUYING
-			|| newOffer.getState() == GrandExchangeOfferState.SELLING)
-			&& newOffer.getQuantitySold() == newOffer.getTotalQuantity())
+		if ((newOffer.getState() == GrandExchangeOfferState.BUYING || newOffer.getState() == GrandExchangeOfferState.SELLING) && newOffer.getQuantitySold() == newOffer.getTotalQuantity())
 		{
 			lastOffers.put(newOfferSlot, newOffer);
 			return true;
 		}
+
 
 		//if there is a last seen offer for that slot
 		if (lastOffers.containsKey(newOfferSlot))
@@ -263,11 +261,11 @@ public class FlippingPlugin extends Plugin
 			GrandExchangeOffer lastOfferForSlot = lastOffers.get(newOfferSlot);
 
 			//if its a duplicate as the last seen event
-			if (lastOfferForSlot.getState().equals(newOffer.getState())
-				&& lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold())
+			if (lastOfferForSlot.getState().equals(newOffer.getState()) && lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold())
 			{
 				return true; //its a bad event!
 			}
+
 			else
 			{
 				//update hashmap to include latest offer
@@ -301,33 +299,37 @@ public class FlippingPlugin extends Plugin
 		//Offer is a margin check.
 		//May change this in the future to be able to update prices independent of quantity.
 		//Perhaps some way of timing the state change from buying to bought such that we know it was "instantly" bought/sold?
-		if ((newOfferState == GrandExchangeOfferState.BOUGHT
-			|| newOfferState == GrandExchangeOfferState.SOLD) && newOffer.getQuantitySold() == 1)
+		if ((newOfferState == GrandExchangeOfferState.BOUGHT || newOfferState == GrandExchangeOfferState.SOLD) && newOffer.getQuantitySold() == 1)
 		{
-			addFlipTrade(tradeConstructor(newOffer));
+			addFlipTrade(tradeConstructor(newOfferEvent));
 			panel.rebuildFlippingPanel(tradesList);
 		}
 		//If the new offer is of state BOUGHT Record the trade to keep track of GE limit.
 		else if (newOffer.getQuantitySold() > 0 && newOfferState == GrandExchangeOfferState.BOUGHT)
 		{
-			addFlipTrade(tradeConstructor(newOffer));
+			addFlipTrade(tradeConstructor(newOfferEvent));
 		}
 
 		updateConfig();
 		panel.updateGELimit();
 	}
 
-	private GrandExchangeTrade tradeConstructor(GrandExchangeOffer offer)
+	private GrandExchangeTrade tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
 	{
-		GrandExchangeTrade result = new GrandExchangeTrade();
-		result.setBuy(offer.getState() == GrandExchangeOfferState.BOUGHT
-			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY);
-		result.setItemId(offer.getItemId());
-		result.setPrice(offer.getSpent() / offer.getQuantitySold());
-		result.setQuantity(offer.getQuantitySold());
-		result.setTime(Instant.now());
+		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
-		return result;
+		OfferInfo offerInfo = new OfferInfo();
+		offerInfo.setBuy(
+			offer.getState() == GrandExchangeOfferState.BOUGHT ||
+				offer.getState() == GrandExchangeOfferState.CANCELLED_BUY ||
+				offer.getState() == GrandExchangeOfferState.BUYING);
+		offerInfo.setItemId(offer.getItemId());
+		offerInfo.setPrice(offer.getSpent() / offer.getQuantitySold());
+		offerInfo.setQuantity(offer.getQuantitySold());
+		offerInfo.setTime(Instant.now());
+		offerInfo.setSlot(newOfferEvent.getSlot());
+		offerInfo.setState(offer.getState());
+		return offerInfo;
 	}
 
 	//Adds GE trade data to the trades list.
@@ -393,9 +395,8 @@ public class FlippingPlugin extends Plugin
 			tradeSellTime = trade.isBuy() ? trade.getTime() : null;
 		}
 
-		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit,
-			0,
-			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false);
+		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit, 0,
+			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false, new HistoryManager());
 
 		flippingItem.updateGELimitReset();
 
@@ -438,11 +439,11 @@ public class FlippingPlugin extends Plugin
 
 		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
 		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0)
-			&& config.autoFreezeMargin())
+		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0) && config.autoFreezeMargin())
 		{
 			flippingItem.setFrozen(true);
 		}
+
 		flippingItem.updateGELimitReset();
 	}
 
@@ -467,8 +468,7 @@ public class FlippingPlugin extends Plugin
 	{
 		Widget widget = event.getWidget();
 		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (panel.isItemHighlighted() && widget.isHidden()
-			&& widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
+		if (panel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
 		{
 			panel.dehighlightItem();
 		}
@@ -595,8 +595,8 @@ public class FlippingPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 
-			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER),
-				client);
+			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
@@ -610,8 +610,7 @@ public class FlippingPlugin extends Plugin
 			}
 
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
-			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER)
-				.getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
 			if (chatInputText.equals("How many do you wish to buy?"))
 			{
 				//No recorded data; default to total GE limit
