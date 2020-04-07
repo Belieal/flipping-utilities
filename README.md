@@ -77,3 +77,5 @@ v1.1.1 - 12 hour format for clocks and various bug fixes.
 * Fixed an issue that caused price colors to flicker.
 
 * Various optimizations and smaller bug fixes.
+
+## v1.3 - Statistics tab update (Coming soon!)
