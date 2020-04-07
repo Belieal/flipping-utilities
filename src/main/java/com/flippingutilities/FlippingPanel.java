@@ -26,6 +26,7 @@
 
 package com.flippingutilities;
 
+import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -36,6 +37,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -55,6 +59,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.ImageUtil;
 
@@ -64,6 +69,7 @@ public class FlippingPanel extends PluginPanel
 	@Getter
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
 	private static final String ITEMS_PANEL = "ITEMS_PANEL";
+	private static final int DEBOUNCE_DELAY_MS = 250;
 	private static final ImageIcon RESET_ICON;
 	private static final ImageIcon RESET_HOVER_ICON;
 	private static final Dimension ICON_SIZE = new Dimension(32, 32);
@@ -86,6 +92,9 @@ public class FlippingPanel extends PluginPanel
 	//Main item panel that holds all the shown items.
 	private final JPanel flippingItemsPanel = new JPanel();
 
+	private final IconTextField searchBar = new IconTextField();
+	private Future<?> runningRequest = null;
+
 	//Constraints for items in the item panel.
 	private final GridBagConstraints constraints = new GridBagConstraints();
 	public final CardLayout cardLayout = new CardLayout();
@@ -98,7 +107,7 @@ public class FlippingPanel extends PluginPanel
 
 
 	@Inject
-	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ClientThread clientThread)
+	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ClientThread clientThread, ScheduledExecutorService executor)
 	{
 		super(false);
 
@@ -137,6 +146,24 @@ public class FlippingPanel extends PluginPanel
 		//Title at the top of the plugin panel.
 		JLabel title = new JLabel("Flipping Utilities", SwingConstants.CENTER);
 		title.setForeground(Color.WHITE);
+
+		//Search bar beneath the title.
+		searchBar.setIcon(IconTextField.Icon.SEARCH);
+		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
+		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
+		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
+		searchBar.setMinimumSize(new Dimension(0, 35));
+		searchBar.addActionListener(e -> executor.execute(this::updateSearch));
+		searchBar.addClearListener(e -> updateSearch());
+		searchBar.addKeyListener(key ->
+		{
+			if (runningRequest != null)
+			{
+				runningRequest.cancel(false);
+			}
+			runningRequest = executor.schedule((Runnable) this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
+		});
 
 		//Contains a greeting message when the items panel is empty.
 		JPanel welcomeWrapper = new JPanel(new BorderLayout());
@@ -181,6 +208,7 @@ public class FlippingPanel extends PluginPanel
 		topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
 		topPanel.add(title, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
+		topPanel.add(searchBar, BorderLayout.SOUTH);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
 		centerPanel.add(scrollWrapper, ITEMS_PANEL);
@@ -202,7 +230,6 @@ public class FlippingPanel extends PluginPanel
 			return;
 		}
 		//Reset active panel list.
-		stopTimerUpdates(activePanels);
 		activePanels.clear();
 
 		if (flippingItems.size() == 0)
@@ -304,10 +331,15 @@ public class FlippingPanel extends PluginPanel
 	{
 		ArrayList<FlippingItem> result = new ArrayList<>();
 
-		activePanels.stream()
-			.filter(t -> t.getFlippingItem().getItemId() == itemId)
-			.findFirst()
-			.ifPresent(t -> result.add(t.getFlippingItem()));
+		for (FlippingItem item : plugin.getTradesList())
+		{
+			if (item.getItemId() == itemId)
+			{
+				result.add(item);
+				//We only expect one result
+				break;
+			}
+		}
 
 		return result;
 	}
@@ -318,15 +350,6 @@ public class FlippingPanel extends PluginPanel
 		for (FlippingItemPanel activePanel : activePanels)
 		{
 			activePanel.checkOutdatedPriceTimes();
-		}
-	}
-
-	//Not sure if this is necessary, but just in case it hinders performance.
-	private void stopTimerUpdates(ArrayList<FlippingItemPanel> activePanels)
-	{
-		for (FlippingItemPanel panel : activePanels)
-		{
-			panel.setActiveTimer(false);
 		}
 	}
 
@@ -352,5 +375,46 @@ public class FlippingPanel extends PluginPanel
 
 		rebuildFlippingPanel(tradeList);
 		plugin.updateConfig();
+	}
+
+	//Searches the active item panels for matching item names.
+	private void updateSearch()
+	{
+		String lookup = searchBar.getText().toLowerCase();
+
+		//Just so we don't mess with the highlight.
+		if (isItemHighlighted())
+		{
+			searchBar.setEditable(true);
+			return;
+		}
+
+		//When the clear button is pressed, this is run.
+		if (Strings.isNullOrEmpty(lookup))
+		{
+			rebuildFlippingPanel(plugin.getTradesList());
+			return;
+		}
+
+		ArrayList<FlippingItem> result = new ArrayList<>();
+		for (FlippingItem item : plugin.getTradesList())
+		{
+			//Contains makes it a little more forgiving when searching.
+			if (item.getItemName().toLowerCase().contains(lookup))
+			{
+				result.add(item);
+			}
+		}
+
+		if (result.isEmpty())
+		{
+			searchBar.setIcon(IconTextField.Icon.ERROR);
+			searchBar.setEditable(true);
+			rebuildFlippingPanel(plugin.getTradesList());
+			return;
+		}
+
+		searchBar.setIcon(IconTextField.Icon.SEARCH);
+		rebuildFlippingPanel(result);
 	}
 }
