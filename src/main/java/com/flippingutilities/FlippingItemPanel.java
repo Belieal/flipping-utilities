@@ -150,6 +150,7 @@ public class FlippingItemPanel extends JPanel
 		clearButton.setBorderPainted(false);
 		clearButton.setContentAreaFilled(false);
 		clearButton.setVisible(false);
+		clearButton.setToolTipText("Delete item");
 
 		JPanel itemClearPanel = new JPanel(new BorderLayout());
 		itemClearPanel.setBackground(background.darker());

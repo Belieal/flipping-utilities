@@ -308,7 +308,7 @@ public class FlippingPlugin extends Plugin
 			panel.rebuildFlippingPanel(tradesList);
 		}
 		//If the new offer is of state BOUGHT Record the trade to keep track of GE limit.
-		else if (newOffer.getQuantitySold() > 0 && newOfferState == GrandExchangeOfferState.BOUGHT)
+		else if (newOffer.getQuantitySold() > 0 && (newOfferState == GrandExchangeOfferState.BOUGHT || newOfferState == GrandExchangeOfferState.CANCELLED_BUY))
 		{
 			addFlipTrade(tradeConstructor(newOffer));
 		}
