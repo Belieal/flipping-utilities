@@ -70,7 +70,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 import net.runelite.http.api.item.ItemStats;
 
 @Slf4j
@@ -318,18 +317,19 @@ public class FlippingPlugin extends Plugin
 	{
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
-		OfferInfo offerInfo = new OfferInfo();
-		offerInfo.setBuy(
-			offer.getState() == GrandExchangeOfferState.BOUGHT ||
-				offer.getState() == GrandExchangeOfferState.CANCELLED_BUY ||
-				offer.getState() == GrandExchangeOfferState.BUYING);
-		offerInfo.setItemId(offer.getItemId());
-		offerInfo.setPrice(offer.getSpent() / offer.getQuantitySold());
-		offerInfo.setQuantity(offer.getQuantitySold());
-		offerInfo.setTime(Instant.now());
-		offerInfo.setSlot(newOfferEvent.getSlot());
-		offerInfo.setState(offer.getState());
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY || offer.getState() == GrandExchangeOfferState.BUYING;
+
+		OfferInfo offerInfo = new OfferInfo(
+			isBuy,
+			offer.getItemId(),
+			offer.getQuantitySold(),
+			offer.getSpent() / offer.getQuantitySold(),
+			Instant.now(),
+			newOfferEvent.getSlot(),
+			offer.getState());
+
 		return offerInfo;
+
 	}
 
 	//Adds GE trade data to the trades list.

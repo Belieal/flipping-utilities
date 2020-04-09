@@ -2,7 +2,9 @@ package com.flippingutilities;
 
 
 import java.time.Instant;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -16,6 +18,7 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  */
 
 @Data
+@AllArgsConstructor
 public class OfferInfo
 {
 	private boolean buy;
@@ -53,16 +56,10 @@ public class OfferInfo
 
 	}
 
+	//TODO actually clone the Instant object, as we are currently just passing that as the same reference.
 	public OfferInfo clone()
 	{
-		OfferInfo clonedOffer = new OfferInfo();
-		clonedOffer.setBuy(buy);
-		clonedOffer.setItemId(itemId);
-		clonedOffer.setQuantity(quantity);
-		clonedOffer.setTime(time); //need to clone the instant object too. Currently this is just a reference to the old one.
-		clonedOffer.setSlot(slot);
-		clonedOffer.setState(state);
-		clonedOffer.setPrice(price);
+		OfferInfo clonedOffer = new OfferInfo(buy, itemId, quantity, price, time, slot, state);
 		return clonedOffer;
 	}
 }

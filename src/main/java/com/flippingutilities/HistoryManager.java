@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -25,6 +26,7 @@ public class HistoryManager
 	//a list of standardizedOffers. A standardizedOffer is an offer with a quantity that represents the
 	//quantity bought since the last offer. A regular offer just has info from an offerEvent, which gives
 	//you the current quantity bought/sold overall in the trade.
+	@Getter
 	private List<OfferInfo> standardizedOffers = new ArrayList<>();
 
 	@Getter
@@ -113,7 +115,7 @@ public class HistoryManager
 		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
 		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
 		// have refreshed, the next refresh will be four after this offer's buy time.
-		if (nextGeLimitRefresh == null || lastOffer.getTime().compareTo(nextGeLimitRefresh) > 1)
+		if (nextGeLimitRefresh == null || lastOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
 			nextGeLimitRefresh = lastOffer.getTime().plus(4, ChronoUnit.HOURS);
 			itemsBoughtThisLimitWindow = lastOffer.getQuantity();
@@ -151,6 +153,7 @@ public class HistoryManager
 			//later than the time the user selected (if they selected 4 hours, its all trades after 4 hours ago.
 			if (standardizedOffer.getTime().compareTo(earliestTime) > 0)
 			{
+
 				if (standardizedOffer.isBuy())
 				{
 					numBoughtItems += standardizedOffer.getQuantity();
