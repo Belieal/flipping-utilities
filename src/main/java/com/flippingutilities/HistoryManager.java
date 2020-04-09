@@ -106,24 +106,24 @@ public class HistoryManager
 	 */
 	private void updateGeProperties()
 	{
-		OfferInfo lastOffer = standardizedOffers.get(standardizedOffers.size() - 1);
-		if (!lastOffer.isBuy())
+		OfferInfo mostRecentOffer = standardizedOffers.get(standardizedOffers.size() - 1);
+		if (!mostRecentOffer.isBuy())
 		{
 			return;
 		}
 		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
 		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
 		// have refreshed, the next refresh will be four hours after this offer's buy time.
-		if (nextGeLimitRefresh == null || lastOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
+		if (nextGeLimitRefresh == null || mostRecentOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
-			nextGeLimitRefresh = lastOffer.getTime().plus(4, ChronoUnit.HOURS);
-			itemsBoughtThisLimitWindow = lastOffer.getQuantity();
+			nextGeLimitRefresh = mostRecentOffer.getTime().plus(4, ChronoUnit.HOURS);
+			itemsBoughtThisLimitWindow = mostRecentOffer.getQuantity();
 		}
 		//if the last offer (most recent offer) is before the next ge limit refresh, add its quantity to the
 		//amount bought this limit window.
 		else
 		{
-			itemsBoughtThisLimitWindow += lastOffer.getQuantity();
+			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantity();
 		}
 
 	}
