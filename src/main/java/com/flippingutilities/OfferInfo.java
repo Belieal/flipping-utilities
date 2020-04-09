@@ -57,7 +57,7 @@ public class OfferInfo extends GrandExchangeTrade
 		clonedOffer.setBuy(isBuy());
 		clonedOffer.setItemId(getItemId());
 		clonedOffer.setQuantity(getQuantity());
-		clonedOffer.setTime(getTime());
+		clonedOffer.setTime(getTime()); //need to clone the instant object too. Currently this is just a reference to the old one.
 		clonedOffer.setSlot(slot);
 		clonedOffer.setState(state);
 		clonedOffer.setPrice(getPrice());

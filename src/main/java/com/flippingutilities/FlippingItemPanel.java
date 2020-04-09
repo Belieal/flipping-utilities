@@ -79,11 +79,13 @@ public class FlippingItemPanel extends JPanel
 
 	static
 	{
-		final BufferedImage openIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
+		final BufferedImage openIcon = ImageUtil
+			.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
 		CLOSE_ICON = new ImageIcon(openIcon);
 		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
 
-		final BufferedImage deleteIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
+		final BufferedImage deleteIcon = ImageUtil
+			.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
 		DELETE_ICON = new ImageIcon(deleteIcon);
 	}
 
@@ -113,7 +115,8 @@ public class FlippingItemPanel extends JPanel
 	JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
 	JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
 
-	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager, final FlippingItem flippingItem)
+	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager,
+					  final FlippingItem flippingItem)
 	{
 		this.flippingItem = flippingItem;
 		this.buyPrice = this.flippingItem.getLatestBuyPrice();
@@ -259,8 +262,10 @@ public class FlippingItemPanel extends JPanel
 		buyPriceText.setToolTipText("The buy price according to your latest margin check");
 		sellPriceText.setToolTipText("The sell price according to your latest margin check");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
-		profitTotalText.setToolTipText("The total profit according to your latest margin check and GE 4-hour limit");
-		ROILabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+		profitTotalText.setToolTipText(
+			"The total profit according to your latest margin check and GE 4-hour limit");
+		ROILabel.setToolTipText(
+			"<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 		limitLabel.setToolTipText("The amount you can buy of this item every 4 hours.");
 
 		profitEachVal.setToolTipText(profitEachText.getToolTipText());
@@ -327,24 +332,31 @@ public class FlippingItemPanel extends JPanel
 		updateProfits();
 		SwingUtilities.invokeLater(() ->
 		{
-			buyPriceVal.setText((this.buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.buyPrice) + " gp");
-			sellPriceVal.setText((this.sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
+			buyPriceVal
+				.setText((this.buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.buyPrice) + " gp");
+			sellPriceVal.setText(
+				(this.sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
 
-			profitEachVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A" : QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-			profitTotalVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A" : QuantityFormatter.quantityToRSDecimalStack(profitTotal) + " gp");
+			profitEachVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A"
+				: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
+			profitTotalVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A" : QuantityFormatter
+				.quantityToRSDecimalStack(profitTotal) + " gp");
 
-			ROILabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A" : String.format("%.2f", ROI) + "%"));
+			ROILabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
+				: String.format("%.2f", ROI) + "%"));
 		});
 
 		//Color gradient red-yellow-green depending on ROI.
 		if (ROI < roiGradientMax * 0.5)
 		{
-			Color gradientRedToYellow = ColorUtil.colorLerp(Color.RED, Color.YELLOW, ROI / roiGradientMax * 2);
+			Color gradientRedToYellow = ColorUtil
+				.colorLerp(Color.RED, Color.YELLOW, ROI / roiGradientMax * 2);
 			SwingUtilities.invokeLater(() -> ROILabel.setForeground(gradientRedToYellow));
 		}
 		else
 		{
-			Color gradientYellowToGreen = (ROI >= roiGradientMax) ? Color.GREEN : ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, ROI / roiGradientMax * 0.5);
+			Color gradientYellowToGreen = (ROI >= roiGradientMax) ? Color.GREEN : ColorUtil
+				.colorLerp(Color.YELLOW, Color.GREEN, ROI / roiGradientMax * 0.5);
 			SwingUtilities.invokeLater(() -> ROILabel.setForeground(gradientYellowToGreen));
 		}
 	}
@@ -383,11 +395,14 @@ public class FlippingItemPanel extends JPanel
 		if (plugin.getConfig().geLimitProfit())
 		{
 			this.profitTotal = (flippingItem.getRemainingGELimit() == 0) ? 0
-				: flippingItem.getRemainingGELimit() * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+				: flippingItem.getRemainingGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
+				? profitEach : 0);
 		}
 		else
 		{
-			this.profitTotal = flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
+			this.profitTotal =
+				flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
+					? profitEach : 0);
 		}
 		this.ROI = calculateROI();
 	}
@@ -410,8 +425,12 @@ public class FlippingItemPanel extends JPanel
 		final String latestSellString = formatPriceTimeText(latestSellTime) + " old";
 
 		//As the config unit is in minutes.
-		final int latestBuyTimeAgo = latestBuyTime != null ? (int) (Instant.now().getEpochSecond() - latestBuyTime.getEpochSecond()) : 0;
-		final int latestSellTimeAgo = latestSellTime != null ? (int) (Instant.now().getEpochSecond() - latestSellTime.getEpochSecond()) : 0;
+		final int latestBuyTimeAgo =
+			latestBuyTime != null ? (int) (Instant.now().getEpochSecond() - latestBuyTime
+				.getEpochSecond()) : 0;
+		final int latestSellTimeAgo =
+			latestSellTime != null ? (int) (Instant.now().getEpochSecond() - latestSellTime
+				.getEpochSecond()) : 0;
 
 		//Check if, according to the user-defined settings, prices are outdated, else set default color.
 		if (latestBuyTimeAgo != 0 && latestBuyTimeAgo / 60 > plugin.getConfig().outOfDateWarning())
@@ -419,7 +438,8 @@ public class FlippingItemPanel extends JPanel
 			SwingUtilities.invokeLater(() ->
 			{
 				buyPriceVal.setForeground(OUTDATED_COLOR);
-				buyPriceVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
+				buyPriceVal
+					.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
 			});
 
 		}
@@ -438,7 +458,8 @@ public class FlippingItemPanel extends JPanel
 			SwingUtilities.invokeLater(() ->
 			{
 				sellPriceVal.setForeground(OUTDATED_COLOR);
-				sellPriceVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestSellString + "</html>");
+				sellPriceVal
+					.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestSellString + "</html>");
 			});
 
 		}
@@ -503,25 +524,31 @@ public class FlippingItemPanel extends JPanel
 	{
 		SwingUtilities.invokeLater(() ->
 		{
-			if (flippingItem.getGeLimitResetTime() != null && flippingItem.getGeLimitResetTime().isBefore(Instant.now()))
+			if (flippingItem.getGeLimitResetTime() != null && flippingItem.getGeLimitResetTime()
+				.isBefore(Instant.now()))
 			{
 				flippingItem.resetGELimit();
 			}
 
-			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGELimit()));
+			limitLabel
+				.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGELimit()));
 			if (flippingItem.getGeLimitResetTime() == null)
 			{
 				limitLabel.setToolTipText("None has been bought in the past 4 hours.");
 			}
 			else
 			{
-				final long remainingSeconds = flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
+				final long remainingSeconds =
+					flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
 				final long remainingMinutes = remainingSeconds / 60 % 60;
 				final long remainingHours = remainingSeconds / 3600 % 24;
-				String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes) + (remainingHours > 1 ? "hours" : "hour");
+				String timeString =
+					String.format("%02d:%02d ", remainingHours, remainingMinutes) + (remainingHours > 1
+						? "hours" : "hour");
 
 				limitLabel.setToolTipText("<html>" + "GE limit is reset in " + timeString + "."
-					+ "<br>This will be at " + formatGELimitResetTime(flippingItem.getGeLimitResetTime()) + ".<html>");
+					+ "<br>This will be at " + formatGELimitResetTime(flippingItem.getGeLimitResetTime())
+					+ ".<html>");
 			}
 		});
 	}
