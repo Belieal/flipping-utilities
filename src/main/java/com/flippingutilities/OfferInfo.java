@@ -4,7 +4,6 @@ package com.flippingutilities;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 

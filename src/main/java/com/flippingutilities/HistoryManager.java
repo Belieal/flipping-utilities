@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 

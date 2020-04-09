@@ -2,7 +2,6 @@ package com.flippingutilities;
 
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,8 @@ public class HistoryManagerTest
 	private static Instant baseTime = Instant.now();
 
 	@BeforeClass
-	public static void setUp() {
+	public static void setUp()
+	{
 		List<OfferInfo> offers = new ArrayList<>();
 		//overall bought 24+3+20=47
 		//overall sold 7 + 3 + 30 = 40
@@ -41,7 +41,8 @@ public class HistoryManagerTest
 		offers.add(new OfferInfo(false, 0, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD));
 
 		historyManager = new HistoryManager();
-		for (OfferInfo offer: offers) {
+		for (OfferInfo offer : offers)
+		{
 			historyManager.updateHistory(offer);
 		}
 
@@ -49,7 +50,8 @@ public class HistoryManagerTest
 	}
 
 	@Test
-	public void offersAreCorrectlyStandardizedTest() {
+	public void offersAreCorrectlyStandardizedTest()
+	{
 		List<OfferInfo> standardizedOffers = new ArrayList<>();
 		standardizedOffers.add(new OfferInfo(true, 0, 7, 100, baseTime.minus(40, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING));
 		standardizedOffers.add(new OfferInfo(true, 0, 6, 100, baseTime.minus(30, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING));
@@ -73,16 +75,18 @@ public class HistoryManagerTest
 	}
 
 	@Test
-	public void getProfitCorrectnessTest() {
+	public void getProfitCorrectnessTest()
+	{
 		assertEquals(200, historyManager.currentProfit(baseTime.minus(1, ChronoUnit.HOURS)));
 		historyManager.updateHistory(new OfferInfo(false, 0, 5, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD));
-		assertEquals(34*5, historyManager.currentProfit(baseTime.minus(25, ChronoUnit.MINUTES))); //34 buys and 40 sells, so looks for 34 items and profit is 5 gp ea.
+		assertEquals(34 * 5, historyManager.currentProfit(baseTime.minus(25, ChronoUnit.MINUTES))); //34 buys and 40 sells, so looks for 34 items and profit is 5 gp ea.
 		assertEquals(0, historyManager.currentProfit(baseTime));
 
 	}
 
 	@Test
-	public void gePropertiesCorrectnessTest() {
+	public void gePropertiesCorrectnessTest()
+	{
 		HistoryManager historyManager = new HistoryManager();
 
 		OfferInfo offer1 = new OfferInfo(true, 0, 7, 100, baseTime.minus(4, ChronoUnit.HOURS), 1, GrandExchangeOfferState.BUYING);
@@ -104,8 +108,6 @@ public class HistoryManagerTest
 		historyManager.updateHistory(offer3);
 		assertEquals(1, historyManager.getItemsBoughtThisLimitWindow());
 		assertEquals(offer3.getTime().plus(4, ChronoUnit.HOURS), historyManager.getNextGeLimitRefresh());
-
-
 
 
 	}
