@@ -45,8 +45,6 @@ public class HistoryManagerTest
 		{
 			historyManager.updateHistory(offer);
 		}
-
-
 	}
 
 	@Test

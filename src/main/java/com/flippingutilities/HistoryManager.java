@@ -75,7 +75,7 @@ public class HistoryManager
 			standardizedOffers.add(standardizedOffer);
 			currentTradesForSlot.add(newOffer);
 
-			//if the offer is complete, delete the history for that slot.
+			//if the offer is complete, clear the history for that slot.
 			if (newOffer.isComplete())
 			{
 				slotHistory.remove(newOfferSlot);
@@ -113,7 +113,7 @@ public class HistoryManager
 		}
 		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
 		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
-		// have refreshed, the next refresh will be four after this offer's buy time.
+		// have refreshed, the next refresh will be four hours after this offer's buy time.
 		if (nextGeLimitRefresh == null || lastOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
 			nextGeLimitRefresh = lastOffer.getTime().plus(4, ChronoUnit.HOURS);

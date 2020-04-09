@@ -28,6 +28,13 @@ public class OfferInfo
 	private int slot;
 	private GrandExchangeOfferState state;
 
+	/**
+	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
+	 * the end of that trade, thus the end of the slot's history. The HistoryManager uses this to decide when
+	 * to clear the history for a slot.
+	 *
+	 * @return boolean value representing that the offer is a complete offer
+	 */
 	public boolean isComplete()
 	{
 		return
