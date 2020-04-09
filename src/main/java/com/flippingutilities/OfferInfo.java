@@ -1,11 +1,10 @@
 package com.flippingutilities;
 
 
+import java.time.Instant;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 
 /**
  * This class stores information from a {@link GrandExchangeOfferChanged} event.
@@ -15,12 +14,15 @@ import net.runelite.http.api.ge.GrandExchangeTrade;
  * GrandExchangeTrade and adding two new fields that are needed for future changes, backwards
  * compatability is maintained, while allowing new work using the additional info stored in this class.
  */
-@EqualsAndHashCode(callSuper = false)
-@Data
-public class OfferInfo extends GrandExchangeTrade
-{
 
-	//new fields that weren't in GrandExchangeTrade
+@Data
+public class OfferInfo
+{
+	private boolean buy;
+	private int itemId;
+	private int quantity;
+	private int price;
+	private Instant time;
 	private int slot;
 	private GrandExchangeOfferState state;
 
@@ -54,20 +56,14 @@ public class OfferInfo extends GrandExchangeTrade
 	public OfferInfo clone()
 	{
 		OfferInfo clonedOffer = new OfferInfo();
-		clonedOffer.setBuy(isBuy());
-		clonedOffer.setItemId(getItemId());
-		clonedOffer.setQuantity(getQuantity());
-		clonedOffer.setTime(getTime()); //need to clone the instant object too. Currently this is just a reference to the old one.
+		clonedOffer.setBuy(buy);
+		clonedOffer.setItemId(itemId);
+		clonedOffer.setQuantity(quantity);
+		clonedOffer.setTime(time); //need to clone the instant object too. Currently this is just a reference to the old one.
 		clonedOffer.setSlot(slot);
 		clonedOffer.setState(state);
-		clonedOffer.setPrice(getPrice());
+		clonedOffer.setPrice(price);
 		return clonedOffer;
-	}
-
-	public String toString()
-	{
-		return "buy: " + isBuy() + " quantity: " + getQuantity() + " price each: " + getPrice() +
-			" slot " + slot + " state " + state;
 	}
 }
 

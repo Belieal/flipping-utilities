@@ -288,7 +288,6 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-
 		if (isBadEvent(newOfferEvent))
 		{
 			return;
@@ -315,7 +314,7 @@ public class FlippingPlugin extends Plugin
 		panel.updateGELimit();
 	}
 
-	private GrandExchangeTrade tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
+	private OfferInfo tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
 	{
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
@@ -334,7 +333,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Adds GE trade data to the trades list.
-	public void addFlipTrade(GrandExchangeTrade trade)
+	public void addFlipTrade(OfferInfo trade)
 	{
 		if (tradesList == null)
 		{
@@ -369,14 +368,14 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Constructs a FlippingItem and adds it to the tradeList.
-	private void addToTradesList(GrandExchangeTrade trade)
+	private void addToTradesList(OfferInfo trade)
 	{
 		int tradeItemId = trade.getItemId();
 		String itemName = itemManager.getItemComposition(tradeItemId).getName();
 
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int tradeGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-		ArrayList<GrandExchangeTrade> tradeHistory = new ArrayList<GrandExchangeTrade>()
+		ArrayList<OfferInfo> tradeHistory = new ArrayList<OfferInfo>()
 		{{
 			add(trade);
 		}};
@@ -411,7 +410,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Updates the latest margins writes history for a Flipping Item
-	private void updateFlip(FlippingItem flippingItem, GrandExchangeTrade trade)
+	private void updateFlip(FlippingItem flippingItem, OfferInfo trade)
 	{
 		boolean tradeBuyState = trade.isBuy();
 		int tradePrice = trade.getPrice();
