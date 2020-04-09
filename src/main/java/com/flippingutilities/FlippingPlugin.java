@@ -238,8 +238,7 @@ public class FlippingPlugin extends Plugin
 		int newOfferSlot = newOfferEvent.getSlot();
 
 		//Check for login screen and empty offers.
-		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(
-			WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
+		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0)
 		{
 			return true;
 		}
