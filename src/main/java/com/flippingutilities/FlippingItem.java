@@ -32,7 +32,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 
 @Slf4j
 @AllArgsConstructor
@@ -41,7 +40,7 @@ public class FlippingItem
 	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
 
 	@Getter
-	private ArrayList<GrandExchangeTrade> tradeHistory;
+	private ArrayList<OfferInfo> tradeHistory;
 
 	@Getter
 	private final int itemId;
@@ -80,9 +79,9 @@ public class FlippingItem
 
 	private HistoryManager history;
 
-	public void updateHistory(GrandExchangeTrade newTrade)
+	public void updateHistory(OfferInfo newTrade)
 	{
-		history.updateHistory((OfferInfo) newTrade);
+		history.updateHistory(newTrade);
 	}
 
 	public int currentProfit(Instant earliestTime)
@@ -90,7 +89,7 @@ public class FlippingItem
 		return history.currentProfit(earliestTime);
 	}
 
-	public void addTradeHistory(final GrandExchangeTrade trade)
+	public void addTradeHistory(final OfferInfo trade)
 	{
 		tradeHistory.add(trade);
 	}
@@ -99,11 +98,11 @@ public class FlippingItem
 	{
 		if (tradeHistory != null)
 		{
-			GrandExchangeTrade oldestTrade = null;
+			OfferInfo oldestTrade = null;
 			remainingGELimit = totalGELimit;
 
 			//Check for the oldest trade within the last 4 hours.
-			for (GrandExchangeTrade trade : tradeHistory)
+			for (OfferInfo trade : tradeHistory)
 			{
 				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
 				{

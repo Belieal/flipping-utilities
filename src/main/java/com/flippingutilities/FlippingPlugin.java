@@ -70,7 +70,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 import net.runelite.http.api.item.ItemStats;
 
 @Slf4j
@@ -239,7 +238,7 @@ public class FlippingPlugin extends Plugin
 		int newOfferSlot = newOfferEvent.getSlot();
 
 		//Check for login screen and empty offers.
-		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0 || client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
+		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0)
 		{
 			return true;
 		}
@@ -287,7 +286,6 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-
 		if (isBadEvent(newOfferEvent))
 		{
 			return;
@@ -314,26 +312,27 @@ public class FlippingPlugin extends Plugin
 		panel.updateGELimit();
 	}
 
-	private GrandExchangeTrade tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
+	private OfferInfo tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
 	{
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
-		OfferInfo offerInfo = new OfferInfo();
-		offerInfo.setBuy(
-			offer.getState() == GrandExchangeOfferState.BOUGHT ||
-				offer.getState() == GrandExchangeOfferState.CANCELLED_BUY ||
-				offer.getState() == GrandExchangeOfferState.BUYING);
-		offerInfo.setItemId(offer.getItemId());
-		offerInfo.setPrice(offer.getSpent() / offer.getQuantitySold());
-		offerInfo.setQuantity(offer.getQuantitySold());
-		offerInfo.setTime(Instant.now());
-		offerInfo.setSlot(newOfferEvent.getSlot());
-		offerInfo.setState(offer.getState());
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY || offer.getState() == GrandExchangeOfferState.BUYING;
+
+		OfferInfo offerInfo = new OfferInfo(
+			isBuy,
+			offer.getItemId(),
+			offer.getQuantitySold(),
+			offer.getSpent() / offer.getQuantitySold(),
+			Instant.now(),
+			newOfferEvent.getSlot(),
+			offer.getState());
+
 		return offerInfo;
+
 	}
 
 	//Adds GE trade data to the trades list.
-	public void addFlipTrade(GrandExchangeTrade trade)
+	public void addFlipTrade(OfferInfo trade)
 	{
 		if (tradesList == null)
 		{
@@ -368,14 +367,14 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Constructs a FlippingItem and adds it to the tradeList.
-	private void addToTradesList(GrandExchangeTrade trade)
+	private void addToTradesList(OfferInfo trade)
 	{
 		int tradeItemId = trade.getItemId();
 		String itemName = itemManager.getItemComposition(tradeItemId).getName();
 
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int tradeGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-		ArrayList<GrandExchangeTrade> tradeHistory = new ArrayList<GrandExchangeTrade>()
+		ArrayList<OfferInfo> tradeHistory = new ArrayList<OfferInfo>()
 		{{
 			add(trade);
 		}};
@@ -410,7 +409,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	//Updates the latest margins writes history for a Flipping Item
-	private void updateFlip(FlippingItem flippingItem, GrandExchangeTrade trade)
+	private void updateFlip(FlippingItem flippingItem, OfferInfo trade)
 	{
 		boolean tradeBuyState = trade.isBuy();
 		int tradePrice = trade.getPrice();

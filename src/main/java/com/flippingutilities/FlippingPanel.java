@@ -79,7 +79,8 @@ public class FlippingPanel extends PluginPanel
 
 	static
 	{
-		final BufferedImage resetIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
+		final BufferedImage resetIcon = ImageUtil
+			.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
 		RESET_ICON = new ImageIcon(resetIcon);
 		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
 	}

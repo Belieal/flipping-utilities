@@ -1,11 +1,13 @@
 package com.flippingutilities;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
@@ -23,16 +25,43 @@ public class HistoryManager
 	//a list of standardizedOffers. A standardizedOffer is an offer with a quantity that represents the
 	//quantity bought since the last offer. A regular offer just has info from an offerEvent, which gives
 	//you the current quantity bought/sold overall in the trade.
+	@Getter
 	private List<OfferInfo> standardizedOffers = new ArrayList<>();
 
+	@Getter
+	private Instant nextGeLimitRefresh;
+
+	//the number of items bought since the last ge limit reset.
+	@Getter
+	private int itemsBoughtThisLimitWindow;
+
+
 	/**
+	 * This method takes in every new offer that comes and updates the standardized offer list along with
+	 * other properties related to the history of an item such as how many items were bought since the last
+	 * ge limit refresh and how when the ge limit will reset again.
+	 *
 	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
-	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives. It is crucial to note that
-	 *                 This OfferInfo object contains the current quantity bought/sold for the trade currently, not the amount
-	 *                 bought/sold since the last offer (to fix this, we "standardize" the offer in this method itself by comparing
-	 *                 it to the last offer seen for that slot (provided it belongs to the same trade).
+	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives
 	 */
 	public void updateHistory(OfferInfo newOffer)
+	{
+		storeStandardizedOffer(newOffer);
+		updateGeProperties();
+
+	}
+
+	/**
+	 * Receives an offer, turns it into a standardized offer, and adds it to the standardized offer list.
+	 * Standardizing an offer refers to making it reflect the quantity bought/sold since last offer rather
+	 * than the current amount bought/sold overall in the trade as is the default information in the OfferInfo
+	 * constructed from a grandExchangeOfferChanged event.
+	 *
+	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
+	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives. It is crucial to note that
+	 *                 This OfferInfo object contains the current quantity bought/sold for the trade currently.
+	 */
+	private void storeStandardizedOffer(OfferInfo newOffer)
 	{
 		int newOfferSlot = newOffer.getSlot();
 
@@ -46,7 +75,7 @@ public class HistoryManager
 			standardizedOffers.add(standardizedOffer);
 			currentTradesForSlot.add(newOffer);
 
-			//if the offer is complete, delete the history for that slot.
+			//if the offer is complete, clear the history for that slot.
 			if (newOffer.isComplete())
 			{
 				slotHistory.remove(newOfferSlot);
@@ -68,6 +97,35 @@ public class HistoryManager
 
 			}
 		}
+
+	}
+
+	/**
+	 * Updates when the ge limit will refresh and how many items have been bought since the last
+	 * ge limit refresh.
+	 */
+	private void updateGeProperties()
+	{
+		OfferInfo mostRecentOffer = standardizedOffers.get(standardizedOffers.size() - 1);
+		if (!mostRecentOffer.isBuy())
+		{
+			return;
+		}
+		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
+		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
+		// have refreshed, the next refresh will be four hours after this offer's buy time.
+		if (nextGeLimitRefresh == null || mostRecentOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
+		{
+			nextGeLimitRefresh = mostRecentOffer.getTime().plus(4, ChronoUnit.HOURS);
+			itemsBoughtThisLimitWindow = mostRecentOffer.getQuantity();
+		}
+		//if the last offer (most recent offer) is before the next ge limit refresh, add its quantity to the
+		//amount bought this limit window.
+		else
+		{
+			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantity();
+		}
+
 	}
 
 	//TODO
@@ -94,6 +152,7 @@ public class HistoryManager
 			//later than the time the user selected (if they selected 4 hours, its all trades after 4 hours ago.
 			if (standardizedOffer.getTime().compareTo(earliestTime) > 0)
 			{
+
 				if (standardizedOffer.isBuy())
 				{
 					numBoughtItems += standardizedOffer.getQuantity();
@@ -152,4 +211,5 @@ public class HistoryManager
 
 		return moneySpent;
 	}
+
 }

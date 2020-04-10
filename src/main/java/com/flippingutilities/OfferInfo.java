@@ -1,11 +1,11 @@
 package com.flippingutilities;
 
 
+import java.time.Instant;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 
 /**
  * This class stores information from a {@link GrandExchangeOfferChanged} event.
@@ -15,15 +15,26 @@ import net.runelite.http.api.ge.GrandExchangeTrade;
  * GrandExchangeTrade and adding two new fields that are needed for future changes, backwards
  * compatability is maintained, while allowing new work using the additional info stored in this class.
  */
-@EqualsAndHashCode(callSuper = false)
-@Data
-public class OfferInfo extends GrandExchangeTrade
-{
 
-	//new fields that weren't in GrandExchangeTrade
+@Data
+@AllArgsConstructor
+public class OfferInfo
+{
+	private boolean buy;
+	private int itemId;
+	private int quantity;
+	private int price;
+	private Instant time;
 	private int slot;
 	private GrandExchangeOfferState state;
 
+	/**
+	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
+	 * the end of that trade, thus the end of the slot's history. The HistoryManager uses this to decide when
+	 * to clear the history for a slot.
+	 *
+	 * @return boolean value representing that the offer is a complete offer
+	 */
 	public boolean isComplete()
 	{
 		return
@@ -51,23 +62,11 @@ public class OfferInfo extends GrandExchangeTrade
 
 	}
 
+	//TODO actually clone the Instant object, as we are currently just passing that as the same reference.
 	public OfferInfo clone()
 	{
-		OfferInfo clonedOffer = new OfferInfo();
-		clonedOffer.setBuy(isBuy());
-		clonedOffer.setItemId(getItemId());
-		clonedOffer.setQuantity(getQuantity());
-		clonedOffer.setTime(getTime());
-		clonedOffer.setSlot(slot);
-		clonedOffer.setState(state);
-		clonedOffer.setPrice(getPrice());
+		OfferInfo clonedOffer = new OfferInfo(buy, itemId, quantity, price, time, slot, state);
 		return clonedOffer;
-	}
-
-	public String toString()
-	{
-		return "buy: " + isBuy() + " quantity: " + getQuantity() + " price each: " + getPrice() +
-			" slot " + slot + " state " + state;
 	}
 }
 
