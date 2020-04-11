@@ -85,7 +85,7 @@ public class FlippingItem
 		history.updateHistory(newOffer);
 	}
 
-	public int currentProfit(Instant earliestTime)
+	public long currentProfit(Instant earliestTime)
 	{
 		return history.currentProfit(earliestTime);
 	}
@@ -107,7 +107,7 @@ public class FlippingItem
 
 	/**
 	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by {@link FlippingPlugin#updateFlippingItem} which itself is only
+	 * margin check. It is invoked by updateFlippingItem in the plugin class which itself is only
 	 * invoked when an offer is a margin check.
 	 *
 	 * @param newOffer the new offer just received.

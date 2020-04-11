@@ -29,27 +29,22 @@ package com.flippingutilities;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -66,7 +61,7 @@ import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
-public class FlippingPanel extends PluginPanel
+public class FlippingPanel extends JPanel
 {
 	@Getter
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
@@ -77,7 +72,7 @@ public class FlippingPanel extends PluginPanel
 	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder());
+		BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
 	static
 	{
@@ -105,7 +100,7 @@ public class FlippingPanel extends PluginPanel
 	@Getter
 	public final JPanel centerPanel = new JPanel(cardLayout);
 
-	//So we can keep track what items are shown on the panel.
+	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
 
@@ -146,11 +141,7 @@ public class FlippingPanel extends PluginPanel
 		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
 		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 
-		//Title at the top of the plugin panel.
-		JLabel title = new JLabel("Flipping Utilities", SwingConstants.CENTER);
-		title.setForeground(Color.WHITE);
-
-		//Search bar beneath the title.
+		//Search bar beneath the tab manager.
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
 		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -208,10 +199,9 @@ public class FlippingPanel extends PluginPanel
 		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
-		topPanel.add(title, BorderLayout.CENTER);
+		//topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
 		topPanel.add(resetIcon, BorderLayout.EAST);
-		topPanel.add(searchBar, BorderLayout.SOUTH);
+		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
 		centerPanel.add(scrollWrapper, ITEMS_PANEL);

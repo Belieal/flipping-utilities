@@ -141,7 +141,7 @@ public class HistoryManager
 	 * @param earliestTime the earliest time the user wants trades to impact profit for this item for.
 	 * @return profit
 	 */
-	public int currentProfit(Instant earliestTime)
+	public long currentProfit(Instant earliestTime)
 	{
 		List<OfferInfo> buyList = new ArrayList<>();
 		List<OfferInfo> sellList = new ArrayList<>();
@@ -191,10 +191,10 @@ public class HistoryManager
 	 * @return the amount of money spent on the offer list, up to the amount of items specified by the
 	 * limit
 	 */
-	private int getValueOfTrades(List<OfferInfo> tradeList, int itemLimit)
+	private long getValueOfTrades(List<OfferInfo> tradeList, int itemLimit)
 	{
 		int itemsSeen = 0;
-		int moneySpent = 0;
+		long moneySpent = 0;
 
 		for (OfferInfo offer : tradeList)
 		{
@@ -221,7 +221,7 @@ public class HistoryManager
 	 */
 	public void validateGeProperties()
 	{
-		if (Instant.now().compareTo(nextGeLimitRefresh) >= 0 && !(nextGeLimitRefresh==null))
+		if (!(nextGeLimitRefresh == null) && Instant.now().compareTo(nextGeLimitRefresh) >= 0)
 		{
 			nextGeLimitRefresh = null;
 			itemsBoughtThisLimitWindow = 0;

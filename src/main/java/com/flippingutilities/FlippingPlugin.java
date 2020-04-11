@@ -113,9 +113,11 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
-	private FlippingPanel panel;
+	private FlippingPanel flippingPanel;
+	private StatisticsPanel statPanel;
 	private FlippingItemWidget flippingWidget;
-	private int lastTick;
+
+	private TabManager tabManager;
 
 	//Stores all bought or sold trades.
 	@Getter
@@ -133,14 +135,17 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		panel = new FlippingPanel(this, itemManager, clientThread, executor);
+		flippingPanel = new FlippingPanel(this, itemManager, clientThread, executor);
+		statPanel = new StatisticsPanel(this, itemManager, clientThread, executor);
+
+		tabManager = new TabManager(flippingPanel, statPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Plugin")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
 			.priority(3)
-			.panel(panel)
+			.panel(tabManager)
 			.build();
 
 		clientToolbar.addNavigation(navButton);
@@ -169,7 +174,7 @@ public class FlippingPlugin extends Plugin
 						//it might be displaying old values, so this is a way to clear them on start up.
 						flippingItem.validateGeProperties();
 					}
-					panel.rebuildFlippingPanel(tradesList);
+					flippingPanel.rebuildFlippingPanel(tradesList);
 				}
 			})));
 			return true;
@@ -178,7 +183,7 @@ public class FlippingPlugin extends Plugin
 		//Ensures the panel timers are updated at 10 times per second.
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
-			panel.updateActivePanelsPriceOutdatedDisplay();
+			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			backgroundUpdateGePropertiesDisplay();
 		}, 100, 100, TimeUnit.MILLISECONDS);
 	}
@@ -206,7 +211,7 @@ public class FlippingPlugin extends Plugin
 			clientThread.invokeLater(() ->
 			{
 				loadConfig();
-				SwingUtilities.invokeLater(() -> panel.rebuildFlippingPanel(tradesList));
+				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 				return true;
 			});
 		}
@@ -219,7 +224,7 @@ public class FlippingPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 			loadConfig();
-			SwingUtilities.invokeLater(() -> panel.rebuildFlippingPanel(tradesList));
+			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 			return true;
 		});
 	}
@@ -265,7 +270,7 @@ public class FlippingPlugin extends Plugin
 				addToTradesList(newOffer);
 			}
 
-			panel.rebuildFlippingPanel(tradesList);
+			flippingPanel.rebuildFlippingPanel(tradesList);
 		}
 
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
@@ -275,7 +280,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		updateConfig();
-		panel.updateActivePanelsGePropertiesDisplay();
+		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
 
 	/**
@@ -433,9 +438,9 @@ public class FlippingPlugin extends Plugin
 	{
 		Widget widget = event.getWidget();
 		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (panel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
+		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
 		{
-			panel.dehighlightItem();
+			flippingPanel.dehighlightItem();
 		}
 	}
 
@@ -443,9 +448,9 @@ public class FlippingPlugin extends Plugin
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		// The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
-		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && panel.isItemHighlighted())
+		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
-			panel.dehighlightItem();
+			flippingPanel.dehighlightItem();
 		}
 	}
 
@@ -453,12 +458,12 @@ public class FlippingPlugin extends Plugin
 	private void highlightOffer()
 	{
 		int currentGEItemId = client.getVar(CURRENT_GE_ITEM);
-		if (currentGEItemId == prevHighlight || panel.isItemHighlighted())
+		if (currentGEItemId == prevHighlight || flippingPanel.isItemHighlighted())
 		{
 			return;
 		}
 		prevHighlight = currentGEItemId;
-		panel.highlightItem(currentGEItemId);
+		flippingPanel.highlightItem(currentGEItemId);
 	}
 
 	/**
@@ -470,7 +475,7 @@ public class FlippingPlugin extends Plugin
 
 		if (unitTime % 50 == 0)
 		{
-			panel.updateActivePanelsGePropertiesDisplay();
+			flippingPanel.updateActivePanelsGePropertiesDisplay();
 		}
 	}
 
@@ -478,10 +483,10 @@ public class FlippingPlugin extends Plugin
 	public void resetTradeHistory()
 	{
 		tradesList.clear();
-		panel.setItemHighlighted(false);
+		flippingPanel.setItemHighlighted(false);
 		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
-		panel.cardLayout.show(panel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
-		panel.rebuildFlippingPanel(tradesList);
+		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
+		flippingPanel.rebuildFlippingPanel(tradesList);
 	}
 
 	//Stores all the session trade data in config.
@@ -538,7 +543,7 @@ public class FlippingPlugin extends Plugin
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
-					panel.rebuildFlippingPanel(tradesList);
+					flippingPanel.rebuildFlippingPanel(tradesList);
 					break;
 				default:
 					break;
