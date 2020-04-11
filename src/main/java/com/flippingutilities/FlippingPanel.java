@@ -52,7 +52,6 @@ import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -82,8 +81,6 @@ public class FlippingPanel extends JPanel
 		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
 	}
 
-	@Inject
-	private ClientThread clientThread;
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
 
@@ -103,15 +100,13 @@ public class FlippingPanel extends JPanel
 	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
-
 	@Inject
-	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ClientThread clientThread, ScheduledExecutorService executor)
+	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
 
 		this.plugin = plugin;
 		this.itemManager = itemManager;
-		this.clientThread = clientThread;
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);

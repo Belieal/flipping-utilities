@@ -135,8 +135,8 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		flippingPanel = new FlippingPanel(this, itemManager, clientThread, executor);
-		statPanel = new StatisticsPanel(this, itemManager, clientThread, executor);
+		flippingPanel = new FlippingPanel(this, itemManager, executor);
+		statPanel = new StatisticsPanel(this, itemManager, executor);
 
 		tabManager = new TabManager(flippingPanel, statPanel);
 
@@ -166,6 +166,7 @@ public class FlippingPlugin extends Plugin
 
 			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
+				statPanel.updateProfits();
 				if (tradesList != null)
 				{
 					for (FlippingItem flippingItem : tradesList)
@@ -280,6 +281,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		updateConfig();
+		statPanel.updateProfits();
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
 

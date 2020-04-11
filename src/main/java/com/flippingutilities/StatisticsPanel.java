@@ -44,7 +44,6 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -62,6 +61,8 @@ public class StatisticsPanel extends JPanel
 	private static final Font BIG_PROFIT_FONT = StyleContext.getDefaultStyleContext()
 		.getFont(FontManager.getRunescapeBoldFont().getName(), Font.PLAIN, 28);
 
+	private FlippingPlugin plugin;
+
 	//Holds the buttons that control time intervals
 	private JPanel topPanel = new JPanel(new BorderLayout());
 	//Wraps the total profit labels.
@@ -69,23 +70,27 @@ public class StatisticsPanel extends JPanel
 	//Holds all the main content of the panel.
 	private JPanel contentWrapper = new JPanel(new BorderLayout());
 	//Represents the total profit made in the selected time interval.
-	private JLabel totalProfit = new JLabel();
+	private JLabel totalProfitLabel = new JLabel();
+
+	private HistoryManager historyManager = new HistoryManager();
 
 	//Contains the unix time of the start of the interval.
-	private Instant startOfInterval;
+	private Instant startOfInterval = Instant.EPOCH;
 
 	/**
-	 * This represents the front-end Statistics Tab along with methods to update profits.
+	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
+	 * This represents the front-end Statistics Tab.
 	 * It is shown when it has been selected by the tab manager.
 	 *
-	 * @param plugin       Used to access the config for the plugin.
-	 * @param itemManager  Accesses the RuneLite item cache.
-	 * @param clientThread Some operations require it (itemManager), and is useful for expensive operations to prevent freezing.
-	 * @param executor     For repeated method calls, required by periodic update methods.
+	 * @param plugin      Used to access the config and list of trades.
+	 * @param itemManager Accesses the RuneLite item cache.
+	 * @param executor    For repeated method calls, required by periodic update methods.
 	 */
-	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, ClientThread clientThread, ScheduledExecutorService executor)
+	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
+
+		this.plugin = plugin;
 
 		setLayout(new BorderLayout());
 
@@ -104,8 +109,8 @@ public class StatisticsPanel extends JPanel
 			{
 				return;
 			}
-
 			setTimeInterval(selectedInterval);
+			updateProfits();
 		});
 
 		//Holds the time interval selector beneath the tab manager.
@@ -115,12 +120,11 @@ public class StatisticsPanel extends JPanel
 		topPanel.add(timeIntervalList, BorderLayout.CENTER);
 
 		//Title text for the big total profit label.
-		JLabel profitText = new JLabel("Total profit: ");
+		final JLabel profitText = new JLabel("Total profit: ");
 		profitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
 		//Profit total over the selected time interval
-		totalProfit.setFont(BIG_PROFIT_FONT);
-		updateProfits();
+		totalProfitLabel.setFont(BIG_PROFIT_FONT);
 
 		//Contains the main profit information.
 		JPanel profitContainer = new JPanel(new GridBagLayout());
@@ -138,12 +142,12 @@ public class StatisticsPanel extends JPanel
 
 		/* Subinfo labels */
 		constraints.gridy = 1;
-		profitContainer.add(totalProfit, constraints);
+		profitContainer.add(totalProfitLabel, constraints);
 
-		JLabel profitPerHourLabel = new JLabel("Hourly profit: ");
-		JLabel roiLabel = new JLabel("Return on investment: ");
-		JLabel tradesMadeLabel = new JLabel("Trades made: ");
-		JLabel profitPerTradeLabel = new JLabel("Avg. Profit/trade: ");
+		final JLabel profitPerHourLabel = new JLabel("Hourly profit: ");
+		final JLabel roiLabel = new JLabel("Return on investment: ");
+		final JLabel tradesMadeLabel = new JLabel("Trades made: ");
+		final JLabel profitPerTradeLabel = new JLabel("Avg. Profit/trade: ");
 
 		profitPerHourLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		roiLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
@@ -201,30 +205,53 @@ public class StatisticsPanel extends JPanel
 
 	}
 
+	/**
+	 * Updates all profit labels on the stat panel using their respective update methods.
+	 * Gets called on startup, after the tradesList has been initialized and after every new registered trade.
+	 */
 	//New trade registered, update the profit labels and add/update profit item.
 	public void updateProfits()
 	{
 		updateTotalProfit();
 	}
 
+	/**
+	 * Responsible for updating the total profit label at the very top.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin}.
+	 */
 	//TODO: As QuantityFormatter.quantityToRSDecimalStack() doesn't take longs as parameter,
 	// a new format method is needed that support longs.
 	private void updateTotalProfit()
 	{
-		//TODO: Hook this up to historyManager.
-		long currentProfit = 2147483647;
+		if (plugin.getTradesList() == null)
+		{
+			totalProfitLabel.setText("0");
+			totalProfitLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			totalProfitLabel.setToolTipText("Total Profit: 0 gp");
+			return;
+		}
+
 		SwingUtilities.invokeLater(() ->
 		{
-			totalProfit.setText((currentProfit >= 0 ? "" : "-")
-				+ QuantityFormatter.quantityToRSDecimalStack(2147483647, true) + " gp");
+			long totalProfit = 0;
 
-			totalProfit.setToolTipText("Total Profit: "
-				+ (currentProfit >= 0 ? "" : "-") + QuantityFormatter.formatNumber(2147483647) + " gp");
+			for (FlippingItem item : plugin.getTradesList())
+			{
+				totalProfit += item.currentProfit(startOfInterval);
+			}
 
-			totalProfit.setForeground(currentProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+			totalProfitLabel.setText(QuantityFormatter.quantityToRSDecimalStack((int) totalProfit, true) + " gp");
+			totalProfitLabel.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
+			totalProfitLabel.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
 		});
 	}
 
+	/**
+	 * Gets called every time the time interval combobox has its selection changed.
+	 * Sets the start interval of the profit calculation.
+	 *
+	 * @param selectedInterval The string from TIME_INTERVAL_STRINGS that is selected in the time interval combobox
+	 */
 	private void setTimeInterval(String selectedInterval)
 	{
 		Instant timeNow = Instant.now();
@@ -254,6 +281,12 @@ public class StatisticsPanel extends JPanel
 		}
 	}
 
+	/**
+	 * Gets called every time the sort by combobox has its selection changed.
+	 * Sorts the profit items according to the selected string.
+	 *
+	 * @param selectedSort The string from SORT_BY_STRINGS that is selected in the sort by combobox
+	 */
 	//TODO: Hook this up
 	private void setSortBy(String selectedSort)
 	{
