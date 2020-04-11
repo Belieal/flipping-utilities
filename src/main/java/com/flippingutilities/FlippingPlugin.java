@@ -115,7 +115,6 @@ public class FlippingPlugin extends Plugin
 
 	private FlippingPanel panel;
 	private FlippingItemWidget flippingWidget;
-	private int lastTick;
 
 	//Stores all bought or sold trades.
 	@Getter
