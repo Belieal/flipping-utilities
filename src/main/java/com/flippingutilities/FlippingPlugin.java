@@ -133,7 +133,7 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		panel = new FlippingPanel(this, itemManager, clientThread, executor);
+		panel = new FlippingPanel(this, itemManager, executor);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
 		navButton = NavigationButton.builder()
