@@ -36,6 +36,8 @@ import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -257,7 +259,8 @@ public class FlippingPanel extends PluginPanel
 					{
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
-							deletePanel(newPanel);
+							System.out.println(item.currentProfit(Instant.now().minus(4,ChronoUnit.HOURS)));
+							//deletePanel(newPanel);
 						}
 					}
 				});

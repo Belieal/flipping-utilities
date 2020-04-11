@@ -27,7 +27,6 @@
 package com.flippingutilities;
 
 import java.time.Instant;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +42,6 @@ import lombok.extern.slf4j.Slf4j;
  * of a panel which is then displayed.
  */
 @Slf4j
-@AllArgsConstructor
 public class FlippingItem
 {
 	@Getter
@@ -68,13 +66,20 @@ public class FlippingItem
 	private Instant latestSellTime;
 
 	@Getter
-	private Instant geLimitResetTime;
-
-	@Getter
 	@Setter
 	private boolean isFrozen;
 
-	private HistoryManager history;
+	private HistoryManager history = new HistoryManager();
+
+
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, boolean isFrozen)
+	{
+		this.itemId = itemId;
+		this.itemName = itemName;
+		this.totalGELimit = totalGeLimit;
+		this.isFrozen = isFrozen;
+	}
+
 
 	public void updateHistory(OfferInfo newOffer)
 	{
@@ -89,6 +94,11 @@ public class FlippingItem
 	public int remainingGeLimit()
 	{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
+	}
+
+	public Instant getGeLimitResetTime()
+	{
+		return history.getNextGeLimitRefresh();
 	}
 
 	public void validateGeProperties()

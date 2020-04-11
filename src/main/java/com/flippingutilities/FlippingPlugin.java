@@ -383,24 +383,8 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		int tradeBuyPrice = 0;
-		int tradeSellPrice = 0;
-
-		Instant tradeBuyTime = null;
-		Instant tradeSellTime = null;
-
-		if (newOffer.getQuantity() == 1)
-		{
-			tradeBuyPrice = !newOffer.isBuy() ? newOffer.getPrice() : 0;
-			tradeSellPrice = newOffer.isBuy() ? newOffer.getPrice() : 0;
-
-			tradeBuyTime = !newOffer.isBuy() ? newOffer.getTime() : null;
-			tradeSellTime = newOffer.isBuy() ? newOffer.getTime() : null;
-		}
-
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit,
-			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false, new HistoryManager());
-
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, false);
+		flippingItem.updateMargin(newOffer);
 		flippingItem.updateHistory(newOffer);
 
 		tradesList.add(0, flippingItem);
