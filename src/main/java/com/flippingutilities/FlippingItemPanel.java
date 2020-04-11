@@ -40,7 +40,6 @@ import java.time.format.DateTimeFormatter;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -107,7 +106,6 @@ public class FlippingItemPanel extends JPanel
 	JLabel ROILabel = new JLabel();
 	JLabel arrowIcon = new JLabel(OPEN_ICON);
 	JButton clearButton = new JButton(DELETE_ICON);
-	JCheckBox marginFreezer = new JCheckBox();
 
 	/* Panels */
 	JPanel topPanel = new JPanel(new BorderLayout());
@@ -125,7 +123,7 @@ public class FlippingItemPanel extends JPanel
 
 		final int itemID = flippingItem.getItemId();
 
-		updateProfits();
+		updatePotentialProfit();
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -313,8 +311,8 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.setBorder(ITEM_INFO_BORDER);
 
 		buildPanelValues();
-		updateGELimits();
-		checkOutdatedPriceTimes();
+		updateGePropertiesDisplay();
+		updatePriceOutdatedDisplay();
 
 		add(topPanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
@@ -329,7 +327,7 @@ public class FlippingItemPanel extends JPanel
 
 		int roiGradientMax = plugin.getConfig().roiGradientMax();
 
-		updateProfits();
+		updatePotentialProfit();
 		SwingUtilities.invokeLater(() ->
 		{
 			buyPriceVal
@@ -385,7 +383,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	//Recalculates profits.
-	public void updateProfits()
+	public void updatePotentialProfit()
 	{
 		this.profitEach = sellPrice - buyPrice;
 
@@ -394,8 +392,8 @@ public class FlippingItemPanel extends JPanel
 		the margin check loss. */
 		if (plugin.getConfig().geLimitProfit())
 		{
-			this.profitTotal = (flippingItem.getRemainingGELimit() == 0) ? 0
-				: flippingItem.getRemainingGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
+			this.profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
+				: flippingItem.remainingGeLimit() * profitEach - (plugin.getConfig().marginCheckLoss()
 				? profitEach : 0);
 		}
 		else
@@ -414,7 +412,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	//Checks if prices are outdated and updates the tooltip.
-	public void checkOutdatedPriceTimes()
+	public void updatePriceOutdatedDisplay()
 	{
 		//Update time of latest price update.
 		Instant latestBuyTime = flippingItem.getLatestBuyTime();
@@ -438,8 +436,7 @@ public class FlippingItemPanel extends JPanel
 			SwingUtilities.invokeLater(() ->
 			{
 				buyPriceVal.setForeground(OUTDATED_COLOR);
-				buyPriceVal
-					.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
+				buyPriceVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
 			});
 
 		}
@@ -520,18 +517,17 @@ public class FlippingItemPanel extends JPanel
 		return timeFormatter.format(time);
 	}
 
-	public void updateGELimits()
+	/**
+	 * uses the properties of the FlippingItem to set the ge limit and refresh time display.
+	 */
+	public void updateGePropertiesDisplay()
 	{
 		SwingUtilities.invokeLater(() ->
 		{
-			if (flippingItem.getGeLimitResetTime() != null && flippingItem.getGeLimitResetTime()
-				.isBefore(Instant.now()))
-			{
-				flippingItem.resetGELimit();
-			}
+			flippingItem.validateGeProperties();
 
 			limitLabel
-				.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGELimit()));
+				.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
 			if (flippingItem.getGeLimitResetTime() == null)
 			{
 				limitLabel.setToolTipText("None has been bought in the past 4 hours.");

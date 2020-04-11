@@ -11,8 +11,9 @@ import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
- * manages the history for an item. This class is responsible for figuring out how much profit a user made for
- * an item.
+ * Manages the history for an item. This class is responsible for figuring out how much profit a user made for
+ * an item along with tracking how many items they bought since the last ge limit refresh and when the
+ * next ge limit refresh for this an item will be.
  */
 public class HistoryManager
 {
@@ -210,6 +211,21 @@ public class HistoryManager
 		}
 
 		return moneySpent;
+	}
+
+	/**
+	 * This is to prevent old values from remaining for items that a user has bought and whose
+	 * refresh times have already passed. If the user buys the item again, the values will be up to date,
+	 * so this method wouldn't be needed, but there is no guarantee the user buys the item again after the
+	 * limit refreshes. This method should be called periodically to ensure no old values will remain.
+	 */
+	public void validateGeProperties()
+	{
+		if (Instant.now().compareTo(nextGeLimitRefresh) >= 0 && !(nextGeLimitRefresh==null))
+		{
+			nextGeLimitRefresh = null;
+			itemsBoughtThisLimitWindow = 0;
+		}
 	}
 
 }
