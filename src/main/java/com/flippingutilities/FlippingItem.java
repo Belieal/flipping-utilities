@@ -27,18 +27,25 @@
 package com.flippingutilities;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * This class is the representation of an item that a user is flipping. It contains information about the
+ * margin of the item (buying and selling price), the latest buy and sell times, and the history of the item
+ * which is all of the offers that make up the trade history of that item. This history is managed by the
+ * {@link HistoryManager} and is used to get the profits for this item, how many more of it you can buy
+ * until the ge limit refreshes, and when the next ge limit refreshes.
+ * <p>
+ * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
+ * of a panel which is then displayed.
+ */
 @Slf4j
 @AllArgsConstructor
 public class FlippingItem
 {
-	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
-
 	@Getter
 	private final int itemId;
 
@@ -84,16 +91,20 @@ public class FlippingItem
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
 	}
 
-	public void validateGeProperties() {
+	public void validateGeProperties()
+	{
 		history.validateGeProperties();
 	}
 
 	/**
-	 * This method is used to update the margin of an item. As such it is only envoked when an offer
+	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
+	 * margin check. It is invoked by {@link FlippingPlugin#updateFlippingItem} which itself is only
+	 * invoked when an offer is a margin check.
 	 *
 	 * @param newOffer the new offer just received.
 	 */
-	public void updateMargin(OfferInfo newOffer) {
+	public void updateMargin(OfferInfo newOffer)
+	{
 		boolean tradeBuyState = newOffer.isBuy();
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();

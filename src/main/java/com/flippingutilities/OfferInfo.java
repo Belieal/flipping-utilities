@@ -51,7 +51,8 @@ public class OfferInfo
 	 *
 	 * @return boolean value representing whether the offer is a margin check or not
 	 */
-	public boolean isMarginCheck() {
+	public boolean isMarginCheck()
+	{
 		return (state == GrandExchangeOfferState.BOUGHT || state == GrandExchangeOfferState.SOLD) && quantity == 1;
 	}
 

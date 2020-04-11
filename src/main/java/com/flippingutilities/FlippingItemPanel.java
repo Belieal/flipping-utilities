@@ -123,7 +123,7 @@ public class FlippingItemPanel extends JPanel
 
 		final int itemID = flippingItem.getItemId();
 
-		updateProfits();
+		updatePotentialProfit();
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -327,7 +327,7 @@ public class FlippingItemPanel extends JPanel
 
 		int roiGradientMax = plugin.getConfig().roiGradientMax();
 
-		updateProfits();
+		updatePotentialProfit();
 		SwingUtilities.invokeLater(() ->
 		{
 			buyPriceVal
@@ -383,7 +383,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	//Recalculates profits.
-	public void updateProfits()
+	public void updatePotentialProfit()
 	{
 		this.profitEach = sellPrice - buyPrice;
 
@@ -436,8 +436,7 @@ public class FlippingItemPanel extends JPanel
 			SwingUtilities.invokeLater(() ->
 			{
 				buyPriceVal.setForeground(OUTDATED_COLOR);
-				buyPriceVal
-					.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
+				buyPriceVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
 			});
 
 		}

@@ -33,13 +33,11 @@ import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
@@ -229,14 +227,16 @@ public class FlippingPlugin extends Plugin
 	/**
 	 * This method is invoked every time the plugin receives a GrandExchangeOfferChanged event.
 	 * The events are handled in one of two ways:
-	 *
+	 * <p>
 	 * if the offer is deemed a margin check, its either added
 	 * to the tradesList (if it doesn't exist), or, if the item exists, it is updated to reflect the margins as
 	 * discovered by the margin check.
-	 *
+	 * <p>
 	 * The second way events are handled is in all other cases except for margin checks. If an offer is
 	 * not a margin check and the offer exists, you don't need to update the margins of the item, but you do need
 	 * to update its history (which updates its ge limit/reset time and the profit a user made for that item.
+	 * <p>
+	 * The history of a flipping item is updated in every branch of this method.
 	 *
 	 * @param newOfferEvent the offer event that represents when an offer is updated
 	 *                      (buying, selling, bought, sold, cancelled sell, or cancelled buy)
@@ -256,7 +256,7 @@ public class FlippingPlugin extends Plugin
 		{
 			if (flippingItem.isPresent())
 			{
-				updateFlip(flippingItem.get(), newOffer);
+				updateFlippingItem(flippingItem.get(), newOffer);
 				tradesList.remove(flippingItem.get());
 				tradesList.add(0, flippingItem.get());
 			}
@@ -414,7 +414,7 @@ public class FlippingPlugin extends Plugin
 	 * @param flippingItem flippingItem that is being updated.
 	 * @param newOffer     the offer that just came in.
 	 */
-	private void updateFlip(FlippingItem flippingItem, OfferInfo newOffer)
+	private void updateFlippingItem(FlippingItem flippingItem, OfferInfo newOffer)
 	{
 		flippingItem.updateMargin(newOffer);
 		flippingItem.updateHistory(newOffer);
