@@ -221,7 +221,11 @@ public class HistoryManager
 	 */
 	public void validateGeProperties()
 	{
-		if (Instant.now().compareTo(nextGeLimitRefresh) >= 0 && !(nextGeLimitRefresh==null))
+		if (nextGeLimitRefresh == null) {
+			return;
+		}
+
+		if (Instant.now().compareTo(nextGeLimitRefresh) >= 0)
 		{
 			nextGeLimitRefresh = null;
 			itemsBoughtThisLimitWindow = 0;
