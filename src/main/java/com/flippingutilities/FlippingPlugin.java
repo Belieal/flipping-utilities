@@ -383,7 +383,7 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, false);
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit);
 		flippingItem.updateMargin(newOffer);
 		flippingItem.updateHistory(newOffer);
 

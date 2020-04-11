@@ -67,17 +67,16 @@ public class FlippingItem
 
 	@Getter
 	@Setter
-	private boolean isFrozen;
+	private boolean isFrozen = false;
 
 	private HistoryManager history = new HistoryManager();
 
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit, boolean isFrozen)
+	public FlippingItem(int itemId, String itemName, int totalGeLimit)
 	{
 		this.itemId = itemId;
 		this.itemName = itemName;
 		this.totalGELimit = totalGeLimit;
-		this.isFrozen = isFrozen;
 	}
 
 
