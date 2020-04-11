@@ -259,8 +259,7 @@ public class FlippingPanel extends PluginPanel
 					{
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
-							System.out.println(item.currentProfit(Instant.now().minus(4,ChronoUnit.HOURS)));
-							//deletePanel(newPanel);
+							deletePanel(newPanel);
 						}
 					}
 				});
