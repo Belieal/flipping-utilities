@@ -176,12 +176,12 @@ public class FlippingItemPanel extends JPanel
 				{
 					if (flippingItem.isFrozen())
 					{
-						flippingItem.setFrozen(false);
+						flippingItem.freezeItem(false);
 						itemName.setForeground(Color.WHITE);
 					}
 					else
 					{
-						flippingItem.setFrozen(true);
+						flippingItem.freezeItem(true);
 						itemName.setForeground(FROZEN_COLOR);
 					}
 				}
