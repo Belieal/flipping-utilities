@@ -40,9 +40,6 @@ public class FlippingItem
 	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
 
 	@Getter
-	private ArrayList<OfferInfo> tradeHistory;
-
-	@Getter
 	private final int itemId;
 
 	@Getter
@@ -52,22 +49,15 @@ public class FlippingItem
 	private final int totalGELimit;
 
 	@Getter
-	private int remainingGELimit;
-
-	@Getter
-	@Setter
 	private int latestBuyPrice;
 
 	@Getter
-	@Setter
 	private int latestSellPrice;
 
 	@Getter
-	@Setter
 	private Instant latestBuyTime;
 
 	@Getter
-	@Setter
 	private Instant latestSellTime;
 
 	@Getter
@@ -79,9 +69,9 @@ public class FlippingItem
 
 	private HistoryManager history;
 
-	public void updateHistory(OfferInfo newTrade)
+	public void updateHistory(OfferInfo newOffer)
 	{
-		history.updateHistory(newTrade);
+		history.updateHistory(newOffer);
 	}
 
 	public int currentProfit(Instant earliestTime)
@@ -89,56 +79,38 @@ public class FlippingItem
 		return history.currentProfit(earliestTime);
 	}
 
-	public void addTradeHistory(final OfferInfo trade)
+	public int remainingGeLimit()
 	{
-		tradeHistory.add(trade);
+		return totalGELimit - history.getItemsBoughtThisLimitWindow();
 	}
 
-	public void updateGELimitReset()
-	{
-		if (tradeHistory != null)
+	public void validateGeProperties() {
+		history.validateGeProperties();
+	}
+
+	/**
+	 * This method is used to update the margin of an item. As such it is only envoked when an offer
+	 *
+	 * @param newOffer the new offer just received.
+	 */
+	public void updateMargin(OfferInfo newOffer) {
+		boolean tradeBuyState = newOffer.isBuy();
+		int tradePrice = newOffer.getPrice();
+		Instant tradeTime = newOffer.getTime();
+
+		if (!isFrozen())
 		{
-			OfferInfo oldestTrade = null;
-			remainingGELimit = totalGELimit;
-
-			//Check for the oldest trade within the last 4 hours.
-			for (OfferInfo trade : tradeHistory)
+			if (tradeBuyState)
 			{
-				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
-				{
-					//Check if trade is older than oldest trade.
-					if (oldestTrade == null || oldestTrade.getTime().getEpochSecond() > trade.getTime().getEpochSecond())
-					{
-						oldestTrade = trade;
-					}
-					remainingGELimit -= trade.getQuantity();
-				}
-			}
-
-			//No buy trade found in the last 4 hours.
-			if (oldestTrade == null)
-			{
-				remainingGELimit = totalGELimit;
-				geLimitResetTime = null;
+				latestSellPrice = tradePrice;
+				latestSellTime = tradeTime;
 			}
 			else
 			{
-				geLimitResetTime = oldestTrade.getTime().plusSeconds(GE_RESET_TIME_SECONDS);
+				latestBuyPrice = tradePrice;
+				latestBuyTime = tradeTime;
 			}
-
 		}
-		else
-		{
-			//No previous trade history; assume no trades made.
-			geLimitResetTime = null;
-			remainingGELimit = totalGELimit;
-		}
-	}
 
-	public void resetGELimit()
-	{
-		tradeHistory.clear();
-		remainingGELimit = totalGELimit;
-		geLimitResetTime = null;
 	}
 }

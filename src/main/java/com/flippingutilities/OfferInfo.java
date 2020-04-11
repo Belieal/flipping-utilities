@@ -45,6 +45,17 @@ public class OfferInfo
 	}
 
 	/**
+	 * A margin check is defined as an offer that is either a BOUGHT or SOLD offer and has a quantity of 1. This
+	 * resembles the typical margin check process wherein you buy an item (quantity of 1) for a high press, and then
+	 * sell that item (quantity of 1), to figure out the optimal buying and selling prices.
+	 *
+	 * @return boolean value representing whether the offer is a margin check or not
+	 */
+	public boolean isMarginCheck() {
+		return (state == GrandExchangeOfferState.BOUGHT || state == GrandExchangeOfferState.SOLD) && quantity == 1;
+	}
+
+	/**
 	 * Returns an offerInfo object with the quantity sold/bought the amount of items sold/bought since
 	 * the last event, rather than current quantity sold/bought overall in the trade. This makes it
 	 * easier to calculate the profit.

@@ -346,21 +346,22 @@ public class FlippingPanel extends PluginPanel
 	}
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
-	public void updateTimes()
+
+	public void updateActivePanelsPriceOutdatedDisplay()
 	{
 		for (FlippingItemPanel activePanel : activePanels)
 		{
-			activePanel.checkOutdatedPriceTimes();
+			activePanel.updatePriceOutdatedDisplay();
 		}
 	}
 
-	public void updateGELimit()
+	public void updateActivePanelsGePropertiesDisplay()
 	{
 		SwingUtilities.invokeLater(() ->
 		{
 			for (FlippingItemPanel activePanel : activePanels)
 			{
-				activePanel.updateGELimits();
+				activePanel.updateGePropertiesDisplay();
 			}
 		});
 	}

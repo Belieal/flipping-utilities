@@ -212,4 +212,17 @@ public class HistoryManager
 		return moneySpent;
 	}
 
+	/**
+	 * This is to prevent old values from remaining for items that a user has bought and whose
+	 * refresh times have already passed. If the user buys the item again, the values will be up to date,
+	 * so this method wouldn't be needed, but there is no guarantee the user buys the item again after the
+	 * limit refreshes. This method should be called periodically to ensure no old values will remain.
+	 */
+	public void validateGeProperties() {
+		if (Instant.now().compareTo(nextGeLimitRefresh) >=0) {
+			nextGeLimitRefresh = null;
+			itemsBoughtThisLimitWindow = 0;
+		}
+	}
+
 }
