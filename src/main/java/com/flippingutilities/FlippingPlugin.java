@@ -182,12 +182,13 @@ public class FlippingPlugin extends Plugin
 			return true;
 		});
 
-		//Ensures the panel timers are updated at 10 times per second.
+		//Ensures the panel displays for the margin check being outdated and the next ge refresh
+		//are updated every second.
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			backgroundUpdateGePropertiesDisplay();
-		}, 100, 100, TimeUnit.MILLISECONDS);
+		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -474,12 +475,9 @@ public class FlippingPlugin extends Plugin
 	 */
 	private void backgroundUpdateGePropertiesDisplay()
 	{
-		long unitTime = Instant.now().toEpochMilli() / 100;
 
-		if (unitTime % 50 == 0)
-		{
-			flippingPanel.updateActivePanelsGePropertiesDisplay();
-		}
+		flippingPanel.updateActivePanelsGePropertiesDisplay();
+
 	}
 
 	//Functionality to the top right reset button.
