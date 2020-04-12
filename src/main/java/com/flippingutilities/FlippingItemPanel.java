@@ -518,7 +518,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	/**
-	 * uses the properties of the FlippingItem to set the ge limit and refresh time display.
+	 * uses the properties of the FlippingItem to show the ge limit and refresh time display.
 	 */
 	public void updateGePropertiesDisplay()
 	{

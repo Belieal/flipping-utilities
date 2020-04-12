@@ -187,7 +187,7 @@ public class FlippingPlugin extends Plugin
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
-			backgroundUpdateGePropertiesDisplay();
+			flippingPanel.updateActivePanelsGePropertiesDisplay();
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
@@ -468,16 +468,6 @@ public class FlippingPlugin extends Plugin
 		}
 		prevHighlight = currentGEItemId;
 		flippingPanel.highlightItem(currentGEItemId);
-	}
-
-	/**
-	 * Called from scheduler and updates all of the active panel's ge properties display.
-	 */
-	private void backgroundUpdateGePropertiesDisplay()
-	{
-
-		flippingPanel.updateActivePanelsGePropertiesDisplay();
-
 	}
 
 	//Functionality to the top right reset button.

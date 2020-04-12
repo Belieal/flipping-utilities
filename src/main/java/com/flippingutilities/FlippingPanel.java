@@ -340,6 +340,11 @@ public class FlippingPanel extends JPanel
 		}
 	}
 
+	/**
+	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is envoked
+	 * in the FlippingPlugin in two places: Everytime an offer comes in (in onGrandExchangeOfferChanged) and
+	 * in a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
+	 */
 	public void updateActivePanelsGePropertiesDisplay()
 	{
 		SwingUtilities.invokeLater(() ->
