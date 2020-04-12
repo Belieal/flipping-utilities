@@ -135,6 +135,7 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
+
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatisticsPanel(this, itemManager, executor);
 
@@ -410,9 +411,9 @@ public class FlippingPlugin extends Plugin
 		flippingItem.updateMargin(newOffer);
 		flippingItem.updateHistory(newOffer);
 
-		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
+		//When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
 		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0) && config.autoFreezeMargin())
+		if (!(flippingItem.isSellPriceNeedsUpdate()) && !(flippingItem.isBuyPriceNeedsUpdate()) && config.autoFreezeMargin())
 		{
 			flippingItem.setFrozen(true);
 		}

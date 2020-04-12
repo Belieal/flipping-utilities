@@ -69,6 +69,12 @@ public class FlippingItem
 	@Setter
 	private boolean isFrozen = false;
 
+	@Getter
+	private boolean sellPriceNeedsUpdate = true;
+
+	@Getter
+	private boolean buyPriceNeedsUpdate = true;
+
 	private HistoryManager history = new HistoryManager();
 
 
@@ -118,19 +124,43 @@ public class FlippingItem
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-		if (!isFrozen())
+		if (!(isFrozen))
 		{
 			if (tradeBuyState)
 			{
 				latestSellPrice = tradePrice;
 				latestSellTime = tradeTime;
+				sellPriceNeedsUpdate = false;
 			}
 			else
 			{
 				latestBuyPrice = tradePrice;
 				latestBuyTime = tradeTime;
+				buyPriceNeedsUpdate = false;
 			}
 		}
 
+	}
+
+	/**
+	 * This Method is responsible for freezing an item. When an item is to be frozen, buyPriceNeedsUpdate and
+	 * sellPriceNeeds update are set to true, and isFrozen is set to false. isFrozen is set to false so that
+	 * updateMargin will update the margins and so that the components that rely on a FlippingItem can easily
+	 * see that it is frozen. BuyPriceNeedsUpdate and sellPriceNeedsUpdate are set to true, so that in
+	 * {@link FlippingPlugin#updateFlippingItem(FlippingItem, OfferInfo)} when an item is being updated, the margin
+	 * is only frozen again if BOTH the sell price and buy price are updated.
+	 * @param freeze
+	 */
+	public void freezeItem(boolean freeze) {
+		if (freeze) {
+			isFrozen = true;
+			buyPriceNeedsUpdate = false;
+			sellPriceNeedsUpdate = false;
+		}
+		else {
+			isFrozen = false;
+			buyPriceNeedsUpdate = true;
+			sellPriceNeedsUpdate = true;
+		}
 	}
 }

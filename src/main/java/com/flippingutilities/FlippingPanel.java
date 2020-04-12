@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -100,7 +99,6 @@ public class FlippingPanel extends JPanel
 	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
-	@Inject
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
