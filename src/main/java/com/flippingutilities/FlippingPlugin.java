@@ -369,6 +369,7 @@ public class FlippingPlugin extends Plugin
 
 		return offerInfo;
 
+
 	}
 
 	private Optional<FlippingItem> findItemInTradesList(int itemIdToFind)

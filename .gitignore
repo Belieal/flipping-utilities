@@ -1,5 +1,6 @@
 .gradle
 build
 .idea/
-src/.idea/
 out/
+src/.idea/
+
