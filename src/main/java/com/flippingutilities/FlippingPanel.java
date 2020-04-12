@@ -334,7 +334,7 @@ public class FlippingPanel extends JPanel
 
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
-	 * This method is called in FlippingPLugin every second.
+	 * This method is called in FlippingPLugin every second by the scheduler.
 	 */
 	public void updateActivePanelsPriceOutdatedDisplay()
 	{
