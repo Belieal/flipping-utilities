@@ -36,6 +36,13 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
+	//Keeps track of the total expenses and revenues accrued.
+	//Only gets updated by currentProfits.
+	@Getter
+	private long totalExpenses;
+	@Getter
+	private long totalRevenues;
+
 
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
@@ -145,6 +152,7 @@ public class HistoryManager
 	{
 		List<OfferInfo> buyList = new ArrayList<>();
 		List<OfferInfo> sellList = new ArrayList<>();
+
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
 
@@ -176,8 +184,12 @@ public class HistoryManager
 		}
 
 		int itemCountLimit = Math.min(numBoughtItems, numSoldItems);
+
+		totalExpenses = getValueOfTrades(buyList, itemCountLimit);
+		totalRevenues = getValueOfTrades(sellList, itemCountLimit);
+
 		//return the value of the sell list - the value of the buy list. This is the profit.
-		return getValueOfTrades(sellList, itemCountLimit) - getValueOfTrades(buyList, itemCountLimit);
+		return totalRevenues - totalExpenses;
 	}
 
 	/**

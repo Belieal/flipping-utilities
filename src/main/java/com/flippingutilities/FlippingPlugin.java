@@ -135,10 +135,10 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatisticsPanel(this, itemManager, executor);
 
+		//Represents the panel navigation that switches between panels using tabs at the top.
 		tabManager = new TabManager(flippingPanel, statPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
@@ -167,7 +167,7 @@ public class FlippingPlugin extends Plugin
 
 			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
-				statPanel.updateProfits();
+				statPanel.updateDisplays();
 				if (tradesList != null)
 				{
 					for (FlippingItem flippingItem : tradesList)
@@ -283,7 +283,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		updateConfig();
-		statPanel.updateProfits();
+		statPanel.updateDisplays();
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
 

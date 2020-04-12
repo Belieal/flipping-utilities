@@ -31,9 +31,15 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -54,12 +60,22 @@ public class StatisticsPanel extends JPanel
 {
 	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past Day", "Past Week", "Past Month", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
+
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
 		BorderFactory.createEmptyBorder(4, 6, 2, 6));
 
 	private static final Font BIG_PROFIT_FONT = StyleContext.getDefaultStyleContext()
 		.getFont(FontManager.getRunescapeBoldFont().getName(), Font.PLAIN, 28);
+
+	private static final NumberFormat PRECISE_DECIMAL_FORMATTER = new DecimalFormat(
+		"#,###.###",
+		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
+	);
+	private static final NumberFormat DECIMAL_FORMATTER = new DecimalFormat(
+		"#,###.#",
+		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
+	);
 
 	private FlippingPlugin plugin;
 
@@ -71,11 +87,26 @@ public class StatisticsPanel extends JPanel
 	private JPanel contentWrapper = new JPanel(new BorderLayout());
 	//Represents the total profit made in the selected time interval.
 	private JLabel totalProfitLabel = new JLabel();
+	//Combo box that selects the time interval that startOfInterval contains.
+	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
 
-	private HistoryManager historyManager = new HistoryManager();
+	private final JLabel hourlyProfitText = new JLabel("Hourly profit: ");
+
+	/* Value labels */
+	final JLabel hourlyProfitVal = new JLabel();
+	final JLabel roiVal = new JLabel();
+	final JLabel tradesMadeVal = new JLabel();
+	final JLabel profitPerTradeVal = new JLabel();
+
+	private long totalProfit;
+	private long totalExpenses;
+	private long totalRevenues;
 
 	//Contains the unix time of the start of the interval.
 	private Instant startOfInterval = Instant.EPOCH;
+
+	//Time when the panel was created. Assume this is the start of session.
+	private Instant sessionTime;
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -86,7 +117,7 @@ public class StatisticsPanel extends JPanel
 	 * @param itemManager Accesses the RuneLite item cache.
 	 * @param executor    For repeated method calls, required by periodic update methods.
 	 */
-	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
+	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, final ScheduledExecutorService executor)
 	{
 		super(false);
 
@@ -94,8 +125,8 @@ public class StatisticsPanel extends JPanel
 
 		setLayout(new BorderLayout());
 
-		//Combo box that selects the time interval that startOfInterval contains.
-		JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
+		sessionTime = Instant.now();
+
 		timeIntervalList.setSelectedItem("All");
 		timeIntervalList.setRenderer(new ComboBoxListRenderer());
 		timeIntervalList.setMinimumSize(new Dimension(0, 35));
@@ -110,7 +141,7 @@ public class StatisticsPanel extends JPanel
 				return;
 			}
 			setTimeInterval(selectedInterval);
-			updateProfits();
+			updateDisplays();
 		});
 
 		//Holds the time interval selector beneath the tab manager.
@@ -120,53 +151,60 @@ public class StatisticsPanel extends JPanel
 		topPanel.add(timeIntervalList, BorderLayout.CENTER);
 
 		//Title text for the big total profit label.
-		final JLabel profitText = new JLabel("Total profit: ");
+		final JLabel profitText = new JLabel("Total Profit: ");
 		profitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
 		//Profit total over the selected time interval
 		totalProfitLabel.setFont(BIG_PROFIT_FONT);
 
 		//Contains the main profit information.
-		JPanel profitContainer = new JPanel(new GridBagLayout());
-		profitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		profitContainer.setBorder(new EmptyBorder(2, 5, 5, 5));
+		JPanel totalProfitContainer = new JPanel(new GridBagLayout());
+		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		totalProfitContainer.setBorder(new EmptyBorder(2, 5, 5, 5));
 
 		GridBagConstraints constraints = new GridBagConstraints();
 		constraints.fill = GridBagConstraints.REMAINDER;
 		constraints.weightx = 1;
 		constraints.gridx = 0;
 		constraints.gridy = 0;
+		constraints.gridwidth = 0;
 		constraints.insets = new Insets(0, 0, 8, 0);
 
-		profitContainer.add(profitText, constraints);
+		totalProfitContainer.add(profitText, constraints);
+		constraints.gridy = 1;
+		totalProfitContainer.add(totalProfitLabel, constraints);
 
 		/* Subinfo labels */
-		constraints.gridy = 1;
-		profitContainer.add(totalProfitLabel, constraints);
+		JPanel subInfoContainer = new JPanel(new GridLayout(4, 2));
+		final JLabel roiText = new JLabel("ROI: ");
+		final JLabel tradesMadeText = new JLabel("Trades made: ");
+		final JLabel profitPerTradeText = new JLabel("Avg. Profit/trade: ");
 
-		final JLabel profitPerHourLabel = new JLabel("Hourly profit: ");
-		final JLabel roiLabel = new JLabel("Return on investment: ");
-		final JLabel tradesMadeLabel = new JLabel("Trades made: ");
-		final JLabel profitPerTradeLabel = new JLabel("Avg. Profit/trade: ");
+		hourlyProfitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		roiText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		tradesMadeText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		profitPerTradeText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
-		profitPerHourLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		roiLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		tradesMadeLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		profitPerTradeLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
-		constraints.gridy = 2;
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 0.5;
-		constraints.insets = new Insets(5, 0, 0, 0);
-		profitContainer.add(profitPerHourLabel, constraints);
-		constraints.gridy = 3;
-		profitContainer.add(roiLabel, constraints);
-		constraints.gridy = 4;
-		profitContainer.add(tradesMadeLabel, constraints);
-		constraints.gridy = 5;
-		profitContainer.add(profitPerTradeLabel, constraints);
+		hourlyProfitVal.setHorizontalAlignment(JLabel.RIGHT);
+		roiVal.setHorizontalAlignment(JLabel.RIGHT);
+		tradesMadeVal.setHorizontalAlignment(JLabel.RIGHT);
+		profitPerTradeVal.setHorizontalAlignment(JLabel.RIGHT);
 
-		profitWrapper.add(profitContainer, BorderLayout.NORTH);
+		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		subInfoContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+		subInfoContainer.add(hourlyProfitText);
+		subInfoContainer.add(hourlyProfitVal);
+		subInfoContainer.add(roiText);
+		subInfoContainer.add(roiVal);
+		subInfoContainer.add(tradesMadeText);
+		subInfoContainer.add(tradesMadeVal);
+		subInfoContainer.add(profitPerTradeText);
+		subInfoContainer.add(profitPerTradeVal);
+
+		profitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
+		profitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
 		profitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		JPanel sortPanel = new JPanel(new BorderLayout());
@@ -202,7 +240,6 @@ public class StatisticsPanel extends JPanel
 
 		add(contentWrapper, BorderLayout.CENTER);
 		add(topPanel, BorderLayout.NORTH);
-
 	}
 
 	/**
@@ -210,9 +247,27 @@ public class StatisticsPanel extends JPanel
 	 * Gets called on startup, after the tradesList has been initialized and after every new registered trade.
 	 */
 	//New trade registered, update the profit labels and add/update profit item.
-	public void updateProfits()
+	public void updateDisplays()
 	{
-		updateTotalProfit();
+		SwingUtilities.invokeLater(() ->
+		{
+			totalProfit = 0;
+			totalExpenses = 0;
+			totalRevenues = 0;
+
+			for (FlippingItem item : plugin.getTradesList())
+			{
+				totalProfit += item.currentProfit(startOfInterval);
+				totalExpenses += item.getTotalExpenses();
+				totalRevenues += item.getTotalRevenues();
+			}
+
+			updateTotalProfitDisplay();
+			updateHourlyProfitDisplay();
+			updateRoiDisplay();
+			updateTradesMadeDisplay();
+			updateAvgProfitPerTradeDisplay();
+		});
 	}
 
 	/**
@@ -221,7 +276,7 @@ public class StatisticsPanel extends JPanel
 	 */
 	//TODO: As QuantityFormatter.quantityToRSDecimalStack() doesn't take longs as parameter,
 	// a new format method is needed that support longs.
-	private void updateTotalProfit()
+	private void updateTotalProfitDisplay()
 	{
 		if (plugin.getTradesList() == null)
 		{
@@ -231,19 +286,64 @@ public class StatisticsPanel extends JPanel
 			return;
 		}
 
-		SwingUtilities.invokeLater(() ->
+		totalProfitLabel.setText(quantityToRSDecimalStack(totalProfit, true) + " gp");
+		totalProfitLabel.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
+		totalProfitLabel.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+	}
+
+	/**
+	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
+	 */
+	private void updateHourlyProfitDisplay()
+	{
+		//Doesn't really make sense to show profit/hr for anything else
+		//	unless we store session time.
+		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
 		{
-			long totalProfit = 0;
-
-			for (FlippingItem item : plugin.getTradesList())
+			hourlyProfitText.setVisible(false);
+			hourlyProfitVal.setVisible(false);
+		}
+		else
+		{
+			if (totalProfit == 0)
 			{
-				totalProfit += item.currentProfit(startOfInterval);
+				hourlyProfitVal.setText("0 gp/hr");
 			}
+			else
+			{
+				String profitString = quantityToRSDecimalStack((totalProfit / ((Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) / (60 * 60))), true);
+				hourlyProfitVal.setText(profitString + " gp/hr");
+			}
+			hourlyProfitText.setVisible(true);
+			hourlyProfitVal.setVisible(true);
+		}
+		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+	}
 
-			totalProfitLabel.setText(QuantityFormatter.quantityToRSDecimalStack((int) totalProfit, true) + " gp");
-			totalProfitLabel.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
-			totalProfitLabel.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
-		});
+	/**
+	 * Updates the total ROI value display. Also checks and sets the font color according to profit/loss.
+	 */
+	private void updateRoiDisplay()
+	{
+		if (totalProfit == 0)
+		{
+			roiVal.setText("0.00%");
+		}
+		else
+		{
+			roiVal.setText(String.format("%.2f", (float) totalProfit / totalExpenses * 100) + "%");
+			roiVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+		}
+	}
+
+	private void updateTradesMadeDisplay()
+	{
+
+	}
+
+	private void updateAvgProfitPerTradeDisplay()
+	{
+
 	}
 
 	/**
@@ -271,7 +371,7 @@ public class StatisticsPanel extends JPanel
 				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
 				break;
 			case "Session":
-				//Use session time.
+				startOfInterval = sessionTime;
 				break;
 			case "All":
 				startOfInterval = Instant.EPOCH;
@@ -303,5 +403,32 @@ public class StatisticsPanel extends JPanel
 			case "Highest Quantity":
 				break;
 		}
+	}
+
+	/**
+	 * Functionally the same as {@link QuantityFormatter#quantityToRSDecimalStack(int, boolean)},
+	 * except this allows for formatting longs.
+	 *
+	 * @param quantity Long to format
+	 * @param precise  If true, allow thousandths precision if {@code quantity} is larger than 1 million.
+	 *                 *            Otherwise have at most a single decimal
+	 * @return Formatted number string.
+	 */
+	public static synchronized String quantityToRSDecimalStack(long quantity, boolean precise)
+	{
+		String quantityStr = String.valueOf(quantity);
+		if (quantityStr.length() <= 4)
+		{
+			return quantityStr;
+		}
+
+		long power = (long) Math.log10(quantity);
+
+		// Output thousandths for values above a million
+		NumberFormat format = precise && power >= 6
+			? PRECISE_DECIMAL_FORMATTER
+			: DECIMAL_FORMATTER;
+
+		return format.format(quantity / (Math.pow(10, (long) (power / 3) * 3))) + new String[] {"", "K", "M", "B"}[(int) (power / 3)];
 	}
 }

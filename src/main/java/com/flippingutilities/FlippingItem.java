@@ -96,6 +96,16 @@ public class FlippingItem
 		return history.currentProfit(earliestTime);
 	}
 
+	public long getTotalExpenses()
+	{
+		return history.getTotalExpenses();
+	}
+
+	public long getTotalRevenues()
+	{
+		return history.getTotalRevenues();
+	}
+
 	public int remainingGeLimit()
 	{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
@@ -149,15 +159,19 @@ public class FlippingItem
 	 * see that it is frozen. BuyPriceNeedsUpdate and sellPriceNeedsUpdate are set to true, so that in
 	 * {@link FlippingPlugin#updateFlippingItem(FlippingItem, OfferInfo)} when an item is being updated, the margin
 	 * is only frozen again if BOTH the sell price and buy price are updated.
+	 *
 	 * @param freeze
 	 */
-	public void freezeItem(boolean freeze) {
-		if (freeze) {
+	public void freezeItem(boolean freeze)
+	{
+		if (freeze)
+		{
 			isFrozen = true;
 			buyPriceNeedsUpdate = false;
 			sellPriceNeedsUpdate = false;
 		}
-		else {
+		else
+		{
 			isFrozen = false;
 			buyPriceNeedsUpdate = true;
 			sellPriceNeedsUpdate = true;

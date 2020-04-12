@@ -38,6 +38,14 @@ import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 public class TabManager extends PluginPanel
 {
 
+	/**
+	 * This manages the tab navigation bar at the top of the panel.
+	 * Once a tab is selected, the corresponding panel will be displayed below
+	 * along with indication of what tab is selected.
+	 *
+	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
+	 * @param statPanel     StatPanel represents useful performance statistics to the user.
+	 */
 	@Inject
 	public TabManager(FlippingPanel flippingPanel, StatisticsPanel statPanel)
 	{
