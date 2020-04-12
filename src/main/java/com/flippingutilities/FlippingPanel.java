@@ -332,6 +332,10 @@ public class FlippingPanel extends JPanel
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
 
+	/**
+	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
+	 * This method is called in FlippingPLugin every second by the scheduler.
+	 */
 	public void updateActivePanelsPriceOutdatedDisplay()
 	{
 		for (FlippingItemPanel activePanel : activePanels)
@@ -340,6 +344,11 @@ public class FlippingPanel extends JPanel
 		}
 	}
 
+	/**
+	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is envoked
+	 * in the FlippingPlugin in two places: Everytime an offer comes in (in onGrandExchangeOfferChanged) and
+	 * in a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
+	 */
 	public void updateActivePanelsGePropertiesDisplay()
 	{
 		SwingUtilities.invokeLater(() ->
