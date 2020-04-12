@@ -29,7 +29,6 @@ package com.flippingutilities;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -40,14 +39,11 @@ import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -55,7 +51,6 @@ import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -64,7 +59,7 @@ import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
-public class FlippingPanel extends PluginPanel
+public class FlippingPanel extends JPanel
 {
 	@Getter
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
@@ -75,17 +70,16 @@ public class FlippingPanel extends PluginPanel
 	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder());
+		BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
 	static
 	{
-		final BufferedImage resetIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
+		final BufferedImage resetIcon = ImageUtil
+			.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
 		RESET_ICON = new ImageIcon(resetIcon);
 		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
 	}
 
-	@Inject
-	private ClientThread clientThread;
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
 
@@ -102,18 +96,15 @@ public class FlippingPanel extends PluginPanel
 	@Getter
 	public final JPanel centerPanel = new JPanel(cardLayout);
 
-	//So we can keep track what items are shown on the panel.
+	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
-
-	@Inject
-	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ClientThread clientThread, ScheduledExecutorService executor)
+	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
 
 		this.plugin = plugin;
 		this.itemManager = itemManager;
-		this.clientThread = clientThread;
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -143,11 +134,7 @@ public class FlippingPanel extends PluginPanel
 		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
 		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 
-		//Title at the top of the plugin panel.
-		JLabel title = new JLabel("Flipping Utilities", SwingConstants.CENTER);
-		title.setForeground(Color.WHITE);
-
-		//Search bar beneath the title.
+		//Search bar beneath the tab manager.
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
 		searchBar.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -205,10 +192,9 @@ public class FlippingPanel extends PluginPanel
 		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
-		topPanel.add(title, BorderLayout.CENTER);
+		//topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
 		topPanel.add(resetIcon, BorderLayout.EAST);
-		topPanel.add(searchBar, BorderLayout.SOUTH);
+		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
 		centerPanel.add(scrollWrapper, ITEMS_PANEL);
@@ -345,21 +331,31 @@ public class FlippingPanel extends PluginPanel
 	}
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
-	public void updateTimes()
+
+	/**
+	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
+	 * This method is called in FlippingPLugin every second by the scheduler.
+	 */
+	public void updateActivePanelsPriceOutdatedDisplay()
 	{
 		for (FlippingItemPanel activePanel : activePanels)
 		{
-			activePanel.checkOutdatedPriceTimes();
+			activePanel.updatePriceOutdatedDisplay();
 		}
 	}
 
-	public void updateGELimit()
+	/**
+	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is envoked
+	 * in the FlippingPlugin in two places: Everytime an offer comes in (in onGrandExchangeOfferChanged) and
+	 * in a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
+	 */
+	public void updateActivePanelsGePropertiesDisplay()
 	{
 		SwingUtilities.invokeLater(() ->
 		{
 			for (FlippingItemPanel activePanel : activePanels)
 			{
-				activePanel.updateGELimits();
+				activePanel.updateGePropertiesDisplay();
 			}
 		});
 	}

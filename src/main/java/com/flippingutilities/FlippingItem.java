@@ -27,22 +27,23 @@
 package com.flippingutilities;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 
+/**
+ * This class is the representation of an item that a user is flipping. It contains information about the
+ * margin of the item (buying and selling price), the latest buy and sell times, and the history of the item
+ * which is all of the offers that make up the trade history of that item. This history is managed by the
+ * {@link HistoryManager} and is used to get the profits for this item, how many more of it you can buy
+ * until the ge limit refreshes, and when the next ge limit refreshes.
+ * <p>
+ * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
+ * of a panel which is then displayed.
+ */
 @Slf4j
-@AllArgsConstructor
 public class FlippingItem
 {
-	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
-
-	@Getter
-	private ArrayList<GrandExchangeTrade> tradeHistory;
-
 	@Getter
 	private final int itemId;
 
@@ -53,81 +54,113 @@ public class FlippingItem
 	private final int totalGELimit;
 
 	@Getter
-	private int remainingGELimit;
-
-	@Getter
-	@Setter
 	private int latestBuyPrice;
 
 	@Getter
-	@Setter
 	private int latestSellPrice;
 
 	@Getter
-	@Setter
 	private Instant latestBuyTime;
 
 	@Getter
-	@Setter
 	private Instant latestSellTime;
 
 	@Getter
-	private Instant geLimitResetTime;
+	@Setter
+	private boolean isFrozen = false;
 
 	@Getter
-	@Setter
-	private boolean isFrozen;
+	private boolean sellPriceNeedsUpdate = true;
 
-	public void addTradeHistory(final GrandExchangeTrade trade)
+	@Getter
+	private boolean buyPriceNeedsUpdate = true;
+
+	private HistoryManager history = new HistoryManager();
+
+
+	public FlippingItem(int itemId, String itemName, int totalGeLimit)
 	{
-		tradeHistory.add(trade);
+		this.itemId = itemId;
+		this.itemName = itemName;
+		this.totalGELimit = totalGeLimit;
 	}
 
-	public void updateGELimitReset()
+
+	public void updateHistory(OfferInfo newOffer)
 	{
-		if (tradeHistory != null)
+		history.updateHistory(newOffer);
+	}
+
+	public long currentProfit(Instant earliestTime)
+	{
+		return history.currentProfit(earliestTime);
+	}
+
+	public int remainingGeLimit()
+	{
+		return totalGELimit - history.getItemsBoughtThisLimitWindow();
+	}
+
+	public Instant getGeLimitResetTime()
+	{
+		return history.getNextGeLimitRefresh();
+	}
+
+	public void validateGeProperties()
+	{
+		history.validateGeProperties();
+	}
+
+	/**
+	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
+	 * margin check. It is invoked by updateFlippingItem in the plugin class which itself is only
+	 * invoked when an offer is a margin check.
+	 *
+	 * @param newOffer the new offer just received.
+	 */
+	public void updateMargin(OfferInfo newOffer)
+	{
+		boolean tradeBuyState = newOffer.isBuy();
+		int tradePrice = newOffer.getPrice();
+		Instant tradeTime = newOffer.getTime();
+
+		if (!(isFrozen))
 		{
-			GrandExchangeTrade oldestTrade = null;
-			remainingGELimit = totalGELimit;
-
-			//Check for the oldest trade within the last 4 hours.
-			for (GrandExchangeTrade trade : tradeHistory)
+			if (tradeBuyState)
 			{
-				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
-				{
-					//Check if trade is older than oldest trade.
-					if (oldestTrade == null || oldestTrade.getTime().getEpochSecond() > trade.getTime().getEpochSecond())
-					{
-						oldestTrade = trade;
-					}
-					remainingGELimit -= trade.getQuantity();
-				}
-			}
-
-			//No buy trade found in the last 4 hours.
-			if (oldestTrade == null)
-			{
-				remainingGELimit = totalGELimit;
-				geLimitResetTime = null;
+				latestSellPrice = tradePrice;
+				latestSellTime = tradeTime;
+				sellPriceNeedsUpdate = false;
 			}
 			else
 			{
-				geLimitResetTime = oldestTrade.getTime().plusSeconds(GE_RESET_TIME_SECONDS);
+				latestBuyPrice = tradePrice;
+				latestBuyTime = tradeTime;
+				buyPriceNeedsUpdate = false;
 			}
+		}
 
-		}
-		else
-		{
-			//No previous trade history; assume no trades made.
-			geLimitResetTime = null;
-			remainingGELimit = totalGELimit;
-		}
 	}
 
-	public void resetGELimit()
-	{
-		tradeHistory.clear();
-		remainingGELimit = totalGELimit;
-		geLimitResetTime = null;
+	/**
+	 * This Method is responsible for freezing an item. When an item is to be frozen, buyPriceNeedsUpdate and
+	 * sellPriceNeeds update are set to true, and isFrozen is set to false. isFrozen is set to false so that
+	 * updateMargin will update the margins and so that the components that rely on a FlippingItem can easily
+	 * see that it is frozen. BuyPriceNeedsUpdate and sellPriceNeedsUpdate are set to true, so that in
+	 * {@link FlippingPlugin#updateFlippingItem(FlippingItem, OfferInfo)} when an item is being updated, the margin
+	 * is only frozen again if BOTH the sell price and buy price are updated.
+	 * @param freeze
+	 */
+	public void freezeItem(boolean freeze) {
+		if (freeze) {
+			isFrozen = true;
+			buyPriceNeedsUpdate = false;
+			sellPriceNeedsUpdate = false;
+		}
+		else {
+			isFrozen = false;
+			buyPriceNeedsUpdate = true;
+			sellPriceNeedsUpdate = true;
+		}
 	}
 }
