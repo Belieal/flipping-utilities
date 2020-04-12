@@ -263,9 +263,9 @@ public class StatisticsPanel extends JPanel
 			}
 
 			updateTotalProfitDisplay();
+
 			updateHourlyProfitDisplay();
 			updateRoiDisplay();
-			updateTradesMadeDisplay();
 			updateAvgProfitPerTradeDisplay();
 		});
 	}
@@ -334,11 +334,6 @@ public class StatisticsPanel extends JPanel
 			roiVal.setText(String.format("%.2f", (float) totalProfit / totalExpenses * 100) + "%");
 			roiVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
 		}
-	}
-
-	private void updateTradesMadeDisplay()
-	{
-
 	}
 
 	private void updateAvgProfitPerTradeDisplay()

@@ -136,9 +136,9 @@ public class HistoryManager
 
 	}
 
-	//TODO
-	//return a summary, not just the profit. A summary will include the profit, and the quantity of buys/sells
-	//and the individual prices (only if they are different)
+	//TODO:
+	// return a summary, not just the profit. A summary will include the profit, and the quantity of buys/sells
+	// and the individual prices (only if they are different)
 
 	/**
 	 * Calculates profit for this item by looking at the standardizedOffers list, filtering out offers
