@@ -24,8 +24,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.ui;
 
+import com.flippingutilities.FlippingItem;
+import com.flippingutilities.FlippingPlugin;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -68,13 +70,13 @@ public class StatisticsPanel extends JPanel
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final ImageIcon OPEN_ICON;
 	private static final ImageIcon CLOSE_ICON;
-	private static final Dimension ICON_SIZE = new Dimension(32, 32);
+	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 	//Color to indicate loss in profit
 	private static final Color LOSS_COLOR = new Color(250, 74, 75);
 
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder(4, 6, 2, 6));
+		BorderFactory.createEmptyBorder(4, 0, 2, 0));
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -286,7 +288,7 @@ public class StatisticsPanel extends JPanel
 		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 		subInfoTextPanel.add(totalExpenseText);
 
-		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 		subInfoValPanel.add(hourlyProfitVal);
 		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 		subInfoValPanel.add(roiVal);
@@ -387,7 +389,7 @@ public class StatisticsPanel extends JPanel
 			return;
 		}
 
-		totalProfitVal.setText(quantityToRSDecimalStack(totalProfit, true) + " gp");
+		totalProfitVal.setText(((totalProfit >= 0) ? "" : "-") + quantityToRSDecimalStack(Math.abs(totalProfit), true) + " gp");
 		totalProfitVal.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
 		totalProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
 	}

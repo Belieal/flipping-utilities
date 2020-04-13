@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.ui;
 
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +48,7 @@ public class FlippingItemWidget
 	private Widget text;
 
 	@Inject
-	FlippingItemWidget(Widget parent, Client client)
+	public FlippingItemWidget(Widget parent, Client client)
 	{
 		this.parent = parent;
 		this.client = client;
