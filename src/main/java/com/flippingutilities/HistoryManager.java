@@ -47,7 +47,8 @@ public class HistoryManager
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
 	 * other properties related to the history of an item such as how many items were bought since the last
-	 * ge limit refresh and how when the ge limit will reset again.
+	 * ge limit refresh and how when the ge limit will reset again. The standardized offer list is used to
+	 * calculate profit for the item.
 	 *
 	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
 	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives
