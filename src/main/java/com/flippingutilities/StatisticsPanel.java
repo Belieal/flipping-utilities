@@ -27,12 +27,13 @@
 package com.flippingutilities;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -42,9 +43,13 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -54,16 +59,26 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
+import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 public class StatisticsPanel extends JPanel
 {
 	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past Day", "Past Week", "Past Month", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
+	private static final ImageIcon OPEN_ICON;
+	private static final ImageIcon CLOSE_ICON;
+	private static final Dimension ICON_SIZE = new Dimension(32, 32);
+	//Color to indicate loss in profit
+	private static final Color LOSS_COLOR = new Color(250, 74, 75);
 
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
 		BorderFactory.createEmptyBorder(4, 6, 2, 6));
+
+	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
+		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
+		BorderFactory.createEmptyBorder(2, 5, 5, 5));
 
 	private static final Font BIG_PROFIT_FONT = StyleContext.getDefaultStyleContext()
 		.getFont(FontManager.getRunescapeBoldFont().getName(), Font.PLAIN, 28);
@@ -77,33 +92,51 @@ public class StatisticsPanel extends JPanel
 		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
 	);
 
+	static
+	{
+		final BufferedImage openIcon = ImageUtil
+			.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
+		CLOSE_ICON = new ImageIcon(openIcon);
+		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
+	}
+
 	private FlippingPlugin plugin;
 
-	//Holds the buttons that control time intervals
-	private JPanel topPanel = new JPanel(new BorderLayout());
-	//Wraps the total profit labels.
-	private JPanel profitWrapper = new JPanel(new BorderLayout());
 	//Holds all the main content of the panel.
 	private JPanel contentWrapper = new JPanel(new BorderLayout());
-	//Represents the total profit made in the selected time interval.
-	private JLabel totalProfitLabel = new JLabel();
+	//Holds the buttons that control time intervals
+	private JPanel topPanel = new JPanel(new BorderLayout());
+
+	//Wraps the total profit labels.
+	private JPanel totalProfitWrapper = new JPanel(new BorderLayout());
+	//Holds the sub info labels.
+	private JPanel subInfoContainer = new JPanel(new BorderLayout());
+
 	//Combo box that selects the time interval that startOfInterval contains.
 	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
 
+	//Represents the total profit made in the selected time interval.
+	private JLabel totalProfitVal = new JLabel();
+
+	//Sets the visible state for subinfo
+	private JLabel arrowIcon = new JLabel(OPEN_ICON);
+
+	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly profit: ");
 
 	/* Value labels */
-	final JLabel hourlyProfitVal = new JLabel();
-	final JLabel roiVal = new JLabel();
-	final JLabel tradesMadeVal = new JLabel();
-	final JLabel profitPerTradeVal = new JLabel();
+	private final JLabel hourlyProfitVal = new JLabel();
+	private final JLabel roiVal = new JLabel();
+	private final JLabel totalRevenueVal = new JLabel();
+	private final JLabel totalExpenseVal = new JLabel();
 
+	//Data acquired from history manager of all items
 	private long totalProfit;
 	private long totalExpenses;
 	private long totalRevenues;
 
 	//Contains the unix time of the start of the interval.
-	private Instant startOfInterval = Instant.EPOCH;
+	private Instant startOfInterval = Instant.now();
 
 	//Time when the panel was created. Assume this is the start of session.
 	private Instant sessionTime;
@@ -125,9 +158,11 @@ public class StatisticsPanel extends JPanel
 
 		setLayout(new BorderLayout());
 
+		//Record start of session time.
 		sessionTime = Instant.now();
 
-		timeIntervalList.setSelectedItem("All");
+		//Start off with "Session" selected in the combobox.
+		timeIntervalList.setSelectedItem("Session");
 		timeIntervalList.setRenderer(new ComboBoxListRenderer());
 		timeIntervalList.setMinimumSize(new Dimension(0, 35));
 		timeIntervalList.setFocusable(false);
@@ -140,6 +175,7 @@ public class StatisticsPanel extends JPanel
 			{
 				return;
 			}
+			//Handle new time interval selected
 			setTimeInterval(selectedInterval);
 			updateDisplays();
 		});
@@ -151,62 +187,129 @@ public class StatisticsPanel extends JPanel
 		topPanel.add(timeIntervalList, BorderLayout.CENTER);
 
 		//Title text for the big total profit label.
-		final JLabel profitText = new JLabel("Total Profit: ");
+		final JLabel profitText = new JLabel("Total Profit: ", SwingConstants.CENTER);
 		profitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		profitText.setFont(FontManager.getRunescapeBoldFont());
 
 		//Profit total over the selected time interval
-		totalProfitLabel.setFont(BIG_PROFIT_FONT);
+		totalProfitVal.setFont(BIG_PROFIT_FONT);
+		totalProfitVal.setHorizontalAlignment(SwingConstants.CENTER);
+		totalProfitVal.setToolTipText("");
 
-		//Contains the main profit information.
-		JPanel totalProfitContainer = new JPanel(new GridBagLayout());
-		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		totalProfitContainer.setBorder(new EmptyBorder(2, 5, 5, 5));
+		arrowIcon.setPreferredSize(ICON_SIZE);
 
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.fill = GridBagConstraints.REMAINDER;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-		constraints.gridwidth = 0;
-		constraints.insets = new Insets(0, 0, 8, 0);
+		//Make sure the profit label is centered
+		JLabel padLabel = new JLabel();
+		padLabel.setPreferredSize(ICON_SIZE);
 
-		totalProfitContainer.add(profitText, constraints);
-		constraints.gridy = 1;
-		totalProfitContainer.add(totalProfitLabel, constraints);
+		//Formats the profit text and value.
+		JPanel profitTextAndVal = new JPanel(new BorderLayout());
+		profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		profitTextAndVal.add(totalProfitVal, BorderLayout.CENTER);
+		profitTextAndVal.add(profitText, BorderLayout.NORTH);
 
+		//Contains the total profit information.
+		JPanel totalProfitContainer = new JPanel(new BorderLayout());
+		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		totalProfitContainer.setBorder(TOTAL_PROFIT_CONTAINER_BORDER);
+
+		//totalProfitContainer.add(, BorderLayout.NORTH);
+		totalProfitContainer.add(profitTextAndVal, BorderLayout.CENTER);
+		totalProfitContainer.add(arrowIcon, BorderLayout.EAST);
+		totalProfitContainer.add(padLabel, BorderLayout.WEST);
+
+		//Controls the collapsible sub info function
+		MouseAdapter collapseOnClick = new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					if (subInfoContainer.isVisible())
+					{
+						//Collapse sub info
+						arrowIcon.setIcon(CLOSE_ICON);
+						subInfoContainer.setVisible(false);
+					}
+					else
+					{
+						//Expand sub info
+						arrowIcon.setIcon(OPEN_ICON);
+						subInfoContainer.setVisible(true);
+					}
+				}
+			}
+		};
+
+		//Since the totalProfitVal's tooltip consumes the mouse event
+		totalProfitContainer.addMouseListener(collapseOnClick);
+		totalProfitVal.addMouseListener(collapseOnClick);
+
+		/* Subinfo represents the less-used general historical stats */
 		/* Subinfo labels */
-		JPanel subInfoContainer = new JPanel(new GridLayout(4, 2));
 		final JLabel roiText = new JLabel("ROI: ");
-		final JLabel tradesMadeText = new JLabel("Trades made: ");
-		final JLabel profitPerTradeText = new JLabel("Avg. Profit/trade: ");
+		final JLabel totalRevenueText = new JLabel("Total Revenue: ");
+		final JLabel totalExpenseText = new JLabel("Total Expense: ");
 
+		//Color the left text.
 		hourlyProfitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		roiText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		tradesMadeText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		profitPerTradeText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		totalRevenueText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		totalExpenseText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
+		//Set alignment of the right values.
+		hourlyProfitVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		roiVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		totalRevenueVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		totalExpenseVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-		hourlyProfitVal.setHorizontalAlignment(JLabel.RIGHT);
-		roiVal.setHorizontalAlignment(JLabel.RIGHT);
-		tradesMadeVal.setHorizontalAlignment(JLabel.RIGHT);
-		profitPerTradeVal.setHorizontalAlignment(JLabel.RIGHT);
+		//Represents the left descriptive text labels.
+		JPanel subInfoTextPanel = new JPanel();
+		//Represents the right value labels.
+		JPanel subInfoValPanel = new JPanel();
+
+		//Both label groups are sorted into paired panels with BoxLayouts.
+		subInfoTextPanel.setLayout(new BoxLayout(subInfoTextPanel, BoxLayout.Y_AXIS));
+		subInfoValPanel.setLayout(new BoxLayout(subInfoValPanel, BoxLayout.Y_AXIS));
+
+		subInfoTextPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		subInfoValPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+		//WHY CAN'T YOU ADD VGAPS TO BOXLAYOUTS *GAAAAAAAAAAAAAAAAARRHHH*...
+		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoTextPanel.add(hourlyProfitText);
+		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoTextPanel.add(roiText);
+		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoTextPanel.add(totalRevenueText);
+		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoTextPanel.add(totalExpenseText);
+
+		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoValPanel.add(hourlyProfitVal);
+		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoValPanel.add(roiVal);
+		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoValPanel.add(totalRevenueVal);
+		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		subInfoValPanel.add(totalExpenseVal);
 
 		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		subInfoContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-		subInfoContainer.add(hourlyProfitText);
-		subInfoContainer.add(hourlyProfitVal);
-		subInfoContainer.add(roiText);
-		subInfoContainer.add(roiVal);
-		subInfoContainer.add(tradesMadeText);
-		subInfoContainer.add(tradesMadeVal);
-		subInfoContainer.add(profitPerTradeText);
-		subInfoContainer.add(profitPerTradeVal);
+		subInfoContainer.add(subInfoTextPanel, BorderLayout.WEST);
+		subInfoContainer.add(subInfoValPanel, BorderLayout.EAST);
 
-		profitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
-		profitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
-		profitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
+		totalProfitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
+		totalProfitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
+		totalProfitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
 
+		contentWrapper.add(totalProfitWrapper, BorderLayout.NORTH);
+
+		/* The following represents the formatting behind the StatItems that appear at the bottom of the page.
+		 These are designed similarly to the FlippingItemPanels and contains information about individual flips. */
+		/* Sorting selector */
 		JPanel sortPanel = new JPanel(new BorderLayout());
 		sortPanel.add(new JLabel("Sort by: "), BorderLayout.WEST);
 
@@ -232,10 +335,10 @@ public class StatisticsPanel extends JPanel
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		sortPanel.setBorder(new EmptyBorder(10, 5, 10, 5));
 
+		//itemContainer holds the StatItems along with its sorting selector.
 		JPanel itemContainer = new JPanel(new BorderLayout());
 		itemContainer.add(sortPanel, BorderLayout.NORTH);
 
-		contentWrapper.add(profitWrapper, BorderLayout.NORTH);
 		contentWrapper.add(itemContainer, BorderLayout.CENTER);
 
 		add(contentWrapper, BorderLayout.CENTER);
@@ -266,29 +369,27 @@ public class StatisticsPanel extends JPanel
 
 			updateHourlyProfitDisplay();
 			updateRoiDisplay();
-			updateAvgProfitPerTradeDisplay();
+			updateRevenueAndExpenseDisplay();
 		});
 	}
 
 	/**
 	 * Responsible for updating the total profit label at the very top.
-	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin}.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesList()}.
 	 */
-	//TODO: As QuantityFormatter.quantityToRSDecimalStack() doesn't take longs as parameter,
-	// a new format method is needed that support longs.
 	private void updateTotalProfitDisplay()
 	{
 		if (plugin.getTradesList() == null)
 		{
-			totalProfitLabel.setText("0");
-			totalProfitLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			totalProfitLabel.setToolTipText("Total Profit: 0 gp");
+			totalProfitVal.setText("0");
+			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			totalProfitVal.setToolTipText("Total Profit: 0 gp");
 			return;
 		}
 
-		totalProfitLabel.setText(quantityToRSDecimalStack(totalProfit, true) + " gp");
-		totalProfitLabel.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
-		totalProfitLabel.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+		totalProfitVal.setText(quantityToRSDecimalStack(totalProfit, true) + " gp");
+		totalProfitVal.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
+		totalProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
 	}
 
 	/**
@@ -317,7 +418,7 @@ public class StatisticsPanel extends JPanel
 			hourlyProfitText.setVisible(true);
 			hourlyProfitVal.setVisible(true);
 		}
-		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
 	}
 
 	/**
@@ -328,17 +429,25 @@ public class StatisticsPanel extends JPanel
 		if (totalProfit == 0)
 		{
 			roiVal.setText("0.00%");
+			roiVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		}
 		else
 		{
 			roiVal.setText(String.format("%.2f", (float) totalProfit / totalExpenses * 100) + "%");
-			roiVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : ColorScheme.PROGRESS_ERROR_COLOR);
+			roiVal.setForeground(totalProfit > 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
 		}
 	}
 
-	private void updateAvgProfitPerTradeDisplay()
+	/**
+	 * Updates both the revenue and expense display along with setting their font colors.
+	 */
+	private void updateRevenueAndExpenseDisplay()
 	{
+		totalRevenueVal.setText(quantityToRSDecimalStack(totalRevenues, true) + " gp");
+		totalRevenueVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 
+		totalExpenseVal.setText(quantityToRSDecimalStack(totalExpenses, true) + " gp");
+		totalExpenseVal.setForeground(LOSS_COLOR);
 	}
 
 	/**
