@@ -153,6 +153,9 @@ public class HistoryManager
 		List<OfferInfo> buyList = new ArrayList<>();
 		List<OfferInfo> sellList = new ArrayList<>();
 
+		totalExpenses = 0;
+		totalRevenues = 0;
+
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
 
