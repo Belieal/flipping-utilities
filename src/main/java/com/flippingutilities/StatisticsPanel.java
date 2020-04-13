@@ -406,15 +406,11 @@ public class StatisticsPanel extends JPanel
 		}
 		else
 		{
-			if (totalProfit == 0)
-			{
-				hourlyProfitVal.setText("0 gp/hr");
-			}
-			else
-			{
-				String profitString = quantityToRSDecimalStack((totalProfit / ((Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) / (60 * 60))), true);
-				hourlyProfitVal.setText(profitString + " gp/hr");
-			}
+			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
+
+			String profitString = quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+			hourlyProfitVal.setText(profitString + " gp/hr");
+
 			hourlyProfitText.setVisible(true);
 			hourlyProfitVal.setVisible(true);
 		}
@@ -426,7 +422,7 @@ public class StatisticsPanel extends JPanel
 	 */
 	private void updateRoiDisplay()
 	{
-		if (totalProfit == 0)
+		if (totalExpenses == 0)
 		{
 			roiVal.setText("0.00%");
 			roiVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -533,6 +529,6 @@ public class StatisticsPanel extends JPanel
 			? PRECISE_DECIMAL_FORMATTER
 			: DECIMAL_FORMATTER;
 
-		return format.format(quantity / (Math.pow(10, (long) (power / 3) * 3))) + new String[] {"", "K", "M", "B"}[(int) (power / 3)];
+		return format.format(quantity / (Math.pow(10, (power / 3) * 3))) + new String[] {"", "K", "M", "B"}[(int) (power / 3)];
 	}
 }
