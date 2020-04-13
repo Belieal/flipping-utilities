@@ -26,7 +26,7 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.FlippingItemPanel;
+import com.flippingutilities.ui.flipping.FlippingItemPanel;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;

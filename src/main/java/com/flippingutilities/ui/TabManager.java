@@ -26,6 +26,8 @@
 
 package com.flippingutilities.ui;
 
+import com.flippingutilities.ui.flipping.FlippingPanel;
+import com.flippingutilities.ui.statistics.StatisticsPanel;
 import java.awt.BorderLayout;
 import javax.inject.Inject;
 import javax.swing.JPanel;

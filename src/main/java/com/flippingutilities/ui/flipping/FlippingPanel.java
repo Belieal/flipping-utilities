@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui;
+package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;

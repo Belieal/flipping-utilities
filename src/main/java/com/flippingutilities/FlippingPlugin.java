@@ -26,10 +26,10 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.FlippingItemWidget;
-import com.flippingutilities.ui.FlippingPanel;
-import com.flippingutilities.ui.StatisticsPanel;
 import com.flippingutilities.ui.TabManager;
+import com.flippingutilities.ui.flipping.FlippingItemWidget;
+import com.flippingutilities.ui.flipping.FlippingPanel;
+import com.flippingutilities.ui.statistics.StatisticsPanel;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
