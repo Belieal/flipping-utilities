@@ -413,4 +413,17 @@ public class FlippingPanel extends JPanel
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		rebuildFlippingPanel(result);
 	}
+
+	/**
+	 * Freezes or unfreezes all the activePanel's margin displays along with the underlying FlippingItem's margin
+	 *
+	 * @param freeze whether the panel/item should be frozen or not.
+	 */
+	private void freezeActivePanels(boolean freeze)
+	{
+		for (FlippingItemPanel panel : activePanels)
+		{
+			panel.freezeMargin(freeze);
+		}
+	}
 }
