@@ -31,6 +31,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
@@ -55,10 +56,16 @@ public class FlippingItem
 	private final int totalGELimit;
 
 	@Getter
-	private int latestBuyPrice;
+	private int marginCheckBuyPrice;
 
 	@Getter
-	private int latestSellPrice;
+	private int marginCheckSellPrice;
+
+	@Getter
+	private Instant marginCheckBuyTime;
+
+	@Getter
+	private Instant marginCheckSellTime;
 
 	@Getter
 	private Instant latestBuyTime;
@@ -86,10 +93,76 @@ public class FlippingItem
 		this.totalGELimit = totalGeLimit;
 	}
 
+	/**
+	 * This method updates the history of an item and the latest buy and sell times.
+	 * It is invoked every time a new offer is received as every new offer will change the history
+	 * and either the latest buy or sell times.
+	 * See {@link FlippingPlugin#onGrandExchangeOfferChanged(GrandExchangeOfferChanged)}
+	 *
+	 * @param newOffer new offer just received
+	 */
+	public void update(OfferInfo newOffer) {
+		updateHistory(newOffer);
+		updateLatestBuySellTimes(newOffer);
+	}
 
+	/**
+	 * This method updates the history of a FlippingItem. This history is used to calculate profits,
+	 * next ge limit refresh, and how many items were bought during this limit window.
+	 *
+	 * @param newOffer the new offer that just came in
+	 */
 	public void updateHistory(OfferInfo newOffer)
 	{
 		history.updateHistory(newOffer);
+	}
+
+	/**
+	 * Updates the latest buy/sell times of an item. This will be used to display an overlay on
+	 * GE slots to show whether an item is active or not.
+	 *
+	 * @param newOffer new offer just received
+	 */
+	public void updateLatestBuySellTimes(OfferInfo newOffer)
+	{
+		if (newOffer.isBuy())
+		{
+			latestBuyTime = newOffer.getTime();
+		}
+		else
+		{
+			latestSellTime = newOffer.getTime();
+		}
+	}
+
+	/**
+	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
+	 * margin check. It is invoked by {@link FlippingPlugin#updateFlippingItem} in the plugin class which itself is only
+	 * invoked when an offer is a margin check.
+	 *
+	 * @param newOffer the new offer just received.
+	 */
+	public void updateMargin(OfferInfo newOffer)
+	{
+		boolean tradeBuyState = newOffer.isBuy();
+		int tradePrice = newOffer.getPrice();
+		Instant tradeTime = newOffer.getTime();
+
+		if (!(isFrozen))
+		{
+			if (tradeBuyState)
+			{
+				marginCheckSellPrice = tradePrice;
+				marginCheckSellTime = tradeTime;
+				sellPriceNeedsUpdate = false;
+			}
+			else
+			{
+				marginCheckBuyPrice = tradePrice;
+				marginCheckBuyTime = tradeTime;
+				buyPriceNeedsUpdate = false;
+			}
+		}
 	}
 
 	public long currentProfit(Instant earliestTime)
@@ -122,36 +195,6 @@ public class FlippingItem
 		history.validateGeProperties();
 	}
 
-	/**
-	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by updateFlippingItem in the plugin class which itself is only
-	 * invoked when an offer is a margin check.
-	 *
-	 * @param newOffer the new offer just received.
-	 */
-	public void updateMargin(OfferInfo newOffer)
-	{
-		boolean tradeBuyState = newOffer.isBuy();
-		int tradePrice = newOffer.getPrice();
-		Instant tradeTime = newOffer.getTime();
-
-		if (!(isFrozen))
-		{
-			if (tradeBuyState)
-			{
-				latestSellPrice = tradePrice;
-				latestSellTime = tradeTime;
-				sellPriceNeedsUpdate = false;
-			}
-			else
-			{
-				latestBuyPrice = tradePrice;
-				latestBuyTime = tradeTime;
-				buyPriceNeedsUpdate = false;
-			}
-		}
-
-	}
 
 	/**
 	 * This Method is responsible for freezing an item's margin. When an item is to be frozen, buyPriceNeedsUpdate and
@@ -178,4 +221,5 @@ public class FlippingItem
 			sellPriceNeedsUpdate = true;
 		}
 	}
+
 }
