@@ -283,7 +283,7 @@ public class FlippingPlugin extends Plugin
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
 		else if (flippingItem.isPresent())
 		{
-			flippingItem.get().updateHistory(newOffer);
+			flippingItem.get().update(newOffer);
 		}
 
 		updateConfig();
@@ -399,7 +399,7 @@ public class FlippingPlugin extends Plugin
 
 		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit);
 		flippingItem.updateMargin(newOffer);
-		flippingItem.updateHistory(newOffer);
+		flippingItem.update(newOffer);
 
 		tradesList.add(0, flippingItem);
 	}
@@ -415,7 +415,7 @@ public class FlippingPlugin extends Plugin
 	private void updateFlippingItem(FlippingItem flippingItem, OfferInfo newOffer)
 	{
 		flippingItem.updateMargin(newOffer);
-		flippingItem.updateHistory(newOffer);
+		flippingItem.update(newOffer);
 
 		//When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
 		//freeze config option has been selected, freeze the item's margin.
@@ -596,25 +596,25 @@ public class FlippingPlugin extends Plugin
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestBuyPrice() == 0)
+					if (selectedItem == null || selectedItem.getMarginCheckBuyPrice() == 0)
 					{
 						flippingWidget.showWidget("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setBuyPrice", selectedItem.getLatestBuyPrice());
+						flippingWidget.showWidget("setBuyPrice", selectedItem.getMarginCheckBuyPrice());
 					}
 				}
 				else if (offerText.equals("Sell offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestSellPrice() == 0)
+					if (selectedItem == null || selectedItem.getMarginCheckSellPrice() == 0)
 					{
 						flippingWidget.showWidget("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setSellPrice", selectedItem.getLatestSellPrice());
+						flippingWidget.showWidget("setSellPrice", selectedItem.getMarginCheckSellPrice());
 					}
 				}
 			}

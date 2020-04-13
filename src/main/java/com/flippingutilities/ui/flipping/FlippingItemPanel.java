@@ -119,8 +119,8 @@ public class FlippingItemPanel extends JPanel
 	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager, final FlippingItem flippingItem)
 	{
 		this.flippingItem = flippingItem;
-		this.buyPrice = this.flippingItem.getLatestBuyPrice();
-		this.sellPrice = this.flippingItem.getLatestSellPrice();
+		this.buyPrice = this.flippingItem.getMarginCheckBuyPrice();
+		this.sellPrice = this.flippingItem.getMarginCheckSellPrice();
 		this.plugin = plugin;
 
 		final int itemID = flippingItem.getItemId();
@@ -324,8 +324,8 @@ public class FlippingItemPanel extends JPanel
 	public void buildPanelValues()
 	{
 		//Update latest price
-		this.buyPrice = flippingItem.getLatestBuyPrice();
-		this.sellPrice = flippingItem.getLatestSellPrice();
+		this.buyPrice = flippingItem.getMarginCheckBuyPrice();
+		this.sellPrice = flippingItem.getMarginCheckSellPrice();
 
 		int roiGradientMax = plugin.getConfig().roiGradientMax();
 
@@ -422,8 +422,8 @@ public class FlippingItemPanel extends JPanel
 	public void updatePriceOutdatedDisplay()
 	{
 		//Update time of latest price update.
-		Instant latestBuyTime = flippingItem.getLatestBuyTime();
-		Instant latestSellTime = flippingItem.getLatestSellTime();
+		Instant latestBuyTime = flippingItem.getMarginCheckBuyTime();
+		Instant latestSellTime = flippingItem.getMarginCheckSellTime();
 
 		//Update price texts with the string formatter
 		final String latestBuyString = formatPriceTimeText(latestBuyTime) + " old";
