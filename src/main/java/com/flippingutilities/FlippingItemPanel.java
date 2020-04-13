@@ -196,7 +196,6 @@ public class FlippingItemPanel extends JPanel
 		topPanel.setBorder(new EmptyBorder(2, 1, 2, 1));
 		topPanel.addMouseListener(new MouseAdapter()
 		{
-
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
@@ -536,8 +535,18 @@ public class FlippingItemPanel extends JPanel
 		{
 			flippingItem.validateGeProperties();
 
-			limitLabel
-				.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
+			//New items can show as having a total GE limit of 0.
+			if (flippingItem.getTotalGELimit() != 0)
+			{
+				limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
+			}
+			else
+			{
+				limitLabel.setText("GE limit: ???");
+				limitLabel.setToolTipText("This item does not have a total GE limit.");
+				return;
+			}
+
 			if (flippingItem.getGeLimitResetTime() == null)
 			{
 				limitLabel.setToolTipText("None has been bought in the past 4 hours.");
