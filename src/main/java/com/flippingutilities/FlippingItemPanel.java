@@ -106,6 +106,7 @@ public class FlippingItemPanel extends JPanel
 	JLabel ROILabel = new JLabel();
 	JLabel arrowIcon = new JLabel(OPEN_ICON);
 	JButton clearButton = new JButton(DELETE_ICON);
+	JLabel itemName;
 
 	/* Panels */
 	JPanel topPanel = new JPanel(new BorderLayout());
@@ -160,7 +161,7 @@ public class FlippingItemPanel extends JPanel
 		itemClearPanel.add(clearButton, BorderLayout.EAST);
 
 		/* Item name panel */
-		JLabel itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
+		itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
 		itemName.setForeground(flippingItem.isFrozen() ? FROZEN_COLOR : Color.WHITE);
 		itemName.setFont(FontManager.getRunescapeBoldFont());
@@ -177,12 +178,12 @@ public class FlippingItemPanel extends JPanel
 				{
 					if (flippingItem.isFrozen())
 					{
-						flippingItem.freezeItem(false);
+						flippingItem.freezeMargin(false);
 						itemName.setForeground(Color.WHITE);
 					}
 					else
 					{
-						flippingItem.freezeItem(true);
+						flippingItem.freezeMargin(true);
 						itemName.setForeground(FROZEN_COLOR);
 					}
 				}
@@ -557,5 +558,18 @@ public class FlippingItemPanel extends JPanel
 					+ ".<html>");
 			}
 		});
+	}
+
+	/**
+	 * Freezes or unfreezes the margin display along with the margin of the underlying FlippingItem
+	 *
+	 * @param freeze whether the margin display and underlyingFlippingItem should be frozen
+	 *               or not.
+	 */
+	public void freezeMargin(boolean freeze)
+	{
+		flippingItem.freezeMargin(freeze);
+		itemName.setForeground(flippingItem.isFrozen() ? FROZEN_COLOR : Color.WHITE);
+
 	}
 }
