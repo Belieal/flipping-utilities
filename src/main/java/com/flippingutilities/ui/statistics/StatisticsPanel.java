@@ -297,6 +297,16 @@ public class StatisticsPanel extends JPanel
 		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 		subInfoValPanel.add(totalExpenseVal);
 
+		hourlyProfitText.setFont(FontManager.getRunescapeSmallFont());
+		roiText.setFont(FontManager.getRunescapeSmallFont());
+		totalRevenueText.setFont(FontManager.getRunescapeSmallFont());
+		totalExpenseText.setFont(FontManager.getRunescapeSmallFont());
+
+		hourlyProfitVal.setFont(FontManager.getRunescapeSmallFont());
+		roiVal.setFont(FontManager.getRunescapeSmallFont());
+		totalRevenueVal.setFont(FontManager.getRunescapeSmallFont());
+		totalExpenseVal.setFont(FontManager.getRunescapeSmallFont());
+
 		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		subInfoContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
 
