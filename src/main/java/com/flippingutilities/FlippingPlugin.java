@@ -29,7 +29,7 @@ package com.flippingutilities;
 import com.flippingutilities.ui.TabManager;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
-import com.flippingutilities.ui.statistics.StatisticsPanel;
+import com.flippingutilities.ui.statistics.StatsPanel;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
@@ -118,7 +118,7 @@ public class FlippingPlugin extends Plugin
 	private ItemManager itemManager;
 
 	private FlippingPanel flippingPanel;
-	private StatisticsPanel statPanel;
+	private StatsPanel statPanel;
 	private FlippingItemWidget flippingWidget;
 
 	private TabManager tabManager;
@@ -140,14 +140,14 @@ public class FlippingPlugin extends Plugin
 	{
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
-		statPanel = new StatisticsPanel(this, itemManager, executor);
+		statPanel = new StatsPanel(this, itemManager, executor);
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
 		tabManager = new TabManager(flippingPanel, statPanel);
 
-		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
+		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
-			.tooltip("Flipping Plugin")
+			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
 			.priority(3)
 			.panel(tabManager)
@@ -539,6 +539,8 @@ public class FlippingPlugin extends Plugin
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
+				case ("subInfoFont"):
+					statPanel.updateDisplays();
 					flippingPanel.rebuildFlippingPanel(tradesList);
 					break;
 				default:

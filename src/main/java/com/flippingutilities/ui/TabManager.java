@@ -27,7 +27,7 @@
 package com.flippingutilities.ui;
 
 import com.flippingutilities.ui.flipping.FlippingPanel;
-import com.flippingutilities.ui.statistics.StatisticsPanel;
+import com.flippingutilities.ui.statistics.StatsPanel;
 import java.awt.BorderLayout;
 import javax.inject.Inject;
 import javax.swing.JPanel;
@@ -49,7 +49,7 @@ public class TabManager extends PluginPanel
 	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
 	@Inject
-	public TabManager(FlippingPanel flippingPanel, StatisticsPanel statPanel)
+	public TabManager(FlippingPanel flippingPanel, StatsPanel statPanel)
 	{
 		super(false);
 

@@ -131,6 +131,7 @@ public class FlippingItemPanel extends JPanel
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		Color background = getBackground();
+
 		/* Item icon */
 		AsyncBufferedImage itemImage = itemManager.getImage(itemID);
 		JLabel itemIcon = new JLabel();

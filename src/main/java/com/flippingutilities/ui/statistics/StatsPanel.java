@@ -64,7 +64,7 @@ import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
-public class StatisticsPanel extends JPanel
+public class StatsPanel extends JPanel
 {
 	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past Day", "Past Week", "Past Month", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
@@ -125,8 +125,11 @@ public class StatisticsPanel extends JPanel
 
 	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly profit: ");
+	private final JLabel roiText = new JLabel("ROI: ");
+	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
+	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
 
-	/* Value labels */
+	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel();
 	private final JLabel roiVal = new JLabel();
 	private final JLabel totalRevenueVal = new JLabel();
@@ -152,7 +155,7 @@ public class StatisticsPanel extends JPanel
 	 * @param itemManager Accesses the RuneLite item cache.
 	 * @param executor    For repeated method calls, required by periodic update methods.
 	 */
-	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, final ScheduledExecutorService executor)
+	public StatsPanel(final FlippingPlugin plugin, final ItemManager itemManager, final ScheduledExecutorService executor)
 	{
 		super(false);
 
@@ -249,11 +252,6 @@ public class StatisticsPanel extends JPanel
 		totalProfitVal.addMouseListener(collapseOnClick);
 
 		/* Subinfo represents the less-used general historical stats */
-		/* Subinfo labels */
-		final JLabel roiText = new JLabel("ROI: ");
-		final JLabel totalRevenueText = new JLabel("Total Revenue: ");
-		final JLabel totalExpenseText = new JLabel("Total Expense: ");
-
 		//Color the left text.
 		hourlyProfitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		roiText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
@@ -272,6 +270,8 @@ public class StatisticsPanel extends JPanel
 		JPanel subInfoValPanel = new JPanel();
 
 		//Both label groups are sorted into paired panels with BoxLayouts.
+		//BoxLayouts are favorable since they allow for packing the labels
+		//based on visibility.
 		subInfoTextPanel.setLayout(new BoxLayout(subInfoTextPanel, BoxLayout.Y_AXIS));
 		subInfoValPanel.setLayout(new BoxLayout(subInfoValPanel, BoxLayout.Y_AXIS));
 
@@ -296,16 +296,6 @@ public class StatisticsPanel extends JPanel
 		subInfoValPanel.add(totalRevenueVal);
 		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 		subInfoValPanel.add(totalExpenseVal);
-
-		hourlyProfitText.setFont(FontManager.getRunescapeSmallFont());
-		roiText.setFont(FontManager.getRunescapeSmallFont());
-		totalRevenueText.setFont(FontManager.getRunescapeSmallFont());
-		totalExpenseText.setFont(FontManager.getRunescapeSmallFont());
-
-		hourlyProfitVal.setFont(FontManager.getRunescapeSmallFont());
-		roiVal.setFont(FontManager.getRunescapeSmallFont());
-		totalRevenueVal.setFont(FontManager.getRunescapeSmallFont());
-		totalExpenseVal.setFont(FontManager.getRunescapeSmallFont());
 
 		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		subInfoContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -379,6 +369,7 @@ public class StatisticsPanel extends JPanel
 
 			updateTotalProfitDisplay();
 
+			updateSubInfoFont();
 			updateHourlyProfitDisplay();
 			updateRoiDisplay();
 			updateRevenueAndExpenseDisplay();
@@ -459,6 +450,52 @@ public class StatisticsPanel extends JPanel
 	}
 
 	/**
+	 * Chooses the font that is used for the sub information based on user config.
+	 */
+	private void updateSubInfoFont()
+	{
+		//Set the font of the sub infos
+		switch (plugin.getConfig().subInfoFontStyle())
+		{
+			case SMALL_FONT:
+				hourlyProfitText.setFont(FontManager.getRunescapeSmallFont());
+				roiText.setFont(FontManager.getRunescapeSmallFont());
+				totalRevenueText.setFont(FontManager.getRunescapeSmallFont());
+				totalExpenseText.setFont(FontManager.getRunescapeSmallFont());
+
+				hourlyProfitVal.setFont(FontManager.getRunescapeSmallFont());
+				roiVal.setFont(FontManager.getRunescapeSmallFont());
+				totalRevenueVal.setFont(FontManager.getRunescapeSmallFont());
+				totalExpenseVal.setFont(FontManager.getRunescapeSmallFont());
+				break;
+
+			case REGULAR_FONT:
+				hourlyProfitText.setFont(FontManager.getRunescapeFont());
+				roiText.setFont(FontManager.getRunescapeFont());
+				totalRevenueText.setFont(FontManager.getRunescapeFont());
+				totalExpenseText.setFont(FontManager.getRunescapeFont());
+
+				hourlyProfitVal.setFont(FontManager.getRunescapeFont());
+				roiVal.setFont(FontManager.getRunescapeFont());
+				totalRevenueVal.setFont(FontManager.getRunescapeFont());
+				totalExpenseVal.setFont(FontManager.getRunescapeFont());
+				break;
+
+			case BOLD_FONT:
+				hourlyProfitText.setFont(FontManager.getRunescapeBoldFont());
+				roiText.setFont(FontManager.getRunescapeBoldFont());
+				totalRevenueText.setFont(FontManager.getRunescapeBoldFont());
+				totalExpenseText.setFont(FontManager.getRunescapeBoldFont());
+
+				hourlyProfitVal.setFont(FontManager.getRunescapeBoldFont());
+				roiVal.setFont(FontManager.getRunescapeBoldFont());
+				totalRevenueVal.setFont(FontManager.getRunescapeBoldFont());
+				totalExpenseVal.setFont(FontManager.getRunescapeBoldFont());
+				break;
+		}
+	}
+
+	/**
 	 * Gets called every time the time interval combobox has its selection changed.
 	 * Sets the start interval of the profit calculation.
 	 *
@@ -523,7 +560,7 @@ public class StatisticsPanel extends JPanel
 	 *
 	 * @param quantity Long to format
 	 * @param precise  If true, allow thousandths precision if {@code quantity} is larger than 1 million.
-	 *                 *            Otherwise have at most a single decimal
+	 *                 Otherwise have at most a single decimal
 	 * @return Formatted number string.
 	 */
 	public static synchronized String quantityToRSDecimalStack(long quantity, boolean precise)
@@ -543,4 +580,5 @@ public class StatisticsPanel extends JPanel
 
 		return format.format(quantity / (Math.pow(10, (power / 3) * 3))) + new String[] {"", "K", "M", "B"}[(int) (power / 3)];
 	}
+
 }
