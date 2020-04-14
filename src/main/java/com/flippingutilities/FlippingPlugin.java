@@ -37,6 +37,7 @@ import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,10 +49,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
@@ -83,17 +86,12 @@ import net.runelite.http.api.item.ItemStats;
 
 public class FlippingPlugin extends Plugin
 {
-	//Limit the amount of trades every item holds.
-	private static final int TRADE_HISTORY_MAX_SIZE = 20;
-	//Limit the amount of items stored.
-	private static final int TRADES_LIST_MAX_SIZE = 200;
-
 	private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
 	private static final int GE_BACK_BUTTON_WIDGET_ID = 30474244;
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
-	public static final String CONFIG_KEY = "items";
+	public static final String CONFIG_KEY = "global";
 
 	@Inject
 	private Client client;
@@ -131,6 +129,8 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private int prevHighlight;
 
+	private String username;
+
 
 	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
 	private Map<Integer, GrandExchangeOffer> lastOffers = new HashMap<>();
@@ -145,7 +145,7 @@ public class FlippingPlugin extends Plugin
 		//Represents the panel navigation that switches between panels using tabs at the top.
 		tabManager = new TabManager(flippingPanel, statPanel);
 
-		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
+		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Plugin")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
@@ -166,23 +166,10 @@ public class FlippingPlugin extends Plugin
 			//Loads tradesList with data from previous sessions.
 			if (config.storeTradeHistory())
 			{
-				loadConfig();
+				loadTradeHistory();
+				onHistoryLoad();
 			}
 
-			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
-			{
-				statPanel.updateDisplays();
-				if (tradesList != null)
-				{
-					for (FlippingItem flippingItem : tradesList)
-					{
-						//it may have been four hours since the first time the user bought the item, so
-						//it might be displaying old values, so this is a way to clear them on start up.
-						flippingItem.validateGeProperties();
-					}
-					flippingPanel.rebuildFlippingPanel(tradesList);
-				}
-			})));
 			return true;
 		});
 
@@ -217,7 +204,7 @@ public class FlippingPlugin extends Plugin
 		{
 			clientThread.invokeLater(() ->
 			{
-				loadConfig();
+				loadTradeHistory();
 				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 				return true;
 			});
@@ -230,7 +217,7 @@ public class FlippingPlugin extends Plugin
 		//Config is now locally stored
 		clientThread.invokeLater(() ->
 		{
-			loadConfig();
+			loadTradeHistory();
 			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 			return true;
 		});
@@ -256,6 +243,7 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
+
 		if (isBadEvent(newOfferEvent))
 		{
 			return;
@@ -286,7 +274,7 @@ public class FlippingPlugin extends Plugin
 			flippingItem.get().update(newOffer);
 		}
 
-		updateConfig();
+		storeTradeHistory();
 		statPanel.updateDisplays();
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
@@ -485,8 +473,73 @@ public class FlippingPlugin extends Plugin
 		flippingPanel.rebuildFlippingPanel(tradesList);
 	}
 
-	//Stores all the session trade data in config.
-	public void updateConfig()
+	/**
+	 * Currently, we use this method for finding out when a user logs in so that we can
+	 * get their username to load their specific trade history to display, as opposed to the global
+	 * trade history across all their accounts.
+	 *
+	 * @param event GameStateChanged event, such as when a user logs in.
+	 */
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			username = client.getUsername();
+			System.out.println(client.getUsername());
+			if (config.storeTradeHistory())
+			{
+				loadTradeHistory();
+				onHistoryLoad();
+			}
+		}
+	}
+
+	/**
+	 * This method is used check whether the items in the flipping list have old values that need
+	 * to be reset. For example, the ge refresh time might be from > 4 hours ago, so that
+	 * would need to be reset, same thing with the ge limit.
+	 *
+	 * @param tradesList all the current trades.
+	 */
+	private void validateAllItems(List<FlippingItem> tradesList)
+	{
+		for (FlippingItem item : tradesList)
+		{
+			item.validateGeProperties();
+		}
+	}
+
+
+	/**
+	 * This method is called when history has just been loaded. This history, which is a list of
+	 * FlippingItem can have old data that needs to be refreshed so validateAllItems is called. Furthermore,
+	 * the statPanel and the FlippingPanel need to have their displays updated. This method is invoked in
+	 * {@link FlippingPlugin#startUp()} and {@link FlippingPlugin#onGameStateChanged(GameStateChanged)}, when a user
+	 * logs in.
+	 */
+	private void onHistoryLoad()
+	{
+		if (!tradesList.isEmpty())
+		{
+			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
+			{
+				validateAllItems(tradesList);
+				flippingPanel.rebuildFlippingPanel(tradesList);
+				statPanel.updateDisplays();
+			})));
+
+		}
+
+	}
+
+	/**
+	 * Converts the tradesList into JSON and stores it using the configManager. It stores the tradesList
+	 * in the ConfigManager associated either with CONFIG_GROUP + CONFIG_KEY or CONFIG_GROUP + username.
+	 * This is so that there is history associated on an account level and combined history based on all account's a user
+	 * logs into.
+	 */
+	public void storeTradeHistory()
 	{
 		if (tradesList.isEmpty())
 		{
@@ -497,14 +550,38 @@ public class FlippingPlugin extends Plugin
 		{
 			final String json = gson.toJson(tradesList);
 			configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, json);
+			//username shouldn't be null as storeTradeHistory is only called when we get offers and even
+			//login offers only come in after the username is set, but just in case...
+			if (username != null)
+			{
+				configManager.setConfiguration(CONFIG_GROUP, username, json);
+			}
+
 		});
 	}
 
-	//Loads previous session data to tradeList.
-	public void loadConfig()
+	/**
+	 * Gets all the trade history as JSON, creates an array of FlippingItems out of it and sets the
+	 * tradesList. The trade history it fetches depends on whether the username is set or not. If the
+	 * username isn't set such as when the user first starts up the client, this method will try to fetch
+	 * the global trade history which is trade history irrespective of username.
+	 * <p>
+	 * If a username is set, such as when the user logs in, this method will try to fetch the trade history
+	 * associated with that username.
+	 */
+	public void loadTradeHistory()
 	{
 		log.info("Loading flipping config");
-		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
+		final String json;
+
+		if (username == null)
+		{
+			json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
+		}
+		else
+		{
+			json = configManager.getConfiguration(CONFIG_GROUP, username);
+		}
 
 		if (json == null)
 		{
