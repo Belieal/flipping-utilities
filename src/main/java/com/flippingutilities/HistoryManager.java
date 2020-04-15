@@ -37,11 +37,15 @@ public class HistoryManager
 	private int itemsBoughtThisLimitWindow;
 
 	//Keeps track of the total expenses and revenues accrued.
-	//Only gets updated by currentProfits.
+	//Will only get updated by currentProfit().
 	@Getter
 	private long totalExpenses;
 	@Getter
 	private long totalRevenues;
+
+	//Keeps track of the amount of items flipped.
+	@Getter
+	private int itemCountFlipped;
 
 
 	/**
@@ -163,7 +167,7 @@ public class HistoryManager
 		for (OfferInfo standardizedOffer : standardizedOffers)
 		{
 			//later than the time the user selected (if they selected 4 hours, its all trades after 4 hours ago.
-			if (standardizedOffer.getTime().compareTo(earliestTime) > 0)
+			if (standardizedOffer.getTime().isAfter(earliestTime))
 			{
 
 				if (standardizedOffer.isBuy())
@@ -187,10 +191,10 @@ public class HistoryManager
 			return 0;
 		}
 
-		int itemCountLimit = Math.min(numBoughtItems, numSoldItems);
+		itemCountFlipped = Math.min(numBoughtItems, numSoldItems);
 
-		totalExpenses = getValueOfTrades(buyList, itemCountLimit);
-		totalRevenues = getValueOfTrades(sellList, itemCountLimit);
+		totalExpenses = getValueOfTrades(buyList, itemCountFlipped);
+		totalRevenues = getValueOfTrades(sellList, itemCountFlipped);
 
 		//return the value of the sell list - the value of the buy list. This is the profit.
 		return totalRevenues - totalExpenses;
@@ -227,6 +231,27 @@ public class HistoryManager
 		}
 
 		return moneySpent;
+	}
+
+	/**
+	 * Returns the history of the item that were traded between earliestTime and now.
+	 *
+	 * @param earliestTime the earliest time that trades from the trade history are added to the resulting list.
+	 * @return A list of offers that were within the interval of earliestTime and now.
+	 */
+	public ArrayList<OfferInfo> getIntervalsHistory(Instant earliestTime)
+	{
+		ArrayList<OfferInfo> result = new ArrayList<>();
+
+		for (OfferInfo offer : standardizedOffers)
+		{
+			if (offer.getTime().isAfter(earliestTime))
+			{
+				result.add(offer);
+			}
+		}
+
+		return result;
 	}
 
 	/**

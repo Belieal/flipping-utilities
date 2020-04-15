@@ -28,6 +28,7 @@ package com.flippingutilities;
 
 import com.flippingutilities.ui.flipping.FlippingItemPanel;
 import java.time.Instant;
+import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -101,7 +102,8 @@ public class FlippingItem
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void update(OfferInfo newOffer) {
+	public void update(OfferInfo newOffer)
+	{
 		updateHistory(newOffer);
 		updateLatestBuySellTimes(newOffer);
 	}
@@ -178,6 +180,16 @@ public class FlippingItem
 	public long getTotalRevenues()
 	{
 		return history.getTotalRevenues();
+	}
+
+	public int getItemCountFlipped()
+	{
+		return history.getItemCountFlipped();
+	}
+
+	public ArrayList<OfferInfo> getIntervalHistory(Instant earliestTime)
+	{
+		return history.getIntervalsHistory(earliestTime);
 	}
 
 	public int remainingGeLimit()
