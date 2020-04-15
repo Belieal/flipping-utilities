@@ -150,7 +150,7 @@ public class StatisticsPanel extends JPanel
 	 *
 	 * @param plugin      Used to access the config and list of trades.
 	 * @param itemManager Accesses the RuneLite item cache.
-	 * @param executor    For repeated method calls, required by periodic update methods.
+	 * @param executor    For repeated method calls, required by periodic updateHistoryAndTradedTime methods.
 	 */
 	public StatisticsPanel(final FlippingPlugin plugin, final ItemManager itemManager, final ScheduledExecutorService executor)
 	{
@@ -348,10 +348,10 @@ public class StatisticsPanel extends JPanel
 	}
 
 	/**
-	 * Updates all profit labels on the stat panel using their respective update methods.
+	 * Updates all profit labels on the stat panel using their respective updateHistoryAndTradedTime methods.
 	 * Gets called on startup, after the tradesList has been initialized and after every new registered trade.
 	 */
-	//New trade registered, update the profit labels and add/update profit item.
+	//New trade registered, updateHistoryAndTradedTime the profit labels and add/updateHistoryAndTradedTime profit item.
 	public void updateDisplays()
 	{
 		SwingUtilities.invokeLater(() ->
@@ -360,7 +360,7 @@ public class StatisticsPanel extends JPanel
 			totalExpenses = 0;
 			totalRevenues = 0;
 
-			for (FlippingItem item : plugin.getTradesList())
+			for (FlippingItem item : plugin.getTrades())
 			{
 				totalProfit += item.currentProfit(startOfInterval);
 				totalExpenses += item.getTotalExpenses();
@@ -377,11 +377,11 @@ public class StatisticsPanel extends JPanel
 
 	/**
 	 * Responsible for updating the total profit label at the very top.
-	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesList()}.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTrades()}.
 	 */
 	private void updateTotalProfitDisplay()
 	{
-		if (plugin.getTradesList() == null)
+		if (plugin.getTrades() == null)
 		{
 			totalProfitVal.setText("0");
 			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);

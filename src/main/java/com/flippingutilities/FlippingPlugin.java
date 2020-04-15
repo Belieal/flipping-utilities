@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
@@ -91,7 +92,7 @@ public class FlippingPlugin extends Plugin
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
-	public static final String CONFIG_KEY = "global";
+	public static final String ACCOUNT_WIDE = "accountwide";
 
 	@Inject
 	private Client client;
@@ -122,8 +123,9 @@ public class FlippingPlugin extends Plugin
 	private TabManager tabManager;
 
 	//Stores all bought or sold trades.
-	@Getter
-	private ArrayList<FlippingItem> tradesList = new ArrayList<>();
+	private ArrayList<FlippingItem> accountSpecificTrades = new ArrayList<>();
+
+	private ArrayList<FlippingItem> accountWideTrades = new ArrayList<>();
 
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
@@ -163,11 +165,12 @@ public class FlippingPlugin extends Plugin
 				case UNKNOWN:
 					return false;
 			}
-			//Loads tradesList with data from previous sessions.
+			//Loads accountWideData when the client (and thus this plugin) is first started
+			//with data from previous sessions stored using the ConfigManager
 			if (config.storeTradeHistory())
 			{
-				loadTradeHistory();
-				onHistoryLoad();
+				accountWideTrades = loadTradeHistory(ACCOUNT_WIDE);
+				updateDisplays(accountWideTrades);
 			}
 
 			return true;
@@ -204,8 +207,9 @@ public class FlippingPlugin extends Plugin
 		{
 			clientThread.invokeLater(() ->
 			{
-				loadTradeHistory();
-				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
+				//don't know if the user is logged in or not, so get key depending on whether username is set.
+				loadTradeHistory(getAccountWideOrSpecificKey());
+				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(getTrades()));
 				return true;
 			});
 		}
@@ -217,25 +221,48 @@ public class FlippingPlugin extends Plugin
 		//Config is now locally stored
 		clientThread.invokeLater(() ->
 		{
-			loadTradeHistory();
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
+			loadTradeHistory(getAccountWideOrSpecificKey());
+			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(getTrades()));
 			return true;
 		});
 	}
 
 	/**
+	 * Returns the correct config key to fetch history based on whether the a user is logged in or not.
+	 *
+	 * @return either the username or ACCOUNT_WIDE
+	 */
+	private String getAccountWideOrSpecificKey()
+	{
+		return username == null ? ACCOUNT_WIDE : username;
+
+	}
+
+	/**
+	 * Gets an already loaded tradesList depending on whether the user is logged in or not.
+	 * If the user is logged in, and thus username will be set, then the accountSpecificTrades
+	 * is returned. Otherwise if the username hasn't been set, such as when a user just opens
+	 * the client, the accountWideTrades are returned.
+	 *
+	 * @return trades
+	 */
+	public ArrayList<FlippingItem> getTrades()
+	{
+		return username == null ? accountWideTrades : accountSpecificTrades;
+	}
+
+	/**
 	 * This method is invoked every time the plugin receives a GrandExchangeOfferChanged event.
-	 * The events are handled in one of two ways:
-	 * <p>
-	 * if the offer is deemed a margin check, its either added
-	 * to the tradesList (if it doesn't exist), or, if the item exists, it is updated to reflect the margins as
-	 * discovered by the margin check.
-	 * <p>
-	 * The second way events are handled is in all other cases except for margin checks. If an offer is
-	 * not a margin check and the offer exists, you don't need to update the margins of the item, but you do need
-	 * to update its history (which updates its ge limit/reset time and the profit a user made for that item.
-	 * <p>
-	 * The history of a flipping item is updated in every branch of this method.
+	 * If the event is determined to be bad event (duplicate, doesn't convey unique info), it is
+	 * screened out by isBadEvent.
+	 * Otherwise, the information is extracted from the event and used to construct an OfferInfo
+	 * object.
+	 * Then, the method tries to find whether the item exists and passes the result of that along with
+	 * which tradesList should be updated, and the OfferInfo object, to updateTradesList.
+	 * After updateTradesList updates the trade lists it was passed, the contents of both the tradeslists
+	 * are persisted as they have changed. (TODO perhaps only persist on shutdown?).
+	 * Finally, because the underlying data that the flipping panel and the stats panel rely on has
+	 * been updated, they need to be refreshed.
 	 *
 	 * @param newOfferEvent the offer event that represents when an offer is updated
 	 *                      (buying, selling, bought, sold, cancelled sell, or cancelled buy)
@@ -248,36 +275,26 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
-
+		log.info("why is it getting through");
 		final OfferInfo newOffer = tradeConstructor(newOfferEvent);
-		Optional<FlippingItem> flippingItem = findItemInTradesList(newOffer.getItemId());
 
-		if (newOffer.isMarginCheck())
-		{
-			if (flippingItem.isPresent())
-			{
-				updateFlippingItem(flippingItem.get(), newOffer);
-				tradesList.remove(flippingItem.get());
-				tradesList.add(0, flippingItem.get());
-			}
-			else
-			{
-				addToTradesList(newOffer);
-			}
+		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
+			accountSpecificTrades,
+			(item) -> item.getItemId() == newOffer.getItemId());
 
-			flippingPanel.rebuildFlippingPanel(tradesList);
-		}
+		Optional<FlippingItem> accountWideItem = findItemInTradesList(
+			accountWideTrades,
+			(item) -> item.getItemId() == newOffer.getItemId() && item.flippedBy == username);
 
-		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
-		else if (flippingItem.isPresent())
-		{
-			flippingItem.get().update(newOffer);
-		}
+		updateTradesList(accountWideTrades, accountWideItem, newOffer);
+		updateTradesList(accountSpecificTrades, accountSpecificItem, newOffer);
 
 		storeTradeHistory();
+		flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
 		statPanel.updateDisplays();
-		flippingPanel.updateActivePanelsGePropertiesDisplay();
+
 	}
+
 
 	/**
 	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled sell
@@ -323,7 +340,7 @@ public class FlippingPlugin extends Plugin
 
 			else
 			{
-				//update hashmap to include latest offer
+				//updateHistoryAndTradedTime hashmap to include latest offer
 				lastOffers.put(newOfferSlot, newOffer);
 				return false; //not a bad event
 			}
@@ -360,24 +377,89 @@ public class FlippingPlugin extends Plugin
 			offer.getState());
 
 		return offerInfo;
-
-
 	}
 
-	private Optional<FlippingItem> findItemInTradesList(int itemIdToFind)
+	/**
+	 * Finds an item in the given trades list that matches the given criteria.
+	 *
+	 * @param trades   the trades list to search through
+	 * @param criteria a function that needs to return true for the item to be returned
+	 * @return the item that matches the criteria
+	 */
+	private Optional<FlippingItem> findItemInTradesList(ArrayList<FlippingItem> trades, Predicate<FlippingItem> criteria)
 	{
-		return tradesList.stream().filter((item) -> item.getItemId() == itemIdToFind).findFirst();
+		return trades.stream().filter(criteria).findFirst();
+	}
+
+	/**
+	 * This method updates the given trade list in response to an OfferInfo based on whether an item
+	 * that matches what the offer was for already exists and whether the offer was a margin check.
+	 * <p>
+	 * If the offer was a margin check, and the item is present, that item's history and margin need
+	 * to be updated. If the item isn't presented, a FlippingItem for the item in that offer and added to the trades
+	 * list.
+	 * <p>
+	 * If the offer was not a margin check and the item was present, just update the history and last traded
+	 * times of the object. (no need to update margins as the offer was not a margin check)
+	 * <p>
+	 * if the offer was not a margin check and the item wasn't present, we don't do anything as there
+	 * is no way to know what to display for the margin checked prices (as it wasn't a margin check) when
+	 * updating the FlippingItem that would have had to be constructed.
+	 *
+	 * @param trades       the trades list to update
+	 * @param flippingItem the flipping item to be updated in the tradeslist, if it even exists
+	 * @param newOffer     new offer that just came in
+	 */
+	private void updateTradesList(ArrayList<FlippingItem> trades, Optional<FlippingItem> flippingItem, OfferInfo newOffer)
+	{
+		if (newOffer.isMarginCheck())
+		{
+			if (flippingItem.isPresent())
+			{
+				FlippingItem item = flippingItem.get();
+				item.updateMargin(newOffer);
+				item.updateHistoryAndTradedTime(newOffer);
+				if (!item.isFrozen() && shouldFreezeItem(item))
+				{
+					item.setFrozen(true);
+				}
+
+				trades.remove(item);
+				trades.add(0, item);
+			}
+			else
+			{
+				addToTradesList(trades, newOffer);
+			}
+		}
+
+		//if the item exists in the trades list but its not a margin check, you only need to update its history and
+		//last traded times.
+		else if (flippingItem.isPresent())
+		{
+			flippingItem.get().updateHistoryAndTradedTime(newOffer);
+		}
+	}
+
+	/**
+	 * When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
+	 * freeze config option has been selected, freeze the item's margin.
+	 */
+	private boolean shouldFreezeItem(FlippingItem item)
+	{
+		return !item.isSellPriceNeedsUpdate() && !item.isBuyPriceNeedsUpdate() && config.autoFreezeMargin();
+
 	}
 
 
 	/**
 	 * Given a new offer, this method creates a FlippingItem, the data structure that represents an item
-	 * you are currently flipping, and adds it to the tradesList. The tradesList is a crucial part of the state
-	 * of the flippingPlugin, as only items from the tradesList are rendered and updated.
+	 * you are currently flipping, and adds it to the accountSpecificTrades. The accountSpecificTrades is a crucial part of the state
+	 * of the flippingPlugin, as only items from the accountSpecificTrades are rendered and updated.
 	 *
 	 * @param newOffer new offer just received
 	 */
-	private void addToTradesList(OfferInfo newOffer)
+	private void addToTradesList(ArrayList<FlippingItem> tradesList, OfferInfo newOffer)
 	{
 		int tradeItemId = newOffer.getItemId();
 		String itemName = itemManager.getItemComposition(tradeItemId).getName();
@@ -385,32 +467,11 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit);
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, username);
 		flippingItem.updateMargin(newOffer);
-		flippingItem.update(newOffer);
+		flippingItem.updateHistoryAndTradedTime(newOffer);
 
 		tradesList.add(0, flippingItem);
-	}
-
-	/**
-	 * This method updates a flipping item by adding to its history and updating its margins. Since it updates
-	 * the margins of an item, it is only envoked when the offer is a margin check. This method is called in
-	 * {@link FlippingPlugin#onGrandExchangeOfferChanged}
-	 *
-	 * @param flippingItem flippingItem that is being updated.
-	 * @param newOffer     the offer that just came in.
-	 */
-	private void updateFlippingItem(FlippingItem flippingItem, OfferInfo newOffer)
-	{
-		flippingItem.updateMargin(newOffer);
-		flippingItem.update(newOffer);
-
-		//When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
-		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.isSellPriceNeedsUpdate()) && !(flippingItem.isBuyPriceNeedsUpdate()) && config.autoFreezeMargin())
-		{
-			flippingItem.setFrozen(true);
-		}
 
 	}
 
@@ -466,11 +527,21 @@ public class FlippingPlugin extends Plugin
 	//Functionality to the top right reset button.
 	public void resetTradeHistory()
 	{
-		tradesList.clear();
-		flippingPanel.setItemHighlighted(false);
-		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
-		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
-		flippingPanel.rebuildFlippingPanel(tradesList);
+
+		//if username is null, then user hasn't logged in. So reset account wide trade list
+		if (username == null)
+		{
+			accountWideTrades.clear();
+			log.info("resetting account wide trades");
+			configManager.unsetConfiguration(CONFIG_GROUP, ACCOUNT_WIDE);
+		}
+		//user has logged in, so reset username specific trade list.
+		else
+		{
+			accountSpecificTrades.clear();
+			log.info("resetting username specific");
+			configManager.unsetConfiguration(CONFIG_GROUP, username);
+		}
 	}
 
 	/**
@@ -486,11 +557,11 @@ public class FlippingPlugin extends Plugin
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
 			username = client.getUsername();
-			System.out.println(client.getUsername());
+
 			if (config.storeTradeHistory())
 			{
-				loadTradeHistory();
-				onHistoryLoad();
+				accountSpecificTrades = loadTradeHistory(username);
+				updateDisplays(accountSpecificTrades);
 			}
 		}
 	}
@@ -518,76 +589,59 @@ public class FlippingPlugin extends Plugin
 	 * {@link FlippingPlugin#startUp()} and {@link FlippingPlugin#onGameStateChanged(GameStateChanged)}, when a user
 	 * logs in.
 	 */
-	private void onHistoryLoad()
+	private void updateDisplays(ArrayList<FlippingItem> trades)
 	{
-		if (!tradesList.isEmpty())
+		executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 		{
-			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
-			{
-				validateAllItems(tradesList);
-				flippingPanel.rebuildFlippingPanel(tradesList);
-				statPanel.updateDisplays();
-			})));
-
-		}
-
+			validateAllItems(trades);
+			flippingPanel.rebuildFlippingPanel(trades);
+			statPanel.updateDisplays();
+		})));
 	}
 
 	/**
-	 * Converts the tradesList into JSON and stores it using the configManager. It stores the tradesList
-	 * in the ConfigManager associated either with CONFIG_GROUP + CONFIG_KEY or CONFIG_GROUP + username.
-	 * This is so that there is history associated on an account level and combined history based on all account's a user
-	 * logs into.
+	 * Stores the trade history
 	 */
 	public void storeTradeHistory()
 	{
-		if (tradesList.isEmpty())
+
+		if (accountSpecificTrades.isEmpty())
 		{
 			return;
 		}
 		final Gson gson = new Gson();
 		executor.submit(() ->
 		{
-			final String json = gson.toJson(tradesList);
-			configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, json);
+			String accountSpecificTradesJson = gson.toJson(accountSpecificTrades);
+			String accountWideTradesJson = gson.toJson(accountWideTrades);
+			configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, accountWideTradesJson);
 			//username shouldn't be null as storeTradeHistory is only called when we get offers and even
 			//login offers only come in after the username is set, but just in case...
 			if (username != null)
 			{
-				configManager.setConfiguration(CONFIG_GROUP, username, json);
+				configManager.setConfiguration(CONFIG_GROUP, username, accountSpecificTradesJson);
 			}
 
 		});
 	}
 
 	/**
-	 * Gets all the trade history as JSON, creates an array of FlippingItems out of it and sets the
-	 * tradesList. The trade history it fetches depends on whether the username is set or not. If the
-	 * username isn't set such as when the user first starts up the client, this method will try to fetch
-	 * the global trade history which is trade history irrespective of username.
-	 * <p>
-	 * If a username is set, such as when the user logs in, this method will try to fetch the trade history
-	 * associated with that username.
+	 * Gets the trade history for the specified key as JSON, turns it into an arraylist of FlippingItem
+	 * and returns it.
+	 *
+	 * @param key can be either ACCOUNT_WIDE (which is currently the string "accountwide") or a username
+	 *            which is the username of the currently logged in user.
 	 */
-	public void loadTradeHistory()
+	public ArrayList<FlippingItem> loadTradeHistory(String key)
 	{
-		log.info("Loading flipping config");
-		final String json;
+		log.info(String.format("Loading flipping history for %s", key));
 
-		if (username == null)
-		{
-			json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
-		}
-		else
-		{
-			json = configManager.getConfiguration(CONFIG_GROUP, username);
-		}
+		String tradesJson = configManager.getConfiguration(CONFIG_GROUP, key);
+		return tradesJson == null ? new ArrayList<>() : jsonToTradesList(tradesJson);
+	}
 
-		if (json == null)
-		{
-			return;
-		}
-
+	private ArrayList<FlippingItem> jsonToTradesList(String json)
+	{
 		try
 		{
 			final Gson gson = new Gson();
@@ -595,12 +649,14 @@ public class FlippingPlugin extends Plugin
 			{
 
 			}.getType();
-			tradesList = gson.fromJson(json, type);
+			return gson.fromJson(json, type);
 		}
 		catch (Exception e)
 		{
 			log.info("Error loading flipping data: " + e);
+			return new ArrayList<>();
 		}
+
 	}
 
 	@Subscribe
@@ -616,7 +672,7 @@ public class FlippingPlugin extends Plugin
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
-					flippingPanel.rebuildFlippingPanel(tradesList);
+					flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
 					break;
 				default:
 					break;
@@ -643,7 +699,7 @@ public class FlippingPlugin extends Plugin
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
-			for (FlippingItem item : tradesList)
+			for (FlippingItem item : accountSpecificTrades)
 			{
 				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
 				{

@@ -175,6 +175,9 @@ public class FlippingPanel extends JPanel
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
 					plugin.resetTradeHistory();
+					itemHighlighted = false;
+					cardLayout.show(getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
+					rebuildFlippingPanel(plugin.getTrades());
 				}
 			}
 
@@ -310,7 +313,7 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		rebuildFlippingPanel(plugin.getTradesList());
+		rebuildFlippingPanel(plugin.getTrades());
 		itemHighlighted = false;
 		plugin.setPrevHighlight(0);
 	}
@@ -319,7 +322,7 @@ public class FlippingPanel extends JPanel
 	{
 		ArrayList<FlippingItem> result = new ArrayList<>();
 
-		for (FlippingItem item : plugin.getTradesList())
+		for (FlippingItem item : plugin.getTrades())
 		{
 			if (item.getItemId() == itemId)
 			{
@@ -368,7 +371,7 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
-		ArrayList<FlippingItem> tradeList = plugin.getTradesList();
+		ArrayList<FlippingItem> tradeList = plugin.getTrades();
 		tradeList.remove(itemPanel.getFlippingItem());
 
 		rebuildFlippingPanel(tradeList);
@@ -390,12 +393,12 @@ public class FlippingPanel extends JPanel
 		//When the clear button is pressed, this is run.
 		if (Strings.isNullOrEmpty(lookup))
 		{
-			rebuildFlippingPanel(plugin.getTradesList());
+			rebuildFlippingPanel(plugin.getTrades());
 			return;
 		}
 
 		ArrayList<FlippingItem> result = new ArrayList<>();
-		for (FlippingItem item : plugin.getTradesList())
+		for (FlippingItem item : plugin.getTrades())
 		{
 			//Contains makes it a little more forgiving when searching.
 			if (item.getItemName().toLowerCase().contains(lookup))
@@ -408,7 +411,7 @@ public class FlippingPanel extends JPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBar.setEditable(true);
-			rebuildFlippingPanel(plugin.getTradesList());
+			rebuildFlippingPanel(plugin.getTrades());
 			return;
 		}
 

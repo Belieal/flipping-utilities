@@ -421,7 +421,7 @@ public class FlippingItemPanel extends JPanel
 	 */
 	public void updatePriceOutdatedDisplay()
 	{
-		//Update time of latest price update.
+		//Update time of latest price updateHistoryAndTradedTime.
 		Instant latestBuyTime = flippingItem.getMarginCheckBuyTime();
 		Instant latestSellTime = flippingItem.getMarginCheckSellTime();
 
