@@ -290,7 +290,13 @@ public class FlippingPlugin extends Plugin
 		updateTradesList(accountSpecificTrades, accountSpecificItem, newOffer);
 
 		storeTradeHistory();
-		flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
+
+		//only way items can float to the top of the list (hence requiring a rebuild) is when
+		//the offer is a margin check.
+		if (newOffer.isMarginCheck()) {
+			flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
+		}
+
 		statPanel.updateDisplays();
 
 	}
