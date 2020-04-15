@@ -318,6 +318,7 @@ public class FlippingItemPanel extends JPanel
 
 		add(topPanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
+		setToolTipText(String.format("Flipped by %s",flippingItem.getFlippedBy()));
 	}
 
 	//Creates, updates and sets the strings for the values to the right.
