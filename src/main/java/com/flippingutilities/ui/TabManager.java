@@ -29,9 +29,13 @@ package com.flippingutilities.ui;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatisticsPanel;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import javax.inject.Inject;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -39,6 +43,9 @@ import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
 public class TabManager extends PluginPanel
 {
+
+
+	private JLabel whichTradesListLabel = new JLabel("Account wide list");
 
 	/**
 	 * This manages the tab navigation bar at the top of the panel.
@@ -56,7 +63,16 @@ public class TabManager extends PluginPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
+		whichTradesListLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		whichTradesListLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
 		JPanel display = new JPanel();
+		JPanel top = new JPanel(new BorderLayout());
+
+		top.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		top.setBorder(new EmptyBorder(5,0,0,0));
+		top.add(whichTradesListLabel, BorderLayout.NORTH);
+
 		MaterialTabGroup tabGroup = new MaterialTabGroup(display);
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
 		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statPanel);
@@ -67,8 +83,13 @@ public class TabManager extends PluginPanel
 
 		// Initialize with flipping tab open.
 		tabGroup.select(flippingTab);
+		top.add(tabGroup, BorderLayout.CENTER);
 
-		add(tabGroup, BorderLayout.NORTH);
+		add(top, BorderLayout.NORTH);
 		add(display, BorderLayout.CENTER);
+	}
+
+	public void setWhichTradesListDisplay(String username) {
+		whichTradesListLabel.setText(String.format("%s's list",username));
 	}
 }

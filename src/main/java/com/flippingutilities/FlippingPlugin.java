@@ -275,7 +275,7 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
-		log.info("why is it getting through");
+
 		final OfferInfo newOffer = tradeConstructor(newOfferEvent);
 
 		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
@@ -568,6 +568,7 @@ public class FlippingPlugin extends Plugin
 			{
 				accountSpecificTrades = loadTradeHistory(username);
 				updateDisplays(accountSpecificTrades);
+				tabManager.setWhichTradesListDisplay(username);
 			}
 		}
 	}
