@@ -71,7 +71,6 @@ public class OfferInfo
 		OfferInfo standardizedOffer = clone();
 		standardizedOffer.setQuantity(getQuantity() - lastOffer.getQuantity());
 		return standardizedOffer;
-
 	}
 
 	//TODO actually clone the Instant object, as we are currently just passing that as the same reference.
@@ -79,6 +78,14 @@ public class OfferInfo
 	{
 		OfferInfo clonedOffer = new OfferInfo(buy, itemId, quantity, price, time, slot, state);
 		return clonedOffer;
+	}
+
+	public String toString()
+	{
+		return " itemId: " + itemId + " isBuy: " + buy +
+			" quantity: " + quantity + " price: " + price +
+			" time: " + time.toString() + " slot " + slot +
+			" state: " + state.toString();
 	}
 }
 
