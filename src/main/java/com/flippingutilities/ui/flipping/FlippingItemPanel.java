@@ -164,32 +164,9 @@ public class FlippingItemPanel extends JPanel
 		/* Item name panel */
 		itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
 
-		itemName.setForeground(flippingItem.isFrozen() ? FROZEN_COLOR : Color.WHITE);
+		itemName.setForeground(Color.WHITE);
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
-
-		//Margin freezing controller
-		itemName.setToolTipText("Right-click to freeze item's margin");
-		itemName.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (SwingUtilities.isRightMouseButton(e))
-				{
-					if (flippingItem.isFrozen())
-					{
-						flippingItem.freezeMargin(false);
-						itemName.setForeground(Color.WHITE);
-					}
-					else
-					{
-						flippingItem.freezeMargin(true);
-						itemName.setForeground(FROZEN_COLOR);
-					}
-				}
-			}
-		});
 
 		topPanel.setBackground(background.darker());
 		topPanel.add(itemClearPanel, BorderLayout.WEST);
@@ -569,18 +546,5 @@ public class FlippingItemPanel extends JPanel
 					+ ".<html>");
 			}
 		});
-	}
-
-	/**
-	 * Freezes or unfreezes the margin display along with the margin of the underlying FlippingItem
-	 *
-	 * @param freeze whether the margin display and underlyingFlippingItem should be frozen
-	 *               or not.
-	 */
-	public void freezeMargin(boolean freeze)
-	{
-		flippingItem.freezeMargin(freeze);
-		itemName.setForeground(flippingItem.isFrozen() ? FROZEN_COLOR : Color.WHITE);
-
 	}
 }

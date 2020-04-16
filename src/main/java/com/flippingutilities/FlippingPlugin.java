@@ -278,8 +278,6 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		System.out.println(newOffer);
-
 		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
 			accountSpecificTrades,
 			(item) -> item.getItemId() == newOffer.getItemId());
@@ -295,14 +293,14 @@ public class FlippingPlugin extends Plugin
 
 		//only way items can float to the top of the list (hence requiring a rebuild) is when
 		//the offer is a margin check.
-		if (newOffer.isMarginCheck()) {
+		if (newOffer.isMarginCheck())
+		{
 			flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
 		}
 
 		statPanel.updateDisplays();
 
 	}
-
 
 	/**
 	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
@@ -425,10 +423,6 @@ public class FlippingPlugin extends Plugin
 				FlippingItem item = flippingItem.get();
 				item.updateMargin(newOffer);
 				item.updateHistoryAndTradedTime(newOffer);
-				if (!item.isFrozen() && shouldFreezeItem(item))
-				{
-					item.setFrozen(true);
-				}
 
 				trades.remove(item);
 				trades.add(0, item);
@@ -446,17 +440,6 @@ public class FlippingPlugin extends Plugin
 			flippingItem.get().updateHistoryAndTradedTime(newOffer);
 		}
 	}
-
-	/**
-	 * When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
-	 * freeze config option has been selected, freeze the item's margin.
-	 */
-	private boolean shouldFreezeItem(FlippingItem item)
-	{
-		return !item.isSellPriceNeedsUpdate() && !item.isBuyPriceNeedsUpdate() && config.autoFreezeMargin();
-
-	}
-
 
 	/**
 	 * Given a new offer, this method creates a FlippingItem, the data structure that represents an item

@@ -31,7 +31,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Optional;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -76,16 +75,6 @@ public class FlippingItem
 	private Instant latestSellTime;
 
 	@Getter
-	@Setter
-	private boolean isFrozen = false;
-
-	@Getter
-	private boolean sellPriceNeedsUpdate = true;
-
-	@Getter
-	private boolean buyPriceNeedsUpdate = true;
-
-	@Getter
 	String flippedBy;
 
 	private HistoryManager history = new HistoryManager();
@@ -107,7 +96,8 @@ public class FlippingItem
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateHistoryAndTradedTime(OfferInfo newOffer) {
+	public void updateHistoryAndTradedTime(OfferInfo newOffer)
+	{
 		updateHistory(newOffer);
 		updateLatestBuySellTimes(newOffer);
 	}
@@ -146,7 +136,6 @@ public class FlippingItem
 	 * margin check. It is invoked by {@link FlippingPlugin#updateTradesList(ArrayList, Optional, OfferInfo)} when
 	 * an offer is figured out to be a margin.
 	 *
-	 *
 	 * @param newOffer the new offer just received.
 	 */
 	public void updateMargin(OfferInfo newOffer)
@@ -155,20 +144,18 @@ public class FlippingItem
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-		if (!(isFrozen))
+
+		if (tradeBuyState)
 		{
-			if (tradeBuyState)
-			{
-				marginCheckSellPrice = tradePrice;
-				marginCheckSellTime = tradeTime;
-				sellPriceNeedsUpdate = false;
-			}
-			else
-			{
-				marginCheckBuyPrice = tradePrice;
-				marginCheckBuyTime = tradeTime;
-				buyPriceNeedsUpdate = false;
-			}
+			marginCheckSellPrice = tradePrice;
+			marginCheckSellTime = tradeTime;
+
+		}
+		else
+		{
+			marginCheckBuyPrice = tradePrice;
+			marginCheckBuyTime = tradeTime;
+
 		}
 	}
 
@@ -201,32 +188,4 @@ public class FlippingItem
 	{
 		history.validateGeProperties();
 	}
-
-
-	/**
-	 * This Method is responsible for freezing an item's margin. When an item is to be frozen, buyPriceNeedsUpdate and
-	 * sellPriceNeeds updateHistoryAndTradedTime are set to true, and isFrozen is set to false. isFrozen is set to false so that
-	 * updateMargin will updateHistoryAndTradedTime the margins and so that the components that rely on a FlippingItem can easily
-	 * see that it is frozen. BuyPriceNeedsUpdate and sellPriceNeedsUpdate are set to true, so that in
-	 * {@link FlippingPlugin#shouldFreezeItem(FlippingItem)} when an item is being updated, the margin
-	 * is only frozen again if BOTH the sell price and buy price are updated.
-	 *
-	 * @param freeze whether the item should have it's margin frozen or not
-	 */
-	public void freezeMargin(boolean freeze)
-	{
-		if (freeze)
-		{
-			isFrozen = true;
-			buyPriceNeedsUpdate = false;
-			sellPriceNeedsUpdate = false;
-		}
-		else
-		{
-			isFrozen = false;
-			buyPriceNeedsUpdate = true;
-			sellPriceNeedsUpdate = true;
-		}
-	}
-
 }
