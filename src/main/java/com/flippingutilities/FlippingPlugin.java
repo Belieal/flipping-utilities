@@ -133,7 +133,7 @@ public class FlippingPlugin extends Plugin
 
 
 	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
-	private Map<Integer, GrandExchangeOffer> lastOffers = new HashMap<>();
+	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
 
 	@Override
 	protected void startUp()
@@ -256,12 +256,15 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		if (isBadEvent(newOfferEvent))
+		OfferInfo newOffer = extractRelevantInfo(newOfferEvent);
+
+		if (isBadOffer(newOffer))
 		{
 			return;
 		}
 
-		final OfferInfo newOffer = tradeConstructor(newOfferEvent);
+		System.out.println(newOffer);
+
 		Optional<FlippingItem> flippingItem = findItemInTradesList(newOffer.getItemId());
 
 		if (newOffer.isMarginCheck())
@@ -291,62 +294,57 @@ public class FlippingPlugin extends Plugin
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
 
+
 	/**
-	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled sell
+	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
 	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
-	 * buying/selling event and a bought/sold event). This screens out the unwanted events/duplicate
-	 * events
+	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
+	 * events and also sets the ticks since the first offer in that slot to help with figuring out whether
+	 * an offer is a margin check.
 	 *
-	 * @param newOfferEvent
+	 * @param newOffer
 	 * @return a boolean representing whether the offer should be passed on or discarded
 	 */
-	private boolean isBadEvent(GrandExchangeOfferChanged newOfferEvent)
+	private boolean isBadOffer(OfferInfo newOffer)
 	{
-		GrandExchangeOffer newOffer = newOfferEvent.getOffer();
-		int newOfferSlot = newOfferEvent.getSlot();
+		//i am mutating offers and they are being passed around, so i'm cloning to avoid passing the same reference around.
+		OfferInfo clonedNewOffer = newOffer.clone();
 
-		//Check for login screen and empty offers.
-		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0)
+		//Check empty offers.
+		if (clonedNewOffer.getItemId() == 0 || clonedNewOffer.getState() == GrandExchangeOfferState.EMPTY)
 		{
 			return true;
 		}
 
-		//if its the last selling/buying event, as evidenced by the quantity sold/bought being
-		//equal to the total quantity of the offer, record it but return true so it doesn't go through
-		//as the next event will be a BOUGHT/SOLD event, and only that should go through.
-		if ((newOffer.getState() == GrandExchangeOfferState.BUYING || newOffer.getState() == GrandExchangeOfferState.SELLING) && newOffer.getQuantitySold() == newOffer.getTotalQuantity())
+		//this is always the start of any offer (when you first put in an offer)
+		if (clonedNewOffer.getQuantity() == 0)
 		{
-			lastOffers.put(newOfferSlot, newOffer);
+			lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
 			return true;
 		}
 
-
-		//if there is a last seen offer for that slot
-		if (lastOffers.containsKey(newOfferSlot))
+		//when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
+		//this clause ignores the buying/selling event as it conveys the same info. We can tell its the buying/selling
+		//event right before a bought/sold event due to the quantity of the offer being == to the total quantity of the offer.
+		if ((clonedNewOffer.getState() == GrandExchangeOfferState.BUYING || clonedNewOffer.getState() == GrandExchangeOfferState.SELLING) && clonedNewOffer.getQuantity() == newOffer.getTotalQuantity())
 		{
-
-			GrandExchangeOffer lastOfferForSlot = lastOffers.get(newOfferSlot);
-
-			//if its a duplicate as the last seen event
-			if (lastOfferForSlot.getState().equals(newOffer.getState()) && lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold())
-			{
-				return true; //its a bad event!
-			}
-
-			else
-			{
-				//update hashmap to include latest offer
-				lastOffers.put(newOfferSlot, newOffer);
-				return false; //not a bad event
-			}
+			return true;
 		}
-		//if there isn't a last seen offer for that slot
-		else
+
+		OfferInfo lastOfferForSlot = lastOffers.get(clonedNewOffer.getSlot());
+
+		//if its a duplicate as the last seen event
+		if (lastOfferForSlot.equals(clonedNewOffer))
 		{
-			//put the offer in the hashmap with the corresponding slot
-			lastOffers.put(newOfferSlot, newOffer);
-			return false;
+			return true;
 		}
+
+		int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
+		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+		lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+		return false; //not a bad event
+
 	}
 
 	/**
@@ -356,8 +354,9 @@ public class FlippingPlugin extends Plugin
 	 * @param newOfferEvent new offer event just received
 	 * @return an OfferInfo with the relevant information.
 	 */
-	private OfferInfo tradeConstructor(GrandExchangeOfferChanged newOfferEvent)
+	private OfferInfo extractRelevantInfo(GrandExchangeOfferChanged newOfferEvent)
 	{
+
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
 		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY || offer.getState() == GrandExchangeOfferState.BUYING;
@@ -366,10 +365,13 @@ public class FlippingPlugin extends Plugin
 			isBuy,
 			offer.getItemId(),
 			offer.getQuantitySold(),
-			offer.getSpent() / offer.getQuantitySold(),
+			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
 			Instant.now(),
 			newOfferEvent.getSlot(),
-			offer.getState());
+			offer.getState(),
+			client.getTickCount(),
+			0,
+			offer.getTotalQuantity());
 
 		return offerInfo;
 
