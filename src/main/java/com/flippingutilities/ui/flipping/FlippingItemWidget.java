@@ -44,7 +44,6 @@ public class FlippingItemWidget
 {
 	private final Widget parent;
 	private final Client client;
-	private int value;
 	private Widget text;
 
 	@Inject
