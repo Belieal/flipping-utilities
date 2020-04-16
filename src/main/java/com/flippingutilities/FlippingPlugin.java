@@ -271,7 +271,8 @@ public class FlippingPlugin extends Plugin
 		{
 			if (flippingItem.isPresent())
 			{
-				updateFlippingItem(flippingItem.get(), newOffer);
+				flippingItem.get().update(newOffer);
+				flippingItem.get().updateMargin(newOffer);
 				tradesList.remove(flippingItem.get());
 				tradesList.add(0, flippingItem.get());
 			}
@@ -404,28 +405,6 @@ public class FlippingPlugin extends Plugin
 		flippingItem.update(newOffer);
 
 		tradesList.add(0, flippingItem);
-	}
-
-	/**
-	 * This method updates a flipping item by adding to its history and updating its margins. Since it updates
-	 * the margins of an item, it is only envoked when the offer is a margin check. This method is called in
-	 * {@link FlippingPlugin#onGrandExchangeOfferChanged}
-	 *
-	 * @param flippingItem flippingItem that is being updated.
-	 * @param newOffer     the offer that just came in.
-	 */
-	private void updateFlippingItem(FlippingItem flippingItem, OfferInfo newOffer)
-	{
-		flippingItem.updateMargin(newOffer);
-		flippingItem.update(newOffer);
-
-		//When you have finished margin checking an item (when both the buy and sell prices have been updated) and the auto
-		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.isSellPriceNeedsUpdate()) && !(flippingItem.isBuyPriceNeedsUpdate()) && config.autoFreezeMargin())
-		{
-			flippingItem.setFrozen(true);
-		}
-
 	}
 
 	@Provides
