@@ -28,55 +28,51 @@ package com.flippingutilities.ui.statistics;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.OfferInfo;
+import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Locale;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
+import lombok.Getter;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
-import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 public class StatsPanel extends JPanel
 {
-	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past Day", "Past Week", "Past Month", "Session", "All"};
+	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
-	private static final ImageIcon OPEN_ICON;
-	private static final ImageIcon CLOSE_ICON;
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
-	//Color to indicate loss in profit
-	private static final Color LOSS_COLOR = new Color(250, 74, 75);
 
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder(4, 0, 2, 0));
+		BorderFactory.createEmptyBorder(4, 2, 2, 2));
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -85,34 +81,20 @@ public class StatsPanel extends JPanel
 	private static final Font BIG_PROFIT_FONT = StyleContext.getDefaultStyleContext()
 		.getFont(FontManager.getRunescapeBoldFont().getName(), Font.PLAIN, 28);
 
-	private static final NumberFormat PRECISE_DECIMAL_FORMATTER = new DecimalFormat(
-		"#,###.###",
-		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
-	);
-	private static final NumberFormat DECIMAL_FORMATTER = new DecimalFormat(
-		"#,###.#",
-		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
-	);
-
-	static
-	{
-		final BufferedImage openIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
-		CLOSE_ICON = new ImageIcon(openIcon);
-		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
-	}
-
 	private FlippingPlugin plugin;
+	private ItemManager itemManager;
+	private ScheduledExecutorService executor;
 
-	//Holds all the main content of the panel.
-	private JPanel contentWrapper = new JPanel(new BorderLayout());
 	//Holds the buttons that control time intervals
 	private JPanel topPanel = new JPanel(new BorderLayout());
 
-	//Wraps the total profit labels.
-	private JPanel totalProfitWrapper = new JPanel(new BorderLayout());
 	//Holds the sub info labels.
 	private JPanel subInfoContainer = new JPanel(new BorderLayout());
+
+	private JPanel statItemContainer = new JPanel(new GridBagLayout());
+
+	//Constraints for statItemContainer.
+	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	//Combo box that selects the time interval that startOfInterval contains.
 	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
@@ -121,7 +103,7 @@ public class StatsPanel extends JPanel
 	private JLabel totalProfitVal = new JLabel();
 
 	//Sets the visible state for subinfo
-	private JLabel arrowIcon = new JLabel(OPEN_ICON);
+	private JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
 
 	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly profit: ");
@@ -141,6 +123,7 @@ public class StatsPanel extends JPanel
 	private long totalRevenues;
 
 	//Contains the unix time of the start of the interval.
+	@Getter
 	private Instant startOfInterval = Instant.now();
 
 	//Time when the panel was created. Assume this is the start of session.
@@ -160,11 +143,19 @@ public class StatsPanel extends JPanel
 		super(false);
 
 		this.plugin = plugin;
+		this.itemManager = itemManager;
+
 
 		setLayout(new BorderLayout());
 
 		//Record start of session time.
 		sessionTime = Instant.now();
+
+		//Constraints for statItems later on.
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		constraints.weightx = 1;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
 
 		//Start off with "Session" selected in the combobox.
 		timeIntervalList.setSelectedItem("Session");
@@ -234,16 +225,30 @@ public class StatsPanel extends JPanel
 					if (subInfoContainer.isVisible())
 					{
 						//Collapse sub info
-						arrowIcon.setIcon(CLOSE_ICON);
+						arrowIcon.setIcon(UIUtilities.CLOSE_ICON);
 						subInfoContainer.setVisible(false);
 					}
 					else
 					{
 						//Expand sub info
-						arrowIcon.setIcon(OPEN_ICON);
+						arrowIcon.setIcon(UIUtilities.OPEN_ICON);
 						subInfoContainer.setVisible(true);
 					}
 				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			}
 		};
 
@@ -303,17 +308,22 @@ public class StatsPanel extends JPanel
 		subInfoContainer.add(subInfoTextPanel, BorderLayout.WEST);
 		subInfoContainer.add(subInfoValPanel, BorderLayout.EAST);
 
+		//Wraps the total profit labels.
+		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
 		totalProfitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
 		totalProfitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
 		totalProfitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
 
+		//Holds all the main content of the panel.
+		JPanel contentWrapper = new JPanel(new BorderLayout());
 		contentWrapper.add(totalProfitWrapper, BorderLayout.NORTH);
 
 		/* The following represents the formatting behind the StatItems that appear at the bottom of the page.
 		 These are designed similarly to the FlippingItemPanels and contains information about individual flips. */
 		/* Sorting selector */
 		JPanel sortPanel = new JPanel(new BorderLayout());
-		sortPanel.add(new JLabel("Sort by: "), BorderLayout.WEST);
+
+		JLabel sortLabel = new JLabel("Sort by: ");
 
 		JComboBox<String> sortBox = new JComboBox<>(SORT_BY_STRINGS);
 		sortBox.setSelectedItem("Most Recent");
@@ -321,6 +331,7 @@ public class StatsPanel extends JPanel
 		sortBox.setMinimumSize(new Dimension(0, 35));
 		sortBox.setFocusable(false);
 		sortBox.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
 		sortBox.addActionListener(event ->
 		{
 			String selectedSort = (String) sortBox.getSelectedItem();
@@ -333,18 +344,77 @@ public class StatsPanel extends JPanel
 			setSortBy(selectedSort);
 		});
 
-		sortPanel.add(sortBox, BorderLayout.CENTER);
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		sortPanel.setBorder(new EmptyBorder(10, 5, 10, 5));
+		sortPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
+
+		sortPanel.add(sortLabel, BorderLayout.WEST);
+		sortPanel.add(sortBox, BorderLayout.CENTER);
+
+		JPanel statItemWrapper = new JPanel(new BorderLayout());
+		statItemWrapper.add(statItemContainer, BorderLayout.NORTH);
+
+		JScrollPane scrollWrapper = new JScrollPane(statItemWrapper);
+		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		scrollWrapper.setBorder(new EmptyBorder(3, 5, 5, 5));
+		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(6, 0));
+		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 3, 0, 0));
 
 		//itemContainer holds the StatItems along with its sorting selector.
 		JPanel itemContainer = new JPanel(new BorderLayout());
 		itemContainer.add(sortPanel, BorderLayout.NORTH);
+		itemContainer.add(scrollWrapper, BorderLayout.CENTER);
 
 		contentWrapper.add(itemContainer, BorderLayout.CENTER);
 
 		add(contentWrapper, BorderLayout.CENTER);
 		add(topPanel, BorderLayout.NORTH);
+	}
+
+	/**
+	 * Removes old stat items and builds new ones based on the passed trade list.
+	 * Items are initialized with their sub info containers collapsed.
+	 *
+	 * @param tradesList The list of flipping items that get shown on the stat panel.
+	 */
+	public void rebuild(ArrayList<FlippingItem> tradesList)
+	{
+		SwingUtilities.invokeLater(() ->
+		{
+			//Remove old stats
+			statItemContainer.removeAll();
+
+			int index = 0;
+			for (FlippingItem item : tradesList)
+			{
+				ArrayList<OfferInfo> tradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
+
+				//Make sure the item has stats we can use
+				if (tradeHistory.isEmpty() || item.countItemsFlipped(tradeHistory) == 0)
+				{
+					continue;
+				}
+
+				StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, executor, item);
+
+				if (index++ > 0)
+				{
+					JPanel marginWrapper = new JPanel(new BorderLayout());
+					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+					marginWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
+					marginWrapper.add(newPanel, BorderLayout.NORTH);
+					statItemContainer.add(marginWrapper, constraints);
+				}
+				else
+				{
+					//First item in the wrapper
+					statItemContainer.add(newPanel, constraints);
+				}
+				constraints.gridy++;
+			}
+		});
+
+		revalidate();
+		repaint();
 	}
 
 	/**
@@ -360,11 +430,15 @@ public class StatsPanel extends JPanel
 			totalExpenses = 0;
 			totalRevenues = 0;
 
-			for (FlippingItem item : plugin.getTradesList())
+			ArrayList<FlippingItem> tradesList = plugin.getTradesList();
+
+			rebuild(tradesList);
+
+			for (FlippingItem item : tradesList)
 			{
 				totalProfit += item.currentProfit(startOfInterval);
-				totalExpenses += item.getTotalExpenses();
-				totalRevenues += item.getTotalRevenues();
+				totalExpenses += item.getCashflow(startOfInterval, true);
+				totalRevenues += item.getCashflow(startOfInterval, false);
 			}
 
 			updateTotalProfitDisplay();
@@ -390,9 +464,9 @@ public class StatsPanel extends JPanel
 			return;
 		}
 
-		totalProfitVal.setText(((totalProfit >= 0) ? "" : "-") + quantityToRSDecimalStack(Math.abs(totalProfit), true) + " gp");
+		totalProfitVal.setText(((totalProfit >= 0) ? "" : "-") + UIUtilities.quantityToRSDecimalStack(Math.abs(totalProfit), true) + " gp");
 		totalProfitVal.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
-		totalProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
+		totalProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -411,13 +485,13 @@ public class StatsPanel extends JPanel
 		{
 			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
 
-			String profitString = quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+			String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 			hourlyProfitVal.setText(profitString + " gp/hr");
 
 			hourlyProfitText.setVisible(true);
 			hourlyProfitVal.setVisible(true);
 		}
-		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
+		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -425,16 +499,20 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateRoiDisplay()
 	{
+		float roi = (float) totalProfit / totalExpenses * 100;
+
 		if (totalExpenses == 0)
 		{
 			roiVal.setText("0.00%");
-			roiVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			roiVal.setForeground(Color.RED);
+			return;
 		}
 		else
 		{
 			roiVal.setText(String.format("%.2f", (float) totalProfit / totalExpenses * 100) + "%");
-			roiVal.setForeground(totalProfit > 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
 		}
+
+		roiVal.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
 	}
 
 	/**
@@ -442,11 +520,11 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateRevenueAndExpenseDisplay()
 	{
-		totalRevenueVal.setText(quantityToRSDecimalStack(totalRevenues, true) + " gp");
+		totalRevenueVal.setText(UIUtilities.quantityToRSDecimalStack(totalRevenues, true) + " gp");
 		totalRevenueVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 
-		totalExpenseVal.setText(quantityToRSDecimalStack(totalExpenses, true) + " gp");
-		totalExpenseVal.setForeground(LOSS_COLOR);
+		totalExpenseVal.setText(UIUtilities.quantityToRSDecimalStack(totalExpenses, true) + " gp");
+		totalExpenseVal.setForeground(UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -509,6 +587,9 @@ public class StatsPanel extends JPanel
 			case "Past Hour":
 				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
 				break;
+			case "Past 4 Hours":
+				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
+				break;
 			case "Past Day":
 				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
 				break;
@@ -552,33 +633,6 @@ public class StatsPanel extends JPanel
 			case "Highest Quantity":
 				break;
 		}
-	}
-
-	/**
-	 * Functionally the same as {@link QuantityFormatter#quantityToRSDecimalStack(int, boolean)},
-	 * except this allows for formatting longs.
-	 *
-	 * @param quantity Long to format
-	 * @param precise  If true, allow thousandths precision if {@code quantity} is larger than 1 million.
-	 *                 Otherwise have at most a single decimal
-	 * @return Formatted number string.
-	 */
-	public static synchronized String quantityToRSDecimalStack(long quantity, boolean precise)
-	{
-		String quantityStr = String.valueOf(quantity);
-		if (quantityStr.length() <= 4)
-		{
-			return quantityStr;
-		}
-
-		long power = (long) Math.log10(quantity);
-
-		// Output thousandths for values above a million
-		NumberFormat format = precise && power >= 6
-			? PRECISE_DECIMAL_FORMATTER
-			: DECIMAL_FORMATTER;
-
-		return format.format(quantity / (Math.pow(10, (power / 3) * 3))) + new String[] {"", "K", "M", "B"}[(int) (power / 3)];
 	}
 
 }
