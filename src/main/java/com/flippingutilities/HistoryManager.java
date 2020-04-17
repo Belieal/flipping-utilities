@@ -36,18 +36,6 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
-	//Keeps track of the total expenses and revenues accrued.
-	//Will only get updated by currentProfit().
-	@Getter
-	private long totalExpenses;
-	@Getter
-	private long totalRevenues;
-
-	//Keeps track of the amount of items flipped.
-	@Getter
-	private int itemCountFlipped;
-
-
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
 	 * other properties related to the history of an item such as how many items were bought since the last
@@ -155,49 +143,64 @@ public class HistoryManager
 	 */
 	public long currentProfit(Instant earliestTime)
 	{
-		List<OfferInfo> buyList = new ArrayList<>();
-		List<OfferInfo> sellList = new ArrayList<>();
+		List<OfferInfo> itemsInInterval = getIntervalsHistory(earliestTime);
 
-		totalExpenses = 0;
-		totalRevenues = 0;
+		//return the value of the sell list - the value of the buy list. This is the profit.
+		return getCashflow(itemsInInterval, false) - getCashflow(itemsInInterval, true);
+	}
 
+	public long getCashflow(List<OfferInfo> offers, boolean getExpense)
+	{
+		return getValueOfTrades(getSaleList(offers, getExpense), countItemsFlipped(offers));
+	}
+
+	/**
+	 * Gets the quantity of flipped items that has been done in a list of offers.
+	 * The quantity flipped is determined by the lowest of either number of items bought or sold.
+	 *
+	 * @param tradeList The list of items that the item count is based on
+	 * @return An integer representing the total quantity of items flipped in the list of offers
+	 */
+	public int countItemsFlipped(List<OfferInfo> tradeList)
+	{
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
 
-		for (OfferInfo standardizedOffer : standardizedOffers)
+		for (OfferInfo standardizedOffer : tradeList)
 		{
-			//later than the time the user selected (if they selected 4 hours, its all trades after 4 hours ago.
-			if (standardizedOffer.getTime().isAfter(earliestTime))
+			if (standardizedOffer.isBuy())
 			{
-
-				if (standardizedOffer.isBuy())
-				{
-					numBoughtItems += standardizedOffer.getQuantity();
-					buyList.add(standardizedOffer);
-				}
-				else
-				{
-					numSoldItems += standardizedOffer.getQuantity();
-					sellList.add(standardizedOffer);
-				}
+				numBoughtItems += standardizedOffer.getQuantity();
+			}
+			else
+			{
+				numSoldItems += standardizedOffer.getQuantity();
 			}
 		}
 
-		//if a user has only sold items, or a user has only bought items, return profit as 0 as there
-		//is no way to determine how much profit was made until you have both a buy and a sell (so that you can
-		// actually calculate a difference).
-		if (numBoughtItems == 0 || numSoldItems == 0)
+		return Math.min(numBoughtItems, numSoldItems);
+	}
+
+	/**
+	 * Gets the list of trades of either buy or sell states from a list of trades.
+	 *
+	 * @param tradeList The list of trades that will be checked.
+	 * @param buyState  true will return offers that have been bought and false will return offers that have been sold.
+	 * @return A list of items either sold or bought over a period of time.
+	 */
+	private ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
+	{
+		ArrayList<OfferInfo> results = new ArrayList<>();
+
+		for (OfferInfo standardizedOffer : tradeList)
 		{
-			return 0;
+			if (standardizedOffer.isBuy() == buyState)
+			{
+				results.add(standardizedOffer);
+			}
 		}
 
-		itemCountFlipped = Math.min(numBoughtItems, numSoldItems);
-
-		totalExpenses = getValueOfTrades(buyList, itemCountFlipped);
-		totalRevenues = getValueOfTrades(sellList, itemCountFlipped);
-
-		//return the value of the sell list - the value of the buy list. This is the profit.
-		return totalRevenues - totalExpenses;
+		return results;
 	}
 
 	/**

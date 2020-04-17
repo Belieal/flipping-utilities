@@ -29,6 +29,7 @@ package com.flippingutilities;
 import com.flippingutilities.ui.flipping.FlippingItemPanel;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GrandExchangeOfferChanged;
@@ -139,18 +140,15 @@ public class FlippingItem
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-
 		if (tradeBuyState)
 		{
 			marginCheckSellPrice = tradePrice;
 			marginCheckSellTime = tradeTime;
-
 		}
 		else
 		{
 			marginCheckBuyPrice = tradePrice;
 			marginCheckBuyTime = tradeTime;
-
 		}
 	}
 
@@ -159,19 +157,19 @@ public class FlippingItem
 		return history.currentProfit(earliestTime);
 	}
 
-	public long getTotalExpenses()
+	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
 	{
-		return history.getTotalExpenses();
+		return history.getCashflow(tradeList, getExpense);
 	}
 
-	public long getTotalRevenues()
+	public long getCashflow(Instant earliestTime, boolean getExpense)
 	{
-		return history.getTotalRevenues();
+		return history.getCashflow(getIntervalHistory(earliestTime), getExpense);
 	}
 
-	public int getItemCountFlipped()
+	public int countItemsFlipped(List<OfferInfo> tradeList)
 	{
-		return history.getItemCountFlipped();
+		return history.countItemsFlipped(tradeList);
 	}
 
 	public ArrayList<OfferInfo> getIntervalHistory(Instant earliestTime)
