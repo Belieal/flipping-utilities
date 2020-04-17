@@ -27,6 +27,9 @@ public class OfferInfo
 	private Instant time;
 	private int slot;
 	private GrandExchangeOfferState state;
+	private int tickArrivedAt;
+	private int ticksSinceFirstOffer;
+	private int totalQuantity;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -53,7 +56,8 @@ public class OfferInfo
 	 */
 	public boolean isMarginCheck()
 	{
-		return (state == GrandExchangeOfferState.BOUGHT || state == GrandExchangeOfferState.SOLD) && quantity == 1;
+		return (state == GrandExchangeOfferState.BOUGHT || state == GrandExchangeOfferState.SOLD) && quantity == 1
+			&& ticksSinceFirstOffer <= 2;
 	}
 
 	/**
@@ -77,8 +81,22 @@ public class OfferInfo
 	//TODO actually clone the Instant object, as we are currently just passing that as the same reference.
 	public OfferInfo clone()
 	{
-		OfferInfo clonedOffer = new OfferInfo(buy, itemId, quantity, price, time, slot, state);
+		OfferInfo clonedOffer = new OfferInfo(buy, itemId, quantity, price, time, slot, state, tickArrivedAt, ticksSinceFirstOffer, totalQuantity);
 		return clonedOffer;
+	}
+
+	public boolean equals(Object other) {
+		if (other == this) {
+			return true;
+		}
+
+		if (!(other instanceof OfferInfo)) {
+			return false;
+		}
+
+		OfferInfo otherOffer = (OfferInfo) other;
+
+		return getState()==otherOffer.getState() && getQuantity() == otherOffer.getQuantity();
 	}
 }
 

@@ -96,15 +96,4 @@ public interface FlippingConfig extends Config
 		return false;
 	}
 
-	@ConfigItem(
-			keyName = "autoFreezeMargin",
-			name = "Automatically freeze the margin of new items.",
-
-			description = "Ensures that every item that gets added has its margin frozen to prevent its "
-					+ "margin from being updated by subsequent buys/sells of one."
-	)
-	default boolean autoFreezeMargin()
-	{
-		return false;
-	}
 }
