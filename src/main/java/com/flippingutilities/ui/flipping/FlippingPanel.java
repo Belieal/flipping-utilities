@@ -116,7 +116,7 @@ public class FlippingPanel extends JPanel
 		constraints.gridx = 0;
 		constraints.gridy = 0;
 
-		//Contains the main results panel and top panel
+		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
 		container.setLayout(new BorderLayout(0, 5));
 		container.setBorder(new EmptyBorder(0, 0, 5, 0));
