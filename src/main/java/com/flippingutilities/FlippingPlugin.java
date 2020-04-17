@@ -83,11 +83,6 @@ import net.runelite.http.api.item.ItemStats;
 
 public class FlippingPlugin extends Plugin
 {
-	//Limit the amount of trades every item holds.
-	private static final int TRADE_HISTORY_MAX_SIZE = 20;
-	//Limit the amount of items stored.
-	private static final int TRADES_LIST_MAX_SIZE = 200;
-
 	private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
 	private static final int GE_BACK_BUTTON_WIDGET_ID = 30474244;
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
@@ -118,6 +113,7 @@ public class FlippingPlugin extends Plugin
 	private ItemManager itemManager;
 
 	private FlippingPanel flippingPanel;
+	@Getter
 	private StatsPanel statPanel;
 	private FlippingItemWidget flippingWidget;
 
@@ -148,7 +144,7 @@ public class FlippingPlugin extends Plugin
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
-			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
+			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
 			.priority(3)
 			.panel(tabManager)
 			.build();
@@ -181,6 +177,7 @@ public class FlippingPlugin extends Plugin
 						flippingItem.validateGeProperties();
 					}
 					flippingPanel.rebuildFlippingPanel(tradesList);
+					statPanel.rebuild(tradesList);
 				}
 			})));
 			return true;
@@ -198,6 +195,8 @@ public class FlippingPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		updateConfig();
+
 		if (timeUpdateFuture != null)
 		{
 			//Stop all timers
@@ -263,7 +262,7 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		System.out.println(newOffer);
+		System.out.println(newOffer.toString());
 
 		Optional<FlippingItem> flippingItem = findItemInTradesList(newOffer.getItemId());
 
@@ -294,7 +293,6 @@ public class FlippingPlugin extends Plugin
 		statPanel.updateDisplays();
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
-
 
 	/**
 	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
@@ -357,7 +355,6 @@ public class FlippingPlugin extends Plugin
 	 */
 	private OfferInfo extractRelevantInfo(GrandExchangeOfferChanged newOfferEvent)
 	{
-
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
 		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY || offer.getState() == GrandExchangeOfferState.BUYING;
@@ -375,8 +372,6 @@ public class FlippingPlugin extends Plugin
 			offer.getTotalQuantity());
 
 		return offerInfo;
-
-
 	}
 
 	private Optional<FlippingItem> findItemInTradesList(int itemIdToFind)
@@ -484,7 +479,7 @@ public class FlippingPlugin extends Plugin
 	//Loads previous session data to tradeList.
 	public void loadConfig()
 	{
-		log.info("Loading flipping config");
+		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
 
 		if (json == null)
@@ -510,23 +505,15 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		//Ensure that user configs are updated after being changed
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
-			//Ensure that user configs are updated after being changed
-			switch (event.getKey())
+			if (event.getKey().equals("items"))
 			{
-				case ("storeTradeHistory"):
-				case ("outOfDateWarning"):
-				case ("roiGradientMax"):
-				case ("marginCheckLoss"):
-				case ("twelveHourFormat"):
-				case ("subInfoFont"):
-					statPanel.updateDisplays();
-					flippingPanel.rebuildFlippingPanel(tradesList);
-					break;
-				default:
-					break;
+				return;
 			}
+			statPanel.updateDisplays();
+			flippingPanel.rebuildFlippingPanel(tradesList);
 		}
 	}
 
