@@ -284,7 +284,7 @@ public class FlippingPlugin extends Plugin
 
 		Optional<FlippingItem> accountWideItem = findItemInTradesList(
 			accountWideTrades,
-			(item) -> item.getItemId() == newOffer.getItemId() && item.flippedBy == username);
+			(item) -> item.getItemId() == newOffer.getItemId() && item.flippedBy.equals(username));
 
 		updateTradesList(accountWideTrades, accountWideItem, newOffer);
 		updateTradesList(accountSpecificTrades, accountSpecificItem, newOffer);
