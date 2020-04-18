@@ -188,6 +188,7 @@ public class FlippingPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		log.info("shutting down!");
 		if (timeUpdateFuture != null)
 		{
 			//Stop all timers
@@ -234,7 +235,7 @@ public class FlippingPlugin extends Plugin
 	 */
 	private String getAccountWideOrSpecificKey()
 	{
-		return username == null ? ACCOUNT_WIDE : username;
+		return username == null ? ACCOUNT_WIDE : "data:" + username;
 
 	}
 
@@ -338,20 +339,31 @@ public class FlippingPlugin extends Plugin
 			return true;
 		}
 
-		OfferInfo lastOfferForSlot = lastOffers.get(clonedNewOffer.getSlot());
-
-		//if its a duplicate as the last seen event
-		if (lastOfferForSlot.equals(clonedNewOffer))
+		if (lastOffers.containsKey(clonedNewOffer.getSlot()))
 		{
-			return true;
+			OfferInfo lastOfferForSlot = lastOffers.get(clonedNewOffer.getSlot());
+
+			//duplicate as last event
+			if (lastOfferForSlot.equals(clonedNewOffer))
+			{
+				return true;
+			}
+
+			else
+			{
+				int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
+				clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+				lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+				newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+				return false; //not a bad event
+			}
 		}
 
-		int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
-		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
-		lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
-		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
-		return false; //not a bad event
-
+		else
+		{
+			lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+			return false;
+		}
 	}
 
 	/**
@@ -549,7 +561,7 @@ public class FlippingPlugin extends Plugin
 
 			if (config.storeTradeHistory())
 			{
-				accountSpecificTrades = loadTradeHistory(username);
+				accountSpecificTrades = loadTradeHistory("data:" + username);
 				updateDisplays(accountSpecificTrades);
 				tabManager.setWhichTradesListDisplay(username);
 			}
@@ -609,7 +621,7 @@ public class FlippingPlugin extends Plugin
 			//login offers only come in after the username is set, but just in case...
 			if (username != null)
 			{
-				configManager.setConfiguration(CONFIG_GROUP, username, accountSpecificTradesJson);
+				configManager.setConfiguration(CONFIG_GROUP, "data:" + username, accountSpecificTradesJson);
 			}
 
 		});
