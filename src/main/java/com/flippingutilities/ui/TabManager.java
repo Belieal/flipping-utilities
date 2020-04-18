@@ -26,26 +26,31 @@
 
 package com.flippingutilities.ui;
 
+import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatisticsPanel;
 import java.awt.BorderLayout;
-import java.awt.Component;
-import javax.inject.Inject;
-import javax.swing.JLabel;
+import java.util.List;
+import java.util.Set;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
 public class TabManager extends PluginPanel
 {
 
+	@Getter
+	private JComboBox<String> viewSelector = new JComboBox();
 
-	private JLabel whichTradesListLabel = new JLabel("Account wide list");
+	private FlippingPlugin plugin;
+
+	private String prevSelectedUsername = "accountwide";
 
 	/**
 	 * This manages the tab navigation bar at the top of the panel.
@@ -55,23 +60,46 @@ public class TabManager extends PluginPanel
 	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
 	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
-	@Inject
-	public TabManager(FlippingPanel flippingPanel, StatisticsPanel statPanel)
+	public TabManager(FlippingPlugin plugin, FlippingPanel flippingPanel, StatisticsPanel statPanel)
 	{
 		super(false);
+		this.plugin = plugin;
+
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		whichTradesListLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		whichTradesListLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		viewSelector.addItem("accountwide");
+		viewSelector.setSelectedItem("accountwide");
+		viewSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		viewSelector.setFocusable(false);
+		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		viewSelector.setRenderer(new ComboBoxListRenderer());
+		viewSelector.setToolTipText("select which of your account's trades list you want to view");
+		viewSelector.addActionListener(event ->
+		{
+			String selectedUsername = (String) viewSelector.getSelectedItem();
+
+			if (selectedUsername == null)
+			{
+				return;
+			}
+
+			if (!prevSelectedUsername.equals(selectedUsername))
+			{
+				prevSelectedUsername = selectedUsername;
+				plugin.changeView(selectedUsername);
+			}
+		});
 
 		JPanel display = new JPanel();
-		JPanel top = new JPanel(new BorderLayout());
+		//contains the tab group and the view selector combo box.
+		JPanel header = new JPanel(new BorderLayout());
 
-		top.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		top.setBorder(new EmptyBorder(5,0,0,0));
-		top.add(whichTradesListLabel, BorderLayout.NORTH);
+		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		header.setBorder(new EmptyBorder(5, 0, 0, 0));
+		header.add(viewSelector, BorderLayout.NORTH);
+
 
 		MaterialTabGroup tabGroup = new MaterialTabGroup(display);
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
@@ -83,13 +111,17 @@ public class TabManager extends PluginPanel
 
 		// Initialize with flipping tab open.
 		tabGroup.select(flippingTab);
-		top.add(tabGroup, BorderLayout.CENTER);
+		header.add(tabGroup, BorderLayout.CENTER);
 
-		add(top, BorderLayout.NORTH);
+		add(header, BorderLayout.NORTH);
 		add(display, BorderLayout.CENTER);
 	}
 
-	public void setWhichTradesListDisplay(String username) {
-		whichTradesListLabel.setText(String.format("%s's list",username));
+	public void setComboBoxOptions(Set<String> accountNames)
+	{
+		for (String name : accountNames)
+		{
+			viewSelector.addItem(name);
+		}
 	}
 }

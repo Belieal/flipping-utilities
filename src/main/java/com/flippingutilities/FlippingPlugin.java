@@ -40,10 +40,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.Getter;
@@ -122,16 +124,21 @@ public class FlippingPlugin extends Plugin
 
 	private TabManager tabManager;
 
-	//Stores all bought or sold trades.
-	private ArrayList<FlippingItem> accountSpecificTrades = new ArrayList<>();
-
+	//stores all trades for all accounts with a flipping history
 	private ArrayList<FlippingItem> accountWideTrades = new ArrayList<>();
+
+	//used to check which tradelist the user is currently viewing
+	private String currentView = "accountwide";
+
+	//the trades data loaded from disk. I'm using this hashmap as a cache so that I don't have to keep
+	//loading it from disk.
+	private Map<String, ArrayList<FlippingItem>> userTradelistCache = new HashMap<>();
 
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
 	private int prevHighlight;
 
-	private String username;
+	private String loggedInUser;
 
 
 	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
@@ -145,7 +152,7 @@ public class FlippingPlugin extends Plugin
 		statPanel = new StatisticsPanel(this, itemManager, executor);
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
-		tabManager = new TabManager(flippingPanel, statPanel);
+		tabManager = new TabManager(this, flippingPanel, statPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
@@ -171,6 +178,9 @@ public class FlippingPlugin extends Plugin
 			{
 				accountWideTrades = loadTradeHistory(ACCOUNT_WIDE);
 				updateDisplays(accountWideTrades);
+				tabManager.setComboBoxOptions(getAccountNames());
+
+
 			}
 
 			return true;
@@ -208,9 +218,9 @@ public class FlippingPlugin extends Plugin
 		{
 			clientThread.invokeLater(() ->
 			{
-				//don't know if the user is logged in or not, so get key depending on whether username is set.
+				//don't know if the user is logged in or not, so get key depending on whether loggedInUser is set.
 				loadTradeHistory(getAccountWideOrSpecificKey());
-				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(getTrades()));
+				SwingUtilities.invokeLater(() -> flippingPanel.updateDisplays(getTradesForCurrentView()));
 				return true;
 			});
 		}
@@ -223,33 +233,88 @@ public class FlippingPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 			loadTradeHistory(getAccountWideOrSpecificKey());
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(getTrades()));
+			SwingUtilities.invokeLater(() -> flippingPanel.updateDisplays(getTradesForCurrentView()));
 			return true;
 		});
 	}
 
 	/**
+	 * Gets all the account names that have a flip history
+	 *
+	 * @return a list of usernames that have a flip history
+	 */
+	public Set<String> getAccountNames()
+	{
+		Set<String> accountNames = configManager.getConfigurationKeys("flipping").
+			stream().
+			filter(key -> key.contains("username:")).
+			map(name -> name.split("username:")[1]).
+			collect(Collectors.toSet());
+		return accountNames;
+	}
+
+	public void changeView(String selectedUsername)
+	{
+
+		log.info(String.format("changing view to %s", selectedUsername));
+		ArrayList<FlippingItem> tradesListToDisplay;
+
+		if (selectedUsername.equals("accountwide"))
+		{
+			log.info("selected view is account wide so showing account wide trades");
+			tradesListToDisplay = accountWideTrades;
+		}
+
+		else
+		{
+			//look in cache, if its there just use it, otherwise set it from disk.
+			if (userTradelistCache.containsKey(selectedUsername))
+			{
+				log.info("history exists in cache");
+				tradesListToDisplay = userTradelistCache.get(selectedUsername);
+			}
+			else
+			{
+				log.info("history does not exist in cache");
+				tradesListToDisplay = loadTradeHistory("username:" + selectedUsername);
+				userTradelistCache.put(selectedUsername, tradesListToDisplay);
+			}
+		}
+
+		currentView = selectedUsername;
+		updateDisplays(tradesListToDisplay);
+	}
+
+	/**
 	 * Returns the correct config key to fetch history based on whether the a user is logged in or not.
 	 *
-	 * @return either the username or ACCOUNT_WIDE
+	 * @return either the loggedInUser or ACCOUNT_WIDE
 	 */
 	private String getAccountWideOrSpecificKey()
 	{
-		return username == null ? ACCOUNT_WIDE : "data:" + username;
+		return loggedInUser == null ? ACCOUNT_WIDE : "username:" + loggedInUser;
 
 	}
 
 	/**
 	 * Gets an already loaded tradesList depending on whether the user is logged in or not.
-	 * If the user is logged in, and thus username will be set, then the accountSpecificTrades
-	 * is returned. Otherwise if the username hasn't been set, such as when a user just opens
+	 * If the user is logged in, and thus loggedInUser will be set, then the loggedInUserTrades
+	 * is returned. Otherwise if the loggedInUser hasn't been set, such as when a user just opens
 	 * the client, the accountWideTrades are returned.
 	 *
 	 * @return trades
 	 */
-	public ArrayList<FlippingItem> getTrades()
+	public ArrayList<FlippingItem> getTradesForCurrentView()
 	{
-		return username == null ? accountWideTrades : accountSpecificTrades;
+		if (currentView.equals("accountwide"))
+		{
+			return accountWideTrades;
+		}
+
+		else
+		{
+			return userTradelistCache.get(currentView);
+		}
 	}
 
 	/**
@@ -280,27 +345,31 @@ public class FlippingPlugin extends Plugin
 		}
 
 		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
-			accountSpecificTrades,
+			userTradelistCache.get(loggedInUser),
 			(item) -> item.getItemId() == newOffer.getItemId());
 
 		Optional<FlippingItem> accountWideItem = findItemInTradesList(
 			accountWideTrades,
-			(item) -> item.getItemId() == newOffer.getItemId() && item.flippedBy.equals(username));
+			(item) -> item.getItemId() == newOffer.getItemId() && item.flippedBy.equals(loggedInUser));
 
 		updateTradesList(accountWideTrades, accountWideItem, newOffer);
-		updateTradesList(accountSpecificTrades, accountSpecificItem, newOffer);
+		updateTradesList(userTradelistCache.get(loggedInUser), accountSpecificItem, newOffer);
 
 		storeTradeHistory();
 
 		//only way items can float to the top of the list (hence requiring a rebuild) is when
-		//the offer is a margin check.
-		if (newOffer.isMarginCheck())
+		//the offer is a margin check. Additionally, there is no point rebuilding the panel when
+		//the user is looking at the trades list of another one of his accounts that isn't logged in as that
+		//trades list won't be being updated.
+		if (newOffer.isMarginCheck() && (currentView.equals(loggedInUser) || currentView.equals("accountwide")))
 		{
-			flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
+			flippingPanel.updateDisplays(getTradesForCurrentView());
 		}
 
-		statPanel.updateDisplays();
-
+		if (currentView.equals(loggedInUser) || currentView.equals("accountwide"))
+		{
+			statPanel.updateDisplays(getTradesForCurrentView());
+		}
 	}
 
 	/**
@@ -455,8 +524,8 @@ public class FlippingPlugin extends Plugin
 
 	/**
 	 * Given a new offer, this method creates a FlippingItem, the data structure that represents an item
-	 * you are currently flipping, and adds it to the accountSpecificTrades. The accountSpecificTrades is a crucial part of the state
-	 * of the flippingPlugin, as only items from the accountSpecificTrades are rendered and updated.
+	 * you are currently flipping, and adds it to the loggedInUserTrades. The loggedInUserTrades is a crucial part of the state
+	 * of the flippingPlugin, as only items from the loggedInUserTrades are rendered and updated.
 	 *
 	 * @param newOffer new offer just received
 	 */
@@ -468,7 +537,7 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, username);
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, loggedInUser);
 		flippingItem.updateMargin(newOffer);
 		flippingItem.updateHistoryAndTradedTime(newOffer);
 
@@ -528,26 +597,26 @@ public class FlippingPlugin extends Plugin
 	//Functionality to the top right reset button.
 	public void resetTradeHistory()
 	{
-
-		//if username is null, then user hasn't logged in. So reset account wide trade list
-		if (username == null)
+		//if loggedInUser is null, then user hasn't logged in. So reset account wide trade list
+		if (currentView.equals("accountwide"))
 		{
-			accountWideTrades.clear();
 			log.info("resetting account wide trades");
-			configManager.unsetConfiguration(CONFIG_GROUP, ACCOUNT_WIDE);
+			accountWideTrades.clear();
+			configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, new Gson().toJson(new ArrayList<>()));
+			statPanel.updateDisplays(accountWideTrades);
 		}
-		//user has logged in, so reset username specific trade list.
 		else
 		{
-			accountSpecificTrades.clear();
-			log.info("resetting username specific");
-			configManager.unsetConfiguration(CONFIG_GROUP, username);
+			userTradelistCache.put(currentView, new ArrayList<>());
+			log.info(String.format("resetting %s's trades", currentView));
+			configManager.setConfiguration(CONFIG_GROUP, "username:" + currentView, new Gson().toJson(new ArrayList<>()));
+			statPanel.updateDisplays(getTradesForCurrentView());
 		}
 	}
 
 	/**
 	 * Currently, we use this method for finding out when a user logs in so that we can
-	 * get their username to load their specific trade history to display, as opposed to the global
+	 * get their loggedInUser to load their specific trade history to display, as opposed to the global
 	 * trade history across all their accounts.
 	 *
 	 * @param event GameStateChanged event, such as when a user logs in.
@@ -557,13 +626,29 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			username = client.getUsername();
+			loggedInUser = client.getUsername();
+			log.info(String.format("%s has just logged in", loggedInUser));
 
 			if (config.storeTradeHistory())
 			{
-				accountSpecificTrades = loadTradeHistory("data:" + username);
-				updateDisplays(accountSpecificTrades);
-				tabManager.setWhichTradesListDisplay(username);
+				//if the account doesn't have a history yet, create a blank history for it.
+				if (!(getAccountNames().contains(loggedInUser)))
+				{
+					log.info(String.format("%s has no history so it is being set up", loggedInUser));
+					tabManager.getViewSelector().addItem(loggedInUser);
+					configManager.setConfiguration(CONFIG_GROUP, "username:" + loggedInUser, new Gson().toJson(new ArrayList<>()));
+				}
+
+				if (!userTradelistCache.containsKey(loggedInUser))
+				{
+					log.info(String.format("loading trades for %s from disk", loggedInUser));
+					ArrayList<FlippingItem> tradesFromDisk = loadTradeHistory("username:" + loggedInUser);
+					userTradelistCache.put(loggedInUser, tradesFromDisk);
+				}
+
+				tabManager.getViewSelector().setSelectedItem(loggedInUser);
+				currentView = loggedInUser;
+
 			}
 		}
 	}
@@ -593,11 +678,12 @@ public class FlippingPlugin extends Plugin
 	 */
 	private void updateDisplays(ArrayList<FlippingItem> trades)
 	{
+		log.info("list size is: " + trades.size());
 		executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 		{
 			validateAllItems(trades);
-			flippingPanel.rebuildFlippingPanel(trades);
-			statPanel.updateDisplays();
+			flippingPanel.updateDisplays(trades);
+			statPanel.updateDisplays(trades);
 		})));
 	}
 
@@ -607,23 +693,22 @@ public class FlippingPlugin extends Plugin
 	public void storeTradeHistory()
 	{
 
-		if (accountSpecificTrades.isEmpty())
+		if (userTradelistCache.get(loggedInUser).isEmpty())
 		{
 			return;
 		}
 		final Gson gson = new Gson();
 		executor.submit(() ->
 		{
-			String accountSpecificTradesJson = gson.toJson(accountSpecificTrades);
+			String accountSpecificTradesJson = gson.toJson(userTradelistCache.get(loggedInUser));
 			String accountWideTradesJson = gson.toJson(accountWideTrades);
 			configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, accountWideTradesJson);
-			//username shouldn't be null as storeTradeHistory is only called when we get offers and even
-			//login offers only come in after the username is set, but just in case...
-			if (username != null)
+			//loggedInUser shouldn't be null as storeTradeHistory is only called when we get offers and even
+			//login offers only come in after the loggedInUser is set, but just in case...
+			if (loggedInUser != null)
 			{
-				configManager.setConfiguration(CONFIG_GROUP, "data:" + username, accountSpecificTradesJson);
+				configManager.setConfiguration(CONFIG_GROUP, "username:" + loggedInUser, accountSpecificTradesJson);
 			}
-
 		});
 	}
 
@@ -631,8 +716,8 @@ public class FlippingPlugin extends Plugin
 	 * Gets the trade history for the specified key as JSON, turns it into an arraylist of FlippingItem
 	 * and returns it.
 	 *
-	 * @param key can be either ACCOUNT_WIDE (which is currently the string "accountwide") or a username
-	 *            which is the username of the currently logged in user.
+	 * @param key can be either ACCOUNT_WIDE (which is currently the string "accountwide") or the username of a user
+	 *            with a flip history.
 	 */
 	public ArrayList<FlippingItem> loadTradeHistory(String key)
 	{
@@ -674,7 +759,7 @@ public class FlippingPlugin extends Plugin
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
-					flippingPanel.rebuildFlippingPanel(accountSpecificTrades);
+					flippingPanel.updateDisplays(getTradesForCurrentView());
 					break;
 				default:
 					break;
@@ -701,7 +786,7 @@ public class FlippingPlugin extends Plugin
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
-			for (FlippingItem item : accountSpecificTrades)
+			for (FlippingItem item : userTradelistCache.get(loggedInUser))
 			{
 				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
 				{

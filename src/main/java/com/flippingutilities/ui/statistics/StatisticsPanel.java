@@ -41,6 +41,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
@@ -179,7 +180,7 @@ public class StatisticsPanel extends JPanel
 			}
 			//Handle new time interval selected
 			setTimeInterval(selectedInterval);
-			updateDisplays();
+			updateDisplays(plugin.getTradesForCurrentView());
 		});
 
 		//Holds the time interval selector beneath the tab manager.
@@ -352,7 +353,7 @@ public class StatisticsPanel extends JPanel
 	 * Gets called on startup, after the tradesList has been initialized and after every new registered trade.
 	 */
 	//New trade registered, updateHistoryAndTradedTime the profit labels and add/updateHistoryAndTradedTime profit item.
-	public void updateDisplays()
+	public void updateDisplays(ArrayList<FlippingItem> trades)
 	{
 		SwingUtilities.invokeLater(() ->
 		{
@@ -360,7 +361,7 @@ public class StatisticsPanel extends JPanel
 			totalExpenses = 0;
 			totalRevenues = 0;
 
-			for (FlippingItem item : plugin.getTrades())
+			for (FlippingItem item : trades)
 			{
 				totalProfit += item.currentProfit(startOfInterval);
 				totalExpenses += item.getTotalExpenses();
@@ -377,11 +378,11 @@ public class StatisticsPanel extends JPanel
 
 	/**
 	 * Responsible for updating the total profit label at the very top.
-	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTrades()}.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesForCurrentView()}.
 	 */
 	private void updateTotalProfitDisplay()
 	{
-		if (plugin.getTrades() == null)
+		if (plugin.getTradesForCurrentView() == null)
 		{
 			totalProfitVal.setText("0");
 			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
