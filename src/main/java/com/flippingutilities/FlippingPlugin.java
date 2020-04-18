@@ -289,7 +289,6 @@ public class FlippingPlugin extends Plugin
 
 		if (selectedUsername.equals(ACCOUNT_WIDE))
 		{
-			log.info("selected view is account wide so showing account wide trades");
 			tradesListToDisplay = accountWideTrades;
 		}
 
@@ -298,12 +297,13 @@ public class FlippingPlugin extends Plugin
 			//look in cache, if its there just use it, otherwise set it from disk.
 			if (userTradelistCache.containsKey(selectedUsername))
 			{
-				log.info("history exists in cache");
+				log.info(String.format("history for %s exists in cache", selectedUsername));
 				tradesListToDisplay = userTradelistCache.get(selectedUsername);
 			}
 			else
 			{
-				log.info("history does not exist in cache, so its being loaded from disk");
+				log.info(String.format("history for %s does not exist in cache, so its being loaded from " +
+					"disk and the cache is being set", selectedUsername));
 				tradesListToDisplay = loadTradeHistory(KEY_PREFIX + selectedUsername);
 				userTradelistCache.put(selectedUsername, tradesListToDisplay);
 			}
@@ -658,7 +658,8 @@ public class FlippingPlugin extends Plugin
 				//account's tradeslist and thus loading it from disk into the cache that way.
 				if (!userTradelistCache.containsKey(loggedInUser))
 				{
-					log.info(String.format("loading trades for %s from disk", loggedInUser));
+					log.info(String.format("loading trades for %s from disk as they don't exist in the " +
+						"cache and setting the cache", loggedInUser));
 					ArrayList<FlippingItem> tradesFromDisk = loadTradeHistory(KEY_PREFIX + loggedInUser);
 					userTradelistCache.put(loggedInUser, tradesFromDisk);
 				}
