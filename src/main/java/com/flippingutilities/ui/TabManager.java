@@ -48,9 +48,7 @@ public class TabManager extends PluginPanel
 	@Getter
 	private JComboBox<String> viewSelector = new JComboBox();
 
-	private FlippingPlugin plugin;
-
-	private String prevSelectedUsername = "accountwide";
+	private String prevSelectedUsername;
 
 	/**
 	 * This manages the tab navigation bar at the top of the panel.
@@ -63,14 +61,10 @@ public class TabManager extends PluginPanel
 	public TabManager(FlippingPlugin plugin, FlippingPanel flippingPanel, StatisticsPanel statPanel)
 	{
 		super(false);
-		this.plugin = plugin;
-
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		viewSelector.addItem("accountwide");
-		viewSelector.setSelectedItem("accountwide");
 		viewSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		viewSelector.setFocusable(false);
 		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -85,7 +79,7 @@ public class TabManager extends PluginPanel
 				return;
 			}
 
-			if (!prevSelectedUsername.equals(selectedUsername))
+			if (!selectedUsername.equals(prevSelectedUsername) || prevSelectedUsername == null)
 			{
 				prevSelectedUsername = selectedUsername;
 				plugin.changeView(selectedUsername);

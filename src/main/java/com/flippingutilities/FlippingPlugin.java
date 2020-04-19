@@ -131,6 +131,8 @@ public class FlippingPlugin extends Plugin
 	//used to check which trades list the user is currently viewing. This is very important for knowing what tradeslist
 	//to pass to the updateDisplay methods on the stats and flipping panels along with knowing which tradeslist to reset
 	//when the reset button is clicked.
+
+	@Getter
 	private String currentView = ACCOUNT_WIDE;
 
 	//the trades data loaded from disk. I'm using this hashmap as a cache so that I don't have to keep
@@ -179,7 +181,10 @@ public class FlippingPlugin extends Plugin
 			if (config.storeTradeHistory())
 			{
 				accountWideTrades = loadTradeHistory(ACCOUNT_WIDE);
-				updateDisplays(accountWideTrades);
+				currentView = ACCOUNT_WIDE;
+				tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+				tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
+				//updateDisplays(accountWideTrades);
 				tabManager.setComboBoxOptions(getAccountNames());
 			}
 
@@ -242,7 +247,8 @@ public class FlippingPlugin extends Plugin
 	 * the various data set by configManager.setConfiguration. If a user logs into their runelite account, the config
 	 * manager will look in {USER_HOME}/.runelite/profiles/{USERNAME}/settings.properties.
 	 */
-	public void onConfigLocationChanged() {
+	public void onConfigLocationChanged()
+	{
 		accountWideTrades = loadTradeHistory(ACCOUNT_WIDE);
 		currentView = ACCOUNT_WIDE;
 		userTradelistCache = new HashMap<>();
@@ -370,7 +376,8 @@ public class FlippingPlugin extends Plugin
 		updateTradesList(accountWideTrades, accountWideItem, newOffer);
 		updateTradesList(userTradelistCache.get(loggedInUser), accountSpecificItem, newOffer);
 
-		storeTradeHistory();
+		storeTradeHistory(ACCOUNT_WIDE);
+		storeTradeHistory(loggedInUser);
 
 		//only way items can float to the top of the list (hence requiring a rebuild) is when
 		//the offer is a margin check. Additionally, there is no point rebuilding the panel when
@@ -708,24 +715,22 @@ public class FlippingPlugin extends Plugin
 	/**
 	 * Stores the trade history
 	 */
-	public void storeTradeHistory()
+	public void storeTradeHistory(String view)
 	{
-
-		if (userTradelistCache.get(loggedInUser).isEmpty())
-		{
-			return;
-		}
 		final Gson gson = new Gson();
+
 		executor.submit(() ->
 		{
-			String accountSpecificTradesJson = gson.toJson(userTradelistCache.get(loggedInUser));
-			String accountWideTradesJson = gson.toJson(accountWideTrades);
-			configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, accountWideTradesJson);
-			//loggedInUser shouldn't be null as storeTradeHistory is only called when we get offers and even
-			//login offers only come in after the loggedInUser is set, but just in case...
-			if (loggedInUser != null)
+			if (view.equals(ACCOUNT_WIDE))
 			{
-				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + loggedInUser, accountSpecificTradesJson);
+				String accountWideTradesJson = gson.toJson(accountWideTrades);
+				configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, accountWideTradesJson);
+			}
+
+			else
+			{
+				String accountSpecificTradesJson = gson.toJson(userTradelistCache.get(view));
+				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + view, accountSpecificTradesJson);
 			}
 		});
 	}

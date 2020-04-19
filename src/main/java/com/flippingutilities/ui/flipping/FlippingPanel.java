@@ -375,7 +375,7 @@ public class FlippingPanel extends JPanel
 		tradeList.remove(itemPanel.getFlippingItem());
 
 		updateDisplays(tradeList);
-		plugin.storeTradeHistory();
+		plugin.storeTradeHistory(plugin.getCurrentView());
 	}
 
 	//Searches the active item panels for matching item names.
