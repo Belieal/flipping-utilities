@@ -88,7 +88,9 @@ public class FlippingPlugin extends Plugin
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
-	public static final String CONFIG_KEY = "items";
+	public static final String ITEMS_CONFIG_KEY = "items";
+	public static final String TIME_INTERVAL_CONFIG_KEY = "selectedinterval";
+	public static final String SORT_BY_CONFIG_KEY = "sortby";
 
 	@Inject
 	private Client client;
@@ -460,7 +462,7 @@ public class FlippingPlugin extends Plugin
 	{
 		tradesList.clear();
 		flippingPanel.setItemHighlighted(false);
-		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
+		configManager.unsetConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
 		flippingPanel.rebuildFlippingPanel(tradesList);
 	}
@@ -476,8 +478,17 @@ public class FlippingPlugin extends Plugin
 		executor.submit(() ->
 		{
 			final String json = gson.toJson(tradesList);
-			configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, json);
-			configManager.setConfiguration(CONFIG_GROUP, "selectedInterval", statPanel.getSelectedInterval());
+			configManager.setConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY, json);
+
+			if (statPanel.getSelectedInterval() != null)
+			{
+				configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
+			}
+			if (statPanel.getSelectedSort() != null)
+			{
+				configManager.setConfiguration(CONFIG_GROUP, SORT_BY_CONFIG_KEY, statPanel.getSelectedSort());
+			}
+
 		});
 	}
 
@@ -485,8 +496,9 @@ public class FlippingPlugin extends Plugin
 	public void loadConfig()
 	{
 		log.info("Loading Flipping config");
-		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
-		statPanel.setSelectedInterval(configManager.getConfiguration(CONFIG_GROUP, "selectedInterval"));
+		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
+		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY));
+		statPanel.setSortBy(configManager.getConfiguration(CONFIG_GROUP, SORT_BY_CONFIG_KEY));
 
 		if (json == null)
 		{
@@ -514,7 +526,7 @@ public class FlippingPlugin extends Plugin
 		//Ensure that user configs are updated after being changed
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
-			if (event.getKey().equals(CONFIG_KEY) || event.getKey().equals("selectedInterval"))
+			if (event.getKey().equals(ITEMS_CONFIG_KEY) || event.getKey().equals(TIME_INTERVAL_CONFIG_KEY))
 			{
 				return;
 			}

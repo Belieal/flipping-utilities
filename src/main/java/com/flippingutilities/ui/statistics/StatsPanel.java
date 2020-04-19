@@ -55,7 +55,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 import lombok.Getter;
-import lombok.Setter;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -97,6 +96,9 @@ public class StatsPanel extends JPanel
 
 	//Combo box that selects the time interval that startOfInterval contains.
 	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
+
+	//Sorting selector
+	private JComboBox<String> sortBox = new JComboBox<>(SORT_BY_STRINGS);
 
 	//Represents the total profit made in the selected time interval.
 	private JLabel totalProfitVal = new JLabel();
@@ -140,8 +142,10 @@ public class StatsPanel extends JPanel
 	private Instant startOfInterval = Instant.now();
 
 	@Getter
-	@Setter
 	private String selectedInterval;
+
+	@Getter
+	private String selectedSort;
 
 	//Time when the panel was created. Assume this is the start of session.
 	private Instant sessionTime;
@@ -175,7 +179,7 @@ public class StatsPanel extends JPanel
 		constraints.gridy = 0;
 
 		//Start off with "Session" selected in the combobox.
-		timeIntervalList.setSelectedItem(selectedInterval != null ? selectedInterval : "Session");
+		timeIntervalList.setSelectedItem("Session");
 		timeIntervalList.setRenderer(new ComboBoxListRenderer());
 		timeIntervalList.setMinimumSize(new Dimension(0, 35));
 		timeIntervalList.setFocusable(false);
@@ -300,7 +304,6 @@ public class StatsPanel extends JPanel
 
 		JLabel sortLabel = new JLabel("Sort by: ");
 
-		JComboBox<String> sortBox = new JComboBox<>(SORT_BY_STRINGS);
 		sortBox.setSelectedItem("Most Recent");
 		sortBox.setRenderer(new ComboBoxListRenderer());
 		sortBox.setMinimumSize(new Dimension(0, 35));
@@ -309,7 +312,7 @@ public class StatsPanel extends JPanel
 
 		sortBox.addActionListener(event ->
 		{
-			String selectedSort = (String) sortBox.getSelectedItem();
+			selectedSort = (String) sortBox.getSelectedItem();
 
 			if (selectedSort == null)
 			{
@@ -551,7 +554,7 @@ public class StatsPanel extends JPanel
 	 *
 	 * @param selectedInterval The string from TIME_INTERVAL_STRINGS that is selected in the time interval combobox
 	 */
-	private void setTimeInterval(String selectedInterval)
+	public void setTimeInterval(String selectedInterval)
 	{
 		if (selectedInterval == null)
 		{
@@ -588,6 +591,7 @@ public class StatsPanel extends JPanel
 				break;
 		}
 
+		timeIntervalList.setSelectedItem(selectedInterval);
 		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
 		plugin.updateConfig();
 	}
@@ -599,8 +603,13 @@ public class StatsPanel extends JPanel
 	 * @param selectedSort The string from SORT_BY_STRINGS that is selected in the sort by combobox
 	 */
 	//TODO: Hook this up
-	private void setSortBy(String selectedSort)
+	public void setSortBy(String selectedSort)
 	{
+		if (selectedSort == null)
+		{
+			return;
+		}
+
 		switch (selectedSort)
 		{
 			case "Most Recent":
@@ -614,6 +623,10 @@ public class StatsPanel extends JPanel
 			case "Highest Quantity":
 				break;
 		}
+
+		sortBox.setSelectedItem(selectedSort);
+		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
+		plugin.updateConfig();
 	}
 
 }
