@@ -149,6 +149,15 @@ public class HistoryManager
 		return getCashflow(itemsInInterval, false) - getCashflow(itemsInInterval, true);
 	}
 
+	/**
+	 * This method finds the value of a list of offers. The boolean parameter determines if we calculate
+	 * from buyList or sellList.
+	 *
+	 * @param offers     The list of standardized offers whose cashflow we want the value of.
+	 * @param getExpense Options parameter that calculates, if true, the total expenses accrued
+	 *                   and, if false, the total revenues accrued from the trades.
+	 * @return Returns a long value based on the boolean parameter provided.
+	 */
 	public long getCashflow(List<OfferInfo> offers, boolean getExpense)
 	{
 		return getValueOfTrades(getSaleList(offers, getExpense), countItemsFlipped(offers));
