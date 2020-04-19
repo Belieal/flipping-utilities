@@ -167,7 +167,7 @@ public class FlippingPlugin extends Plugin
 
 			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
-				statPanel.updateDisplays();
+				statPanel.rebuild(tradesList);
 				if (tradesList != null)
 				{
 					for (FlippingItem flippingItem : tradesList)
@@ -189,6 +189,7 @@ public class FlippingPlugin extends Plugin
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			flippingPanel.updateActivePanelsGePropertiesDisplay();
+			statPanel.updateDisplays();
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
@@ -290,7 +291,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		updateConfig();
-		statPanel.updateDisplays();
+		statPanel.rebuild(tradesList);
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}
 
@@ -397,7 +398,8 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit);
+		//Initialized with sub info being collapsed.
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, true);
 		flippingItem.updateMargin(newOffer);
 		flippingItem.update(newOffer);
 
@@ -512,11 +514,12 @@ public class FlippingPlugin extends Plugin
 		//Ensure that user configs are updated after being changed
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
-			if (event.getKey().equals("items"))
+			if (event.getKey().equals(CONFIG_KEY) || event.getKey().equals("selectedInterval"))
 			{
 				return;
 			}
-			statPanel.updateDisplays();
+
+			statPanel.rebuild(tradesList);
 			flippingPanel.rebuildFlippingPanel(tradesList);
 		}
 	}

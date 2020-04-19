@@ -98,7 +98,7 @@ public class StatItemPanel extends JPanel
 	//Shows the item's icon
 	private JLabel itemIconTitleLabel = new JLabel();
 	//Label that controls the collapse function of the item panel.
-	private JLabel collapseIconTitleLabel = new JLabel(UIUtilities.CLOSE_ICON);
+	private JLabel collapseIconTitleLabel = new JLabel();
 
 	//Contains the sub info container and trade history panel.
 	private JPanel subInfoAndHistoryContainer = new JPanel(new BorderLayout());
@@ -154,10 +154,10 @@ public class StatItemPanel extends JPanel
 		this.executor = executor;
 		this.flippingItem = flippingItem;
 
+		setLayout(new BorderLayout());
+
 		//Get parent
 		statsPanel = plugin.getStatPanel();
-
-		setLayout(new BorderLayout());
 
 		updateDisplays();
 
@@ -178,6 +178,7 @@ public class StatItemPanel extends JPanel
 		nameAndProfitTitlePanel.add(itemProfitTitleLabel, BorderLayout.SOUTH);
 
 		/* Collapse icon */
+		collapseIconTitleLabel.setIcon(flippingItem.isShouldCollapseStatItem() ? UIUtilities.CLOSE_ICON : UIUtilities.OPEN_ICON);
 		collapseIconTitleLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
 		titlePanel.addMouseListener(new MouseAdapter()
 		{
@@ -188,13 +189,15 @@ public class StatItemPanel extends JPanel
 				{
 					if (subInfoAndHistoryContainer.isVisible())
 					{
-						subInfoAndHistoryContainer.setVisible(false);
 						collapseIconTitleLabel.setIcon(UIUtilities.CLOSE_ICON);
+						subInfoAndHistoryContainer.setVisible(false);
+						flippingItem.setShouldCollapseStatItem(false);
 					}
 					else
 					{
-						subInfoAndHistoryContainer.setVisible(true);
 						collapseIconTitleLabel.setIcon(UIUtilities.OPEN_ICON);
+						subInfoAndHistoryContainer.setVisible(true);
+						flippingItem.setShouldCollapseStatItem(true);
 					}
 				}
 			}
@@ -221,8 +224,7 @@ public class StatItemPanel extends JPanel
 		titlePanel.add(nameAndProfitTitlePanel, BorderLayout.CENTER);
 		titlePanel.add(collapseIconTitleLabel, BorderLayout.EAST);
 
-		//Initialized with sub info being collapsed.
-		subInfoAndHistoryContainer.setVisible(false);
+		subInfoAndHistoryContainer.setVisible(flippingItem.isShouldCollapseStatItem());
 
 		/* Item sub infos */
 		/* Main subinfo name and value labels */
@@ -374,7 +376,6 @@ public class StatItemPanel extends JPanel
 			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
 			timeOfLastFlipValLabel.setText(UIUtilities.formatDuration(lastRecordedTrade.getTime()) + " ago");
 			timeOfLastFlipValLabel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
-
 		}
 
 		float roi = (float) totalProfit / totalExpense * 100;

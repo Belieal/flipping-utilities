@@ -105,27 +105,30 @@ public class StatsPanel extends JPanel
 	private JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
 
 	/* Subinfo text labels */
-	private final JLabel hourlyProfitText = new JLabel("Hourly profit: ");
+	private final JLabel hourlyProfitText = new JLabel("Hourly Profit: ");
 	private final JLabel roiText = new JLabel("ROI: ");
 	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
 	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
+	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel roiVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
 	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
 	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
+	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
@@ -385,6 +388,7 @@ public class StatsPanel extends JPanel
 			}
 		});
 
+		updateDisplays();
 		revalidate();
 		repaint();
 	}
@@ -414,8 +418,6 @@ public class StatsPanel extends JPanel
 
 		ArrayList<FlippingItem> tradesList = plugin.getTradesList();
 
-		rebuild(tradesList);
-
 		for (FlippingItem item : tradesList)
 		{
 			totalProfit += item.currentProfit(startOfInterval);
@@ -428,6 +430,7 @@ public class StatsPanel extends JPanel
 		updateHourlyProfitDisplay();
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
+		updateSessionTime();
 	}
 
 	/**
@@ -532,6 +535,16 @@ public class StatsPanel extends JPanel
 		}
 	}
 
+	private void updateSessionTime()
+	{
+		sessionTimeVal.setText(UIUtilities.formatDuration(sessionTime));
+		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
+		{
+			subInfoContainer.remove(sessionTimePanel);
+		}
+	}
+
 	/**
 	 * Gets called every time the time interval combobox has its selection changed.
 	 * Sets the start interval of the profit calculation.
@@ -575,7 +588,7 @@ public class StatsPanel extends JPanel
 				break;
 		}
 
-		SwingUtilities.invokeLater(this::updateDisplays);
+		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
 		plugin.updateConfig();
 	}
 

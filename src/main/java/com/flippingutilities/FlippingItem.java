@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -74,14 +75,19 @@ public class FlippingItem
 	@Getter
 	private Instant latestSellTime;
 
+	@Getter
+	@Setter
+	private boolean shouldCollapseStatItem;
+
 	private HistoryManager history = new HistoryManager();
 
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit)
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, boolean shouldCollapseStatItem)
 	{
 		this.itemId = itemId;
 		this.itemName = itemName;
 		this.totalGELimit = totalGeLimit;
+		this.shouldCollapseStatItem = shouldCollapseStatItem;
 	}
 
 	/**

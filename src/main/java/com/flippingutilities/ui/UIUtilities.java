@@ -89,13 +89,13 @@ public class UIUtilities
 			long timeAgo = (toInstant - fromInstant.getEpochSecond());
 
 			String result = timeAgo + (timeAgo == 1 ? " second" : " seconds");
-			if (timeAgo > 60)
+			if (timeAgo >= 60)
 			{
 				//Seconds to minutes.
 				long timeAgoMinutes = timeAgo / 60;
 				result = timeAgoMinutes + (timeAgoMinutes == 1 ? " minute" : " minutes");
 
-				if (timeAgoMinutes > 60)
+				if (timeAgoMinutes >= 60)
 				{
 					//Minutes to hours
 					int timeAgoHours = (int) (timeAgoMinutes / 60);
