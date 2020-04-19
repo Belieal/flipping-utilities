@@ -31,7 +31,6 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -63,10 +62,6 @@ import net.runelite.client.util.QuantityFormatter;
 @Slf4j
 public class StatItemPanel extends JPanel
 {
-	private static final Dimension ICON_SIZE = new Dimension(16, 16);
-	private static final Color LOSS_COLOR = new Color(250, 74, 75);
-	private static final Color PRICE_COLOR = new Color(255, 175, 55);
-
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3),
 		BorderFactory.createEmptyBorder(3, 3, 3, 3));
@@ -275,8 +270,8 @@ public class StatItemPanel extends JPanel
 		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		profitEachValLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		quantityValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		avgBuyPriceValLabel.setForeground(PRICE_COLOR);
-		avgSellPriceValLabel.setForeground(PRICE_COLOR);
+		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
+		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
 
 		//Set panel layouts. BoxLayouts are favorable since they fit elements based on visibility.
 		subInfoNamePanel.setLayout(new BoxLayout(subInfoNamePanel, BoxLayout.Y_AXIS));
@@ -375,7 +370,7 @@ public class StatItemPanel extends JPanel
 		}
 
 		itemProfitTitleLabel.setText(totalProfitString);
-		itemProfitTitleLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
+		itemProfitTitleLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		itemProfitTitleLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
 		itemProfitTitleLabel.setFont(FontManager.getRunescapeSmallFont());
 	}
@@ -383,7 +378,7 @@ public class StatItemPanel extends JPanel
 	private void updateItemSubInfosDisplay()
 	{
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(totalProfit, true) + " gp");
-		totalProfitValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
+		totalProfitValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 
 		quantityValLabel.setText(itemCountFlipped + " Items");
 
@@ -403,7 +398,7 @@ public class StatItemPanel extends JPanel
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
 		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((totalProfit / itemCountFlipped), true) + " gp/ea");
-		profitEachValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : LOSS_COLOR);
+		profitEachValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 }

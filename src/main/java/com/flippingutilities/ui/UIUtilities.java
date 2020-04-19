@@ -158,13 +158,13 @@ public class UIUtilities
 	{
 		if (percentage < gradientMax * 0.5)
 		{
-			return (percentage <= 0) ? Color.RED : ColorUtil
-				.colorLerp(Color.RED, Color.YELLOW, percentage / gradientMax * 2);
+			return (percentage <= 0) ? Color.RED :
+				ColorUtil.colorLerp(Color.RED, Color.YELLOW, percentage / gradientMax * 2);
 		}
 		else
 		{
-			return (percentage >= gradientMax) ? Color.GREEN : ColorUtil
-				.colorLerp(Color.YELLOW, Color.GREEN, percentage / gradientMax * 0.5);
+			return (percentage >= gradientMax) ? Color.GREEN :
+				ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, percentage / gradientMax * 0.5);
 		}
 	}
 
