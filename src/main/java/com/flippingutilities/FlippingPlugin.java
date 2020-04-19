@@ -131,12 +131,11 @@ public class FlippingPlugin extends Plugin
 	//used to check which trades list the user is currently viewing. This is very important for knowing what tradeslist
 	//to pass to the updateDisplay methods on the stats and flipping panels along with knowing which tradeslist to reset
 	//when the reset button is clicked.
-
 	@Getter
 	private String currentView = ACCOUNT_WIDE;
 
 	//the trades data loaded from disk. I'm using this hashmap as a cache so that I don't have to keep
-	//loading it from disk.
+	//loading the trade lists from disk.
 	private Map<String, ArrayList<FlippingItem>> userTradelistCache = new HashMap<>();
 
 	//Ensures we don't rebuild constantly when highlighting
@@ -184,7 +183,6 @@ public class FlippingPlugin extends Plugin
 				currentView = ACCOUNT_WIDE;
 				tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
 				tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
-				//updateDisplays(accountWideTrades);
 				tabManager.setComboBoxOptions(getAccountNames());
 			}
 
@@ -280,7 +278,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * This method is invoked everytime a user selects a username from the dropdown at the top of the
+	 * This method is invoked every time a user selects a username from the dropdown at the top of the
 	 * panel. If the username selected does not exist in the cache, it uses loadTradeHistory to load it from
 	 * disk and set the cache. Otherwise, it just reads what in the cache for that username. It updates the displays
 	 * with the trades it either found in the cache or from disk.
@@ -616,7 +614,10 @@ public class FlippingPlugin extends Plugin
 		flippingPanel.highlightItem(currentGEItemId);
 	}
 
-	//Functionality to the top right reset button.
+	/**
+	 * Resets the history and saves blank history to disk. This is invoked in FlippingPanel as the action listener
+	 * for the reset button. It will reset the history of the acccount whose trades the user is currently looking at.
+	 */
 	public void resetTradeHistory()
 	{
 		//if loggedInUser is null, then user hasn't logged in. So reset account wide trade list
@@ -713,15 +714,19 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * Stores the trade history
+	 * Stores the trades associated with a username. This is invoked on every grand exchange offer with the currently
+	 * logged in user's username passed to it along with ACCOUNTWIDE passed to it, as those two trades lists are always
+	 * being updated when onGrandExchangeOffer is called.
+	 *
+	 * @param username, username of the account whose tradelist you want to store.
 	 */
-	public void storeTradeHistory(String view)
+	public void storeTradeHistory(String username)
 	{
 		final Gson gson = new Gson();
 
 		executor.submit(() ->
 		{
-			if (view.equals(ACCOUNT_WIDE))
+			if (username.equals(ACCOUNT_WIDE))
 			{
 				String accountWideTradesJson = gson.toJson(accountWideTrades);
 				configManager.setConfiguration(CONFIG_GROUP, ACCOUNT_WIDE, accountWideTradesJson);
@@ -729,8 +734,8 @@ public class FlippingPlugin extends Plugin
 
 			else
 			{
-				String accountSpecificTradesJson = gson.toJson(userTradelistCache.get(view));
-				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + view, accountSpecificTradesJson);
+				String accountSpecificTradesJson = gson.toJson(userTradelistCache.get(username));
+				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + username, accountSpecificTradesJson);
 			}
 		});
 	}
