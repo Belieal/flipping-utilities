@@ -32,7 +32,6 @@ import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -45,8 +44,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -58,8 +55,10 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 import lombok.Getter;
+import lombok.Setter;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
@@ -89,7 +88,7 @@ public class StatsPanel extends JPanel
 	private JPanel topPanel = new JPanel(new BorderLayout());
 
 	//Holds the sub info labels.
-	private JPanel subInfoContainer = new JPanel(new BorderLayout());
+	private JPanel subInfoContainer = new JPanel();
 
 	private JPanel statItemContainer = new JPanel(new GridBagLayout());
 
@@ -111,11 +110,22 @@ public class StatsPanel extends JPanel
 	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
 	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
 
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText};
+
 	/* Subinfo value labels */
-	private final JLabel hourlyProfitVal = new JLabel();
-	private final JLabel roiVal = new JLabel();
-	private final JLabel totalRevenueVal = new JLabel();
-	private final JLabel totalExpenseVal = new JLabel();
+	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel roiVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
+
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal};
+
+	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
+	private final JPanel roiPanel = new JPanel(new BorderLayout());
+	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
+	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
+
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
@@ -125,6 +135,10 @@ public class StatsPanel extends JPanel
 	//Contains the unix time of the start of the interval.
 	@Getter
 	private Instant startOfInterval = Instant.now();
+
+	@Getter
+	@Setter
+	private String selectedInterval;
 
 	//Time when the panel was created. Assume this is the start of session.
 	private Instant sessionTime;
@@ -158,22 +172,17 @@ public class StatsPanel extends JPanel
 		constraints.gridy = 0;
 
 		//Start off with "Session" selected in the combobox.
-		timeIntervalList.setSelectedItem("Session");
+		timeIntervalList.setSelectedItem(selectedInterval != null ? selectedInterval : "Session");
 		timeIntervalList.setRenderer(new ComboBoxListRenderer());
 		timeIntervalList.setMinimumSize(new Dimension(0, 35));
 		timeIntervalList.setFocusable(false);
 		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		timeIntervalList.addActionListener(event ->
 		{
-			String selectedInterval = (String) timeIntervalList.getSelectedItem();
+			selectedInterval = (String) timeIntervalList.getSelectedItem();
 
-			if (selectedInterval == null)
-			{
-				return;
-			}
 			//Handle new time interval selected
 			setTimeInterval(selectedInterval);
-			updateDisplays();
 		});
 
 		//Holds the time interval selector beneath the tab manager.
@@ -257,56 +266,19 @@ public class StatsPanel extends JPanel
 		totalProfitVal.addMouseListener(collapseOnClick);
 
 		/* Subinfo represents the less-used general historical stats */
-		//Color the left text.
-		hourlyProfitText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		roiText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		totalRevenueText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		totalExpenseText.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		subInfoContainer.setLayout(new DynamicGridLayout(textLabelArray.length, valLabelArray.length));
 
-		//Set alignment of the right values.
-		hourlyProfitVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		roiVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		totalRevenueVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		totalExpenseVal.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		//All labels should already be sorted in their arrays.
+		for (int i = 0; i < subInfoPanelArray.length; i++)
+		{
+			textLabelArray[i].setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
-		//Represents the left descriptive text labels.
-		JPanel subInfoTextPanel = new JPanel();
-		//Represents the right value labels.
-		JPanel subInfoValPanel = new JPanel();
-
-		//Both label groups are sorted into paired panels with BoxLayouts.
-		//BoxLayouts are favorable since they allow for packing the labels
-		//based on visibility.
-		subInfoTextPanel.setLayout(new BoxLayout(subInfoTextPanel, BoxLayout.Y_AXIS));
-		subInfoValPanel.setLayout(new BoxLayout(subInfoValPanel, BoxLayout.Y_AXIS));
-
-		subInfoTextPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		subInfoValPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-
-		//WHY CAN'T YOU ADD VGAPS TO BOXLAYOUTS *GAAAAAAAAAAAAAAAAARRHHH*...
-		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoTextPanel.add(hourlyProfitText);
-		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoTextPanel.add(roiText);
-		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoTextPanel.add(totalRevenueText);
-		subInfoTextPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoTextPanel.add(totalExpenseText);
-
-		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoValPanel.add(hourlyProfitVal);
-		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoValPanel.add(roiVal);
-		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoValPanel.add(totalRevenueVal);
-		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-		subInfoValPanel.add(totalExpenseVal);
+			subInfoPanelArray[i].add(textLabelArray[i], BorderLayout.WEST);
+			subInfoPanelArray[i].add(valLabelArray[i], BorderLayout.EAST);
+		}
 
 		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		subInfoContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
-
-		subInfoContainer.add(subInfoTextPanel, BorderLayout.WEST);
-		subInfoContainer.add(subInfoValPanel, BorderLayout.EAST);
+		subInfoContainer.setBorder(new EmptyBorder(9, 5, 5, 5));
 
 		//Wraps the total profit labels.
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
@@ -424,30 +396,38 @@ public class StatsPanel extends JPanel
 	//New trade registered, update the profit labels and add/update profit item.
 	public void updateDisplays()
 	{
-		SwingUtilities.invokeLater(() ->
+		subInfoContainer.removeAll();
+
+		boolean useAltColor = true;
+		for (JPanel panel : subInfoPanelArray)
 		{
-			totalProfit = 0;
-			totalExpenses = 0;
-			totalRevenues = 0;
+			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
+			subInfoContainer.add(panel);
+			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 
-			ArrayList<FlippingItem> tradesList = plugin.getTradesList();
+			useAltColor = !useAltColor;
+		}
 
-			rebuild(tradesList);
+		totalProfit = 0;
+		totalExpenses = 0;
+		totalRevenues = 0;
 
-			for (FlippingItem item : tradesList)
-			{
-				totalProfit += item.currentProfit(startOfInterval);
-				totalExpenses += item.getCashflow(startOfInterval, true);
-				totalRevenues += item.getCashflow(startOfInterval, false);
-			}
+		ArrayList<FlippingItem> tradesList = plugin.getTradesList();
 
-			updateTotalProfitDisplay();
+		rebuild(tradesList);
 
-			updateSubInfoFont();
-			updateHourlyProfitDisplay();
-			updateRoiDisplay();
-			updateRevenueAndExpenseDisplay();
-		});
+		for (FlippingItem item : tradesList)
+		{
+			totalProfit += item.currentProfit(startOfInterval);
+			totalExpenses += item.getCashflow(startOfInterval, true);
+			totalRevenues += item.getCashflow(startOfInterval, false);
+		}
+
+		updateTotalProfitDisplay();
+		updateSubInfoFont();
+		updateHourlyProfitDisplay();
+		updateRoiDisplay();
+		updateRevenueAndExpenseDisplay();
 	}
 
 	/**
@@ -475,22 +455,19 @@ public class StatsPanel extends JPanel
 	private void updateHourlyProfitDisplay()
 	{
 		//Doesn't really make sense to show profit/hr for anything else
-		//	unless we store session time.
-		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
-		{
-			hourlyProfitText.setVisible(false);
-			hourlyProfitVal.setVisible(false);
-		}
-		else
+		//unless we store session time over longer periods of time.
+		if (Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
 		{
 			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
 
 			String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 			hourlyProfitVal.setText(profitString + " gp/hr");
-
-			hourlyProfitText.setVisible(true);
-			hourlyProfitVal.setVisible(true);
 		}
+		else
+		{
+			subInfoContainer.remove(hourlyProfitPanel);
+		}
+
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
@@ -532,44 +509,26 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateSubInfoFont()
 	{
-		//Set the font of the sub infos
+		Font font = null;
 		switch (plugin.getConfig().subInfoFontStyle())
 		{
 			case SMALL_FONT:
-				hourlyProfitText.setFont(FontManager.getRunescapeSmallFont());
-				roiText.setFont(FontManager.getRunescapeSmallFont());
-				totalRevenueText.setFont(FontManager.getRunescapeSmallFont());
-				totalExpenseText.setFont(FontManager.getRunescapeSmallFont());
-
-				hourlyProfitVal.setFont(FontManager.getRunescapeSmallFont());
-				roiVal.setFont(FontManager.getRunescapeSmallFont());
-				totalRevenueVal.setFont(FontManager.getRunescapeSmallFont());
-				totalExpenseVal.setFont(FontManager.getRunescapeSmallFont());
+				font = FontManager.getRunescapeSmallFont();
 				break;
 
 			case REGULAR_FONT:
-				hourlyProfitText.setFont(FontManager.getRunescapeFont());
-				roiText.setFont(FontManager.getRunescapeFont());
-				totalRevenueText.setFont(FontManager.getRunescapeFont());
-				totalExpenseText.setFont(FontManager.getRunescapeFont());
-
-				hourlyProfitVal.setFont(FontManager.getRunescapeFont());
-				roiVal.setFont(FontManager.getRunescapeFont());
-				totalRevenueVal.setFont(FontManager.getRunescapeFont());
-				totalExpenseVal.setFont(FontManager.getRunescapeFont());
+				font = FontManager.getRunescapeFont();
 				break;
 
 			case BOLD_FONT:
-				hourlyProfitText.setFont(FontManager.getRunescapeBoldFont());
-				roiText.setFont(FontManager.getRunescapeBoldFont());
-				totalRevenueText.setFont(FontManager.getRunescapeBoldFont());
-				totalExpenseText.setFont(FontManager.getRunescapeBoldFont());
-
-				hourlyProfitVal.setFont(FontManager.getRunescapeBoldFont());
-				roiVal.setFont(FontManager.getRunescapeBoldFont());
-				totalRevenueVal.setFont(FontManager.getRunescapeBoldFont());
-				totalExpenseVal.setFont(FontManager.getRunescapeBoldFont());
+				font = FontManager.getRunescapeBoldFont();
 				break;
+		}
+
+		for (int i = 0; i < textLabelArray.length; i++)
+		{
+			textLabelArray[i].setFont(font);
+			valLabelArray[i].setFont(font);
 		}
 	}
 
@@ -581,7 +540,13 @@ public class StatsPanel extends JPanel
 	 */
 	private void setTimeInterval(String selectedInterval)
 	{
+		if (selectedInterval == null)
+		{
+			return;
+		}
+
 		Instant timeNow = Instant.now();
+
 		switch (selectedInterval)
 		{
 			case "Past Hour":
@@ -609,6 +574,9 @@ public class StatsPanel extends JPanel
 			default:
 				break;
 		}
+
+		SwingUtilities.invokeLater(this::updateDisplays);
+		plugin.updateConfig();
 	}
 
 	/**

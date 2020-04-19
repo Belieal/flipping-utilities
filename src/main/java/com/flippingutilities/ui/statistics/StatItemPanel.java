@@ -31,7 +31,6 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -43,8 +42,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -55,6 +52,7 @@ import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
@@ -102,24 +100,31 @@ public class StatItemPanel extends JPanel
 	//Label that controls the collapse function of the item panel.
 	private JLabel collapseIconTitleLabel = new JLabel(UIUtilities.CLOSE_ICON);
 
-
-	//Contains the name box container (west) with a corresponding value box container (east).
+	//Contains the sub info container and trade history panel.
 	private JPanel subInfoAndHistoryContainer = new JPanel(new BorderLayout());
+
+	private JLabel totalProfitValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel profitEachValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel timeOfLastFlipValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantityValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel roiValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel avgBuyPriceValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel avgSellPriceValLabel = new JLabel("", SwingConstants.RIGHT);
 
 	/* These panels contain the sub information regarding the item.
 	   Subinfos are general statistics about an item over the time interval currently selected. */
-	//West container that holds the names of the corresponding sub info value.
-	private JPanel subInfoNamePanel = new JPanel();
-	//East container that holds the values of the corresponding sub info names.
-	private JPanel subInfoValPanel = new JPanel();
 
-	private JLabel totalProfitValLabel = new JLabel();
-	private JLabel timeOfLastFlipValLabel = new JLabel();
-	private JLabel profitEachValLabel = new JLabel();
-	private JLabel roiValLabel = new JLabel();
-	private JLabel quantityValLabel = new JLabel();
-	private JLabel avgBuyPriceValLabel = new JLabel();
-	private JLabel avgSellPriceValLabel = new JLabel();
+	private JPanel totalProfitPanel = new JPanel(new BorderLayout());
+	private JPanel profitEachPanel = new JPanel(new BorderLayout());
+	private JPanel timeOfLastFlipPanel = new JPanel(new BorderLayout());
+	private JPanel quantityPanel = new JPanel(new BorderLayout());
+	private JPanel padPanel = new JPanel(new BorderLayout());
+	private JPanel roiPanel = new JPanel(new BorderLayout());
+	private JPanel avgBuyPricePanel = new JPanel(new BorderLayout());
+	private JPanel avgSellPricePanel = new JPanel(new BorderLayout());
+
+	private final JPanel[] subInfoPanelArray = {totalProfitPanel, profitEachPanel, timeOfLastFlipPanel, quantityPanel,
+		padPanel, roiPanel, avgBuyPricePanel, avgSellPricePanel};
 
 	/* Trade History containers. */
 	//Wraps the title label panel and the item history container.
@@ -220,51 +225,39 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.setVisible(false);
 
 		/* Item sub infos */
-
 		/* Main subinfo name and value labels */
-		JLabel totalProfitNameLabel = new JLabel("Total Profit: ");
-		JLabel timeOfLastFlipNameLabel = new JLabel("Last Traded: ");
-		JLabel profitEachNameLabel = new JLabel("Avg. Profit ea: ");
-		JLabel roiNameLabel = new JLabel("Avg. ROI: ");
-		JLabel quantityNameLabel = new JLabel("Quantity Flipped: ");
-		JLabel avgBuyPriceNameLabel = new JLabel("Avg. Buy Price: ");
-		JLabel avgSellPriceNameLabel = new JLabel("Avg. Sell Price: ");
-
-		JLabel padNameLabel = new JLabel(" ");
-		JLabel padValLabel = new JLabel(" ");
-
 		//Using arrays to make it easier to set UI looks en masse
-		JLabel[] nameLabelList = {totalProfitNameLabel, profitEachNameLabel, timeOfLastFlipNameLabel, quantityNameLabel, padNameLabel, roiNameLabel, avgBuyPriceNameLabel, avgSellPriceNameLabel};
-		JLabel[] valLabelList = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel, padValLabel, roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
+		JLabel[] textLabelArray = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
+			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
 
-		JLabel[] labelList = {totalProfitNameLabel, timeOfLastFlipNameLabel, profitEachNameLabel, padNameLabel, roiNameLabel, quantityNameLabel, avgBuyPriceNameLabel, avgSellPriceNameLabel,
-			totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel, padValLabel, roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
+		JLabel[] valLabelArray = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel,
+			new JLabel(" "), roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
 
-		for (JLabel label : labelList)
+		JPanel subInfoContainer = new JPanel();
+		subInfoContainer.setLayout(new DynamicGridLayout(valLabelArray.length, textLabelArray.length));
+
+		boolean useAltColor = false;
+		for (int i = 0; i < subInfoPanelArray.length; i++)
 		{
-			label.setFont(FontManager.getRunescapeSmallFont());
+			JLabel textLabel = textLabelArray[i];
+			JLabel valLabel = valLabelArray[i];
+			JPanel panel = subInfoPanelArray[i];
+
+			panel.add(textLabel, BorderLayout.WEST);
+			panel.add(valLabel, BorderLayout.EAST);
+
+			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
+
+			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+			useAltColor = !useAltColor;
+
+			textLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+
+			textLabel.setFont(FontManager.getRunescapeSmallFont());
+			valLabel.setFont(FontManager.getRunescapeSmallFont());
+
+			subInfoContainer.add(panel);
 		}
-
-		for (JLabel label : nameLabelList)
-		{
-			label.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-
-			//Add sub info name labels
-			subInfoNamePanel.add(Box.createRigidArea(new Dimension(0, 5)));
-			subInfoNamePanel.add(label);
-		}
-		subInfoNamePanel.add(Box.createRigidArea(new Dimension(0, 5)));
-
-		for (JLabel label : valLabelList)
-		{
-			//Set orientation for values on the right.
-			label.setAlignmentX(Component.RIGHT_ALIGNMENT);
-
-			//Add sub info value labels
-			subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-			subInfoValPanel.add(label);
-		}
-		subInfoValPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
 		//Set font colors of right value labels
 		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
@@ -272,14 +265,6 @@ public class StatItemPanel extends JPanel
 		quantityValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
 		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
-
-		//Set panel layouts. BoxLayouts are favorable since they fit elements based on visibility.
-		subInfoNamePanel.setLayout(new BoxLayout(subInfoNamePanel, BoxLayout.Y_AXIS));
-		subInfoValPanel.setLayout(new BoxLayout(subInfoValPanel, BoxLayout.Y_AXIS));
-
-		//Set panel background.
-		subInfoNamePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		subInfoValPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		/* Trade History (NYI) */
 		//Shows the individual flips made for the item.
@@ -330,8 +315,7 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		subInfoAndHistoryContainer.setBorder(ITEM_INFO_BORDER);
 
-		subInfoAndHistoryContainer.add(subInfoNamePanel, BorderLayout.WEST);
-		subInfoAndHistoryContainer.add(subInfoValPanel, BorderLayout.EAST);
+		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
 		//subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
 
 		add(titlePanel, BorderLayout.NORTH);

@@ -51,6 +51,7 @@ public class UIUtilities
 
 	public static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	public static final Color PROFIT_COLOR = new Color(255, 175, 55);
+	public static final Color DARK_GRAY_ALT_ROW_COLOR = new Color(35, 35, 35);
 
 	private static final NumberFormat PRECISE_DECIMAL_FORMATTER = new DecimalFormat(
 		"#,###.###",
@@ -192,6 +193,6 @@ public class UIUtilities
 			: DECIMAL_FORMATTER;
 
 		return format.format(Long.divideUnsigned(quantity, (long) Math.pow(10, (Long.divideUnsigned(power, 3)) * 3)))
-			+ new String[] {"", "K", "M", "B"}[(int) (power / 3)];
+			+ new String[] {"", "K", "M", "B", "T"}[(int) (power / 3)];
 	}
 }

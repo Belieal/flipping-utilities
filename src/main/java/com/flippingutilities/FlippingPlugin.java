@@ -357,7 +357,9 @@ public class FlippingPlugin extends Plugin
 	{
 		GrandExchangeOffer offer = newOfferEvent.getOffer();
 
-		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT || offer.getState() == GrandExchangeOfferState.CANCELLED_BUY || offer.getState() == GrandExchangeOfferState.BUYING;
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
+			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
+			|| offer.getState() == GrandExchangeOfferState.BUYING;
 
 		OfferInfo offerInfo = new OfferInfo(
 			isBuy,
@@ -473,6 +475,7 @@ public class FlippingPlugin extends Plugin
 		{
 			final String json = gson.toJson(tradesList);
 			configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, json);
+			configManager.setConfiguration(CONFIG_GROUP, "selectedInterval", statPanel.getSelectedInterval());
 		});
 	}
 
@@ -481,6 +484,7 @@ public class FlippingPlugin extends Plugin
 	{
 		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
+		statPanel.setSelectedInterval(configManager.getConfiguration(CONFIG_GROUP, "selectedInterval"));
 
 		if (json == null)
 		{
