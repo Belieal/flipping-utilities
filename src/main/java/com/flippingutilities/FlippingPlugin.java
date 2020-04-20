@@ -190,6 +190,9 @@ public class FlippingPlugin extends Plugin
 			return true;
 		});
 
+		//sets the account selector dropdown to visible or not depending on whether the config option has been selected.
+		tabManager.getViewSelector().setVisible(config.multiAccTracking());
+
 		//Ensures the panel displays for the margin check being outdated and the next ge refresh
 		//are updated every second.
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
@@ -721,11 +724,12 @@ public class FlippingPlugin extends Plugin
 
 			//by setting a selected item, it runs changeView and thus updates the display. However, we only want to
 			//update the display if they the user has multiAcc tracking on.
-			if (config.multiAccTracking()) {
+			if (config.multiAccTracking())
+			{
+				currentView = loggedInUser;
 				tabManager.getViewSelector().setSelectedItem(loggedInUser);
 			}
 
-			currentView = loggedInUser;
 
 		}
 
@@ -841,10 +845,12 @@ public class FlippingPlugin extends Plugin
 					flippingPanel.rebuildFlippingPanel(getTradesForCurrentView());
 					break;
 				case ("multiAccTracking"):
-					if (config.multiAccTracking()) {
+					if (config.multiAccTracking())
+					{
 						tabManager.getViewSelector().setVisible(true);
 					}
-					else {
+					else
+					{
 						tabManager.getViewSelector().setVisible(false);
 					}
 
