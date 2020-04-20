@@ -851,6 +851,7 @@ public class FlippingPlugin extends Plugin
 					}
 					else
 					{
+						tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
 						tabManager.getViewSelector().setVisible(false);
 					}
 
