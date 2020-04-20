@@ -48,6 +48,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
+import jdk.internal.joptsimple.internal.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +56,7 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
+import net.runelite.api.Player;
 import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GameStateChanged;
@@ -639,45 +641,85 @@ public class FlippingPlugin extends Plugin
 
 	/**
 	 * Currently, we use this method for finding out when a user logs in so that we can
-	 * get their loggedInUser to load their specific trade history to display, as opposed to the global
-	 * trade history across all their accounts.
+	 * get their display name, load their history if it isn't in the cache, and switch to that
+	 * account's trade list view.
 	 *
 	 * @param event GameStateChanged event, such as when a user logs in.
 	 */
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
-		if (event.getGameState() == GameState.LOGGED_IN)
+		if (!(event.getGameState() == GameState.LOGGED_IN))
 		{
-			loggedInUser = client.getUsername();
-			log.info(String.format("%s has just logged in", loggedInUser));
-
-			if (config.storeTradeHistory())
-			{
-				//if the account doesn't have a history yet, create a blank history for it.
-				if (!(getAccountNames().contains(loggedInUser)))
-				{
-					log.info(String.format("%s has no history so it is being set up", loggedInUser));
-					tabManager.getViewSelector().addItem(loggedInUser);
-					configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + loggedInUser, new Gson().toJson(new ArrayList<>()));
-				}
-
-				//the trades could already be loaded in to the cache due to the user switching views to another
-				//account's tradeslist and thus loading it from disk into the cache that way.
-				if (!userTradelistCache.containsKey(loggedInUser))
-				{
-					log.info(String.format("loading trades for %s from disk as they don't exist in the " +
-						"cache and setting the cache", loggedInUser));
-					ArrayList<FlippingItem> tradesFromDisk = loadTradeHistory(KEY_PREFIX + loggedInUser);
-					userTradelistCache.put(loggedInUser, tradesFromDisk);
-				}
-
-				//by setting a selected item, it runs changeView and thus updates the display.
-				tabManager.getViewSelector().setSelectedItem(loggedInUser);
-				currentView = loggedInUser;
-
-			}
+			return;
 		}
+
+		//keep scheduling this task until it returns true (when we have access to a display name)
+		clientThread.invokeLater(() ->
+		{
+			//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
+			//want to keep scheduling this task.
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				return true;
+			}
+
+			final Player player = client.getLocalPlayer();
+
+			if (player == null)
+			{
+				return false;
+			}
+
+			final String name = player.getName();
+
+			if (Strings.isNullOrEmpty(name))
+			{
+				return false;
+			}
+
+			handleLogin(name);
+			return true;
+		});
+	}
+
+	/**
+	 * If the history for the display name doesn't exist, it creates it. If it the history doesn't exist in the cache.
+	 * it loads it from disk and sets it in the cache. Finally, it changes the view to the display name's trade list.
+	 *
+	 * @param displayName the display name of the account that just logged in.
+	 */
+	private void handleLogin(String displayName)
+	{
+		loggedInUser = displayName;
+		log.info(String.format("%s has just logged in", loggedInUser));
+
+		if (config.storeTradeHistory())
+		{
+			//if the account doesn't have a history yet, create a blank history for it.
+			if (!(getAccountNames().contains(loggedInUser)))
+			{
+				log.info(String.format("%s has no history so it is being set up", loggedInUser));
+				tabManager.getViewSelector().addItem(loggedInUser);
+				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + loggedInUser, new Gson().toJson(new ArrayList<>()));
+			}
+
+			//the trades could already be loaded in to the cache due to the user switching views to another
+			//account's tradeslist and thus loading it from disk into the cache that way.
+			if (!userTradelistCache.containsKey(loggedInUser))
+			{
+				log.info(String.format("loading trades for %s from disk as they don't exist in the " +
+					"cache and setting the cache", loggedInUser));
+				ArrayList<FlippingItem> tradesFromDisk = loadTradeHistory(KEY_PREFIX + loggedInUser);
+				userTradelistCache.put(loggedInUser, tradesFromDisk);
+			}
+
+			//by setting a selected item, it runs changeView and thus updates the display.
+			tabManager.getViewSelector().setSelectedItem(loggedInUser);
+			currentView = loggedInUser;
+
+		}
+
 	}
 
 	/**
