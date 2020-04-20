@@ -177,7 +177,7 @@ public class FlippingPanel extends JPanel
 					plugin.resetTradeHistory();
 					itemHighlighted = false;
 					cardLayout.show(getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
-					updateDisplays(plugin.getTradesForCurrentView());
+					rebuildFlippingPanel(plugin.getTradesForCurrentView());
 				}
 			}
 
@@ -269,7 +269,7 @@ public class FlippingPanel extends JPanel
 		});
 	}
 
-	public void updateDisplays(ArrayList<FlippingItem> flippingItems)
+	public void rebuildFlippingPanel(ArrayList<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
 		if (flippingItems == null)
@@ -299,7 +299,7 @@ public class FlippingPanel extends JPanel
 		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
 		if (!itemToHighlight.isEmpty())
 		{
-			updateDisplays(itemToHighlight);
+			rebuildFlippingPanel(itemToHighlight);
 			itemHighlighted = true;
 		}
 	}
@@ -313,7 +313,7 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		updateDisplays(plugin.getTradesForCurrentView());
+		rebuildFlippingPanel(plugin.getTradesForCurrentView());
 		itemHighlighted = false;
 		plugin.setPrevHighlight(0);
 	}
@@ -374,7 +374,7 @@ public class FlippingPanel extends JPanel
 		ArrayList<FlippingItem> tradeList = plugin.getTradesForCurrentView();
 		tradeList.remove(itemPanel.getFlippingItem());
 
-		updateDisplays(tradeList);
+		rebuildFlippingPanel(tradeList);
 		plugin.storeTradeHistory(plugin.getCurrentView());
 	}
 
@@ -393,7 +393,7 @@ public class FlippingPanel extends JPanel
 		//When the clear button is pressed, this is run.
 		if (Strings.isNullOrEmpty(lookup))
 		{
-			updateDisplays(plugin.getTradesForCurrentView());
+			rebuildFlippingPanel(plugin.getTradesForCurrentView());
 			return;
 		}
 
@@ -411,12 +411,12 @@ public class FlippingPanel extends JPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBar.setEditable(true);
-			updateDisplays(plugin.getTradesForCurrentView());
+			rebuildFlippingPanel(plugin.getTradesForCurrentView());
 			return;
 		}
 
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		updateDisplays(result);
+		rebuildFlippingPanel(result);
 	}
 
 }

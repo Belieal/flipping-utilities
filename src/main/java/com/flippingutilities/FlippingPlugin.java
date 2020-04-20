@@ -383,7 +383,7 @@ public class FlippingPlugin extends Plugin
 		//trades list won't be being updated.
 		if (newOffer.isMarginCheck() && (currentView.equals(loggedInUser) || currentView.equals(ACCOUNT_WIDE)))
 		{
-			flippingPanel.updateDisplays(getTradesForCurrentView());
+			flippingPanel.rebuildFlippingPanel(getTradesForCurrentView());
 		}
 
 		if (currentView.equals(loggedInUser) || currentView.equals(ACCOUNT_WIDE))
@@ -708,7 +708,7 @@ public class FlippingPlugin extends Plugin
 		executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 		{
 			validateAllItems(trades);
-			flippingPanel.updateDisplays(trades);
+			flippingPanel.rebuildFlippingPanel(trades);
 			statPanel.updateDisplays(trades);
 		})));
 	}
@@ -787,7 +787,7 @@ public class FlippingPlugin extends Plugin
 				case ("roiGradientMax"):
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
-					flippingPanel.updateDisplays(getTradesForCurrentView());
+					flippingPanel.rebuildFlippingPanel(getTradesForCurrentView());
 					break;
 				default:
 					break;
