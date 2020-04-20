@@ -96,4 +96,17 @@ public interface FlippingConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(
+		keyName = "multiAccTracking",
+		name = "multi account tracking",
+		description = "Enabling this feature gives you access to a dropdown which allows you to see each of your accounts" +
+			"flips and profits in isolation. This is very useful if you flip on multiple accounts."
+	)
+	default boolean multiAccTracking()
+	{
+		return false;
+	}
+
+
+
 }

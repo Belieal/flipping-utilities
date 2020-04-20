@@ -86,6 +86,8 @@ public class TabManager extends PluginPanel
 			}
 		});
 
+		viewSelector.setVisible(false);
+
 		JPanel display = new JPanel();
 		//contains the tab group and the view selector combo box.
 		JPanel header = new JPanel(new BorderLayout());

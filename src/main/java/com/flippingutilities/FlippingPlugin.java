@@ -48,7 +48,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
-import jdk.internal.joptsimple.internal.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -295,6 +294,7 @@ public class FlippingPlugin extends Plugin
 
 		if (selectedUsername.equals(ACCOUNT_WIDE))
 		{
+			log.info("switching to view for account wide trades so no need to look in the cache");
 			tradesListToDisplay = accountWideTrades;
 		}
 
@@ -303,13 +303,14 @@ public class FlippingPlugin extends Plugin
 			//look in cache, if its there just use it, otherwise set it from disk.
 			if (userTradelistCache.containsKey(selectedUsername))
 			{
-				log.info(String.format("history for %s exists in cache", selectedUsername));
+				log.info(String.format("history for %s already exists in cache, so just retrieving it to display",
+					selectedUsername));
 				tradesListToDisplay = userTradelistCache.get(selectedUsername);
 			}
 			else
 			{
 				log.info(String.format("history for %s does not exist in cache, so its being loaded from " +
-					"disk and the cache is being set", selectedUsername));
+					"disk to display and the cache is being set", selectedUsername));
 				tradesListToDisplay = loadTradeHistory(KEY_PREFIX + selectedUsername);
 				userTradelistCache.put(selectedUsername, tradesListToDisplay);
 			}
@@ -673,7 +674,12 @@ public class FlippingPlugin extends Plugin
 
 			final String name = player.getName();
 
-			if (Strings.isNullOrEmpty(name))
+			if (name == null)
+			{
+				return false;
+			}
+
+			if (name.equals(""))
 			{
 				return false;
 			}
@@ -704,8 +710,7 @@ public class FlippingPlugin extends Plugin
 				configManager.setConfiguration(CONFIG_GROUP, KEY_PREFIX + loggedInUser, new Gson().toJson(new ArrayList<>()));
 			}
 
-			//the trades could already be loaded in to the cache due to the user switching views to another
-			//account's tradeslist and thus loading it from disk into the cache that way.
+			//if the trades are not in the cache yet, put them in.
 			if (!userTradelistCache.containsKey(loggedInUser))
 			{
 				log.info(String.format("loading trades for %s from disk as they don't exist in the " +
@@ -714,8 +719,12 @@ public class FlippingPlugin extends Plugin
 				userTradelistCache.put(loggedInUser, tradesFromDisk);
 			}
 
-			//by setting a selected item, it runs changeView and thus updates the display.
-			tabManager.getViewSelector().setSelectedItem(loggedInUser);
+			//by setting a selected item, it runs changeView and thus updates the display. However, we only want to
+			//update the display if they the user has multiAcc tracking on.
+			if (config.multiAccTracking()) {
+				tabManager.getViewSelector().setSelectedItem(loggedInUser);
+			}
+
 			currentView = loggedInUser;
 
 		}
@@ -830,6 +839,15 @@ public class FlippingPlugin extends Plugin
 				case ("marginCheckLoss"):
 				case ("twelveHourFormat"):
 					flippingPanel.rebuildFlippingPanel(getTradesForCurrentView());
+					break;
+				case ("multiAccTracking"):
+					if (config.multiAccTracking()) {
+						tabManager.getViewSelector().setVisible(true);
+					}
+					else {
+						tabManager.getViewSelector().setVisible(false);
+					}
+
 					break;
 				default:
 					break;
