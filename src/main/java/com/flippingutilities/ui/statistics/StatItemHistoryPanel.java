@@ -27,68 +27,94 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.OfferInfo;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import com.flippingutilities.Flip;
+import com.flippingutilities.ui.UIUtilities;
+import java.awt.BorderLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.QuantityFormatter;
 
 public class StatItemHistoryPanel extends JPanel
 {
+	JLabel timeSince = new JLabel("", SwingConstants.CENTER);
 
-	private JLabel timeSince = new JLabel("", SwingConstants.CENTER);
-	private JLabel price = new JLabel();
-	private JLabel stateAndQuantityLabel = new JLabel("x ", SwingConstants.RIGHT);
+	private Flip flip;
 
-	/**
-	 * Definitely not finished, don't look plz =)
-	 *
-	 * @param boughtOffer
-	 * @param soldOffer
-	 * @param itemCountFlipped
-	 */
-	StatItemHistoryPanel(OfferInfo boughtOffer, OfferInfo soldOffer, int itemCountFlipped)
+	StatItemHistoryPanel(Flip flip)
 	{
-		setLayout(new GridBagLayout());
-		setBackground(ColorScheme.DARK_GRAY_COLOR);
+		this.flip = flip;
 
-		JLabel[] labelList = {timeSince, stateAndQuantityLabel};
+		setLayout(new BorderLayout());
+
+
+		int profitEach = flip.getSellPrice() - flip.getBuyPrice();
+		int profitTotal = profitEach * flip.getQuantity();
+
+		timeSince.setOpaque(true);
+		timeSince.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped " + "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+
+		JLabel buyPriceText = new JLabel("Buy Price:");
+		JLabel sellPriceText = new JLabel("Sell Price:");
+		JLabel profitText = new JLabel((profitTotal >= 0) ? "Profit: " : "Loss: ");
+
+		JLabel buyPriceVal = new JLabel(QuantityFormatter.formatNumber(flip.getBuyPrice()) + " gp", SwingConstants.RIGHT);
+		JLabel sellPriceVal = new JLabel(QuantityFormatter.formatNumber(flip.getSellPrice()) + " gp", SwingConstants.RIGHT);
+
+		String profitString = UIUtilities.quantityToRSDecimalStack(profitTotal, true) + " gp"
+			+ ((flip.getQuantity() <= 1) ? "" : " (" + UIUtilities.quantityToRSDecimalStack(profitEach, false) + " gp ea.)");
+
+		JLabel profitVal = new JLabel(profitString);
+
+		JLabel[] labelList = {timeSince, buyPriceText, buyPriceVal, sellPriceText, sellPriceVal, profitText, profitVal};
 
 		for (JLabel label : labelList)
 		{
 			label.setFont(FontManager.getRunescapeSmallFont());
-			label.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+			label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		}
 
-		GridBagConstraints constraints = new GridBagConstraints();
+		profitText.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitVal.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 
-		constraints.fill = GridBagConstraints.REMAINDER;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-		add(timeSince, constraints);
+		JPanel buyPricePanel = new JPanel(new BorderLayout());
+		JPanel sellPricePanel = new JPanel(new BorderLayout());
+		JPanel profitPanel = new JPanel(new BorderLayout());
 
-		constraints.fill = GridBagConstraints.VERTICAL;
-		constraints.weightx = 0.5;
-		constraints.gridy++;
-		//add(buyPrice);
+		buyPricePanel.add(buyPriceText, BorderLayout.WEST);
+		buyPricePanel.add(buyPriceVal, BorderLayout.EAST);
 
-		constraints.gridy++;
-		//add(sellPrice);
+		sellPricePanel.add(sellPriceText, BorderLayout.WEST);
+		sellPricePanel.add(sellPriceVal, BorderLayout.EAST);
 
-		constraints.gridx = 1;
-		constraints.gridy = 1;
-		//add(profitLabel);
+		profitPanel.add(profitText, BorderLayout.WEST);
+		profitPanel.add(profitVal, BorderLayout.EAST);
 
-		constraints.gridy++;
-		add(stateAndQuantityLabel);
+		JPanel infoContainer = new JPanel(new DynamicGridLayout(3, 2, 0, 2));
+
+		infoContainer.add(buyPricePanel);
+		infoContainer.add(sellPricePanel);
+		infoContainer.add(profitPanel);
+
+		infoContainer.setBorder(new EmptyBorder(0, 2, 1, 2));
+
+		add(timeSince, BorderLayout.NORTH);
+		add(infoContainer, BorderLayout.CENTER);
 	}
 
-	public void updateDisplays()
+	public void updateTime()
 	{
+		SwingUtilities.invokeLater(() ->
+		{
+			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
+				+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+		});
 	}
 
 }

@@ -26,11 +26,13 @@
 
 package com.flippingutilities.ui.statistics;
 
+import com.flippingutilities.Flip;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -46,6 +48,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -63,6 +66,10 @@ public class StatItemPanel extends JPanel
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3),
 		BorderFactory.createEmptyBorder(3, 3, 3, 3));
+
+	private static final Border ITEM_HISTORY_BORDER = new CompoundBorder(
+		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3),
+		BorderFactory.createEmptyBorder(3, 0, 0, 0));
 
 	private static final Border TRADE_HISTORY_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -159,6 +166,11 @@ public class StatItemPanel extends JPanel
 		//Get parent
 		statsPanel = plugin.getStatPanel();
 
+		//Make sure the item name fits. This has to be called BEFORE the label is made.
+		nameTitleLabel.setPreferredSize(new Dimension(0, 0));
+		nameTitleLabel = new JLabel(flippingItem.getItemName());
+		nameTitleLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
+
 		updateDisplays();
 
 		/* Item icon */
@@ -178,8 +190,11 @@ public class StatItemPanel extends JPanel
 		nameAndProfitTitlePanel.add(itemProfitTitleLabel, BorderLayout.SOUTH);
 
 		/* Collapse icon */
-		collapseIconTitleLabel.setIcon(flippingItem.isShouldCollapseStatItem() ? UIUtilities.CLOSE_ICON : UIUtilities.OPEN_ICON);
+		collapseIconTitleLabel.setIcon(flippingItem.isShouldCollapseStatItem() ? UIUtilities.OPEN_ICON : UIUtilities.CLOSE_ICON);
 		collapseIconTitleLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
+
+		subInfoAndHistoryContainer.setVisible(flippingItem.isShouldCollapseStatItem());
+
 		titlePanel.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -224,8 +239,6 @@ public class StatItemPanel extends JPanel
 		titlePanel.add(nameAndProfitTitlePanel, BorderLayout.CENTER);
 		titlePanel.add(collapseIconTitleLabel, BorderLayout.EAST);
 
-		subInfoAndHistoryContainer.setVisible(flippingItem.isShouldCollapseStatItem());
-
 		/* Item sub infos */
 		/* Main subinfo name and value labels */
 		//Using arrays to make it easier to set UI looks en masse
@@ -268,7 +281,7 @@ public class StatItemPanel extends JPanel
 		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
 		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
 
-		/* Trade History (NYI) */
+		/* Trade History */
 		//Shows the individual flips made for the item.
 		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
 
@@ -282,7 +295,7 @@ public class StatItemPanel extends JPanel
 			{
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
-					if (subInfoAndHistoryContainer.isVisible())
+					if (tradeHistoryItemContainer.isVisible())
 					{
 						tradeHistoryItemContainer.setVisible(false);
 						collapseTradeHistoryIconLabel.setIcon(UIUtilities.CLOSE_ICON);
@@ -308,9 +321,13 @@ public class StatItemPanel extends JPanel
 			}
 		});
 
+		tradeHistoryItemContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		tradeHistoryItemContainer.setVisible(false);
+		tradeHistoryItemContainer.setBorder(ITEM_HISTORY_BORDER);
+
 		tradeHistoryPanel.add(tradeHistoryTitlePanel, BorderLayout.NORTH);
 		tradeHistoryPanel.add(tradeHistoryItemContainer, BorderLayout.CENTER);
-		tradeHistoryPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		//tradeHistoryPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
 
 		//Set background and border of container with sub infos and trade history
@@ -318,10 +335,51 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.setBorder(ITEM_INFO_BORDER);
 
 		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
-		//subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
+		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
+
+		rebuildTradeHistory();
 
 		add(titlePanel, BorderLayout.NORTH);
 		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
+	}
+
+	public void rebuildTradeHistory()
+	{
+		SwingUtilities.invokeLater(() ->
+		{
+			tradeHistoryItemContainer.removeAll();
+
+			constraints.fill = GridBagConstraints.HORIZONTAL;
+			constraints.weightx = 1;
+			constraints.gridx = 0;
+			constraints.gridy = 0;
+
+			int index = 0;
+			for (Flip flip : flippingItem.getFlips(startOfInterval))
+			{
+				if (flip.getQuantity() == 0)
+				{
+					continue;
+				}
+
+				StatItemHistoryPanel newPanel = new StatItemHistoryPanel(flip);
+
+				if (index++ > 0)
+				{
+					JPanel marginWrapper = new JPanel(new BorderLayout());
+					marginWrapper.add(newPanel, BorderLayout.NORTH);
+					tradeHistoryItemContainer.add(marginWrapper, constraints);
+				}
+				else
+				{
+					tradeHistoryItemContainer.add(newPanel, constraints);
+				}
+				constraints.gridy++;
+			}
+		});
+
+		revalidate();
+		repaint();
 	}
 
 	/**
@@ -336,6 +394,19 @@ public class StatItemPanel extends JPanel
 		totalRevenue = flippingItem.getCashflow(tradeHistory, false);
 		itemCountFlipped = flippingItem.countItemsFlipped(tradeHistory);
 
+		if (itemCountFlipped == 0)
+		{
+			return;
+		}
+
+		for (Component component : tradeHistoryItemContainer.getComponents())
+		{
+			if (component instanceof StatItemHistoryPanel)
+			{
+				((StatItemHistoryPanel) component).updateTime();
+			}
+		}
+
 		updateTitleDisplay();
 		updateItemSubInfosDisplay();
 	}
@@ -343,11 +414,6 @@ public class StatItemPanel extends JPanel
 	/* Total profit and name label */
 	private void updateTitleDisplay()
 	{
-		//Make sure the item name fits. This has to be called BEFORE the label is made.
-		nameTitleLabel.setPreferredSize(new Dimension(0, 0));
-		nameTitleLabel = new JLabel(flippingItem.getItemName());
-		nameTitleLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
-
 		String totalProfitString = ((totalProfit > 0) ? "+" : "") + UIUtilities.quantityToRSDecimalStack(totalProfit, true) + " gp";
 
 		if (itemCountFlipped != 0)

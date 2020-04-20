@@ -138,7 +138,7 @@ public class FlippingPlugin extends Plugin
 	{
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
-		statPanel = new StatsPanel(this, itemManager, executor);
+		statPanel = new StatsPanel(this, itemManager);
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
 		tabManager = new TabManager(flippingPanel, statPanel);
@@ -488,7 +488,6 @@ public class FlippingPlugin extends Plugin
 			{
 				configManager.setConfiguration(CONFIG_GROUP, SORT_BY_CONFIG_KEY, statPanel.getSelectedSort());
 			}
-
 		});
 	}
 

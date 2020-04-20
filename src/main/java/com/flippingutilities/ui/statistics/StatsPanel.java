@@ -32,6 +32,7 @@ import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -157,9 +158,8 @@ public class StatsPanel extends JPanel
 	 *
 	 * @param plugin      Used to access the config and list of trades.
 	 * @param itemManager Accesses the RuneLite item cache.
-	 * @param executor    For repeated method calls, required by periodic update methods.
 	 */
-	public StatsPanel(final FlippingPlugin plugin, final ItemManager itemManager, final ScheduledExecutorService executor)
+	public StatsPanel(final FlippingPlugin plugin, final ItemManager itemManager)
 	{
 		super(false);
 
@@ -398,9 +398,8 @@ public class StatsPanel extends JPanel
 
 	/**
 	 * Updates all profit labels on the stat panel using their respective update methods.
-	 * Gets called on startup, after the tradesList has been initialized and after every new registered trade.
+	 * Gets called on startup, after the tradesList has been initialized, and after every new registered trade.
 	 */
-	//New trade registered, update the profit labels and add/update profit item.
 	public void updateDisplays()
 	{
 		subInfoContainer.removeAll();
@@ -426,6 +425,14 @@ public class StatsPanel extends JPanel
 			totalProfit += item.currentProfit(startOfInterval);
 			totalExpenses += item.getCashflow(startOfInterval, true);
 			totalRevenues += item.getCashflow(startOfInterval, false);
+		}
+
+		for (Component component : statItemContainer.getComponents())
+		{
+			if (component instanceof StatItemPanel)
+			{
+				((StatItemPanel) component).updateDisplays();
+			}
 		}
 
 		updateTotalProfitDisplay();
@@ -541,6 +548,7 @@ public class StatsPanel extends JPanel
 	private void updateSessionTime()
 	{
 		sessionTimeVal.setText(UIUtilities.formatDuration(sessionTime));
+		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
 		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
 		{

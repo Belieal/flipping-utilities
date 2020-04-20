@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -286,6 +288,129 @@ public class HistoryManager
 			nextGeLimitRefresh = null;
 			itemsBoughtThisLimitWindow = 0;
 		}
+	}
+
+	/**
+	 * This method serves as a way of segmenting a series of trades into separate flips.
+	 * <p>
+	 * Each buy trade is tallied up and price mapped with their quantities.
+	 * Afterwards, we compartmentalize the quantities into respective completed sell offers.
+	 * Completed sell offers act as a conclusion to a flip and thus each can only generate one flip.
+	 * If we have a higher sell than bought quantity, we skim off the remaining sell offers as we
+	 * are not able to determine where they originated and thus cannot accurately produce a flip.
+	 *
+	 * @param earliestTime The earliest time that new trades are treated as flips.
+	 * @return A list of compartmentalized flips from the interval between now and the parameter.
+	 */
+	public ArrayList<Flip> getFlips(Instant earliestTime)
+	{
+		//Fetch relevant history
+		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
+
+		//The resulting flips
+		ArrayList<Flip> flips = new ArrayList<>();
+
+		ArrayList<OfferInfo> buyList = getSaleList(intervalHistory, true);
+		ArrayList<OfferInfo> sellList = new ArrayList<>();
+
+		//This loop consolidates incomplete and complete sell offers
+		int numOfItemsSold = 0;
+		for (OfferInfo offer : standardizedOffers)
+		{
+			//If the offer is complete, add the quantity and add it to the list of sales
+			if (!offer.isBuy() && offer.isComplete())
+			{
+				numOfItemsSold += offer.getQuantity();
+
+				//Clone the offer such that we retain the information that it provides
+				//while still being able to set the quantity.
+				OfferInfo consolidatedOffer = offer.clone();
+				consolidatedOffer.setQuantity(numOfItemsSold);
+
+				sellList.add(consolidatedOffer);
+				numOfItemsSold = 0;
+			}
+			//If the offer is incomplete we add the quantity and continue.
+			else if (!offer.isBuy())
+			{
+				numOfItemsSold += offer.getQuantity();
+			}
+		}
+
+		//Reverse the sellList such that the newest sales are at the top.
+		Collections.reverse(sellList);
+
+		//This map serves as the backlog of bought quantities mapped with their prices they were bought at.
+		//The map is required to be linked, due to the fact that we want the newest buy trades at the top
+		//thus making the insertion order pivotal.
+		//K: price V: quantity
+		LinkedHashMap<Integer, Integer> backlog = new LinkedHashMap<>();
+
+		//We check every buy offer made and map them.
+		for (OfferInfo offer : buyList)
+		{
+			int price = offer.getPrice();
+
+			//If we already encountered a bought offer with the same price
+			//add it to the quantity.
+			if (backlog.containsKey(price))
+			{
+				backlog.replace(price, backlog.get(price) + offer.getQuantity());
+			}
+			//Else create a new entry with price and its initial quantity.
+			else
+			{
+				backlog.put(price, offer.getQuantity());
+			}
+		}
+
+		//Now that we have the list of consolidated sales with bought prices and quantities, we need to match them together
+		//and create flips.
+		for (OfferInfo offer : sellList)
+		{
+			int sellPrice = offer.getPrice();
+			int sellQuantity = offer.getQuantity();
+
+			//We use the sell offers time since this is the last activity the user had with this flip.
+			Instant timeOfFlipCompletion = offer.getTime();
+
+			if (backlog.isEmpty())
+			{
+				return flips;
+			}
+
+			//Since the buy price is also our key, we need to find the newest key (buy price) first
+			//then we can get the value (quantity).
+			int newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
+			int newestBuyQuantity = backlog.get(newestBuyPrice);
+
+			//As long as the sell is higher than the buy quantity we create flips with the buy quantity as its flip count
+			//and subtract it from the sell quantity.
+			while (sellQuantity >= newestBuyQuantity && backlog.size() != 0)
+			{
+				newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
+				newestBuyQuantity = backlog.get(newestBuyPrice);
+
+				sellQuantity -= newestBuyQuantity;
+				//Remove the quantity since this is now accounted for.
+				backlog.remove(newestBuyPrice);
+
+				//Create new history panel with newestBuyQuantity as flip count.
+				flips.add(new Flip(newestBuyPrice, sellPrice, newestBuyQuantity, timeOfFlipCompletion));
+
+			}
+			//sellQuantity is lower than buy quantity
+			if (sellQuantity < newestBuyQuantity && sellQuantity != 0)
+			{
+				//Subtract the amount of items we've accounted for.
+				backlog.replace(newestBuyPrice, newestBuyQuantity - sellQuantity);
+
+				//Create new history panel with sellQuantity as flip count.
+				flips.add(new Flip(newestBuyPrice, sellPrice, sellQuantity, timeOfFlipCompletion));
+			}
+		}
+
+		return flips;
 	}
 
 }

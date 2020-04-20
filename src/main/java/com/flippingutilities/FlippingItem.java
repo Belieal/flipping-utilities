@@ -198,4 +198,9 @@ public class FlippingItem
 		history.validateGeProperties();
 	}
 
+	public ArrayList<Flip> getFlips(Instant earliestTime)
+	{
+		return history.getFlips(earliestTime);
+	}
+
 }
