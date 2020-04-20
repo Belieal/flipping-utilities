@@ -192,7 +192,7 @@ public class UIUtilities
 			? PRECISE_DECIMAL_FORMATTER
 			: DECIMAL_FORMATTER;
 
-		return format.format(Long.divideUnsigned(quantity, (long) Math.pow(10, (Long.divideUnsigned(power, 3)) * 3)))
+		return format.format(quantity / Math.pow(10, (Long.divideUnsigned(power, 3)) * 3))
 			+ new String[] {"", "K", "M", "B", "T"}[(int) (power / 3)];
 	}
 }
