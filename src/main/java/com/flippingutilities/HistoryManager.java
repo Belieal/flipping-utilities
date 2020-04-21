@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -293,13 +292,9 @@ public class HistoryManager
 	}
 
 	/**
-	 * This method serves as a way of segmenting a series of trades into separate flips.
-	 * <p>
-	 * Each buy trade is tallied up and price mapped with their quantities. Afterwards, we
-	 * compartmentalize the quantities into respective completed sell offers. Completed sell offers
-	 * act as a conclusion to a flip and thus each can only generate one flip. If we have a higher
-	 * sell than bought quantity, we skim off the remaining sell offers as we are not able to
-	 * determine where they originated and thus cannot accurately produce a flip.
+	 * This method serves as a way of segmenting a series of offers into seperate trades which are
+	 * then used to create Flips. A Flip is a buy offer followed by a sell offer. A trade is a series of offers
+	 * for the same slot at the same price.
 	 *
 	 * @param earliestTime The earliest time that new trades are treated as flips.
 	 * @return A list of compartmentalized flips from the interval between now and the parameter.
@@ -320,15 +315,34 @@ public class HistoryManager
 
 		flips.addAll(groupMarginChecks(buyMarginChecks, sellMarginChecks));
 
-		List<OfferInfo> consolidatedBuys = consolidateList(nonMarginCheckBuys);
-		List<OfferInfo> consolidatedSells = consolidateList(nonMarginCheckSells);
+		List<OfferInfo> consolidatedBuys = consolidateOffersIntoWholeTrades(nonMarginCheckBuys);
+		List<OfferInfo> consolidatedSells = consolidateOffersIntoWholeTrades(nonMarginCheckSells);
 
+		flips.addAll(flipsFromConsolidatedBuysAndSells(consolidatedBuys, consolidatedSells));
+
+		flips.sort(Comparator.comparing(flip -> flip.getTime()));
+		Collections.reverse(flips);
+
+		return flips;
+	}
+
+	/**
+	 * This method creates Flips from consolidated buy and sell offers. Consolidated buy and sells offers represent the
+	 * entire trade which could have been made up by many offers. As such it has the quantity of the entire trade (the
+	 * sum of all the individual offers' quantities that made up the trade).
+	 *
+	 * @param buys consolidated buys which each represent an entire trade
+	 * @param sells consolidated sells which each represent an entire trade
+	 * @return flips that represent a buy followed by a sell.
+	 */
+	private ArrayList<Flip> flipsFromConsolidatedBuysAndSells (List<OfferInfo> buys, List<OfferInfo> sells) {
+		ArrayList<Flip> flips = new ArrayList<>();
 		int buyListPointer = 0;
 		int sellListPointer = 0;
-		while (buyListPointer < consolidatedBuys.size() && sellListPointer < consolidatedSells.size())
+		while (buyListPointer < buys.size() && sellListPointer < sells.size())
 		{
-			OfferInfo buy = consolidatedBuys.get(buyListPointer);
-			OfferInfo sell = consolidatedSells.get(sellListPointer);
+			OfferInfo buy = buys.get(buyListPointer);
+			OfferInfo sell = sells.get(sellListPointer);
 
 			if (sell.getQuantity() >= buy.getQuantity())
 			{
@@ -344,16 +358,26 @@ public class HistoryManager
 				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime()));
 			}
 		}
-
-		flips.sort(Comparator.comparing(flip -> flip.getTime()));
-		Collections.reverse(flips);
 		return flips;
+
 	}
 
-	//hashmap based iterative version, i think this is easier to understand
-	private ArrayList<OfferInfo> consolidateList(List<OfferInfo> offers)
+	/**
+	 * This method is crucial to the process of generating Flips from individual offers. A Flip represents
+	 * a completed buy trade followed by a completed sell trade. As such, this method's responsibility is grouping
+	 * individual offers that could be from any slot at any price (thus belong to different trades) into their
+	 * respective trades.
+	 *
+	 * Individual offers are grouped into their respective trades by a mapping of slot and price to a consolidated offer.
+	 * This consolidated offer is a representation of an entire trade, which could have been made up of many offers. As
+	 * such everytime we see an offer belonging to a certain slot and price, we add to the consolidated price's quantity.
+	 *
+	 * @param offers the offers to consolidate into whole trades.
+	 * @return offers representing consolidated offers (whole trades).
+	 */
+	private ArrayList<OfferInfo> consolidateOffersIntoWholeTrades(List<OfferInfo> offers)
 	{
-		LinkedHashMap<List<Integer>, OfferInfo> slotAndPriceToOffer = new LinkedHashMap();
+		Map<List<Integer>, OfferInfo> slotAndPriceToOffer = new HashMap<>();
 		ArrayList<OfferInfo> consolidatedOffers = new ArrayList<>();
 
 		for (OfferInfo offer : offers)
@@ -391,7 +415,16 @@ public class HistoryManager
 		return consolidatedOffers;
 	}
 
-
+	/**
+	 * This method takes in buy and sell offers that are margin checks and creates Flips out of them. The
+	 * margin checks needs to be isolated from the rest of the offers because they only make sense if they are
+	 * together (a margin check buy should not be matched with a non margin check sell to create a flip, margin
+	 * checks are flips themselves).
+	 *
+	 * @param buyMarginChecks buy offers that are margin checks
+	 * @param sellMarginChecks sell offers that are margin checks
+	 * @return
+	 */
 	private ArrayList<Flip> groupMarginChecks(List<OfferInfo> buyMarginChecks, List<OfferInfo> sellMarginChecks)
 	{
 		ArrayList<Flip> marginCheckFlips = new ArrayList<>();
@@ -405,5 +438,4 @@ public class HistoryManager
 		}
 		return marginCheckFlips;
 	}
-
 }
