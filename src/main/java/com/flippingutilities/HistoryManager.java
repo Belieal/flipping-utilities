@@ -5,10 +5,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -293,124 +295,115 @@ public class HistoryManager
 	/**
 	 * This method serves as a way of segmenting a series of trades into separate flips.
 	 * <p>
-	 * Each buy trade is tallied up and price mapped with their quantities.
-	 * Afterwards, we compartmentalize the quantities into respective completed sell offers.
-	 * Completed sell offers act as a conclusion to a flip and thus each can only generate one flip.
-	 * If we have a higher sell than bought quantity, we skim off the remaining sell offers as we
-	 * are not able to determine where they originated and thus cannot accurately produce a flip.
+	 * Each buy trade is tallied up and price mapped with their quantities. Afterwards, we
+	 * compartmentalize the quantities into respective completed sell offers. Completed sell offers
+	 * act as a conclusion to a flip and thus each can only generate one flip. If we have a higher
+	 * sell than bought quantity, we skim off the remaining sell offers as we are not able to
+	 * determine where they originated and thus cannot accurately produce a flip.
 	 *
 	 * @param earliestTime The earliest time that new trades are treated as flips.
 	 * @return A list of compartmentalized flips from the interval between now and the parameter.
 	 */
 	public ArrayList<Flip> getFlips(Instant earliestTime)
 	{
-		//Fetch relevant history
-		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
-
 		//The resulting flips
 		ArrayList<Flip> flips = new ArrayList<>();
 
-		ArrayList<OfferInfo> buyList = getSaleList(intervalHistory, true);
-		ArrayList<OfferInfo> sellList = new ArrayList<>();
+		//Fetch relevant history
+		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
 
-		//This loop consolidates incomplete and complete sell offers
-		int numOfItemsSold = 0;
-		for (OfferInfo offer : standardizedOffers)
+		List<OfferInfo> buyMarginChecks = intervalHistory.stream().filter(offer -> offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
+		List<OfferInfo> nonMarginCheckBuys = intervalHistory.stream().filter(offer -> offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
+
+		List<OfferInfo> sellMarginChecks = intervalHistory.stream().filter(offer -> !offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
+		List<OfferInfo> nonMarginCheckSells = intervalHistory.stream().filter(offer -> !offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
+
+		flips.addAll(groupMarginChecks(buyMarginChecks, sellMarginChecks));
+
+		List<OfferInfo> consolidatedBuys = consolidateList(nonMarginCheckBuys);
+		List<OfferInfo> consolidatedSells = consolidateList(nonMarginCheckSells);
+
+		int buyListPointer = 0;
+		int sellListPointer = 0;
+		while (buyListPointer < consolidatedBuys.size() && sellListPointer < consolidatedSells.size())
 		{
-			//If the offer is complete, add the quantity and add it to the list of sales
-			if (!offer.isBuy() && offer.isComplete())
+			OfferInfo buy = consolidatedBuys.get(buyListPointer);
+			OfferInfo sell = consolidatedSells.get(sellListPointer);
+
+			if (sell.getQuantity() >= buy.getQuantity())
 			{
-				numOfItemsSold += offer.getQuantity();
-
-				//Clone the offer such that we retain the information that it provides
-				//while still being able to set the quantity.
-				OfferInfo consolidatedOffer = offer.clone();
-				consolidatedOffer.setQuantity(numOfItemsSold);
-
-				sellList.add(consolidatedOffer);
-				numOfItemsSold = 0;
+				sell.setQuantity(sell.getQuantity() - buy.getQuantity());
+				buyListPointer++;
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getQuantity(), sell.getTime()));
 			}
-			//If the offer is incomplete we add the quantity and continue.
-			else if (!offer.isBuy())
-			{
-				numOfItemsSold += offer.getQuantity();
-			}
-		}
 
-		//Reverse the sellList such that the newest sales are at the top.
-		Collections.reverse(sellList);
-
-		//This map serves as the backlog of bought quantities mapped with their prices they were bought at.
-		//The map is required to be linked, due to the fact that we want the newest buy trades at the top
-		//thus making the insertion order pivotal.
-		//K: price V: quantity
-		LinkedHashMap<Integer, Integer> backlog = new LinkedHashMap<>();
-
-		//We check every buy offer made and map them.
-		for (OfferInfo offer : buyList)
-		{
-			int price = offer.getPrice();
-
-			//If we already encountered a bought offer with the same price
-			//add it to the quantity.
-			if (backlog.containsKey(price))
-			{
-				backlog.replace(price, backlog.get(price) + offer.getQuantity());
-			}
-			//Else create a new entry with price and its initial quantity.
 			else
 			{
-				backlog.put(price, offer.getQuantity());
+				buy.setQuantity(buy.getQuantity() - sell.getQuantity());
+				sellListPointer++;
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime()));
 			}
 		}
 
-		//Now that we have the list of consolidated sales with bought prices and quantities, we need to match them together
-		//and create flips.
-		for (OfferInfo offer : sellList)
-		{
-			int sellPrice = offer.getPrice();
-			int sellQuantity = offer.getQuantity();
-
-			//We use the sell offers time since this is the last activity the user had with this flip.
-			Instant timeOfFlipCompletion = offer.getTime();
-
-			if (backlog.isEmpty())
-			{
-				return flips;
-			}
-
-			//Since the buy price is also our key, we need to find the newest key (buy price) first
-			//then we can get the value (quantity).
-			int newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
-			int newestBuyQuantity = backlog.get(newestBuyPrice);
-
-			//As long as the sell is higher than the buy quantity we create flips with the buy quantity as its flip count
-			//and subtract it from the sell quantity.
-			while (sellQuantity >= newestBuyQuantity && backlog.size() != 0)
-			{
-				newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
-				newestBuyQuantity = backlog.get(newestBuyPrice);
-
-				sellQuantity -= newestBuyQuantity;
-				//Remove the quantity since this is now accounted for.
-				backlog.remove(newestBuyPrice);
-
-				//Create new history panel with newestBuyQuantity as flip count.
-				flips.add(new Flip(newestBuyPrice, sellPrice, newestBuyQuantity, timeOfFlipCompletion));
-
-			}
-			//sellQuantity is lower than buy quantity
-			if (sellQuantity < newestBuyQuantity && sellQuantity != 0)
-			{
-				//Subtract the amount of items we've accounted for.
-				backlog.replace(newestBuyPrice, newestBuyQuantity - sellQuantity);
-
-				//Create new history panel with sellQuantity as flip count.
-				flips.add(new Flip(newestBuyPrice, sellPrice, sellQuantity, timeOfFlipCompletion));
-			}
-		}
-
+		flips.sort(Comparator.comparing(flip -> flip.getTime()));
+		Collections.reverse(flips);
 		return flips;
+	}
+
+	//hashmap based iterative version, i think this is easier to understand
+	private ArrayList<OfferInfo> consolidateList(List<OfferInfo> offers)
+	{
+		LinkedHashMap<List<Integer>, OfferInfo> slotAndPriceToOffer = new LinkedHashMap();
+		ArrayList<OfferInfo> consolidatedOffers = new ArrayList<>();
+
+		for (OfferInfo offer : offers)
+		{
+			int slot = offer.getSlot();
+			int price = offer.getPrice();
+			List<Integer> slotAndPrice = new ArrayList<>(Arrays.asList(slot, price));
+
+			if (slotAndPriceToOffer.containsKey(slotAndPrice))
+			{
+				OfferInfo consolidatedOffer = slotAndPriceToOffer.get(slotAndPrice);
+				consolidatedOffer.setQuantity(consolidatedOffer.getQuantity() + offer.getQuantity());
+				consolidatedOffer.setTime(offer.getTime());
+				if (offer.isComplete())
+				{
+					consolidatedOffers.add(consolidatedOffer);
+					slotAndPriceToOffer.remove(slotAndPrice);
+				}
+
+			}
+			else
+			{
+				if (offer.isComplete())
+				{
+					consolidatedOffers.add(offer.clone());
+				}
+				else
+				{
+					slotAndPriceToOffer.put(slotAndPrice, offer.clone());
+				}
+
+			}
+		}
+
+		return consolidatedOffers;
+	}
+
+
+	private ArrayList<Flip> groupMarginChecks(List<OfferInfo> buyMarginChecks, List<OfferInfo> sellMarginChecks)
+	{
+		ArrayList<Flip> marginCheckFlips = new ArrayList<>();
+		int minSize = Math.min(buyMarginChecks.size(), sellMarginChecks.size());
+		for (int i = 0; i < minSize; i++)
+		{
+			OfferInfo buyMarginCheck = buyMarginChecks.get(i);
+			OfferInfo sellMarginCheck = sellMarginChecks.get(i);
+			Flip flip = new Flip(buyMarginCheck.getPrice(), sellMarginCheck.getPrice(), 1, sellMarginCheck.getTime());
+			marginCheckFlips.add(flip);
+		}
+		return marginCheckFlips;
 	}
 
 }
