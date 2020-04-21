@@ -5,10 +5,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -291,126 +292,150 @@ public class HistoryManager
 	}
 
 	/**
-	 * This method serves as a way of segmenting a series of trades into separate flips.
-	 * <p>
-	 * Each buy trade is tallied up and price mapped with their quantities.
-	 * Afterwards, we compartmentalize the quantities into respective completed sell offers.
-	 * Completed sell offers act as a conclusion to a flip and thus each can only generate one flip.
-	 * If we have a higher sell than bought quantity, we skim off the remaining sell offers as we
-	 * are not able to determine where they originated and thus cannot accurately produce a flip.
+	 * This method serves as a way of segmenting a series of offers into seperate trades which are
+	 * then used to create Flips. A Flip is a buy offer followed by a sell offer. A trade is a series of offers
+	 * for the same slot at the same price.
 	 *
 	 * @param earliestTime The earliest time that new trades are treated as flips.
 	 * @return A list of compartmentalized flips from the interval between now and the parameter.
 	 */
 	public ArrayList<Flip> getFlips(Instant earliestTime)
 	{
-		//Fetch relevant history
-		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
-
 		//The resulting flips
 		ArrayList<Flip> flips = new ArrayList<>();
 
-		ArrayList<OfferInfo> buyList = getSaleList(intervalHistory, true);
-		ArrayList<OfferInfo> sellList = new ArrayList<>();
+		//Fetch relevant history
+		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
 
-		//This loop consolidates incomplete and complete sell offers
-		int numOfItemsSold = 0;
-		for (OfferInfo offer : standardizedOffers)
-		{
-			//If the offer is complete, add the quantity and add it to the list of sales
-			if (!offer.isBuy() && offer.isComplete())
-			{
-				numOfItemsSold += offer.getQuantity();
+		List<OfferInfo> buyMarginChecks = intervalHistory.stream().filter(offer -> offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
+		List<OfferInfo> nonMarginCheckBuys = intervalHistory.stream().filter(offer -> offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
 
-				//Clone the offer such that we retain the information that it provides
-				//while still being able to set the quantity.
-				OfferInfo consolidatedOffer = offer.clone();
-				consolidatedOffer.setQuantity(numOfItemsSold);
+		List<OfferInfo> sellMarginChecks = intervalHistory.stream().filter(offer -> !offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
+		List<OfferInfo> nonMarginCheckSells = intervalHistory.stream().filter(offer -> !offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
 
-				sellList.add(consolidatedOffer);
-				numOfItemsSold = 0;
-			}
-			//If the offer is incomplete we add the quantity and continue.
-			else if (!offer.isBuy())
-			{
-				numOfItemsSold += offer.getQuantity();
-			}
-		}
+		flips.addAll(groupMarginChecks(buyMarginChecks, sellMarginChecks));
 
-		//Reverse the sellList such that the newest sales are at the top.
-		Collections.reverse(sellList);
+		List<OfferInfo> consolidatedBuys = consolidateOffersIntoWholeTrades(nonMarginCheckBuys);
+		List<OfferInfo> consolidatedSells = consolidateOffersIntoWholeTrades(nonMarginCheckSells);
 
-		//This map serves as the backlog of bought quantities mapped with their prices they were bought at.
-		//The map is required to be linked, due to the fact that we want the newest buy trades at the top
-		//thus making the insertion order pivotal.
-		//K: price V: quantity
-		LinkedHashMap<Integer, Integer> backlog = new LinkedHashMap<>();
+		flips.addAll(flipsFromConsolidatedBuysAndSells(consolidatedBuys, consolidatedSells));
 
-		//We check every buy offer made and map them.
-		for (OfferInfo offer : buyList)
-		{
-			int price = offer.getPrice();
-
-			//If we already encountered a bought offer with the same price
-			//add it to the quantity.
-			if (backlog.containsKey(price))
-			{
-				backlog.replace(price, backlog.get(price) + offer.getQuantity());
-			}
-			//Else create a new entry with price and its initial quantity.
-			else
-			{
-				backlog.put(price, offer.getQuantity());
-			}
-		}
-
-		//Now that we have the list of consolidated sales with bought prices and quantities, we need to match them together
-		//and create flips.
-		for (OfferInfo offer : sellList)
-		{
-			int sellPrice = offer.getPrice();
-			int sellQuantity = offer.getQuantity();
-
-			//We use the sell offers time since this is the last activity the user had with this flip.
-			Instant timeOfFlipCompletion = offer.getTime();
-
-			if (backlog.isEmpty())
-			{
-				return flips;
-			}
-
-			//Since the buy price is also our key, we need to find the newest key (buy price) first
-			//then we can get the value (quantity).
-			int newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
-			int newestBuyQuantity = backlog.get(newestBuyPrice);
-
-			//As long as the sell is higher than the buy quantity we create flips with the buy quantity as its flip count
-			//and subtract it from the sell quantity.
-			while (sellQuantity >= newestBuyQuantity && backlog.size() != 0)
-			{
-				newestBuyPrice = (int) backlog.keySet().toArray()[backlog.size() - 1];
-				newestBuyQuantity = backlog.get(newestBuyPrice);
-
-				sellQuantity -= newestBuyQuantity;
-				//Remove the quantity since this is now accounted for.
-				backlog.remove(newestBuyPrice);
-
-				//Create new history panel with newestBuyQuantity as flip count.
-				flips.add(new Flip(newestBuyPrice, sellPrice, newestBuyQuantity, timeOfFlipCompletion));
-
-			}
-			//sellQuantity is lower than buy quantity
-			if (sellQuantity < newestBuyQuantity && sellQuantity != 0)
-			{
-				//Subtract the amount of items we've accounted for.
-				backlog.replace(newestBuyPrice, newestBuyQuantity - sellQuantity);
-
-				//Create new history panel with sellQuantity as flip count.
-				flips.add(new Flip(newestBuyPrice, sellPrice, sellQuantity, timeOfFlipCompletion));
-			}
-		}
+		flips.sort(Comparator.comparing(flip -> flip.getTime()));
+		Collections.reverse(flips);
 
 		return flips;
 	}
 
+	/**
+	 * This method creates Flips from consolidated buy and sell offers. Consolidated buy and sells offers represent the
+	 * entire trade which could have been made up by many offers. As such it has the quantity of the entire trade (the
+	 * sum of all the individual offers' quantities that made up the trade).
+	 *
+	 * @param buys consolidated buys which each represent an entire trade
+	 * @param sells consolidated sells which each represent an entire trade
+	 * @return flips that represent a buy followed by a sell.
+	 */
+	private ArrayList<Flip> flipsFromConsolidatedBuysAndSells (List<OfferInfo> buys, List<OfferInfo> sells) {
+		ArrayList<Flip> flips = new ArrayList<>();
+		int buyListPointer = 0;
+		int sellListPointer = 0;
+		while (buyListPointer < buys.size() && sellListPointer < sells.size())
+		{
+			OfferInfo buy = buys.get(buyListPointer);
+			OfferInfo sell = sells.get(sellListPointer);
+
+			if (sell.getQuantity() >= buy.getQuantity())
+			{
+				sell.setQuantity(sell.getQuantity() - buy.getQuantity());
+				buyListPointer++;
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getQuantity(), sell.getTime()));
+			}
+
+			else
+			{
+				buy.setQuantity(buy.getQuantity() - sell.getQuantity());
+				sellListPointer++;
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime()));
+			}
+		}
+		return flips;
+
+	}
+
+	/**
+	 * This method is crucial to the process of generating Flips from individual offers. A Flip represents
+	 * a completed buy trade followed by a completed sell trade. As such, this method's responsibility is grouping
+	 * individual offers that could be from any slot at any price (thus belong to different trades) into their
+	 * respective trades.
+	 *
+	 * Individual offers are grouped into their respective trades by a mapping of slot and price to a consolidated offer.
+	 * This consolidated offer is a representation of an entire trade, which could have been made up of many offers. As
+	 * such everytime we see an offer belonging to a certain slot and price, we add to the consolidated price's quantity.
+	 *
+	 * @param offers the offers to consolidate into whole trades.
+	 * @return offers representing consolidated offers (whole trades).
+	 */
+	private ArrayList<OfferInfo> consolidateOffersIntoWholeTrades(List<OfferInfo> offers)
+	{
+		Map<List<Integer>, OfferInfo> slotAndPriceToOffer = new HashMap<>();
+		ArrayList<OfferInfo> consolidatedOffers = new ArrayList<>();
+
+		for (OfferInfo offer : offers)
+		{
+			int slot = offer.getSlot();
+			int price = offer.getPrice();
+			List<Integer> slotAndPrice = new ArrayList<>(Arrays.asList(slot, price));
+
+			if (slotAndPriceToOffer.containsKey(slotAndPrice))
+			{
+				OfferInfo consolidatedOffer = slotAndPriceToOffer.get(slotAndPrice);
+				consolidatedOffer.setQuantity(consolidatedOffer.getQuantity() + offer.getQuantity());
+				consolidatedOffer.setTime(offer.getTime());
+				if (offer.isComplete())
+				{
+					consolidatedOffers.add(consolidatedOffer);
+					slotAndPriceToOffer.remove(slotAndPrice);
+				}
+
+			}
+			else
+			{
+				if (offer.isComplete())
+				{
+					consolidatedOffers.add(offer.clone());
+				}
+				else
+				{
+					slotAndPriceToOffer.put(slotAndPrice, offer.clone());
+				}
+
+			}
+		}
+
+		return consolidatedOffers;
+	}
+
+	/**
+	 * This method takes in buy and sell offers that are margin checks and creates Flips out of them. The
+	 * margin checks needs to be isolated from the rest of the offers because they only make sense if they are
+	 * together (a margin check buy should not be matched with a non margin check sell to create a flip, margin
+	 * checks are flips themselves).
+	 *
+	 * @param buyMarginChecks buy offers that are margin checks
+	 * @param sellMarginChecks sell offers that are margin checks
+	 * @return
+	 */
+	private ArrayList<Flip> groupMarginChecks(List<OfferInfo> buyMarginChecks, List<OfferInfo> sellMarginChecks)
+	{
+		ArrayList<Flip> marginCheckFlips = new ArrayList<>();
+		int minSize = Math.min(buyMarginChecks.size(), sellMarginChecks.size());
+		for (int i = 0; i < minSize; i++)
+		{
+			OfferInfo buyMarginCheck = buyMarginChecks.get(i);
+			OfferInfo sellMarginCheck = sellMarginChecks.get(i);
+			Flip flip = new Flip(buyMarginCheck.getPrice(), sellMarginCheck.getPrice(), 1, sellMarginCheck.getTime());
+			marginCheckFlips.add(flip);
+		}
+		return marginCheckFlips;
+	}
 }
