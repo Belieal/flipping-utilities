@@ -41,4 +41,5 @@ public class Flip
 	int sellPrice;
 	int quantity;
 	Instant time;
+	boolean marginCheck;
 }

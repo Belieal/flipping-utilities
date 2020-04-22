@@ -58,7 +58,15 @@ public class StatItemHistoryPanel extends JPanel
 
 		timeSince.setOpaque(true);
 		timeSince.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped " + "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+
+		if (flip.isMarginCheck())
+		{
+			timeSince.setText("Margin Checked " + "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+		}
+		else
+		{
+			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+		}
 
 		JLabel buyPriceText = new JLabel("Buy Price:");
 		JLabel sellPriceText = new JLabel("Sell Price:");
@@ -112,8 +120,15 @@ public class StatItemHistoryPanel extends JPanel
 	{
 		SwingUtilities.invokeLater(() ->
 		{
-			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
-				+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			if (flip.isMarginCheck())
+			{
+				timeSince.setText("Margin Checked (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			}
+			else
+			{
+				timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
+					+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			}
 		});
 	}
 

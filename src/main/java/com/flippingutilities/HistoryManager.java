@@ -315,10 +315,10 @@ public class HistoryManager
 
 		flips.addAll(groupMarginChecks(buyMarginChecks, sellMarginChecks));
 
-		List<OfferInfo> consolidatedBuys = consolidateOffersIntoWholeTrades(nonMarginCheckBuys);
-		List<OfferInfo> consolidatedSells = consolidateOffersIntoWholeTrades(nonMarginCheckSells);
+		List<OfferInfo> consolidatedBuys = consolidateOffers(nonMarginCheckBuys);
+		List<OfferInfo> consolidatedSells = consolidateOffers(nonMarginCheckSells);
 
-		flips.addAll(flipsFromConsolidatedBuysAndSells(consolidatedBuys, consolidatedSells));
+		flips.addAll(combineToFlips(consolidatedBuys, consolidatedSells));
 
 		flips.sort(Comparator.comparing(flip -> flip.getTime()));
 		Collections.reverse(flips);
@@ -331,11 +331,12 @@ public class HistoryManager
 	 * entire trade which could have been made up by many offers. As such it has the quantity of the entire trade (the
 	 * sum of all the individual offers' quantities that made up the trade).
 	 *
-	 * @param buys consolidated buys which each represent an entire trade
+	 * @param buys  consolidated buys which each represent an entire trade
 	 * @param sells consolidated sells which each represent an entire trade
 	 * @return flips that represent a buy followed by a sell.
 	 */
-	private ArrayList<Flip> flipsFromConsolidatedBuysAndSells (List<OfferInfo> buys, List<OfferInfo> sells) {
+	private ArrayList<Flip> combineToFlips(List<OfferInfo> buys, List<OfferInfo> sells)
+	{
 		ArrayList<Flip> flips = new ArrayList<>();
 		int buyListPointer = 0;
 		int sellListPointer = 0;
@@ -348,14 +349,14 @@ public class HistoryManager
 			{
 				sell.setQuantity(sell.getQuantity() - buy.getQuantity());
 				buyListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getQuantity(), sell.getTime()));
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getQuantity(), sell.getTime(), false));
 			}
 
 			else
 			{
 				buy.setQuantity(buy.getQuantity() - sell.getQuantity());
 				sellListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime()));
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime(), false));
 			}
 		}
 		return flips;
@@ -367,7 +368,7 @@ public class HistoryManager
 	 * a completed buy trade followed by a completed sell trade. As such, this method's responsibility is grouping
 	 * individual offers that could be from any slot at any price (thus belong to different trades) into their
 	 * respective trades.
-	 *
+	 * <p>
 	 * Individual offers are grouped into their respective trades by a mapping of slot and price to a consolidated offer.
 	 * This consolidated offer is a representation of an entire trade, which could have been made up of many offers. As
 	 * such everytime we see an offer belonging to a certain slot and price, we add to the consolidated price's quantity.
@@ -375,7 +376,7 @@ public class HistoryManager
 	 * @param offers the offers to consolidate into whole trades.
 	 * @return offers representing consolidated offers (whole trades).
 	 */
-	private ArrayList<OfferInfo> consolidateOffersIntoWholeTrades(List<OfferInfo> offers)
+	private ArrayList<OfferInfo> consolidateOffers(List<OfferInfo> offers)
 	{
 		Map<List<Integer>, OfferInfo> slotAndPriceToOffer = new HashMap<>();
 		ArrayList<OfferInfo> consolidatedOffers = new ArrayList<>();
@@ -421,7 +422,7 @@ public class HistoryManager
 	 * together (a margin check buy should not be matched with a non margin check sell to create a flip, margin
 	 * checks are flips themselves).
 	 *
-	 * @param buyMarginChecks buy offers that are margin checks
+	 * @param buyMarginChecks  buy offers that are margin checks
 	 * @param sellMarginChecks sell offers that are margin checks
 	 * @return
 	 */
@@ -433,7 +434,7 @@ public class HistoryManager
 		{
 			OfferInfo buyMarginCheck = buyMarginChecks.get(i);
 			OfferInfo sellMarginCheck = sellMarginChecks.get(i);
-			Flip flip = new Flip(buyMarginCheck.getPrice(), sellMarginCheck.getPrice(), 1, sellMarginCheck.getTime());
+			Flip flip = new Flip(buyMarginCheck.getPrice(), sellMarginCheck.getPrice(), 1, sellMarginCheck.getTime(), true);
 			marginCheckFlips.add(flip);
 		}
 		return marginCheckFlips;
