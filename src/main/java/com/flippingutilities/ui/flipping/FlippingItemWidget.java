@@ -84,9 +84,9 @@ public class FlippingItemWidget
 
 		switch (mode)
 		{
-			case ("setQuantity"):
+			case ("setCurrentQuantityInTrade"):
 				text.setText("Set to remaining GE limit: " + value);
-				text.setAction(1, "Set quantity");
+				text.setAction(1, "Set currentQuantityInTrade");
 				text.setOnOpListener((JavaScriptCallback) ev ->
 				{
 					client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");

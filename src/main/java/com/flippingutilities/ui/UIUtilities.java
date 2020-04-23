@@ -174,7 +174,7 @@ public class UIUtilities
 	 * except this allows for formatting longs.
 	 *
 	 * @param quantity Long to format
-	 * @param precise  If true, allow thousandths precision if {@code quantity} is larger than 1 million.
+	 * @param precise  If true, allow thousandths precision if {@code currentQuantityInTrade} is larger than 1 million.
 	 *                 Otherwise have at most a single decimal
 	 * @return Formatted number string.
 	 */

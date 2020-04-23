@@ -318,7 +318,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		//this is always the start of any offer (when you first put in an offer)
-		if (clonedNewOffer.getQuantity() == 0)
+		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
 			lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
 			return true;
@@ -326,8 +326,8 @@ public class FlippingPlugin extends Plugin
 
 		//when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
 		//this clause ignores the buying/selling event as it conveys the same info. We can tell its the buying/selling
-		//event right before a bought/sold event due to the quantity of the offer being == to the total quantity of the offer.
-		if ((clonedNewOffer.getState() == GrandExchangeOfferState.BUYING || clonedNewOffer.getState() == GrandExchangeOfferState.SELLING) && clonedNewOffer.getQuantity() == newOffer.getTotalQuantity())
+		//event right before a bought/sold event due to the currentQuantityInTrade of the offer being == to the total currentQuantityInTrade of the offer.
+		if ((clonedNewOffer.getState() == GrandExchangeOfferState.BUYING || clonedNewOffer.getState() == GrandExchangeOfferState.SELLING) && clonedNewOffer.getCurrentQuantityInTrade() == newOffer.getTotalQuantityInTrade())
 		{
 			return true;
 		}
@@ -373,7 +373,8 @@ public class FlippingPlugin extends Plugin
 			offer.getState(),
 			client.getTickCount(),
 			0,
-			offer.getTotalQuantity());
+			offer.getTotalQuantity(),
+			0);
 
 		return offerInfo;
 	}
@@ -565,11 +566,11 @@ public class FlippingPlugin extends Plugin
 				{
 					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
 					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-					flippingWidget.showWidget("setQuantity", itemGELimit);
+					flippingWidget.showWidget("setCurrentQuantityInTrade", itemGELimit);
 				}
 				else
 				{
-					flippingWidget.showWidget("setQuantity", selectedItem.remainingGeLimit());
+					flippingWidget.showWidget("setCurrentQuantityInTrade", selectedItem.remainingGeLimit());
 				}
 			}
 			else if (chatInputText.equals("Set a price for each item:"))
