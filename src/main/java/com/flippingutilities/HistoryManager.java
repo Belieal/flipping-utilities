@@ -117,6 +117,7 @@ public class HistoryManager
 		{
 			//don't need to standardize as its currentQuantityInTrade represents the currentQuantityInTrade bought as its the first
 			//trade in that slot.
+			newOffer.setQuantitySinceLastOffer(newOffer.getCurrentQuantityInTrade());
 			standardizedOffers.add(newOffer);
 
 			//if the offer was a complete offer there's no need to add it to the slot history as a complete
@@ -253,6 +254,7 @@ public class HistoryManager
 	{
 		int itemsSeen = 0;
 		long moneySpent = 0;
+
 
 		for (OfferInfo offer : tradeList)
 		{

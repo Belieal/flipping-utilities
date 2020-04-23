@@ -124,7 +124,8 @@ public class OfferInfo
 
 		OfferInfo otherOffer = (OfferInfo) other;
 
-		return getState() == otherOffer.getState() && getCurrentQuantityInTrade() == otherOffer.getCurrentQuantityInTrade();
+		return state == otherOffer.getState() && currentQuantityInTrade == otherOffer.getCurrentQuantityInTrade()
+			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
 	}
 }
 
