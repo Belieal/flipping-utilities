@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -325,6 +326,13 @@ public class HistoryManager
 	}
 
 
+	/**
+	 * Creates Flips from offers. Flips represent a buy trade followed by a sell trade. A trade is a collection
+	 * of offers from the empty offer to the completed offer. A completed offer marks the end of a trade.
+	 *
+	 * @param earliestTime the time after which trades should be looked at
+	 * @return flips
+	 */
 	public ArrayList<Flip> getFlips(Instant earliestTime)
 	{
 		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
@@ -363,47 +371,49 @@ public class HistoryManager
 			}
 		}
 
-		flips.addAll(combineToFlips(buyMarginChecks, sellMarginChecks));
-		flips.addAll(combineToFlips(nonMarginCheckBuys, nonMarginCheckSells));
+		flips.addAll(combineToFlips(clone(buyMarginChecks), clone(sellMarginChecks)));
+		flips.addAll(combineToFlips(clone(nonMarginCheckBuys), clone(nonMarginCheckSells)));
 		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
 		return flips;
 	}
 
+	private List<OfferInfo> clone(List<OfferInfo> offers)
+	{
+		return offers.stream().map(offer -> offer.clone()).collect(Collectors.toList());
+	}
+
 	/**
-	 * This method creates Flips from consolidated buy and sell offers. Consolidated buy and sells offers represent the
-	 * entire trade which could have been made up by many offers. As such it has the currentQuantityInTrade of the entire trade (the
-	 * sum of all the individual offers' quantities that made up the trade).
+	 * Creates flips based on the buy and sell list. It does this by going through the sell list and the buy list
+	 * and only moving onto the next sell offer when the current sell offer is exhausted (seen more items bought than it
+	 * has items sold). This ensures that a flip is only created on a completed sell offer.
 	 *
-	 * @param buys  consolidated buys which each represent an entire trade
-	 * @param sells consolidated sells which each represent an entire trade
-	 * @return flips that represent a buy followed by a sell.
+	 * @param buys  the buy offers
+	 * @param sells the sell offers
+	 * @return a list of Flips based on the buy and sell list.
 	 */
 	private ArrayList<Flip> combineToFlips(List<OfferInfo> buys, List<OfferInfo> sells)
 	{
 		ArrayList<Flip> flips = new ArrayList<>();
-		int buyListPointer = 0;
-		int sellListPointer = 0;
-		while (buyListPointer < buys.size() && sellListPointer < sells.size())
+
+		int buyIdx = 0;
+		for (OfferInfo sell : sells)
 		{
-			OfferInfo buy = buys.get(buyListPointer);
-			OfferInfo sell = sells.get(sellListPointer);
-
-			if (sell.getCurrentQuantityInTrade() >= buy.getCurrentQuantityInTrade())
+			int numBuysSeen = 0;
+			while (buyIdx < buys.size())
 			{
-				sell.setCurrentQuantityInTrade(sell.getCurrentQuantityInTrade() - buy.getCurrentQuantityInTrade());
-				buyListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getCurrentQuantityInTrade(), sell.getTime(), false));
-			}
-
-			else
-			{
-				buy.setCurrentQuantityInTrade(buy.getCurrentQuantityInTrade() - sell.getCurrentQuantityInTrade());
-				sellListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), false));
+				OfferInfo buy = buys.get(buyIdx);
+				numBuysSeen += buy.getCurrentQuantityInTrade();
+				if (numBuysSeen >= sell.getCurrentQuantityInTrade())
+				{
+					buy.setCurrentQuantityInTrade(numBuysSeen - sell.getCurrentQuantityInTrade());
+					flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck()));
+					break;
+				}
+				buyIdx++;
 			}
 		}
-		return flips;
 
+		return flips;
 	}
 }

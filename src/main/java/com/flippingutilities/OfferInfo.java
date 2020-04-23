@@ -104,7 +104,6 @@ public class OfferInfo
 		return standardizedOffer;
 	}
 
-	//TODO actually clone the Instant object, as we are currently just passing that as the same reference.
 	public OfferInfo clone()
 	{
 		return new OfferInfo(buy, itemId, currentQuantityInTrade, price, time, slot, state, tickArrivedAt, ticksSinceFirstOffer, totalQuantityInTrade, quantitySinceLastOffer);
