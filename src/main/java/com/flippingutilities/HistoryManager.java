@@ -274,14 +274,6 @@ public class HistoryManager
 		return moneySpent;
 	}
 
-	public void sortHistoryByLatestActivity()
-	{
-		if (standardizedOffers.size() > 0)
-		{
-			standardizedOffers.sort(Comparator.comparing(OfferInfo::getTime));
-		}
-	}
-
 	/**
 	 * Returns the history of the item that were traded between earliestTime and now.
 	 *

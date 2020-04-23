@@ -217,6 +217,7 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
+
 		//Reset active panel list.
 		activePanels.clear();
 
@@ -228,7 +229,6 @@ public class FlippingPanel extends JPanel
 		{
 			cardLayout.show(centerPanel, ITEMS_PANEL);
 		}
-
 
 		SwingUtilities.invokeLater(() ->
 		{

@@ -36,6 +36,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
@@ -98,6 +99,8 @@ public class StatsPanel extends JPanel
 	//Combo box that selects the time interval that startOfInterval contains.
 	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
 
+	private ActionListener comboboxListener;
+
 	//Sorting selector
 	private JComboBox<String> sortBox = new JComboBox<>(SORT_BY_STRINGS);
 
@@ -113,9 +116,10 @@ public class StatsPanel extends JPanel
 	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
 	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
 	private final JLabel totalQuantityText = new JLabel("Total Items Flipped: ");
+	private final JLabel totalFlipsText = new JLabel("Total Flips: ");
 	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, sessionTimeText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, totalFlipsText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
@@ -123,24 +127,27 @@ public class StatsPanel extends JPanel
 	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalQuantityVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel totalFlipsVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, sessionTimeVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, totalFlipsVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
 	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
 	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
 	private final JPanel totalQuantityPanel = new JPanel(new BorderLayout());
+	private final JPanel totalFlipsPanel = new JPanel(new BorderLayout());
 	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, sessionTimePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, totalFlipsPanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
 	private long totalExpenses;
 	private long totalRevenues;
 	private long totalQuantity;
+	private int totalFlips;
 
 	//Contains the unix time of the start of the interval.
 	@Getter
@@ -184,19 +191,20 @@ public class StatsPanel extends JPanel
 		constraints.gridx = 0;
 		constraints.gridy = 0;
 
-		//Start off with "Session" selected in the combobox.
-		timeIntervalList.setSelectedItem("Session");
-		timeIntervalList.setRenderer(new ComboBoxListRenderer());
-		timeIntervalList.setMinimumSize(new Dimension(0, 35));
-		timeIntervalList.setFocusable(false);
-		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		timeIntervalList.addActionListener(event ->
+		comboboxListener = e ->
 		{
 			selectedInterval = (String) timeIntervalList.getSelectedItem();
 
 			//Handle new time interval selected
-			setTimeInterval(selectedInterval);
-		});
+			setTimeInterval(selectedInterval, false);
+		};
+
+		//Start off with "Session" selected in the combobox.
+		timeIntervalList.setRenderer(new ComboBoxListRenderer());
+		timeIntervalList.setMinimumSize(new Dimension(0, 35));
+		timeIntervalList.setFocusable(false);
+		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		timeIntervalList.addActionListener(comboboxListener);
 
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -325,7 +333,7 @@ public class StatsPanel extends JPanel
 				return;
 			}
 
-			SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
+			rebuild(plugin.getTradesList());
 			plugin.updateConfig();
 		});
 
@@ -428,6 +436,7 @@ public class StatsPanel extends JPanel
 		totalExpenses = 0;
 		totalRevenues = 0;
 		totalQuantity = 0;
+		totalFlips = 0;
 
 		ArrayList<FlippingItem> tradesList = plugin.getTradesList();
 
@@ -443,6 +452,7 @@ public class StatsPanel extends JPanel
 		for (StatItemPanel panel : activePanels)
 		{
 			panel.updateDisplays();
+			totalFlips += panel.getTotalFlips();
 		}
 
 		updateTotalProfitDisplay();
@@ -451,6 +461,7 @@ public class StatsPanel extends JPanel
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
 		updateTotalQuantityDisplay();
+		updateTotalFlipsDisplay();
 		updateSessionTime();
 	}
 
@@ -555,6 +566,12 @@ public class StatsPanel extends JPanel
 		totalQuantityVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 	}
 
+	private void updateTotalFlipsDisplay()
+	{
+		totalFlipsVal.setText(QuantityFormatter.formatNumber(totalFlips));
+		totalFlipsVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+	}
+
 	private void updateSessionTime()
 	{
 		sessionTimeVal.setText(UIUtilities.formatDuration(sessionTime));
@@ -571,8 +588,10 @@ public class StatsPanel extends JPanel
 	 * Sets the start interval of the profit calculation.
 	 *
 	 * @param selectedInterval The string from TIME_INTERVAL_STRINGS that is selected in the time interval combobox
+	 * @param isStartUp        Boolean determines if the switch is called from the startUp or an actionListener.
+	 *                         This is so we don't call it twice unnecessarily.
 	 */
-	public void setTimeInterval(String selectedInterval)
+	public void setTimeInterval(String selectedInterval, boolean isStartUp)
 	{
 		if (selectedInterval == null)
 		{
@@ -609,8 +628,16 @@ public class StatsPanel extends JPanel
 				break;
 		}
 
+		//We need to remove the actionlistener first, otherwise the event is fired again.
+		timeIntervalList.removeActionListener(comboboxListener);
 		timeIntervalList.setSelectedItem(selectedInterval);
-		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
+		timeIntervalList.addActionListener(comboboxListener);
+
+		if (!isStartUp)
+		{
+			rebuild(plugin.getTradesList());
+		}
+
 		plugin.updateConfig();
 	}
 
