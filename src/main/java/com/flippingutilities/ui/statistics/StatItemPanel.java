@@ -152,14 +152,12 @@ public class StatItemPanel extends JPanel
 	 *
 	 * @param plugin       Used to access the plugin user config.
 	 * @param itemManager  Used to get the icon of the item.
-	 * @param executor     Used to allow for periodic updates of the panel if need be.
 	 * @param flippingItem The item that the panel represents.
 	 */
 
-	StatItemPanel(FlippingPlugin plugin, ItemManager itemManager, ScheduledExecutorService executor, FlippingItem flippingItem)
+	StatItemPanel(FlippingPlugin plugin, ItemManager itemManager, FlippingItem flippingItem)
 	{
 		this.plugin = plugin;
-		this.executor = executor;
 		this.flippingItem = flippingItem;
 
 		setLayout(new BorderLayout());

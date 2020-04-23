@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -83,7 +82,6 @@ public class StatsPanel extends JPanel
 
 	private FlippingPlugin plugin;
 	private ItemManager itemManager;
-	private ScheduledExecutorService executor;
 
 	//Holds the buttons that control time intervals
 	private JPanel topPanel = new JPanel(new BorderLayout());
@@ -379,7 +377,7 @@ public class StatsPanel extends JPanel
 					continue;
 				}
 
-				StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, executor, item);
+				StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, item);
 
 				if (index++ > 0)
 				{
