@@ -90,7 +90,6 @@ public class FlippingPlugin extends Plugin
 	public static final String CONFIG_GROUP = "flipping";
 	public static final String ITEMS_CONFIG_KEY = "items";
 	public static final String TIME_INTERVAL_CONFIG_KEY = "selectedinterval";
-	public static final String SORT_BY_CONFIG_KEY = "sortby";
 
 	@Inject
 	private Client client;
@@ -185,7 +184,7 @@ public class FlippingPlugin extends Plugin
 			return true;
 		});
 
-		//Ensures the panel displays for the margin check being outdated and the next ge refresh
+		//Ensures the panel displays for the margin check being outdated and the next ge reset
 		//are updated every second.
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
@@ -401,7 +400,8 @@ public class FlippingPlugin extends Plugin
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
 		//Initialized with sub info being collapsed.
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, true);
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit);
+
 		flippingItem.updateMargin(newOffer);
 		flippingItem.update(newOffer);
 
@@ -474,21 +474,15 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
-		final Gson gson = new Gson();
-		executor.submit(() ->
-		{
-			final String json = gson.toJson(tradesList);
-			configManager.setConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY, json);
 
-			if (statPanel.getSelectedInterval() != null)
-			{
-				configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
-			}
-			if (statPanel.getSelectedSort() != null)
-			{
-				configManager.setConfiguration(CONFIG_GROUP, SORT_BY_CONFIG_KEY, statPanel.getSelectedSort());
-			}
-		});
+		final Gson gson = new Gson();
+		final String json = gson.toJson(tradesList);
+		configManager.setConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY, json);
+
+		if (statPanel.getSelectedInterval() != null)
+		{
+			configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
+		}
 	}
 
 	//Loads previous session data to tradeList.
@@ -497,7 +491,6 @@ public class FlippingPlugin extends Plugin
 		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY));
-		statPanel.setSortBy(configManager.getConfiguration(CONFIG_GROUP, SORT_BY_CONFIG_KEY));
 
 		if (json == null)
 		{
