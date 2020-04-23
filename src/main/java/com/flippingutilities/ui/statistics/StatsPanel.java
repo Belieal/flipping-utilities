@@ -43,6 +43,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -111,31 +112,35 @@ public class StatsPanel extends JPanel
 	private final JLabel roiText = new JLabel("ROI: ");
 	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
 	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
+	private final JLabel totalQuantityText = new JLabel("Total Items Flipped: ");
 	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, sessionTimeText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel roiVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel totalQuantityVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, sessionTimeVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
 	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
 	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
+	private final JPanel totalQuantityPanel = new JPanel(new BorderLayout());
 	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, sessionTimePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
 	private long totalExpenses;
 	private long totalRevenues;
+	private long totalQuantity;
 
 	//Contains the unix time of the start of the interval.
 	@Getter
@@ -358,14 +363,13 @@ public class StatsPanel extends JPanel
 	 */
 	public void rebuild(ArrayList<FlippingItem> tradesList)
 	{
+		//Remove old stats
+		activePanels = new ArrayList<>();
+		sortTradeList(tradesList);
+
 		SwingUtilities.invokeLater(() ->
 		{
-			//Remove old stats
 			statItemContainer.removeAll();
-			activePanels = new ArrayList<>();
-
-			sortTradeList(tradesList);
-
 			int index = 0;
 			for (FlippingItem item : tradesList)
 			{
@@ -396,10 +400,10 @@ public class StatsPanel extends JPanel
 				constraints.gridy++;
 			}
 			updateDisplays();
-		});
 
-		revalidate();
-		repaint();
+			revalidate();
+			repaint();
+		});
 	}
 
 	/**
@@ -408,7 +412,6 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateDisplays()
 	{
-
 		subInfoContainer.removeAll();
 
 		boolean useAltColor = true;
@@ -424,14 +427,17 @@ public class StatsPanel extends JPanel
 		totalProfit = 0;
 		totalExpenses = 0;
 		totalRevenues = 0;
+		totalQuantity = 0;
 
 		ArrayList<FlippingItem> tradesList = plugin.getTradesList();
 
 		for (FlippingItem item : tradesList)
 		{
-			totalProfit += item.currentProfit(item.getIntervalHistory(startOfInterval));
+			List<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+			totalProfit += item.currentProfit(intervalHistory);
 			totalExpenses += item.getCashflow(startOfInterval, true);
 			totalRevenues += item.getCashflow(startOfInterval, false);
+			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
 		for (StatItemPanel panel : activePanels)
@@ -444,26 +450,8 @@ public class StatsPanel extends JPanel
 		updateHourlyProfitDisplay();
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
+		updateTotalQuantityDisplay();
 		updateSessionTime();
-	}
-
-	/**
-	 * Responsible for updating the total profit label at the very top.
-	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesList()}.
-	 */
-	private void updateTotalProfitDisplay()
-	{
-		if (plugin.getTradesList() == null)
-		{
-			totalProfitVal.setText("0");
-			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			totalProfitVal.setToolTipText("Total Profit: 0 gp");
-			return;
-		}
-
-		totalProfitVal.setText(((totalProfit >= 0) ? "" : "-") + UIUtilities.quantityToRSDecimalStack(Math.abs(totalProfit), true) + " gp");
-		totalProfitVal.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
-		totalProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -486,6 +474,46 @@ public class StatsPanel extends JPanel
 		}
 
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+	}
+
+	/**
+	 * Responsible for updating the total profit label at the very top.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesList()}.
+	 */
+	private void updateTotalProfitDisplay()
+	{
+		if (plugin.getTradesList() == null)
+		{
+			totalProfitVal.setText("0");
+			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			totalProfitVal.setToolTipText("Total Profit: 0 gp");
+			return;
+		}
+
+		totalProfitVal.setText(((totalProfit >= 0) ? "" : "-") + UIUtilities.quantityToRSDecimalStack(Math.abs(totalProfit), true) + " gp");
+		totalProfitVal.setToolTipText("Total Profit: " + QuantityFormatter.formatNumber(totalProfit) + " gp");
+
+		//Reproduce the RuneScape stack size colors
+		if (totalProfit < 0)
+		{
+			//]-inf, 0[
+			totalProfitVal.setForeground(UIUtilities.OUTDATED_COLOR);
+		}
+		else if (totalProfit < 99999)
+		{
+			//[0,100k[
+			totalProfitVal.setForeground(Color.YELLOW);
+		}
+		else if (totalProfit < 99999999)
+		{
+			//[100k,10m[
+			totalProfitVal.setForeground(Color.WHITE);
+		}
+		else
+		{
+			//[10m,inf[
+			totalProfitVal.setForeground(Color.GREEN);
+		}
 	}
 
 	/**
@@ -521,32 +549,10 @@ public class StatsPanel extends JPanel
 		totalExpenseVal.setForeground(UIUtilities.OUTDATED_COLOR);
 	}
 
-	/**
-	 * Chooses the font that is used for the sub information based on user config.
-	 */
-	private void updateSubInfoFont()
+	private void updateTotalQuantityDisplay()
 	{
-		Font font = null;
-		switch (plugin.getConfig().subInfoFontStyle())
-		{
-			case SMALL_FONT:
-				font = FontManager.getRunescapeSmallFont();
-				break;
-
-			case REGULAR_FONT:
-				font = FontManager.getRunescapeFont();
-				break;
-
-			case BOLD_FONT:
-				font = FontManager.getRunescapeBoldFont();
-				break;
-		}
-
-		for (int i = 0; i < textLabelArray.length; i++)
-		{
-			textLabelArray[i].setFont(font);
-			valLabelArray[i].setFont(font);
-		}
+		totalQuantityVal.setText(QuantityFormatter.formatNumber(totalQuantity));
+		totalQuantityVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 	}
 
 	private void updateSessionTime()
@@ -606,6 +612,34 @@ public class StatsPanel extends JPanel
 		timeIntervalList.setSelectedItem(selectedInterval);
 		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
 		plugin.updateConfig();
+	}
+
+	/**
+	 * Chooses the font that is used for the sub information based on user config.
+	 */
+	private void updateSubInfoFont()
+	{
+		Font font = null;
+		switch (plugin.getConfig().subInfoFontStyle())
+		{
+			case SMALL_FONT:
+				font = FontManager.getRunescapeSmallFont();
+				break;
+
+			case REGULAR_FONT:
+				font = FontManager.getRunescapeFont();
+				break;
+
+			case BOLD_FONT:
+				font = FontManager.getRunescapeBoldFont();
+				break;
+		}
+
+		for (int i = 0; i < textLabelArray.length; i++)
+		{
+			textLabelArray[i].setFont(font);
+			valLabelArray[i].setFont(font);
+		}
 	}
 
 	/**
