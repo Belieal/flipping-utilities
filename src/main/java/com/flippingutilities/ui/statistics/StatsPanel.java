@@ -32,7 +32,6 @@ import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -42,6 +41,8 @@ import java.awt.event.MouseEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
@@ -66,7 +67,7 @@ import net.runelite.client.util.QuantityFormatter;
 public class StatsPanel extends JPanel
 {
 	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
-	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Profit Total", "Most Profit Each", "Highest ROI", "Highest Quantity"};
+	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
@@ -150,6 +151,8 @@ public class StatsPanel extends JPanel
 
 	//Time when the panel was created. Assume this is the start of session.
 	private Instant sessionTime;
+
+	private ArrayList<StatItemPanel> activePanels = new ArrayList<>();
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -319,7 +322,8 @@ public class StatsPanel extends JPanel
 				return;
 			}
 
-			setSortBy(selectedSort);
+			SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
+			plugin.updateConfig();
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -360,14 +364,17 @@ public class StatsPanel extends JPanel
 		{
 			//Remove old stats
 			statItemContainer.removeAll();
+			activePanels = new ArrayList<>();
+
+			sortTradeList(tradesList);
 
 			int index = 0;
 			for (FlippingItem item : tradesList)
 			{
-				ArrayList<OfferInfo> tradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
+				ArrayList<OfferInfo> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
-				if (tradeHistory.isEmpty() || item.countItemsFlipped(tradeHistory) == 0)
+				if (itemTradeHistory.isEmpty() || item.countItemsFlipped(itemTradeHistory) == 0)
 				{
 					continue;
 				}
@@ -387,11 +394,12 @@ public class StatsPanel extends JPanel
 					//First item in the wrapper
 					statItemContainer.add(newPanel, constraints);
 				}
+				activePanels.add(newPanel);
 				constraints.gridy++;
 			}
+			updateDisplays();
 		});
 
-		updateDisplays();
 		revalidate();
 		repaint();
 	}
@@ -402,6 +410,7 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateDisplays()
 	{
+
 		subInfoContainer.removeAll();
 
 		boolean useAltColor = true;
@@ -422,17 +431,14 @@ public class StatsPanel extends JPanel
 
 		for (FlippingItem item : tradesList)
 		{
-			totalProfit += item.currentProfit(startOfInterval);
+			totalProfit += item.currentProfit(item.getIntervalHistory(startOfInterval));
 			totalExpenses += item.getCashflow(startOfInterval, true);
 			totalRevenues += item.getCashflow(startOfInterval, false);
 		}
 
-		for (Component component : statItemContainer.getComponents())
+		for (StatItemPanel panel : activePanels)
 		{
-			if (component instanceof StatItemPanel)
-			{
-				((StatItemPanel) component).updateDisplays();
-			}
+			panel.updateDisplays();
 		}
 
 		updateTotalProfitDisplay();
@@ -605,15 +611,13 @@ public class StatsPanel extends JPanel
 	}
 
 	/**
-	 * Gets called every time the sort by combobox has its selection changed.
-	 * Sorts the profit items according to the selected string.
+	 * Sorts the to-be-built tradeList items according to the selectedSort string.
 	 *
-	 * @param selectedSort The string from SORT_BY_STRINGS that is selected in the sort by combobox
+	 * @param tradeList The soon-to-be drawn tradeList whose items are getting sorted.
 	 */
-	//TODO: Hook this up
-	public void setSortBy(String selectedSort)
+	public void sortTradeList(ArrayList<FlippingItem> tradeList)
 	{
-		if (selectedSort == null)
+		if (selectedSort == null || tradeList.isEmpty())
 		{
 			return;
 		}
@@ -621,20 +625,62 @@ public class StatsPanel extends JPanel
 		switch (selectedSort)
 		{
 			case "Most Recent":
-				break;
-			case "Most Profit Total":
-				break;
-			case "Most Profit Each":
-				break;
-			case "Highest ROI":
-				break;
-			case "Highest Quantity":
-				break;
-		}
+				tradeList.sort((item1, item2) ->
+				{
+					if (item1 == null || item2 == null)
+					{
+						return -1;
+					}
 
-		sortBox.setSelectedItem(selectedSort);
-		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
-		plugin.updateConfig();
+					return item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime());
+				});
+				break;
+
+			case "Most Total Profit":
+				tradeList.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
+				break;
+
+			case "Most Profit Each":
+				tradeList.sort(Comparator.comparing(item ->
+				{
+					ArrayList<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+					int quantity = item.countItemsFlipped(intervalHistory);
+
+					if (quantity == 0)
+					{
+						return 0;
+					}
+
+					return (int) item.currentProfit(intervalHistory) / quantity;
+				}));
+				break;
+
+			case "Highest ROI":
+				tradeList.sort((item1, item2) ->
+				{
+					ArrayList<OfferInfo> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
+					ArrayList<OfferInfo> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
+
+					long totalExpense1 = item1.getCashflow(intervalHistory1, true);
+					long totalExpense2 = item2.getCashflow(intervalHistory2, true);
+
+					if (totalExpense1 == 0 || totalExpense2 == 0)
+					{
+						return -1;
+					}
+
+					return Float.compare((float) item1.currentProfit(intervalHistory1) / totalExpense1, (float) item2.currentProfit(intervalHistory2) / totalExpense2);
+				});
+				break;
+
+			case "Highest Quantity":
+				tradeList.sort(Comparator.comparing(item -> item.countItemsFlipped(item.getIntervalHistory(startOfInterval))));
+				break;
+
+			default:
+				throw new IllegalStateException("Unexpected value: " + selectedSort);
+		}
+		Collections.reverse(tradeList);
 	}
 
 }

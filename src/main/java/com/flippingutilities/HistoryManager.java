@@ -1,3 +1,30 @@
+/*
+ * Copyright (c) 2020, Belieal <https://github.com/Belieal>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
 package com.flippingutilities;
 
 import java.time.Instant;
@@ -137,33 +164,30 @@ public class HistoryManager
 	// and the individual prices (only if they are different)
 
 	/**
-	 * Calculates profit for this item by looking at the standardizedOffers list, filtering out offers
-	 * that are older than the earliest time, putting buy offers and sell offers into a different list, and then
-	 * returning the difference in value of the sell list and the buy list.
+	 * Calculates profit for a list of trades made with this item by counting the expenses and revenues
+	 * accrued over these trades and figuring out the difference in value.
 	 *
-	 * @param earliestTime the earliest time the user wants trades to impact profit for this item for.
+	 * @param tradeList The list of trades whose total profits will be calculated.
 	 * @return profit
 	 */
-	public long currentProfit(Instant earliestTime)
+	public long currentProfit(List<OfferInfo> tradeList)
 	{
-		List<OfferInfo> itemsInInterval = getIntervalsHistory(earliestTime);
-
 		//return the value of the sell list - the value of the buy list. This is the profit.
-		return getCashflow(itemsInInterval, false) - getCashflow(itemsInInterval, true);
+		return getCashflow(tradeList, false) - getCashflow(tradeList, true);
 	}
 
 	/**
 	 * This method finds the value of a list of offers. The boolean parameter determines if we calculate
 	 * from buyList or sellList.
 	 *
-	 * @param offers     The list of standardized offers whose cashflow we want the value of.
+	 * @param tradeList  The list of standardized offers whose cashflow we want the value of.
 	 * @param getExpense Options parameter that calculates, if true, the total expenses accrued
 	 *                   and, if false, the total revenues accrued from the trades.
 	 * @return Returns a long value based on the boolean parameter provided.
 	 */
-	public long getCashflow(List<OfferInfo> offers, boolean getExpense)
+	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
 	{
-		return getValueOfTrades(getSaleList(offers, getExpense), countItemsFlipped(offers));
+		return getValueOfTrades(getSaleList(tradeList, getExpense), countItemsFlipped(tradeList));
 	}
 
 	/**
@@ -248,6 +272,14 @@ public class HistoryManager
 		return moneySpent;
 	}
 
+	public void sortHistoryByLatestActivity()
+	{
+		if (standardizedOffers.size() > 0)
+		{
+			standardizedOffers.sort(Comparator.comparing(OfferInfo::getTime));
+		}
+	}
+
 	/**
 	 * Returns the history of the item that were traded between earliestTime and now.
 	 *
@@ -307,6 +339,9 @@ public class HistoryManager
 		//Fetch relevant history
 		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
 
+		//Ensure offers are sorted by recency.
+		intervalHistory.sort(Comparator.comparing(OfferInfo::getTime));
+
 		List<OfferInfo> buyMarginChecks = intervalHistory.stream().filter(offer -> offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
 		List<OfferInfo> nonMarginCheckBuys = intervalHistory.stream().filter(offer -> offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
 
@@ -320,7 +355,7 @@ public class HistoryManager
 
 		flips.addAll(combineToFlips(consolidatedBuys, consolidatedSells));
 
-		flips.sort(Comparator.comparing(flip -> flip.getTime()));
+		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
 
 		return flips;

@@ -75,19 +75,27 @@ public class FlippingItem
 	@Getter
 	private Instant latestSellTime;
 
+	//An activity is described as a completed offer event.
+	@Getter
+	private Instant latestActivityTime = Instant.now();
+
 	@Getter
 	@Setter
-	private boolean shouldCollapseStatItem;
+	private boolean shouldExpandStatItem = false;
+
+	@Getter
+	@Setter
+	private boolean shouldExpandHistory = false;
+
 
 	private HistoryManager history = new HistoryManager();
 
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit, boolean shouldCollapseStatItem)
+	public FlippingItem(int itemId, String itemName, int totalGeLimit)
 	{
 		this.itemId = itemId;
 		this.itemName = itemName;
 		this.totalGELimit = totalGeLimit;
-		this.shouldCollapseStatItem = shouldCollapseStatItem;
 	}
 
 	/**
@@ -101,7 +109,7 @@ public class FlippingItem
 	public void update(OfferInfo newOffer)
 	{
 		updateHistory(newOffer);
-		updateLatestBuySellTimes(newOffer);
+		updateLatestTimes(newOffer);
 	}
 
 	/**
@@ -121,7 +129,7 @@ public class FlippingItem
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateLatestBuySellTimes(OfferInfo newOffer)
+	public void updateLatestTimes(OfferInfo newOffer)
 	{
 		if (newOffer.isBuy())
 		{
@@ -130,6 +138,11 @@ public class FlippingItem
 		else
 		{
 			latestSellTime = newOffer.getTime();
+		}
+
+		if (newOffer.isComplete())
+		{
+			latestActivityTime = newOffer.getTime();
 		}
 	}
 
@@ -158,9 +171,9 @@ public class FlippingItem
 		}
 	}
 
-	public long currentProfit(Instant earliestTime)
+	public long currentProfit(List<OfferInfo> tradeList)
 	{
-		return history.currentProfit(earliestTime);
+		return history.currentProfit(tradeList);
 	}
 
 	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)

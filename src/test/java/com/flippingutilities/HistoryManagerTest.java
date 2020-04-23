@@ -75,11 +75,11 @@ public class HistoryManagerTest
 	@Test
 	public void getProfitCorrectnessTest()
 	{
-		assertEquals(200, historyManager.currentProfit(baseTime.minus(1, ChronoUnit.HOURS)));
-		historyManager.updateHistory(new OfferInfo(false, 0, 5, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD,0,0,0));
-		assertEquals(34 * 5, historyManager.currentProfit(baseTime.minus(25, ChronoUnit.MINUTES))); //34 buys and 40 sells, so looks for 34 items and profit is 5 gp ea.
-		assertEquals(0, historyManager.currentProfit(baseTime));
-
+		List<OfferInfo> list = historyManager.getIntervalsHistory(baseTime);
+		assertEquals(200, historyManager.currentProfit(list));
+		historyManager.updateHistory(new OfferInfo(false, 0, 5, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 0, 0, 0));
+		assertEquals(34 * 5, historyManager.currentProfit(list)); //34 buys and 40 sells, so looks for 34 items and profit is 5 gp ea.
+		assertEquals(0, historyManager.currentProfit(list));
 	}
 
 	@Test

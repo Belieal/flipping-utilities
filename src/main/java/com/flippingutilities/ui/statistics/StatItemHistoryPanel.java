@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2020, Belieal <https://github.com/Belieal>
  * All rights reserved.
