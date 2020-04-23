@@ -36,7 +36,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -53,9 +52,9 @@ public class HistoryManager
 	//as the slot is now empty.
 	private Map<Integer, List<OfferInfo>> slotHistory = new HashMap<>();
 
-	//a list of standardizedOffers. A standardizedOffer is an offer with a quantity that represents the
-	//quantity bought since the last offer. A regular offer just has info from an offerEvent, which gives
-	//you the current quantity bought/sold overall in the trade.
+	//a list of standardizedOffers. A standardizedOffer is an offer with a currentQuantityInTrade that represents the
+	//currentQuantityInTrade bought since the last offer. A regular offer just has info from an offerEvent, which gives
+	//you the current currentQuantityInTrade bought/sold overall in the trade.
 	@Getter
 	private List<OfferInfo> standardizedOffers = new ArrayList<>();
 
@@ -84,13 +83,13 @@ public class HistoryManager
 
 	/**
 	 * Receives an offer, turns it into a standardized offer, and adds it to the standardized offer list.
-	 * Standardizing an offer refers to making it reflect the quantity bought/sold since last offer rather
+	 * Standardizing an offer refers to making it reflect the currentQuantityInTrade bought/sold since last offer rather
 	 * than the current amount bought/sold overall in the trade as is the default information in the OfferInfo
 	 * constructed from a grandExchangeOfferChanged event.
 	 *
 	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
 	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives. It is crucial to note that
-	 *                 This OfferInfo object contains the current quantity bought/sold for the trade currently.
+	 *                 This OfferInfo object contains the current currentQuantityInTrade bought/sold for the trade currently.
 	 */
 	private void storeStandardizedOffer(OfferInfo newOffer)
 	{
@@ -116,7 +115,7 @@ public class HistoryManager
 		//its the first trade for that slot!
 		else
 		{
-			//don't need to standardize as its quantity represents the quantity bought as its the first
+			//don't need to standardize as its currentQuantityInTrade represents the currentQuantityInTrade bought as its the first
 			//trade in that slot.
 			standardizedOffers.add(newOffer);
 
@@ -148,19 +147,19 @@ public class HistoryManager
 		if (nextGeLimitRefresh == null || mostRecentOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
 			nextGeLimitRefresh = mostRecentOffer.getTime().plus(4, ChronoUnit.HOURS);
-			itemsBoughtThisLimitWindow = mostRecentOffer.getQuantity();
+			itemsBoughtThisLimitWindow = mostRecentOffer.getQuantitySinceLastOffer();
 		}
-		//if the last offer (most recent offer) is before the next ge limit refresh, add its quantity to the
+		//if the last offer (most recent offer) is before the next ge limit refresh, add its currentQuantityInTrade to the
 		//amount bought this limit window.
 		else
 		{
-			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantity();
+			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantitySinceLastOffer();
 		}
 
 	}
 
 	//TODO:
-	// return a summary, not just the profit. A summary will include the profit, and the quantity of buys/sells
+	// return a summary, not just the profit. A summary will include the profit, and the currentQuantityInTrade of buys/sells
 	// and the individual prices (only if they are different)
 
 	/**
@@ -191,11 +190,11 @@ public class HistoryManager
 	}
 
 	/**
-	 * Gets the quantity of flipped items that has been done in a list of offers.
-	 * The quantity flipped is determined by the lowest of either number of items bought or sold.
+	 * Gets the currentQuantityInTrade of flipped items that has been done in a list of offers.
+	 * The currentQuantityInTrade flipped is determined by the lowest of either number of items bought or sold.
 	 *
 	 * @param tradeList The list of items that the item count is based on
-	 * @return An integer representing the total quantity of items flipped in the list of offers
+	 * @return An integer representing the total currentQuantityInTrade of items flipped in the list of offers
 	 */
 	public int countItemsFlipped(List<OfferInfo> tradeList)
 	{
@@ -206,11 +205,11 @@ public class HistoryManager
 		{
 			if (standardizedOffer.isBuy())
 			{
-				numBoughtItems += standardizedOffer.getQuantity();
+				numBoughtItems += standardizedOffer.getQuantitySinceLastOffer();
 			}
 			else
 			{
-				numSoldItems += standardizedOffer.getQuantity();
+				numSoldItems += standardizedOffer.getQuantitySinceLastOffer();
 			}
 		}
 
@@ -257,15 +256,15 @@ public class HistoryManager
 
 		for (OfferInfo offer : tradeList)
 		{
-			if (itemsSeen + offer.getQuantity() >= itemLimit)
+			if (itemsSeen + offer.getQuantitySinceLastOffer() >= itemLimit)
 			{
 				moneySpent += (itemLimit - itemsSeen) * offer.getPrice();
 				break;
 			}
 			else
 			{
-				moneySpent += offer.getQuantity() * offer.getPrice();
-				itemsSeen += offer.getQuantity();
+				moneySpent += offer.getQuantitySinceLastOffer() * offer.getPrice();
+				itemsSeen += offer.getQuantitySinceLastOffer();
 			}
 		}
 
@@ -323,47 +322,55 @@ public class HistoryManager
 		}
 	}
 
-	/**
-	 * This method serves as a way of segmenting a series of offers into seperate trades which are
-	 * then used to create Flips. A Flip is a buy offer followed by a sell offer. A trade is a series of offers
-	 * for the same slot at the same price.
-	 *
-	 * @param earliestTime The earliest time that new trades are treated as flips.
-	 * @return A list of compartmentalized flips from the interval between now and the parameter.
-	 */
+
 	public ArrayList<Flip> getFlips(Instant earliestTime)
 	{
-		//The resulting flips
-		ArrayList<Flip> flips = new ArrayList<>();
-
-		//Fetch relevant history
 		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
 
-		//Ensure offers are sorted by recency.
-		intervalHistory.sort(Comparator.comparing(OfferInfo::getTime));
+		List<OfferInfo> buyMarginChecks = new ArrayList<>();
+		List<OfferInfo> sellMarginChecks = new ArrayList<>();
+		List<OfferInfo> nonMarginCheckBuys = new ArrayList<>();
+		List<OfferInfo> nonMarginCheckSells = new ArrayList<>();
 
-		List<OfferInfo> buyMarginChecks = intervalHistory.stream().filter(offer -> offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
-		List<OfferInfo> nonMarginCheckBuys = intervalHistory.stream().filter(offer -> offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
+		ArrayList<Flip> flips = new ArrayList<>();
 
-		List<OfferInfo> sellMarginChecks = intervalHistory.stream().filter(offer -> !offer.isBuy() && offer.isMarginCheck()).collect(Collectors.toList());
-		List<OfferInfo> nonMarginCheckSells = intervalHistory.stream().filter(offer -> !offer.isBuy() && !offer.isMarginCheck()).collect(Collectors.toList());
+		for (OfferInfo offer : intervalHistory)
+		{
+			if (offer.isMarginCheck())
+			{
+				if (offer.isBuy())
+				{
+					buyMarginChecks.add(offer);
+				}
+				else
+				{
+					sellMarginChecks.add(offer);
+				}
+			}
 
-		flips.addAll(groupMarginChecks(buyMarginChecks, sellMarginChecks));
+			else if (!offer.isMarginCheck() && offer.isComplete())
+			{
+				if (offer.isBuy())
+				{
+					nonMarginCheckBuys.add(offer);
+				}
+				else
+				{
+					nonMarginCheckSells.add(offer);
+				}
+			}
+		}
 
-		List<OfferInfo> consolidatedBuys = consolidateOffers(nonMarginCheckBuys);
-		List<OfferInfo> consolidatedSells = consolidateOffers(nonMarginCheckSells);
-
-		flips.addAll(combineToFlips(consolidatedBuys, consolidatedSells));
-
+		flips.addAll(combineToFlips(buyMarginChecks, sellMarginChecks));
+		flips.addAll(combineToFlips(nonMarginCheckBuys, nonMarginCheckSells));
 		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
-
 		return flips;
 	}
 
 	/**
 	 * This method creates Flips from consolidated buy and sell offers. Consolidated buy and sells offers represent the
-	 * entire trade which could have been made up by many offers. As such it has the quantity of the entire trade (the
+	 * entire trade which could have been made up by many offers. As such it has the currentQuantityInTrade of the entire trade (the
 	 * sum of all the individual offers' quantities that made up the trade).
 	 *
 	 * @param buys  consolidated buys which each represent an entire trade
@@ -380,98 +387,21 @@ public class HistoryManager
 			OfferInfo buy = buys.get(buyListPointer);
 			OfferInfo sell = sells.get(sellListPointer);
 
-			if (sell.getQuantity() >= buy.getQuantity())
+			if (sell.getCurrentQuantityInTrade() >= buy.getCurrentQuantityInTrade())
 			{
-				sell.setQuantity(sell.getQuantity() - buy.getQuantity());
+				sell.setCurrentQuantityInTrade(sell.getCurrentQuantityInTrade() - buy.getCurrentQuantityInTrade());
 				buyListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getQuantity(), sell.getTime(), false));
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), buy.getCurrentQuantityInTrade(), sell.getTime(), false));
 			}
 
 			else
 			{
-				buy.setQuantity(buy.getQuantity() - sell.getQuantity());
+				buy.setCurrentQuantityInTrade(buy.getCurrentQuantityInTrade() - sell.getCurrentQuantityInTrade());
 				sellListPointer++;
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getQuantity(), sell.getTime(), false));
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), false));
 			}
 		}
 		return flips;
 
-	}
-
-	/**
-	 * This method is crucial to the process of generating Flips from individual offers. A Flip represents
-	 * a completed buy trade followed by a completed sell trade. As such, this method's responsibility is grouping
-	 * individual offers that could be from any slot at any price (thus belong to different trades) into their
-	 * respective trades.
-	 * <p>
-	 * Individual offers are grouped into their respective trades by a mapping of slot and price to a consolidated offer.
-	 * This consolidated offer is a representation of an entire trade, which could have been made up of many offers. As
-	 * such everytime we see an offer belonging to a certain slot and price, we add to the consolidated price's quantity.
-	 *
-	 * @param offers the offers to consolidate into whole trades.
-	 * @return offers representing consolidated offers (whole trades).
-	 */
-	private ArrayList<OfferInfo> consolidateOffers(List<OfferInfo> offers)
-	{
-		Map<List<Integer>, OfferInfo> slotAndPriceToOffer = new HashMap<>();
-		ArrayList<OfferInfo> consolidatedOffers = new ArrayList<>();
-
-		for (OfferInfo offer : offers)
-		{
-			int slot = offer.getSlot();
-			int price = offer.getPrice();
-			List<Integer> slotAndPrice = new ArrayList<>(Arrays.asList(slot, price));
-
-			if (slotAndPriceToOffer.containsKey(slotAndPrice))
-			{
-				OfferInfo consolidatedOffer = slotAndPriceToOffer.get(slotAndPrice);
-				consolidatedOffer.setQuantity(consolidatedOffer.getQuantity() + offer.getQuantity());
-				consolidatedOffer.setTime(offer.getTime());
-				if (offer.isComplete())
-				{
-					consolidatedOffers.add(consolidatedOffer);
-					slotAndPriceToOffer.remove(slotAndPrice);
-				}
-
-			}
-			else
-			{
-				if (offer.isComplete())
-				{
-					consolidatedOffers.add(offer.clone());
-				}
-				else
-				{
-					slotAndPriceToOffer.put(slotAndPrice, offer.clone());
-				}
-
-			}
-		}
-
-		return consolidatedOffers;
-	}
-
-	/**
-	 * This method takes in buy and sell offers that are margin checks and creates Flips out of them. The
-	 * margin checks needs to be isolated from the rest of the offers because they only make sense if they are
-	 * together (a margin check buy should not be matched with a non margin check sell to create a flip, margin
-	 * checks are flips themselves).
-	 *
-	 * @param buyMarginChecks  buy offers that are margin checks
-	 * @param sellMarginChecks sell offers that are margin checks
-	 * @return
-	 */
-	private ArrayList<Flip> groupMarginChecks(List<OfferInfo> buyMarginChecks, List<OfferInfo> sellMarginChecks)
-	{
-		ArrayList<Flip> marginCheckFlips = new ArrayList<>();
-		int minSize = Math.min(buyMarginChecks.size(), sellMarginChecks.size());
-		for (int i = 0; i < minSize; i++)
-		{
-			OfferInfo buyMarginCheck = buyMarginChecks.get(i);
-			OfferInfo sellMarginCheck = sellMarginChecks.get(i);
-			Flip flip = new Flip(buyMarginCheck.getPrice(), sellMarginCheck.getPrice(), 1, sellMarginCheck.getTime(), true);
-			marginCheckFlips.add(flip);
-		}
-		return marginCheckFlips;
 	}
 }
