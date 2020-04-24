@@ -201,19 +201,22 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown event)
 	{
-		log.info("client is being shutdown, saving config");
+		log.info("Shutting down, save Flipping config");
 		updateConfig();
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event) {
-		if (event.getGameState() == GameState.LOGGED_IN) {
-			log.info("user logged in");
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			log.info("Logging in");
 			previouslyLoggedIn = true;
 		}
 
-		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn) {
-			log.info("user logged out, saving config");
+		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
+		{
+			log.info("Logging out, saving Flipping config");
 			updateConfig();
 		}
 	}

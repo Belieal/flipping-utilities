@@ -77,6 +77,7 @@ public class StatItemPanel extends JPanel
 
 	private FlippingPlugin plugin;
 	private ScheduledExecutorService executor;
+	@Getter
 	private FlippingItem flippingItem;
 
 	private StatsPanel statsPanel;
@@ -341,7 +342,7 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
 		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
 
-		SwingUtilities.invokeLater(() -> rebuildTradeHistory());
+		SwingUtilities.invokeLater(this::rebuildTradeHistory);
 
 		add(titlePanel, BorderLayout.NORTH);
 		add(subInfoAndHistoryContainer, BorderLayout.CENTER);

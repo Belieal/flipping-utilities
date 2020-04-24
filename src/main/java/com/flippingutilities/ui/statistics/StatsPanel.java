@@ -116,10 +116,11 @@ public class StatsPanel extends JPanel
 	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
 	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
 	private final JLabel totalQuantityText = new JLabel("Total Items Flipped: ");
-	private final JLabel totalFlipsText = new JLabel("Total Flips: ");
+	private final JLabel totalFlipsText = new JLabel("Total Flips Made: ");
+	private final JLabel mostCommonFlipText = new JLabel("Most Common: ");
 	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, totalFlipsText, sessionTimeText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, totalFlipsText, mostCommonFlipText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
@@ -128,9 +129,10 @@ public class StatsPanel extends JPanel
 	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalQuantityVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalFlipsVal = new JLabel("", SwingConstants.RIGHT);
+	private final JLabel mostCommonFlipVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, totalFlipsVal, sessionTimeVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, totalFlipsVal, mostCommonFlipVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
@@ -138,9 +140,10 @@ public class StatsPanel extends JPanel
 	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
 	private final JPanel totalQuantityPanel = new JPanel(new BorderLayout());
 	private final JPanel totalFlipsPanel = new JPanel(new BorderLayout());
+	private final JPanel mostCommonFlipPanel = new JPanel(new BorderLayout());
 	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, totalFlipsPanel, sessionTimePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, totalFlipsPanel, mostCommonFlipPanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
@@ -148,6 +151,8 @@ public class StatsPanel extends JPanel
 	private long totalRevenues;
 	private long totalQuantity;
 	private int totalFlips;
+	private String mostCommonItemName;
+	private int mostFlips;
 
 	//Contains the unix time of the start of the interval.
 	@Getter
@@ -287,7 +292,7 @@ public class StatsPanel extends JPanel
 		totalProfitVal.addMouseListener(collapseOnClick);
 
 		/* Subinfo represents the less-used general historical stats */
-		subInfoContainer.setLayout(new DynamicGridLayout(textLabelArray.length, valLabelArray.length));
+		subInfoContainer.setLayout(new DynamicGridLayout(subInfoPanelArray.length, 1));
 
 		//All labels should already be sorted in their arrays.
 		for (int i = 0; i < subInfoPanelArray.length; i++)
@@ -448,10 +453,20 @@ public class StatsPanel extends JPanel
 			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
+
+		mostCommonItemName = null;
+		mostFlips = 0;
 		for (StatItemPanel panel : activePanels)
 		{
 			panel.updateDisplays();
 			totalFlips += panel.getTotalFlips();
+
+			if (mostCommonItemName == null || mostFlips < panel.getTotalFlips())
+			{
+				mostFlips = panel.getTotalFlips();
+				mostCommonItemName = panel.getFlippingItem().getItemName();
+			}
+
 		}
 
 		updateTotalProfitDisplay();
@@ -461,29 +476,8 @@ public class StatsPanel extends JPanel
 		updateRevenueAndExpenseDisplay();
 		updateTotalQuantityDisplay();
 		updateTotalFlipsDisplay();
+		updateMostCommonFlip();
 		updateSessionTime();
-	}
-
-	/**
-	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
-	 */
-	private void updateHourlyProfitDisplay()
-	{
-		//Doesn't really make sense to show profit/hr for anything else
-		//unless we store session time over longer periods of time.
-		if (Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
-		{
-			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
-
-			String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
-			hourlyProfitVal.setText(profitString + " gp/hr");
-		}
-		else
-		{
-			subInfoContainer.remove(hourlyProfitPanel);
-		}
-
-		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -524,6 +518,28 @@ public class StatsPanel extends JPanel
 			//[10m,inf[
 			totalProfitVal.setForeground(Color.GREEN);
 		}
+	}
+
+	/**
+	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
+	 */
+	private void updateHourlyProfitDisplay()
+	{
+		//Doesn't really make sense to show profit/hr for anything else
+		//unless we store session time over longer periods of time.
+		if (Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
+		{
+			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
+
+			String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+			hourlyProfitVal.setText(profitString + " gp/hr");
+		}
+		else
+		{
+			subInfoContainer.remove(hourlyProfitPanel);
+		}
+
+		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 	}
 
 	/**
@@ -569,6 +585,19 @@ public class StatsPanel extends JPanel
 	{
 		totalFlipsVal.setText(QuantityFormatter.formatNumber(totalFlips));
 		totalFlipsVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+	}
+
+	private void updateMostCommonFlip()
+	{
+		if (mostCommonItemName == null || mostFlips == 0)
+		{
+			mostCommonFlipVal.setText("None");
+			mostCommonFlipVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+			return;
+		}
+		mostCommonFlipVal.setText(mostCommonItemName);
+		mostCommonFlipVal.setToolTipText("Flipped " + mostFlips + (mostFlips == 1 ? " time" : " times"));
+		mostCommonFlipVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 	}
 
 	private void updateSessionTime()
@@ -634,6 +663,7 @@ public class StatsPanel extends JPanel
 
 		if (!isStartUp)
 		{
+			updateDisplays();
 			rebuild(plugin.getTradesList());
 		}
 	}
