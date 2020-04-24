@@ -51,6 +51,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
@@ -84,6 +85,9 @@ public class StatItemPanel extends JPanel
 	private long totalExpense;
 	private long totalRevenue;
 	private int itemCountFlipped;
+	@Getter
+	private int totalFlips;
+
 	private Instant startOfInterval;
 	private ArrayList<OfferInfo> tradeHistory = new ArrayList<>();
 
@@ -337,7 +341,7 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
 		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
 
-		rebuildTradeHistory();
+		SwingUtilities.invokeLater(() -> rebuildTradeHistory());
 
 		add(titlePanel, BorderLayout.NORTH);
 		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
@@ -345,41 +349,44 @@ public class StatItemPanel extends JPanel
 
 	public void rebuildTradeHistory()
 	{
-		SwingUtilities.invokeLater(() ->
+		tradeHistoryItemContainer.removeAll();
+
+		activePanels = new ArrayList<>();
+
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		constraints.weightx = 1;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+
+		totalFlips = 0;
+		int index = 0;
+		for (Flip flip : flippingItem.getFlips(startOfInterval))
 		{
-			tradeHistoryItemContainer.removeAll();
-
-			activePanels = new ArrayList<>();
-
-			constraints.fill = GridBagConstraints.HORIZONTAL;
-			constraints.weightx = 1;
-			constraints.gridx = 0;
-			constraints.gridy = 0;
-
-			int index = 0;
-			for (Flip flip : flippingItem.getFlips(startOfInterval))
+			if (flip.getQuantity() == 0)
 			{
-				if (flip.getQuantity() == 0)
-				{
-					continue;
-				}
-
-				StatItemHistoryPanel newPanel = new StatItemHistoryPanel(flip);
-
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					tradeHistoryItemContainer.add(marginWrapper, constraints);
-				}
-				else
-				{
-					tradeHistoryItemContainer.add(newPanel, constraints);
-				}
-				activePanels.add(newPanel);
-				constraints.gridy++;
+				continue;
 			}
-		});
+
+			if (!flip.isMarginCheck())
+			{
+				totalFlips++;
+			}
+
+			StatItemHistoryPanel newPanel = new StatItemHistoryPanel(flip);
+
+			if (index++ > 0)
+			{
+				JPanel marginWrapper = new JPanel(new BorderLayout());
+				marginWrapper.add(newPanel, BorderLayout.NORTH);
+				tradeHistoryItemContainer.add(marginWrapper, constraints);
+			}
+			else
+			{
+				tradeHistoryItemContainer.add(newPanel, constraints);
+			}
+			activePanels.add(newPanel);
+			constraints.gridy++;
+		}
 
 		revalidate();
 		repaint();

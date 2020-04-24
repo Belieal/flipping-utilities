@@ -173,7 +173,6 @@ public class FlippingPlugin extends Plugin
 
 			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
-				statPanel.rebuild(tradesList);
 				if (tradesList != null)
 				{
 					for (FlippingItem flippingItem : tradesList)
@@ -488,6 +487,7 @@ public class FlippingPlugin extends Plugin
 		configManager.unsetConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
 		flippingPanel.rebuildFlippingPanel(tradesList);
+		statPanel.rebuild(tradesList);
 	}
 
 	//Stores all the session trade data in config.
@@ -513,7 +513,7 @@ public class FlippingPlugin extends Plugin
 	{
 		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
-		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY));
+		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
 
 		if (json == null)
 		{
