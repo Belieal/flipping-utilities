@@ -48,10 +48,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
@@ -64,6 +66,7 @@ import net.runelite.client.account.SessionManager;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.SessionClose;
 import net.runelite.client.events.SessionOpen;
@@ -132,6 +135,8 @@ public class FlippingPlugin extends Plugin
 	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
 	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
 
+	private boolean previouslyLoggedIn;
+
 	@Override
 	protected void startUp()
 	{
@@ -194,11 +199,29 @@ public class FlippingPlugin extends Plugin
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
+	@Subscribe(priority = 101)
+	public void onClientShutdown(ClientShutdown event)
+	{
+		log.info("client is being shutdown, saving config");
+		updateConfig();
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event) {
+		if (event.getGameState() == GameState.LOGGED_IN) {
+			log.info("user logged in");
+			previouslyLoggedIn = true;
+		}
+
+		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn) {
+			log.info("user logged out, saving config");
+			updateConfig();
+		}
+	}
+
 	@Override
 	protected void shutDown()
 	{
-		updateConfig();
-
 		if (timeUpdateFuture != null)
 		{
 			//Stop all timers
@@ -291,7 +314,6 @@ public class FlippingPlugin extends Plugin
 			flippingItem.get().update(newOffer);
 		}
 
-		updateConfig();
 		statPanel.rebuild(tradesList);
 		flippingPanel.updateActivePanelsGePropertiesDisplay();
 	}

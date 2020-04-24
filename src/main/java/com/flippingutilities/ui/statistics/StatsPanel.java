@@ -326,7 +326,6 @@ public class StatsPanel extends JPanel
 			}
 
 			SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
-			plugin.updateConfig();
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -611,7 +610,6 @@ public class StatsPanel extends JPanel
 
 		timeIntervalList.setSelectedItem(selectedInterval);
 		SwingUtilities.invokeLater(() -> rebuild(plugin.getTradesList()));
-		plugin.updateConfig();
 	}
 
 	/**
