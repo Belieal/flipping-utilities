@@ -334,7 +334,6 @@ public class StatsPanel extends JPanel
 			}
 
 			rebuild(plugin.getTradesList());
-			plugin.updateConfig();
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -637,8 +636,6 @@ public class StatsPanel extends JPanel
 		{
 			rebuild(plugin.getTradesList());
 		}
-
-		plugin.updateConfig();
 	}
 
 	/**
