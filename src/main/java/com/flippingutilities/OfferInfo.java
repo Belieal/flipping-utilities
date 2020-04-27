@@ -39,7 +39,7 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * around when current methods like addFlipTrade, addToTradesList, and updateFlip expect a
  * {@Link GrandExchangeTrade} would require a lot of changes in existing code. Instead, by subclassing
  * GrandExchangeTrade and adding two new fields that are needed for future changes, backwards
- * compatability is maintained, while allowing new work using the additional info stored in this class.
+ * compatibility is maintained, while allowing new work using the additional info stored in this class.
  */
 
 @Data
@@ -57,6 +57,11 @@ public class OfferInfo
 	private int ticksSinceFirstOffer;
 	private int totalQuantityInTrade;
 	private int quantitySinceLastOffer;
+
+	//States that determine if the offer is appurtenant to the current scope of the panel.
+	//The states change dependent on user-selected removals.
+	private boolean validStatOffer;
+	private boolean validFlippingOffer;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -106,7 +111,19 @@ public class OfferInfo
 
 	public OfferInfo clone()
 	{
-		return new OfferInfo(buy, itemId, currentQuantityInTrade, price, time, slot, state, tickArrivedAt, ticksSinceFirstOffer, totalQuantityInTrade, quantitySinceLastOffer);
+		return new OfferInfo(buy,
+			itemId,
+			currentQuantityInTrade,
+			price,
+			time,
+			slot,
+			state,
+			tickArrivedAt,
+			ticksSinceFirstOffer,
+			totalQuantityInTrade,
+			quantitySinceLastOffer,
+			validStatOffer,
+			validFlippingOffer);
 	}
 
 	public boolean equals(Object other)

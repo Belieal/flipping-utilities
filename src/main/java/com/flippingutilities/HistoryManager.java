@@ -66,6 +66,28 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
+	public boolean hasValidOffers(PanelSelection panelSelection)
+	{
+		boolean result = false;
+
+		switch (panelSelection)
+		{
+			case FLIPPING:
+				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidFlippingOffer);
+				break;
+
+			case STATS:
+				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidStatOffer);
+				break;
+
+			case BOTH:
+				result = standardizedOffers.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
+				break;
+		}
+
+		return result;
+	}
+
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
 	 * other properties related to the history of an item such as how many items were bought since the last
@@ -79,7 +101,6 @@ public class HistoryManager
 	{
 		storeStandardizedOffer(newOffer);
 		updateGeProperties();
-
 	}
 
 	/**
@@ -303,20 +324,46 @@ public class HistoryManager
 	 */
 	public void validateGeProperties()
 	{
-
 		if (nextGeLimitRefresh == null)
 		{
 			return;
 		}
 
 		if (Instant.now().compareTo(nextGeLimitRefresh) >= 0)
-
 		{
 			nextGeLimitRefresh = null;
 			itemsBoughtThisLimitWindow = 0;
 		}
 	}
 
+	public void invalidateOffers(PanelSelection panelSelection)
+	{
+		switch (panelSelection)
+		{
+			case FLIPPING:
+				standardizedOffers.forEach(offer -> offer.setValidFlippingOffer(false));
+				break;
+
+			case STATS:
+				standardizedOffers.forEach(offer -> offer.setValidStatOffer(false));
+				break;
+
+			case BOTH:
+				standardizedOffers.forEach(offer ->
+				{
+					offer.setValidFlippingOffer(false);
+					offer.setValidStatOffer(false);
+				});
+				break;
+		}
+
+		truncateInvalidOffers();
+	}
+
+	public void truncateInvalidOffers()
+	{
+		standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
+	}
 
 	/**
 	 * Creates Flips from offers. Flips represent a buy trade followed by a sell trade. A trade is a collection
@@ -367,7 +414,15 @@ public class HistoryManager
 		flips.addAll(combineToFlips(clone(nonMarginCheckBuys), clone(nonMarginCheckSells)));
 		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
+
 		return flips;
+	}
+
+	public enum PanelSelection
+	{
+		FLIPPING,
+		STATS,
+		BOTH
 	}
 
 	private List<OfferInfo> clone(List<OfferInfo> offers)

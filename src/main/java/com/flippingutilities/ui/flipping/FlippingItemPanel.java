@@ -301,13 +301,13 @@ public class FlippingItemPanel extends JPanel
 		SwingUtilities.invokeLater(() ->
 		{
 			buyPriceVal
-				.setText((this.buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.buyPrice) + " gp");
+				.setText((buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, buyPrice) + " gp");
 			sellPriceVal.setText(
-				(this.sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
+				(sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
 
-			profitEachVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A"
+			profitEachVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A"
 				: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-			profitTotalVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A" : QuantityFormatter
+			profitTotalVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A" : QuantityFormatter
 				.quantityToRSDecimalStack(profitTotal) + " gp");
 
 			roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"

@@ -201,7 +201,7 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown event)
 	{
-		log.info("Shutting down, save Flipping config");
+		System.out.println("Shutting down, save Flipping config");
 		updateConfig();
 	}
 
@@ -210,13 +210,13 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			log.info("Logging in");
+			System.out.println("Logging in");
 			previouslyLoggedIn = true;
 		}
 
 		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
-			log.info("Logging out, saving Flipping config");
+			System.out.println("Logging out, saving Flipping config");
 			updateConfig();
 		}
 	}
@@ -311,9 +311,9 @@ public class FlippingPlugin extends Plugin
 		}
 
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
-		else if (flippingItem.isPresent())
+		else
 		{
-			flippingItem.get().update(newOffer);
+			flippingItem.ifPresent(item -> item.update(newOffer));
 		}
 
 		statPanel.rebuild(tradesList);
@@ -387,7 +387,7 @@ public class FlippingPlugin extends Plugin
 			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
 			|| offer.getState() == GrandExchangeOfferState.BUYING;
 
-		OfferInfo offerInfo = new OfferInfo(
+		return new OfferInfo(
 			isBuy,
 			offer.getItemId(),
 			offer.getQuantitySold(),
@@ -398,14 +398,14 @@ public class FlippingPlugin extends Plugin
 			client.getTickCount(),
 			0,
 			offer.getTotalQuantity(),
-			0);
-
-		return offerInfo;
+			0,
+			true,
+			true);
 	}
 
 	private Optional<FlippingItem> findItemInTradesList(int itemIdToFind)
 	{
-		return tradesList.stream().filter((item) -> item.getItemId() == itemIdToFind).findFirst();
+		return tradesList.stream().filter(item -> item.getItemId() == itemIdToFind).findFirst();
 	}
 
 
@@ -485,9 +485,7 @@ public class FlippingPlugin extends Plugin
 	//Functionality to the top right reset button.
 	public void resetTradeHistory()
 	{
-		tradesList.clear();
 		flippingPanel.setItemHighlighted(false);
-		configManager.unsetConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
 		flippingPanel.rebuildFlippingPanel(tradesList);
 		statPanel.rebuild(tradesList);

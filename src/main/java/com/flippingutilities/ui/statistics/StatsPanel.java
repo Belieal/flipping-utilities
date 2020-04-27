@@ -184,7 +184,6 @@ public class StatsPanel extends JPanel
 		this.plugin = plugin;
 		this.itemManager = itemManager;
 
-
 		setLayout(new BorderLayout());
 
 		//Record start of session time.

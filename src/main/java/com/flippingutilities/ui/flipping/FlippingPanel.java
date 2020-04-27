@@ -28,6 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.HistoryManager;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -174,7 +176,9 @@ public class FlippingPanel extends JPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
-					plugin.resetTradeHistory();
+					resetPanel();
+					cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
+					rebuildFlippingPanel(plugin.getTradesList());
 				}
 			}
 
@@ -213,30 +217,29 @@ public class FlippingPanel extends JPanel
 
 	private void initializeFlippingPanel(ArrayList<FlippingItem> flippingItems)
 	{
-		if (flippingItems == null)
+		if (flippingItems == null || flippingItems.size() == 0)
 		{
+			cardLayout.show(centerPanel, WELCOME_PANEL);
 			return;
 		}
 
 		//Reset active panel list.
 		activePanels.clear();
 
-		if (flippingItems.size() == 0)
-		{
-			cardLayout.show(centerPanel, WELCOME_PANEL);
-		}
-		else
-		{
-			cardLayout.show(centerPanel, ITEMS_PANEL);
-		}
-
 		SwingUtilities.invokeLater(() ->
 		{
+			cardLayout.show(centerPanel, ITEMS_PANEL);
+
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
+				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+				{
+					continue;
+				}
+
 				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
-				activePanels.add(newPanel);
+
 				newPanel.clearButton.addMouseListener(new MouseAdapter()
 				{
 					@Override
@@ -245,6 +248,7 @@ public class FlippingPanel extends JPanel
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
 							deletePanel(newPanel);
+							rebuildFlippingPanel(plugin.getTradesList());
 						}
 					}
 				});
@@ -262,21 +266,22 @@ public class FlippingPanel extends JPanel
 					flippingItemsPanel.add(newPanel, constraints);
 				}
 				constraints.gridy++;
+				activePanels.add(newPanel);
+			}
+
+			if (activePanels.isEmpty())
+			{
+				cardLayout.show(centerPanel, WELCOME_PANEL);
 			}
 		});
+
 	}
 
 	public void rebuildFlippingPanel(ArrayList<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
-		if (flippingItems == null)
-		{
-			return;
-		}
-		else
-		{
-			initializeFlippingPanel(flippingItems);
-		}
+
+		initializeFlippingPanel(flippingItems);
 
 		revalidate();
 		repaint();
@@ -293,7 +298,9 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
+
 		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
+
 		if (!itemToHighlight.isEmpty())
 		{
 			rebuildFlippingPanel(itemToHighlight);
@@ -317,23 +324,13 @@ public class FlippingPanel extends JPanel
 
 	public ArrayList<FlippingItem> findItemPanel(int itemId)
 	{
-		ArrayList<FlippingItem> result = new ArrayList<>();
-
-		for (FlippingItem item : plugin.getTradesList())
-		{
-			if (item.getItemId() == itemId)
-			{
-				result.add(item);
-				//We only expect one result
-				break;
-			}
-		}
-
-		return result;
+		//We only expect one item.
+		return plugin.getTradesList().stream()
+			.filter(item -> item.getItemId() == itemId && item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
-
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
 	 * This method is called in FlippingPLugin every second by the scheduler.
@@ -368,10 +365,18 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
-		ArrayList<FlippingItem> tradeList = plugin.getTradesList();
-		tradeList.remove(itemPanel.getFlippingItem());
 
-		rebuildFlippingPanel(tradeList);
+		itemPanel.getFlippingItem().invalidateOffers(HistoryManager.PanelSelection.FLIPPING);
+	}
+
+	public void resetPanel()
+	{
+		for (FlippingItemPanel itemPanel : activePanels)
+		{
+			deletePanel(itemPanel);
+		}
+
+		setItemHighlighted(false);
 	}
 
 	//Searches the active item panels for matching item names.

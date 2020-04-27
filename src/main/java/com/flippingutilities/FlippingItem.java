@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
@@ -45,7 +44,6 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
  * of a panel which is then displayed.
  */
-@Slf4j
 public class FlippingItem
 {
 	@Getter
@@ -87,9 +85,7 @@ public class FlippingItem
 	@Setter
 	private boolean shouldExpandHistory = false;
 
-
 	private HistoryManager history = new HistoryManager();
-
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit)
 	{
@@ -148,26 +144,28 @@ public class FlippingItem
 
 	/**
 	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by {@link FlippingPlugin#updateFlippingItem} in the plugin class which itself is only
+	 * margin check. It is invoked by FlippingPlugin's updateFlippingItem method in the plugin class which itself is only
 	 * invoked when an offer is a margin check.
 	 *
 	 * @param newOffer the new offer just received.
 	 */
 	public void updateMargin(OfferInfo newOffer)
 	{
-		boolean tradeBuyState = newOffer.isBuy();
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-		if (tradeBuyState)
+		if (newOffer.isValidFlippingOffer())
 		{
-			marginCheckSellPrice = tradePrice;
-			marginCheckSellTime = tradeTime;
-		}
-		else
-		{
-			marginCheckBuyPrice = tradePrice;
-			marginCheckBuyTime = tradeTime;
+			if (newOffer.isBuy())
+			{
+				marginCheckSellPrice = tradePrice;
+				marginCheckSellTime = tradeTime;
+			}
+			else
+			{
+				marginCheckBuyPrice = tradePrice;
+				marginCheckBuyTime = tradeTime;
+			}
 		}
 	}
 
@@ -214,6 +212,24 @@ public class FlippingItem
 	public ArrayList<Flip> getFlips(Instant earliestTime)
 	{
 		return history.getFlips(earliestTime);
+	}
+
+	public boolean hasValidOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		return history.hasValidOffers(panelSelection);
+	}
+
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		if (panelSelection == HistoryManager.PanelSelection.FLIPPING)
+		{
+			marginCheckSellPrice = 0;
+			marginCheckSellTime = null;
+
+			marginCheckBuyPrice = 0;
+			marginCheckBuyTime = null;
+		}
+		history.invalidateOffers(panelSelection);
 	}
 
 }
