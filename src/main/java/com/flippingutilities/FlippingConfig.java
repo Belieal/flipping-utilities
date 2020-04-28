@@ -34,6 +34,13 @@ import net.runelite.client.config.Units;
 @ConfigGroup(FlippingPlugin.CONFIG_GROUP)
 public interface FlippingConfig extends Config
 {
+	enum Fonts
+	{
+		SMALL_FONT,
+		REGULAR_FONT,
+		BOLD_FONT
+	}
+
 	@ConfigItem(
 		keyName = "storeTradeHistory",
 		name = "Store session trade history locally",
@@ -96,4 +103,13 @@ public interface FlippingConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(
+		keyName = "subInfoFont",
+		name = "Set sub info font",
+		description = "Choose the font for sub information on the panel"
+	)
+	default Fonts subInfoFontStyle()
+	{
+		return Fonts.SMALL_FONT;
+	}
 }

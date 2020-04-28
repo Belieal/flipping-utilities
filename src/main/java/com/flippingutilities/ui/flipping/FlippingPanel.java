@@ -28,6 +28,10 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.HistoryManager;
+import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
+import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -36,15 +40,16 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
@@ -58,7 +63,6 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
-import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 public class FlippingPanel extends JPanel
@@ -67,20 +71,9 @@ public class FlippingPanel extends JPanel
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
 	private static final String ITEMS_PANEL = "ITEMS_PANEL";
 	private static final int DEBOUNCE_DELAY_MS = 250;
-	private static final ImageIcon RESET_ICON;
-	private static final ImageIcon RESET_HOVER_ICON;
-	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
 		BorderFactory.createEmptyBorder(4, 0, 0, 0));
-
-	static
-	{
-		final BufferedImage resetIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
-		RESET_ICON = new ImageIcon(resetIcon);
-		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
-	}
 
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
@@ -116,7 +109,7 @@ public class FlippingPanel extends JPanel
 		constraints.gridx = 0;
 		constraints.gridy = 0;
 
-		//Contains the main results panel and top panel
+		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
 		container.setLayout(new BorderLayout(0, 5));
 		container.setBorder(new EmptyBorder(0, 0, 5, 0));
@@ -151,7 +144,7 @@ public class FlippingPanel extends JPanel
 			{
 				runningRequest.cancel(false);
 			}
-			runningRequest = executor.schedule((Runnable) this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
+			runningRequest = executor.schedule(this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
 		});
 
 		//Contains a greeting message when the items panel is empty.
@@ -174,7 +167,9 @@ public class FlippingPanel extends JPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
-					plugin.resetTradeHistory();
+					resetPanel();
+					cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
+					rebuildFlippingPanel(plugin.getTradesList());
 				}
 			}
 
@@ -191,10 +186,23 @@ public class FlippingPanel extends JPanel
 			}
 		});
 
+		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
+		clearMenuOption.addActionListener(e ->
+		{
+			plugin.getTradesList().clear();
+			resetPanel();
+			plugin.getStatPanel().resetPanel();
+		});
+
+		final JPopupMenu popupMenu = new JPopupMenu();
+		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+		popupMenu.add(clearMenuOption);
+
+		resetIcon.setComponentPopupMenu(popupMenu);
+
 		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		//topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
 		topPanel.add(resetIcon, BorderLayout.EAST);
 		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
@@ -213,30 +221,29 @@ public class FlippingPanel extends JPanel
 
 	private void initializeFlippingPanel(ArrayList<FlippingItem> flippingItems)
 	{
-		if (flippingItems == null)
+		if (flippingItems == null || flippingItems.size() == 0)
 		{
+			cardLayout.show(centerPanel, WELCOME_PANEL);
 			return;
 		}
+
 		//Reset active panel list.
 		activePanels.clear();
 
-		if (flippingItems.size() == 0)
-		{
-			cardLayout.show(centerPanel, WELCOME_PANEL);
-		}
-		else
-		{
-			cardLayout.show(centerPanel, ITEMS_PANEL);
-		}
-
-
 		SwingUtilities.invokeLater(() ->
 		{
+			cardLayout.show(centerPanel, ITEMS_PANEL);
+
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
+				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+				{
+					continue;
+				}
+
 				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
-				activePanels.add(newPanel);
+
 				newPanel.clearButton.addMouseListener(new MouseAdapter()
 				{
 					@Override
@@ -244,7 +251,8 @@ public class FlippingPanel extends JPanel
 					{
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
-							deletePanel(newPanel);
+							deleteItemPanel(newPanel);
+							rebuildFlippingPanel(plugin.getTradesList());
 						}
 					}
 				});
@@ -262,21 +270,22 @@ public class FlippingPanel extends JPanel
 					flippingItemsPanel.add(newPanel, constraints);
 				}
 				constraints.gridy++;
+				activePanels.add(newPanel);
+			}
+
+			if (activePanels.isEmpty())
+			{
+				cardLayout.show(centerPanel, WELCOME_PANEL);
 			}
 		});
+
 	}
 
 	public void rebuildFlippingPanel(ArrayList<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
-		if (flippingItems == null)
-		{
-			return;
-		}
-		else
-		{
-			initializeFlippingPanel(flippingItems);
-		}
+
+		initializeFlippingPanel(flippingItems);
 
 		revalidate();
 		repaint();
@@ -293,7 +302,9 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
+
 		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
+
 		if (!itemToHighlight.isEmpty())
 		{
 			rebuildFlippingPanel(itemToHighlight);
@@ -317,23 +328,13 @@ public class FlippingPanel extends JPanel
 
 	public ArrayList<FlippingItem> findItemPanel(int itemId)
 	{
-		ArrayList<FlippingItem> result = new ArrayList<>();
-
-		for (FlippingItem item : plugin.getTradesList())
-		{
-			if (item.getItemId() == itemId)
-			{
-				result.add(item);
-				//We only expect one result
-				break;
-			}
-		}
-
-		return result;
+		//We only expect one item.
+		return plugin.getTradesList().stream()
+			.filter(item -> item.getItemId() == itemId && item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
-
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
 	 * This method is called in FlippingPLugin every second by the scheduler.
@@ -362,17 +363,25 @@ public class FlippingPanel extends JPanel
 		});
 	}
 
-	public void deletePanel(FlippingItemPanel itemPanel)
+	private void deleteItemPanel(FlippingItemPanel itemPanel)
 	{
 		if (!activePanels.contains(itemPanel))
 		{
 			return;
 		}
-		ArrayList<FlippingItem> tradeList = plugin.getTradesList();
-		tradeList.remove(itemPanel.getFlippingItem());
 
-		rebuildFlippingPanel(tradeList);
-		plugin.updateConfig();
+		itemPanel.getFlippingItem().invalidateOffers(HistoryManager.PanelSelection.FLIPPING);
+	}
+
+	public void resetPanel()
+	{
+		for (FlippingItemPanel itemPanel : activePanels)
+		{
+			deleteItemPanel(itemPanel);
+		}
+
+		plugin.truncateTradeList();
+		setItemHighlighted(false);
 	}
 
 	//Searches the active item panels for matching item names.

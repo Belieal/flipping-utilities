@@ -28,6 +28,9 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.ui.UIUtilities;
+import static com.flippingutilities.ui.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -35,12 +38,8 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -55,46 +54,23 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
-import net.runelite.client.util.ColorUtil;
-import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 @Slf4j
 public class FlippingItemPanel extends JPanel
 {
-
-	private static final ImageIcon OPEN_ICON;
-	private static final ImageIcon CLOSE_ICON;
-	private static final ImageIcon DELETE_ICON;
-
-	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final String NUM_FORMAT = "%,d";
-	private static final Color OUTDATED_COLOR = new Color(250, 74, 75);
-	private static final Color PROFIT_COLOR = new Color(255, 175, 55);
-	private static final Color FROZEN_COLOR = new Color(0, 193, 255);
 	private static final String OUTDATED_STRING = "Price is outdated. ";
 
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARK_GRAY_COLOR),
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3));
 
-	static
-	{
-		final BufferedImage openIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/open-arrow.png");
-		CLOSE_ICON = new ImageIcon(openIcon);
-		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
-
-		final BufferedImage deleteIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
-		DELETE_ICON = new ImageIcon(deleteIcon);
-	}
-
 	private int buyPrice;
 	private int sellPrice;
 	private int profitEach;
 	private int profitTotal;
-	private float ROI;
+	private float roi;
 	@Getter
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
@@ -105,13 +81,13 @@ public class FlippingItemPanel extends JPanel
 	JLabel profitEachVal = new JLabel();
 	JLabel profitTotalVal = new JLabel();
 	JLabel limitLabel = new JLabel();
-	JLabel ROILabel = new JLabel();
-	JLabel arrowIcon = new JLabel(OPEN_ICON);
+	JLabel roiLabel = new JLabel();
+	JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
 	JButton clearButton = new JButton(DELETE_ICON);
 	JLabel itemName;
 
 	/* Panels */
-	JPanel topPanel = new JPanel(new BorderLayout());
+	JPanel titlePanel = new JPanel(new BorderLayout());
 	JPanel itemInfo = new JPanel(new BorderLayout());
 	JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
 	JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
@@ -131,6 +107,7 @@ public class FlippingItemPanel extends JPanel
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		Color background = getBackground();
+
 		/* Item icon */
 		AsyncBufferedImage itemImage = itemManager.getImage(itemID);
 		JLabel itemIcon = new JLabel();
@@ -168,12 +145,12 @@ public class FlippingItemPanel extends JPanel
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 
-		topPanel.setBackground(background.darker());
-		topPanel.add(itemClearPanel, BorderLayout.WEST);
-		topPanel.add(itemName, BorderLayout.CENTER);
-		topPanel.add(arrowIcon, BorderLayout.EAST);
-		topPanel.setBorder(new EmptyBorder(2, 1, 2, 1));
-		topPanel.addMouseListener(new MouseAdapter()
+		titlePanel.setBackground(background.darker());
+		titlePanel.add(itemClearPanel, BorderLayout.WEST);
+		titlePanel.add(itemName, BorderLayout.CENTER);
+		titlePanel.add(arrowIcon, BorderLayout.EAST);
+		titlePanel.setBorder(new EmptyBorder(2, 1, 2, 1));
+		titlePanel.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mousePressed(MouseEvent e)
@@ -194,6 +171,10 @@ public class FlippingItemPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
+				if (!titlePanel.contains(e.getPoint()))
+				{
+					return;
+				}
 				itemIcon.setVisible(false);
 				clearButton.setVisible(true);
 			}
@@ -202,7 +183,7 @@ public class FlippingItemPanel extends JPanel
 			public void mouseExited(MouseEvent e)
 			{
 				//Mouse is hovering over icon
-				if (topPanel.contains(e.getPoint()))
+				if (titlePanel.contains(e.getPoint()))
 				{
 					return;
 				}
@@ -226,7 +207,7 @@ public class FlippingItemPanel extends JPanel
 		sellPriceVal.setHorizontalAlignment(JLabel.RIGHT);
 		profitEachVal.setHorizontalAlignment(JLabel.RIGHT);
 		profitTotalVal.setHorizontalAlignment(JLabel.RIGHT);
-		ROILabel.setHorizontalAlignment(JLabel.RIGHT);
+		roiLabel.setHorizontalAlignment(JLabel.RIGHT);
 
 		/* Left font colors */
 		buyPriceText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -241,7 +222,7 @@ public class FlippingItemPanel extends JPanel
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
 		profitTotalText.setToolTipText(
 			"The total profit according to your latest margin check and GE 4-hour limit");
-		ROILabel.setToolTipText(
+		roiLabel.setToolTipText(
 			"<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 		limitLabel.setToolTipText("The amount you can buy of this item every 4 hours.");
 
@@ -249,8 +230,8 @@ public class FlippingItemPanel extends JPanel
 		profitTotalVal.setToolTipText(profitTotalText.getToolTipText());
 
 		/* Right profit labels font colors. */
-		profitEachVal.setForeground(PROFIT_COLOR);
-		profitTotalVal.setForeground(PROFIT_COLOR);
+		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
+		profitTotalVal.setForeground(UIUtilities.PROFIT_COLOR);
 
 		//To space out the pricing and profit labels
 		JLabel padLabel1 = new JLabel(" ");
@@ -278,7 +259,7 @@ public class FlippingItemPanel extends JPanel
 
 		/* GE limits and ROI labels */
 		leftInfoTextPanel.add(limitLabel);
-		rightValuesPanel.add(ROILabel);
+		rightValuesPanel.add(roiLabel);
 
 		leftInfoTextPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
 		rightValuesPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
@@ -293,7 +274,7 @@ public class FlippingItemPanel extends JPanel
 		updateGePropertiesDisplay();
 		updatePriceOutdatedDisplay();
 
-		add(topPanel, BorderLayout.NORTH);
+		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 	}
 
@@ -304,45 +285,32 @@ public class FlippingItemPanel extends JPanel
 		this.buyPrice = flippingItem.getMarginCheckBuyPrice();
 		this.sellPrice = flippingItem.getMarginCheckSellPrice();
 
-		int roiGradientMax = plugin.getConfig().roiGradientMax();
-
 		updatePotentialProfit();
 		SwingUtilities.invokeLater(() ->
 		{
 			buyPriceVal
-				.setText((this.buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.buyPrice) + " gp");
+				.setText((buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, buyPrice) + " gp");
 			sellPriceVal.setText(
-				(this.sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
+				(sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
 
-			profitEachVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A"
+			profitEachVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A"
 				: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-			profitTotalVal.setText((this.buyPrice == 0 || this.sellPrice == 0) ? "N/A" : QuantityFormatter
+			profitTotalVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A" : QuantityFormatter
 				.quantityToRSDecimalStack(profitTotal) + " gp");
 
-			ROILabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
-				: String.format("%.2f", ROI) + "%"));
+			roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
+				: String.format("%.2f", roi) + "%"));
 		});
 
 		//Color gradient red-yellow-green depending on ROI.
-		if (ROI < roiGradientMax * 0.5)
-		{
-			Color gradientRedToYellow = ColorUtil
-				.colorLerp(Color.RED, Color.YELLOW, ROI / roiGradientMax * 2);
-			SwingUtilities.invokeLater(() -> ROILabel.setForeground(gradientRedToYellow));
-		}
-		else
-		{
-			Color gradientYellowToGreen = (ROI >= roiGradientMax) ? Color.GREEN : ColorUtil
-				.colorLerp(Color.YELLOW, Color.GREEN, ROI / roiGradientMax * 0.5);
-			SwingUtilities.invokeLater(() -> ROILabel.setForeground(gradientYellowToGreen));
-		}
+		SwingUtilities.invokeLater(() -> roiLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax())));
 	}
 
 	public void expand()
 	{
 		if (isCollapsed())
 		{
-			arrowIcon.setIcon(OPEN_ICON);
+			arrowIcon.setIcon(UIUtilities.OPEN_ICON);
 			itemInfo.setVisible(true);
 		}
 	}
@@ -351,7 +319,7 @@ public class FlippingItemPanel extends JPanel
 	{
 		if (!isCollapsed())
 		{
-			arrowIcon.setIcon(CLOSE_ICON);
+			arrowIcon.setIcon(UIUtilities.CLOSE_ICON);
 			itemInfo.setVisible(false);
 		}
 	}
@@ -381,7 +349,7 @@ public class FlippingItemPanel extends JPanel
 				flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
 					? profitEach : 0);
 		}
-		this.ROI = calculateROI();
+		this.roi = calculateROI();
 	}
 
 	//Calculates the return on investment percentage.
@@ -403,8 +371,8 @@ public class FlippingItemPanel extends JPanel
 		Instant latestSellTime = flippingItem.getMarginCheckSellTime();
 
 		//Update price texts with the string formatter
-		final String latestBuyString = formatPriceTimeText(latestBuyTime) + " old";
-		final String latestSellString = formatPriceTimeText(latestSellTime) + " old";
+		final String latestBuyString = UIUtilities.formatDuration(latestBuyTime) + " old";
+		final String latestSellString = UIUtilities.formatDuration(latestSellTime) + " old";
 
 		//As the config unit is in minutes.
 		final int latestBuyTimeAgo =
@@ -419,7 +387,7 @@ public class FlippingItemPanel extends JPanel
 		{
 			SwingUtilities.invokeLater(() ->
 			{
-				buyPriceVal.setForeground(OUTDATED_COLOR);
+				buyPriceVal.setForeground(UIUtilities.OUTDATED_COLOR);
 				buyPriceVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
 			});
 
@@ -438,7 +406,7 @@ public class FlippingItemPanel extends JPanel
 		{
 			SwingUtilities.invokeLater(() ->
 			{
-				sellPriceVal.setForeground(OUTDATED_COLOR);
+				sellPriceVal.setForeground(UIUtilities.OUTDATED_COLOR);
 				sellPriceVal
 					.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestSellString + "</html>");
 			});
@@ -453,52 +421,6 @@ public class FlippingItemPanel extends JPanel
 			});
 		}
 
-	}
-
-	//Helper to construct the price time tooltip string.
-	//If there's a method somewhere that does this already, please tell me. :)
-	//TODO: Refactor using something other than Instant (LocalTime?)
-	private String formatPriceTimeText(Instant timeInstant)
-	{
-		if (timeInstant != null)
-		{
-			//Time since trade was done.
-			long timeAgo = (Instant.now().getEpochSecond() - timeInstant.getEpochSecond());
-
-			String result = timeAgo + (timeAgo == 1 ? " second" : " seconds");
-			if (timeAgo > 60)
-			{
-				//Seconds to minutes.
-				long timeAgoMinutes = timeAgo / 60;
-				result = timeAgoMinutes + (timeAgoMinutes == 1 ? " minute" : " minutes");
-
-				if (timeAgoMinutes > 60)
-				{
-					//Minutes to hours
-					long timeAgoHours = timeAgoMinutes / 60;
-					result = timeAgoHours + (timeAgoHours == 1 ? " hour" : " hours");
-				}
-			}
-			return result;
-		}
-		else
-		{
-			return "";
-		}
-	}
-
-	private String formatGELimitResetTime(Instant time)
-	{
-		DateTimeFormatter timeFormatter;
-		if (plugin.getConfig().twelveHourFormat())
-		{
-			timeFormatter = DateTimeFormatter.ofPattern("hh:mm a").withZone(ZoneId.systemDefault());
-		}
-		else
-		{
-			timeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
-		}
-		return timeFormatter.format(time);
 	}
 
 	/**
@@ -541,7 +463,7 @@ public class FlippingItemPanel extends JPanel
 						? "hours" : "hour");
 
 				limitLabel.setToolTipText("<html>" + "GE limit is reset in " + timeString + "."
-					+ "<br>This will be at " + formatGELimitResetTime(flippingItem.getGeLimitResetTime())
+					+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
 					+ ".<html>");
 			}
 		});

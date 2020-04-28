@@ -27,9 +27,12 @@
 package com.flippingutilities;
 
 import com.flippingutilities.ui.flipping.FlippingItemPanel;
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
@@ -42,38 +45,61 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
  * of a panel which is then displayed.
  */
-@Slf4j
 public class FlippingItem
 {
+	@SerializedName("id")
 	@Getter
 	private final int itemId;
 
+	@SerializedName("name")
 	@Getter
 	private final String itemName;
 
+	@SerializedName("tGL")
 	@Getter
 	private final int totalGELimit;
 
+	@SerializedName("mCBP")
 	@Getter
 	private int marginCheckBuyPrice;
 
+	@SerializedName("mCSP")
 	@Getter
 	private int marginCheckSellPrice;
 
+	@SerializedName("mCBT")
 	@Getter
 	private Instant marginCheckBuyTime;
 
+	@SerializedName("mCST")
 	@Getter
 	private Instant marginCheckSellTime;
 
+	@SerializedName("lBT")
 	@Getter
 	private Instant latestBuyTime;
 
+	@SerializedName("lST")
 	@Getter
 	private Instant latestSellTime;
 
-	private HistoryManager history = new HistoryManager();
+	//An activity is described as a completed offer event.
+	@SerializedName("lAT")
+	@Getter
+	private Instant latestActivityTime = Instant.now();
 
+	@SerializedName("sESI")
+	@Getter
+	@Setter
+	private boolean shouldExpandStatItem = false;
+
+	@SerializedName("sEH")
+	@Getter
+	@Setter
+	private boolean shouldExpandHistory = false;
+
+	@SerializedName("h")
+	private HistoryManager history = new HistoryManager();
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit)
 	{
@@ -93,7 +119,7 @@ public class FlippingItem
 	public void update(OfferInfo newOffer)
 	{
 		updateHistory(newOffer);
-		updateLatestBuySellTimes(newOffer);
+		updateLatestTimes(newOffer);
 	}
 
 	/**
@@ -113,7 +139,7 @@ public class FlippingItem
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateLatestBuySellTimes(OfferInfo newOffer)
+	public void updateLatestTimes(OfferInfo newOffer)
 	{
 		if (newOffer.isBuy())
 		{
@@ -123,49 +149,63 @@ public class FlippingItem
 		{
 			latestSellTime = newOffer.getTime();
 		}
+
+		if (newOffer.isComplete())
+		{
+			latestActivityTime = newOffer.getTime();
+		}
 	}
 
 	/**
 	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by {@link FlippingPlugin#updateFlippingItem} in the plugin class which itself is only
+	 * margin check. It is invoked by FlippingPlugin's updateFlippingItem method in the plugin class which itself is only
 	 * invoked when an offer is a margin check.
 	 *
 	 * @param newOffer the new offer just received.
 	 */
 	public void updateMargin(OfferInfo newOffer)
 	{
-		boolean tradeBuyState = newOffer.isBuy();
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-
-		if (tradeBuyState)
+		if (newOffer.isValidFlippingOffer())
 		{
-			marginCheckSellPrice = tradePrice;
-			marginCheckSellTime = tradeTime;
-
+			if (newOffer.isBuy())
+			{
+				marginCheckSellPrice = tradePrice;
+				marginCheckSellTime = tradeTime;
+			}
+			else
+			{
+				marginCheckBuyPrice = tradePrice;
+				marginCheckBuyTime = tradeTime;
+			}
 		}
-		else
-		{
-			marginCheckBuyPrice = tradePrice;
-			marginCheckBuyTime = tradeTime;
-
-		}
 	}
 
-	public long currentProfit(Instant earliestTime)
+	public long currentProfit(List<OfferInfo> tradeList)
 	{
-		return history.currentProfit(earliestTime);
+		return history.currentProfit(tradeList);
 	}
 
-	public long getTotalExpenses()
+	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
 	{
-		return history.getTotalExpenses();
+		return history.getCashflow(tradeList, getExpense);
 	}
 
-	public long getTotalRevenues()
+	public long getCashflow(Instant earliestTime, boolean getExpense)
 	{
-		return history.getTotalRevenues();
+		return history.getCashflow(getIntervalHistory(earliestTime), getExpense);
+	}
+
+	public int countItemsFlipped(List<OfferInfo> tradeList)
+	{
+		return history.countItemsFlipped(tradeList);
+	}
+
+	public ArrayList<OfferInfo> getIntervalHistory(Instant earliestTime)
+	{
+		return history.getIntervalsHistory(earliestTime);
 	}
 
 	public int remainingGeLimit()
@@ -181,6 +221,34 @@ public class FlippingItem
 	public void validateGeProperties()
 	{
 		history.validateGeProperties();
+	}
+
+	public ArrayList<Flip> getFlips(Instant earliestTime)
+	{
+		return history.getFlips(earliestTime);
+	}
+
+	public boolean hasValidOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		return history.hasValidOffers(panelSelection);
+	}
+
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		if (panelSelection == HistoryManager.PanelSelection.FLIPPING)
+		{
+			marginCheckSellPrice = 0;
+			marginCheckSellTime = null;
+
+			marginCheckBuyPrice = 0;
+			marginCheckBuyTime = null;
+		}
+		history.invalidateOffers(panelSelection);
+	}
+
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferInfo> offerList)
+	{
+		history.invalidateOffers(panelSelection, offerList);
 	}
 
 }
