@@ -309,7 +309,7 @@ public class FlippingPlugin extends Plugin
 				addToTradesList(newOffer);
 			}
 
-			flippingPanel.rebuildFlippingPanel(tradesList);
+			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 		}
 
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
@@ -508,7 +508,6 @@ public class FlippingPlugin extends Plugin
 		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
-		System.out.println(json);
 
 		if (json == null)
 		{
@@ -523,6 +522,14 @@ public class FlippingPlugin extends Plugin
 
 			}.getType();
 			tradesList = gson.fromJson(json, type);
+
+			int CONFIG_CAP = 262144;
+			System.out.println("Config char length: " + json.length() + "\nChars before cap is reached: " + (CONFIG_CAP - json.length()));
+			if (!tradesList.isEmpty())
+			{
+				System.out.println("Average length per item: " + (json.length() / tradesList.size()));
+				System.out.println("Average items before reaching config cap: " + (CONFIG_CAP / (json.length() / tradesList.size())));
+			}
 		}
 		catch (Exception e)
 		{
@@ -534,9 +541,14 @@ public class FlippingPlugin extends Plugin
 	{
 		tradesList.removeIf((item) ->
 		{
-			Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
-			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS)
-				&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
+			if (item.getGeLimitResetTime() != null)
+			{
+				Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
+
+				return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS)
+					&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
+			}
+			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS);
 		});
 	}
 

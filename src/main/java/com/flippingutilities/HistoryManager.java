@@ -71,6 +71,11 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
+	private List<OfferInfo> clone(List<OfferInfo> offers)
+	{
+		return offers.stream().map(OfferInfo::clone).collect(Collectors.toList());
+	}
+
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
 	 * other properties related to the history of an item such as how many items were bought since the last
@@ -452,11 +457,6 @@ public class HistoryManager
 		FLIPPING,
 		STATS,
 		BOTH
-	}
-
-	private List<OfferInfo> clone(List<OfferInfo> offers)
-	{
-		return offers.stream().map(offer -> offer.clone()).collect(Collectors.toList());
 	}
 
 	/**
