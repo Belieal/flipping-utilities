@@ -116,6 +116,7 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
+	@Getter
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
@@ -480,15 +481,6 @@ public class FlippingPlugin extends Plugin
 		}
 		prevHighlight = currentGEItemId;
 		flippingPanel.highlightItem(currentGEItemId);
-	}
-
-	//Functionality to the top right reset button.
-	public void resetTradeHistory()
-	{
-		flippingPanel.setItemHighlighted(false);
-		flippingPanel.cardLayout.show(flippingPanel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
-		flippingPanel.rebuildFlippingPanel(tradesList);
-		statPanel.rebuild(tradesList);
 	}
 
 	//Stores all the session trade data in config.

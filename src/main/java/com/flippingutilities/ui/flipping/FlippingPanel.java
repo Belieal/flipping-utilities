@@ -29,6 +29,9 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
+import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
+import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -37,16 +40,16 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
@@ -60,7 +63,6 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
-import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 public class FlippingPanel extends JPanel
@@ -69,20 +71,9 @@ public class FlippingPanel extends JPanel
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
 	private static final String ITEMS_PANEL = "ITEMS_PANEL";
 	private static final int DEBOUNCE_DELAY_MS = 250;
-	private static final ImageIcon RESET_ICON;
-	private static final ImageIcon RESET_HOVER_ICON;
-	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
 		BorderFactory.createEmptyBorder(4, 0, 0, 0));
-
-	static
-	{
-		final BufferedImage resetIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
-		RESET_ICON = new ImageIcon(resetIcon);
-		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
-	}
 
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
@@ -153,7 +144,7 @@ public class FlippingPanel extends JPanel
 			{
 				runningRequest.cancel(false);
 			}
-			runningRequest = executor.schedule((Runnable) this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
+			runningRequest = executor.schedule(this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
 		});
 
 		//Contains a greeting message when the items panel is empty.
@@ -195,10 +186,23 @@ public class FlippingPanel extends JPanel
 			}
 		});
 
+		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
+		clearMenuOption.addActionListener(e ->
+		{
+			plugin.getTradesList().clear();
+			resetPanel();
+			plugin.getStatPanel().resetPanel();
+		});
+
+		final JPopupMenu popupMenu = new JPopupMenu();
+		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+		popupMenu.add(clearMenuOption);
+
+		resetIcon.setComponentPopupMenu(popupMenu);
+
 		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		//topPanel.add(new Box.Filler(ICON_SIZE, ICON_SIZE, ICON_SIZE), BorderLayout.WEST);
 		topPanel.add(resetIcon, BorderLayout.EAST);
 		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
@@ -247,7 +251,7 @@ public class FlippingPanel extends JPanel
 					{
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
-							deletePanel(newPanel);
+							deleteItemPanel(newPanel);
 							rebuildFlippingPanel(plugin.getTradesList());
 						}
 					}
@@ -359,7 +363,7 @@ public class FlippingPanel extends JPanel
 		});
 	}
 
-	public void deletePanel(FlippingItemPanel itemPanel)
+	private void deleteItemPanel(FlippingItemPanel itemPanel)
 	{
 		if (!activePanels.contains(itemPanel))
 		{
@@ -373,7 +377,7 @@ public class FlippingPanel extends JPanel
 	{
 		for (FlippingItemPanel itemPanel : activePanels)
 		{
-			deletePanel(itemPanel);
+			deleteItemPanel(itemPanel);
 		}
 
 		setItemHighlighted(false);

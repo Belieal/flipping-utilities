@@ -66,28 +66,6 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
-	public boolean hasValidOffers(PanelSelection panelSelection)
-	{
-		boolean result = false;
-
-		switch (panelSelection)
-		{
-			case FLIPPING:
-				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidFlippingOffer);
-				break;
-
-			case STATS:
-				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidStatOffer);
-				break;
-
-			case BOTH:
-				result = standardizedOffers.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
-				break;
-		}
-
-		return result;
-	}
-
 	/**
 	 * This method takes in every new offer that comes and updates the standardized offer list along with
 	 * other properties related to the history of an item such as how many items were bought since the last
@@ -133,7 +111,6 @@ public class HistoryManager
 				slotHistory.remove(newOfferSlot);
 			}
 		}
-
 		//its the first trade for that slot!
 		else
 		{
@@ -224,15 +201,20 @@ public class HistoryManager
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
 
-		for (OfferInfo standardizedOffer : tradeList)
+		for (OfferInfo offer : tradeList)
 		{
-			if (standardizedOffer.isBuy())
+			if (!offer.isValidStatOffer())
 			{
-				numBoughtItems += standardizedOffer.getQuantitySinceLastOffer();
+				continue;
+			}
+
+			if (offer.isBuy())
+			{
+				numBoughtItems += offer.getQuantitySinceLastOffer();
 			}
 			else
 			{
-				numSoldItems += standardizedOffer.getQuantitySinceLastOffer();
+				numSoldItems += offer.getQuantitySinceLastOffer();
 			}
 		}
 
@@ -250,11 +232,11 @@ public class HistoryManager
 	{
 		ArrayList<OfferInfo> results = new ArrayList<>();
 
-		for (OfferInfo standardizedOffer : tradeList)
+		for (OfferInfo offer : tradeList)
 		{
-			if (standardizedOffer.isBuy() == buyState)
+			if (offer.isBuy() == buyState && offer.isValidStatOffer())
 			{
-				results.add(standardizedOffer);
+				results.add(offer);
 			}
 		}
 
@@ -280,6 +262,11 @@ public class HistoryManager
 
 		for (OfferInfo offer : tradeList)
 		{
+			if (!offer.isValidStatOffer())
+			{
+				continue;
+			}
+
 			if (itemsSeen + offer.getQuantitySinceLastOffer() >= itemLimit)
 			{
 				moneySpent += (itemLimit - itemsSeen) * offer.getPrice();
@@ -290,6 +277,7 @@ public class HistoryManager
 				moneySpent += offer.getQuantitySinceLastOffer() * offer.getPrice();
 				itemsSeen += offer.getQuantitySinceLastOffer();
 			}
+
 		}
 
 		return moneySpent;
@@ -307,7 +295,7 @@ public class HistoryManager
 
 		for (OfferInfo offer : standardizedOffers)
 		{
-			if (offer.getTime().isAfter(earliestTime))
+			if (offer.getTime().isAfter(earliestTime) && offer.isValidStatOffer())
 			{
 				result.add(offer);
 			}
@@ -336,20 +324,47 @@ public class HistoryManager
 		}
 	}
 
+	public boolean hasValidOffers(PanelSelection panelSelection)
+	{
+		boolean result = false;
+
+		switch (panelSelection)
+		{
+			case FLIPPING:
+				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidFlippingOffer);
+				break;
+
+			case STATS:
+				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidStatOffer);
+				break;
+
+			case BOTH:
+				result = standardizedOffers.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
+				break;
+		}
+
+		return result;
+	}
+
 	public void invalidateOffers(PanelSelection panelSelection)
+	{
+		invalidateOffers(panelSelection, standardizedOffers);
+	}
+
+	public void invalidateOffers(PanelSelection panelSelection, List<OfferInfo> offerList)
 	{
 		switch (panelSelection)
 		{
 			case FLIPPING:
-				standardizedOffers.forEach(offer -> offer.setValidFlippingOffer(false));
+				offerList.forEach(offer -> offer.setValidFlippingOffer(false));
 				break;
 
 			case STATS:
-				standardizedOffers.forEach(offer -> offer.setValidStatOffer(false));
+				offerList.forEach(offer -> offer.setValidStatOffer(false));
 				break;
 
 			case BOTH:
-				standardizedOffers.forEach(offer ->
+				offerList.forEach(offer ->
 				{
 					offer.setValidFlippingOffer(false);
 					offer.setValidStatOffer(false);
@@ -362,7 +377,16 @@ public class HistoryManager
 
 	public void truncateInvalidOffers()
 	{
-		standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
+		if (nextGeLimitRefresh == null)
+		{
+			standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
+			return;
+		}
+
+		Instant startOfRefresh = nextGeLimitRefresh.minus(4, ChronoUnit.HOURS);
+
+		standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer() &&
+			(offer.getTime().isAfter(nextGeLimitRefresh) || offer.getTime().isBefore(startOfRefresh)));
 	}
 
 	/**

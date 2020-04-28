@@ -29,6 +29,8 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.UIUtilities;
+import static com.flippingutilities.ui.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -36,10 +38,8 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.time.Instant;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -54,29 +54,17 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
-import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 @Slf4j
 public class FlippingItemPanel extends JPanel
 {
-	private static final ImageIcon DELETE_ICON;
-
-	private static final Dimension ICON_SIZE = new Dimension(32, 32);
 	private static final String NUM_FORMAT = "%,d";
-	private static final Color FROZEN_COLOR = new Color(0, 193, 255);
 	private static final String OUTDATED_STRING = "Price is outdated. ";
 
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARK_GRAY_COLOR),
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3));
-
-	static
-	{
-		final BufferedImage deleteIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
-		DELETE_ICON = new ImageIcon(deleteIcon);
-	}
 
 	private int buyPrice;
 	private int sellPrice;

@@ -232,4 +232,9 @@ public class FlippingItem
 		history.invalidateOffers(panelSelection);
 	}
 
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferInfo> offerList)
+	{
+		history.invalidateOffers(panelSelection, offerList);
+	}
+
 }

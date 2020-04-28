@@ -29,6 +29,7 @@ package com.flippingutilities.ui;
 
 import com.flippingutilities.FlippingPlugin;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -62,15 +63,28 @@ public class UIUtilities
 		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
 	);
 
+	public static final Dimension ICON_SIZE = new Dimension(32, 32);
+
 	public static final ImageIcon OPEN_ICON;
 	public static final ImageIcon CLOSE_ICON;
 
+	public static final ImageIcon RESET_ICON;
+	public static final ImageIcon RESET_HOVER_ICON;
+
+	public static final ImageIcon DELETE_ICON;
+
 	static
 	{
-		final BufferedImage openIcon = ImageUtil
-			.getResourceStreamFromClass(FlippingPlugin.class, "/small_open_arrow.png");
+		final BufferedImage openIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/small_open_arrow.png");
 		CLOSE_ICON = new ImageIcon(openIcon);
 		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
+
+		final BufferedImage resetIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
+		RESET_ICON = new ImageIcon(resetIcon);
+		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
+
+		final BufferedImage deleteIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
+		DELETE_ICON = new ImageIcon(deleteIcon);
 	}
 
 	/**

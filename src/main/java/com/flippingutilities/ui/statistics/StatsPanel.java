@@ -28,8 +28,11 @@ package com.flippingutilities.ui.statistics;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.HistoryManager;
 import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
+import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -49,7 +52,9 @@ import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -73,7 +78,7 @@ public class StatsPanel extends JPanel
 
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder(4, 2, 2, 2));
+		BorderFactory.createEmptyBorder(5, 2, 1, 8));
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -205,16 +210,66 @@ public class StatsPanel extends JPanel
 
 		//Start off with "Session" selected in the combobox.
 		timeIntervalList.setRenderer(new ComboBoxListRenderer());
-		timeIntervalList.setMinimumSize(new Dimension(0, 35));
 		timeIntervalList.setFocusable(false);
 		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		timeIntervalList.addActionListener(comboboxListener);
 
+		//Icon that resets all the panels currently shown in the time span.
+		final JLabel resetIcon = new JLabel(RESET_ICON);
+		resetIcon.setToolTipText("Reset Statistics");
+		resetIcon.setPreferredSize(ICON_SIZE);
+		resetIcon.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (SwingUtilities.isLeftMouseButton(e))
+				{
+					resetPanel();
+					rebuild(plugin.getTradesList());
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				resetIcon.setIcon(RESET_HOVER_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				resetIcon.setIcon(RESET_ICON);
+			}
+		});
+
+		//Adds option completely reset the trade history.
+		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
+		clearMenuOption.addActionListener(e ->
+		{
+			plugin.getTradesList().clear();
+			resetPanel();
+			plugin.getFlippingPanel().resetPanel();
+		});
+
+		final JPopupMenu popupMenu = new JPopupMenu();
+		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+		popupMenu.add(clearMenuOption);
+
+		resetIcon.setComponentPopupMenu(popupMenu);
+
+		//Since the combobox can't be resized using setBorder, we have to use a wrapper.
+		JPanel wrapper = new JPanel(new BorderLayout());
+		wrapper.setBorder(new EmptyBorder(0, 2, 0, 11));
+		wrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		wrapper.add(timeIntervalList, BorderLayout.CENTER);
+
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		topPanel.setBorder(TOP_PANEL_BORDER);
-		topPanel.add(new JLabel("Time Interval: "), BorderLayout.WEST);
-		topPanel.add(timeIntervalList, BorderLayout.CENTER);
+		topPanel.add(new JLabel("Time Span:"), BorderLayout.WEST);
+		topPanel.add(wrapper, BorderLayout.CENTER);
+		topPanel.add(resetIcon, BorderLayout.EAST);
 
 		//Title text for the big total profit label.
 		final JLabel profitText = new JLabel("Total Profit: ", SwingConstants.CENTER);
@@ -304,6 +359,9 @@ public class StatsPanel extends JPanel
 
 		subInfoContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		subInfoContainer.setBorder(new EmptyBorder(9, 5, 5, 5));
+
+		//To ensure the item's name won't wrap the whole panel.
+		mostCommonFlipVal.setMaximumSize(new Dimension(145, 0));
 
 		//Wraps the total profit labels.
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
@@ -452,7 +510,6 @@ public class StatsPanel extends JPanel
 			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
-
 		mostCommonItemName = null;
 		mostFlips = 0;
 		for (StatItemPanel panel : activePanels)
@@ -465,7 +522,6 @@ public class StatsPanel extends JPanel
 				mostFlips = panel.getTotalFlips();
 				mostCommonItemName = panel.getFlippingItem().getItemName();
 			}
-
 		}
 
 		updateTotalProfitDisplay();
@@ -607,6 +663,36 @@ public class StatsPanel extends JPanel
 		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
 		{
 			subInfoContainer.remove(sessionTimePanel);
+		}
+	}
+
+	/**
+	 * Designates the panel for deletion by changing its FlippingItem's stored offers stat validity state to false.
+	 * This means the panel will not be built upon the next rebuild calls of StatPanel.
+	 *
+	 * @param itemPanel The panel which holds the FlippingItem to be terminated.
+	 */
+	public void deletePanel(StatItemPanel itemPanel)
+	{
+		if (!activePanels.contains(itemPanel))
+		{
+			return;
+		}
+
+		FlippingItem item = itemPanel.getFlippingItem();
+
+		item.invalidateOffers(HistoryManager.PanelSelection.STATS, item.getIntervalHistory(startOfInterval));
+	}
+
+	/**
+	 * Designates every panel that is currently shown on the StatPanel to be terminated.
+	 * Read deletePanel method's doc for information on how this is done.
+	 */
+	public void resetPanel()
+	{
+		for (StatItemPanel itemPanel : activePanels)
+		{
+			deletePanel(itemPanel);
 		}
 	}
 

@@ -31,6 +31,9 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
+import static com.flippingutilities.ui.UIUtilities.CLOSE_ICON;
+import static com.flippingutilities.ui.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.UIUtilities.OPEN_ICON;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -107,7 +110,7 @@ public class StatItemPanel extends JPanel
 	private JLabel itemProfitTitleLabel = new JLabel();
 
 	//Shows the item's icon
-	private JLabel itemIconTitleLabel = new JLabel();
+	private JPanel itemIconTitlePanel = new JPanel(new BorderLayout());
 	//Label that controls the collapse function of the item panel.
 	private JLabel collapseIconTitleLabel = new JLabel();
 
@@ -146,7 +149,7 @@ public class StatItemPanel extends JPanel
 	//Holds the individual trades in the history.
 	private JPanel tradeHistoryItemContainer = new JPanel(new GridBagLayout());
 
-	private JLabel collapseTradeHistoryIconLabel = new JLabel(UIUtilities.CLOSE_ICON);
+	private JLabel collapseTradeHistoryIconLabel = new JLabel(CLOSE_ICON);
 
 	//Constraints for tradeHistoryItemContainer.
 	private GridBagConstraints constraints = new GridBagConstraints();
@@ -177,16 +180,50 @@ public class StatItemPanel extends JPanel
 
 		updateDisplays();
 
+		/* Clear icon */
+		JLabel deleteLabel = new JLabel(DELETE_ICON);
+		deleteLabel.setPreferredSize(new Dimension(24, 24));
+		deleteLabel.setVisible(false);
+
 		/* Item icon */
 		AsyncBufferedImage itemImage = itemManager.getImage(flippingItem.getItemId());
+		JLabel itemLabel = new JLabel();
 		Runnable resize = () ->
 		{
 			BufferedImage subIcon = itemImage.getSubimage(0, 0, 32, 32);
-			itemIconTitleLabel.setIcon(new ImageIcon(subIcon.getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+			ImageIcon itemIcon = new ImageIcon(subIcon.getScaledInstance(24, 24, Image.SCALE_SMOOTH));
+			itemLabel.setIcon(itemIcon);
 		};
 		itemImage.onLoaded(resize);
 		resize.run();
-		itemIconTitleLabel.setBorder(new EmptyBorder(0, 2, 0, 5));
+
+		itemIconTitlePanel.add(itemLabel, BorderLayout.WEST);
+		itemIconTitlePanel.add(deleteLabel, BorderLayout.EAST);
+		itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		itemIconTitlePanel.setBorder(new EmptyBorder(0, 2, 0, 5));
+		itemIconTitlePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				deletePanel();
+				statsPanel.rebuild(plugin.getTradesList());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				itemLabel.setVisible(false);
+				deleteLabel.setVisible(true);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				itemLabel.setVisible(true);
+				deleteLabel.setVisible(false);
+			}
+		});
 
 		/* Item name and profit label */
 		nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -194,7 +231,7 @@ public class StatItemPanel extends JPanel
 		nameAndProfitTitlePanel.add(itemProfitTitleLabel, BorderLayout.SOUTH);
 
 		/* Collapse icon */
-		collapseIconTitleLabel.setIcon(flippingItem.isShouldExpandStatItem() ? UIUtilities.OPEN_ICON : UIUtilities.CLOSE_ICON);
+		collapseIconTitleLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
 		collapseIconTitleLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
 
 		subInfoAndHistoryContainer.setVisible(flippingItem.isShouldExpandStatItem());
@@ -208,13 +245,13 @@ public class StatItemPanel extends JPanel
 				{
 					if (subInfoAndHistoryContainer.isVisible())
 					{
-						collapseIconTitleLabel.setIcon(UIUtilities.CLOSE_ICON);
+						collapseIconTitleLabel.setIcon(CLOSE_ICON);
 						subInfoAndHistoryContainer.setVisible(false);
 						flippingItem.setShouldExpandStatItem(false);
 					}
 					else
 					{
-						collapseIconTitleLabel.setIcon(UIUtilities.OPEN_ICON);
+						collapseIconTitleLabel.setIcon(OPEN_ICON);
 						subInfoAndHistoryContainer.setVisible(true);
 						flippingItem.setShouldExpandStatItem(true);
 					}
@@ -226,6 +263,7 @@ public class StatItemPanel extends JPanel
 			{
 				nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
 				titlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
 				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			}
 
@@ -233,6 +271,7 @@ public class StatItemPanel extends JPanel
 			public void mouseExited(MouseEvent e)
 			{
 				nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 				titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			}
 		});
@@ -240,7 +279,7 @@ public class StatItemPanel extends JPanel
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
 
-		titlePanel.add(itemIconTitleLabel, BorderLayout.WEST);
+		titlePanel.add(itemIconTitlePanel, BorderLayout.WEST);
 		titlePanel.add(nameAndProfitTitlePanel, BorderLayout.CENTER);
 		titlePanel.add(collapseIconTitleLabel, BorderLayout.EAST);
 
@@ -304,13 +343,13 @@ public class StatItemPanel extends JPanel
 					{
 						tradeHistoryItemContainer.setVisible(false);
 						flippingItem.setShouldExpandHistory(false);
-						collapseTradeHistoryIconLabel.setIcon(UIUtilities.CLOSE_ICON);
+						collapseTradeHistoryIconLabel.setIcon(CLOSE_ICON);
 					}
 					else
 					{
 						tradeHistoryItemContainer.setVisible(true);
 						flippingItem.setShouldExpandHistory(true);
-						collapseTradeHistoryIconLabel.setIcon(UIUtilities.OPEN_ICON);
+						collapseTradeHistoryIconLabel.setIcon(OPEN_ICON);
 					}
 				}
 			}
@@ -459,6 +498,11 @@ public class StatItemPanel extends JPanel
 
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+	}
+
+	private void deletePanel()
+	{
+		statsPanel.deletePanel(this);
 	}
 
 }
