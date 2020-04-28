@@ -208,7 +208,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	public void onGameStateChanged(GameStateChanged event) throws InterruptedException
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{

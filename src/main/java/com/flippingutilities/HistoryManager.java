@@ -88,7 +88,8 @@ public class HistoryManager
 	public void updateHistory(OfferInfo newOffer)
 	{
 		storeStandardizedOffer(newOffer);
-		updateGeProperties();
+		updateGeProperties(standardizedOffers);
+		truncateOffers(standardizedOffers);
 	}
 
 	/**
@@ -101,7 +102,7 @@ public class HistoryManager
 	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives. It is crucial to note that
 	 *                 This OfferInfo object contains the current currentQuantityInTrade bought/sold for the trade currently.
 	 */
-	private void storeStandardizedOffer(OfferInfo newOffer)
+	public void storeStandardizedOffer(OfferInfo newOffer)
 	{
 		int newOfferSlot = newOffer.getSlot();
 
@@ -144,9 +145,9 @@ public class HistoryManager
 	 * Updates when the ge limit will refresh and how many items have been bought since the last
 	 * ge limit refresh.
 	 */
-	private void updateGeProperties()
+	private void updateGeProperties(List<OfferInfo> offers)
 	{
-		OfferInfo mostRecentOffer = standardizedOffers.get(standardizedOffers.size() - 1);
+		OfferInfo mostRecentOffer = offers.get(offers.size() - 1);
 		if (!mostRecentOffer.isBuy())
 		{
 			return;
@@ -166,6 +167,43 @@ public class HistoryManager
 			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantitySinceLastOffer();
 		}
 
+	}
+
+	public void truncateOffers(List<OfferInfo> offers)
+	{
+		OfferInfo mostRecentOffer = offers.get(offers.size() - 1);
+
+		//do not go through the process of truncation if the offer is the only offer in that trade as it will
+		//have no past offers to truncate. Also don't start truncation if the offer is not complete
+		if (mostRecentOffer.getQuantitySinceLastOffer() == mostRecentOffer.getCurrentQuantityInTrade() || !mostRecentOffer.isComplete())
+		{
+			return;
+		}
+
+		//getting the profit still relies on "quantitySinceLastOffer" and since we are deleting all
+		//"last offers" for a trade, we have to set the "quantitySinceLastOffer" equal to the amount
+		//bought/sold in the entire trade to get accurate profit results.
+		mostRecentOffer.setQuantitySinceLastOffer(mostRecentOffer.getCurrentQuantityInTrade());
+
+		//size is minus 2 to get the second to last item in the list
+		for (int i = offers.size() - 2; i > -1; i--)
+		{
+			OfferInfo aPreviousOffer = offers.get(i);
+			if (aPreviousOffer.getSlot() == mostRecentOffer.getSlot() && aPreviousOffer.isBuy() == mostRecentOffer.isBuy())
+			{
+				//if it belongs to the same slot and its complete, it must belong to a previous trade given that
+				//the most recent offer was for the same slot and was also complete.
+				if (aPreviousOffer.isComplete())
+				{
+					return;
+				}
+
+				else
+				{
+					offers.remove(i);
+				}
+			}
+		}
 	}
 
 	//TODO:
