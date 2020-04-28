@@ -27,6 +27,7 @@
 package com.flippingutilities;
 
 import com.flippingutilities.ui.flipping.FlippingItemPanel;
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,45 +47,58 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  */
 public class FlippingItem
 {
+	@SerializedName("id")
 	@Getter
 	private final int itemId;
 
+	@SerializedName("name")
 	@Getter
 	private final String itemName;
 
+	@SerializedName("tGL")
 	@Getter
 	private final int totalGELimit;
 
+	@SerializedName("mCBP")
 	@Getter
 	private int marginCheckBuyPrice;
 
+	@SerializedName("mCSP")
 	@Getter
 	private int marginCheckSellPrice;
 
+	@SerializedName("mCBT")
 	@Getter
 	private Instant marginCheckBuyTime;
 
+	@SerializedName("mCST")
 	@Getter
 	private Instant marginCheckSellTime;
 
+	@SerializedName("lBT")
 	@Getter
 	private Instant latestBuyTime;
 
+	@SerializedName("lST")
 	@Getter
 	private Instant latestSellTime;
 
 	//An activity is described as a completed offer event.
+	@SerializedName("lAT")
 	@Getter
 	private Instant latestActivityTime = Instant.now();
 
+	@SerializedName("sESI")
 	@Getter
 	@Setter
 	private boolean shouldExpandStatItem = false;
 
+	@SerializedName("sEH")
 	@Getter
 	@Setter
 	private boolean shouldExpandHistory = false;
 
+	@SerializedName("h")
 	private HistoryManager history = new HistoryManager();
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit)

@@ -27,6 +27,7 @@
 package com.flippingutilities;
 
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -46,21 +47,34 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
 @AllArgsConstructor
 public class OfferInfo
 {
+	@SerializedName("b")
 	private boolean buy;
+	@SerializedName("id")
 	private int itemId;
+	@SerializedName("cQIT")
 	private int currentQuantityInTrade;
+	@SerializedName("p")
 	private int price;
+	@SerializedName("t")
 	private Instant time;
+	@SerializedName("s")
 	private int slot;
+	@SerializedName("st")
 	private GrandExchangeOfferState state;
+	@SerializedName("tAA")
 	private int tickArrivedAt;
+	@SerializedName("tSFO")
 	private int ticksSinceFirstOffer;
+	@SerializedName("tQIT")
 	private int totalQuantityInTrade;
+	@SerializedName("qSLQ")
 	private int quantitySinceLastOffer;
 
 	//States that determine if the offer is appurtenant to the current scope of the panel.
 	//The states change dependent on user-selected removals.
+	@SerializedName("vSQ")
 	private boolean validStatOffer;
+	@SerializedName("vFO")
 	private boolean validFlippingOffer;
 
 	/**

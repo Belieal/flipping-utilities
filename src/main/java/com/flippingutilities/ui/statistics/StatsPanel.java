@@ -442,6 +442,11 @@ public class StatsPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : tradesList)
 			{
+				if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
+				{
+					continue;
+				}
+
 				ArrayList<OfferInfo> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
@@ -503,6 +508,11 @@ public class StatsPanel extends JPanel
 
 		for (FlippingItem item : tradesList)
 		{
+			if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
+			{
+				continue;
+			}
+
 			List<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
 			totalProfit += item.currentProfit(intervalHistory);
 			totalExpenses += item.getCashflow(startOfInterval, true);
@@ -682,6 +692,7 @@ public class StatsPanel extends JPanel
 		FlippingItem item = itemPanel.getFlippingItem();
 
 		item.invalidateOffers(HistoryManager.PanelSelection.STATS, item.getIntervalHistory(startOfInterval));
+		plugin.truncateTradeList();
 	}
 
 	/**

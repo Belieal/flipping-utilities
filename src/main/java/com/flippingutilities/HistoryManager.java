@@ -27,6 +27,7 @@
 
 package com.flippingutilities;
 
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -51,18 +52,22 @@ public class HistoryManager
 	//slot history to figure out how many new items were bought/sold. When a offer with a state that is
 	//complete (bought/sold/cancelled buy/cancelled sell) comes in, the history for that slot is removed
 	//as the slot is now empty.
+	@SerializedName("sH")
 	private Map<Integer, List<OfferInfo>> slotHistory = new HashMap<>();
 
 	//a list of standardizedOffers. A standardizedOffer is an offer with a currentQuantityInTrade that represents the
 	//currentQuantityInTrade bought since the last offer. A regular offer just has info from an offerEvent, which gives
 	//you the current currentQuantityInTrade bought/sold overall in the trade.
+	@SerializedName("sO")
 	@Getter
 	private List<OfferInfo> standardizedOffers = new ArrayList<>();
 
+	@SerializedName("nGLR")
 	@Getter
 	private Instant nextGeLimitRefresh;
 
 	//the number of items bought since the last ge limit reset.
+	@SerializedName("iBTLW")
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 

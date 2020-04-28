@@ -35,6 +35,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import java.lang.reflect.Type;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -393,7 +394,7 @@ public class FlippingPlugin extends Plugin
 			offer.getItemId(),
 			offer.getQuantitySold(),
 			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
-			Instant.now(),
+			Instant.now().truncatedTo(ChronoUnit.SECONDS),
 			newOfferEvent.getSlot(),
 			offer.getState(),
 			client.getTickCount(),
@@ -507,6 +508,7 @@ public class FlippingPlugin extends Plugin
 		log.info("Loading Flipping config");
 		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
 		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
+		System.out.println(json);
 
 		if (json == null)
 		{
@@ -526,6 +528,16 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("Error loading flipping data: " + e);
 		}
+	}
+
+	public void truncateTradeList()
+	{
+		tradesList.removeIf((item) ->
+		{
+			Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
+			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS)
+				&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
+		});
 	}
 
 	@Subscribe

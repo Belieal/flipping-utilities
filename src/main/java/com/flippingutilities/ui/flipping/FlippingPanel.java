@@ -380,6 +380,7 @@ public class FlippingPanel extends JPanel
 			deleteItemPanel(itemPanel);
 		}
 
+		plugin.truncateTradeList();
 		setItemHighlighted(false);
 	}
 
