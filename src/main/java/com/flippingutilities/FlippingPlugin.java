@@ -100,7 +100,7 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ClientThread clientThread;
 	@Inject
-	private ScheduledExecutorService scheduledExecutor;
+	private ScheduledExecutorService executor;
 	private ScheduledFuture timeUpdateFuture;
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -146,7 +146,7 @@ public class FlippingPlugin extends Plugin
 	protected void startUp()
 	{
 		//Main visuals.
-		flippingPanel = new FlippingPanel(this, itemManager, scheduledExecutor);
+		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
@@ -185,7 +185,7 @@ public class FlippingPlugin extends Plugin
 				}
 			}
 
-			scheduledExecutor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
+			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
 				if (tradesList != null)
 				{
@@ -210,7 +210,7 @@ public class FlippingPlugin extends Plugin
 
 		//Ensures the panel displays for the margin check being outdated and the next ge reset
 		//are updated every second.
-		timeUpdateFuture = scheduledExecutor.scheduleAtFixedRate(() ->
+		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			flippingPanel.updateActivePanelsGePropertiesDisplay();
@@ -522,7 +522,7 @@ public class FlippingPlugin extends Plugin
 	 */
 	public Future<Void> storeTrades(List<FlippingItem> trades)
 	{
-		Future<Void> tradeStoringTask = scheduledExecutor.submit(() -> {
+		Future<Void> tradeStoringTask = executor.submit(() -> {
 			try
 			{
 				tradePersister.storeTrades(trades);

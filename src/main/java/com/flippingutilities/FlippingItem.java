@@ -99,7 +99,6 @@ public class FlippingItem
 	private boolean shouldExpandHistory = false;
 
 	@SerializedName("h")
-	@Getter
 	private HistoryManager history = new HistoryManager();
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit)
