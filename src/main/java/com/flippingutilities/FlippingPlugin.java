@@ -30,16 +30,18 @@ import com.flippingutilities.ui.TabManager;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -100,7 +102,7 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ClientThread clientThread;
 	@Inject
-	private ScheduledExecutorService executor;
+	private ScheduledExecutorService scheduledExecutor;
 	private ScheduledFuture timeUpdateFuture;
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -127,7 +129,7 @@ public class FlippingPlugin extends Plugin
 
 	//Stores all bought or sold trades.
 	@Getter
-	private ArrayList<FlippingItem> tradesList = new ArrayList<>();
+	private List<FlippingItem> tradesList = new ArrayList<>();
 
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
@@ -139,11 +141,17 @@ public class FlippingPlugin extends Plugin
 
 	private boolean previouslyLoggedIn;
 
+
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
+
+	//used to load and store trades from a file on disk.
+	private TradePersistor tradePersistor = new TradePersistor();
+
 	@Override
 	protected void startUp()
 	{
 		//Main visuals.
-		flippingPanel = new FlippingPanel(this, itemManager, executor);
+		flippingPanel = new FlippingPanel(this, itemManager, scheduledExecutor);
 		statPanel = new StatsPanel(this, itemManager);
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
@@ -170,10 +178,21 @@ public class FlippingPlugin extends Plugin
 			//Loads tradesList with data from previous sessions.
 			if (config.storeTradeHistory())
 			{
-				loadConfig();
+				try
+				{
+					tradePersistor.setup();
+					tradesList = loadTrades();
+				}
+				catch (IOException e)
+				{
+					log.info("couldn't set up trade persistor, error message = " + e);
+					tradesList = new ArrayList<>();
+				}
 			}
 
-			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
+			statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
+
+			scheduledExecutor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
 				if (tradesList != null)
 				{
@@ -192,7 +211,7 @@ public class FlippingPlugin extends Plugin
 
 		//Ensures the panel displays for the margin check being outdated and the next ge reset
 		//are updated every second.
-		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
+		timeUpdateFuture = scheduledExecutor.scheduleAtFixedRate(() ->
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			flippingPanel.updateActivePanelsGePropertiesDisplay();
@@ -200,11 +219,21 @@ public class FlippingPlugin extends Plugin
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
-	@Subscribe(priority = 101)
-	public void onClientShutdown(ClientShutdown event)
+	/**
+	 * Gets invoked when the client is shutting down. This method calls storeTrades and blocks the main
+	 * thread until it finishes, thus allowing trades to be stored safely.
+	 *
+	 * @param clientShutdownEvent even that we receive when the client is shutting down
+	 */
+	@Subscribe
+	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		System.out.println("Shutting down, save Flipping config");
-		updateConfig();
+		log.info("Shutting down, saving trades!");
+
+		Future<Void> storeTradeTaskStatus = storeTrades(tradesList);
+
+		clientShutdownEvent.waitFor(storeTradeTaskStatus);
+
 	}
 
 	@Subscribe
@@ -218,8 +247,7 @@ public class FlippingPlugin extends Plugin
 
 		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
-			System.out.println("Logging out, saving Flipping config");
-			updateConfig();
+			storeTrades(tradesList);
 		}
 	}
 
@@ -245,7 +273,7 @@ public class FlippingPlugin extends Plugin
 		{
 			clientThread.invokeLater(() ->
 			{
-				loadConfig();
+				tradesList = loadTrades();
 				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 				return true;
 			});
@@ -258,7 +286,7 @@ public class FlippingPlugin extends Plugin
 		//Config is now locally stored
 		clientThread.invokeLater(() ->
 		{
-			loadConfig();
+			tradesList = loadTrades();
 			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
 			return true;
 		});
@@ -484,56 +512,45 @@ public class FlippingPlugin extends Plugin
 		flippingPanel.highlightItem(currentGEItemId);
 	}
 
-	//Stores all the session trade data in config.
-	public void updateConfig()
+	/**
+	 * submits the task to the executor to be run in another thread. The executor returns a
+	 * future object that is used to figure out whether the task is done or not. This future object is
+	 * important because we use it in
+	 *
+	 * @param trades user's trade list
+	 * @return a future that can be queried to figure out whether the task has been completed.
+	 */
+	public Future<Void> storeTrades(List<FlippingItem> trades)
 	{
-		if (tradesList.isEmpty())
-		{
-			return;
-		}
+		Future<Void> tradeStoringTask = executor.submit(() -> {
+			try
+			{
+				tradePersistor.storeTrades(trades);
+				log.info("successfully stored trades");
+			}
+			catch (IOException e)
+			{
+				log.info("couldn't store trades, error = " + e);
+			}
+			;
+			return null;
+		});
 
-		final Gson gson = new Gson();
-		final String json = gson.toJson(tradesList);
-		configManager.setConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY, json);
-
-		if (statPanel.getSelectedInterval() != null)
-		{
-			configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
-		}
+		return tradeStoringTask;
 	}
 
-	//Loads previous session data to tradeList.
-	public void loadConfig()
+	public List<FlippingItem> loadTrades()
 	{
-		log.info("Loading Flipping config");
-		final String json = configManager.getConfiguration(CONFIG_GROUP, ITEMS_CONFIG_KEY);
-		statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
-
-		if (json == null)
-		{
-			return;
-		}
-
 		try
 		{
-			final Gson gson = new Gson();
-			Type type = new TypeToken<ArrayList<FlippingItem>>()
-			{
-
-			}.getType();
-			tradesList = gson.fromJson(json, type);
-
-			int CONFIG_CAP = 262144;
-			System.out.println("Config char length: " + json.length() + "\nChars before cap is reached: " + (CONFIG_CAP - json.length()));
-			if (!tradesList.isEmpty())
-			{
-				System.out.println("Average length per item: " + (json.length() / tradesList.size()));
-				System.out.println("Average items before reaching config cap: " + (CONFIG_CAP / (json.length() / tradesList.size())));
-			}
+			List<FlippingItem> trades = tradePersistor.loadTrades();
+			log.info("successfully loaded trades");
+			return trades;
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
-			log.info("Error loading flipping data: " + e);
+			log.info("couldn't load trades, error = " + e);
+			return new ArrayList<>();
 		}
 	}
 

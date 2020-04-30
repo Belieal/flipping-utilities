@@ -41,6 +41,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -219,7 +220,7 @@ public class FlippingPanel extends JPanel
 		add(container, BorderLayout.CENTER);
 	}
 
-	private void initializeFlippingPanel(ArrayList<FlippingItem> flippingItems)
+	private void initializeFlippingPanel(List<FlippingItem> flippingItems)
 	{
 		if (flippingItems == null || flippingItems.size() == 0)
 		{
@@ -281,7 +282,7 @@ public class FlippingPanel extends JPanel
 
 	}
 
-	public void rebuildFlippingPanel(ArrayList<FlippingItem> flippingItems)
+	public void rebuildFlippingPanel(List<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
 
