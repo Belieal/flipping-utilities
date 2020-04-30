@@ -41,6 +41,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -169,7 +170,7 @@ public class FlippingPanel extends JPanel
 				{
 					resetPanel();
 					cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
-					rebuildFlippingPanel(plugin.getTradesList());
+					rebuild(plugin.getTradesList());
 				}
 			}
 
@@ -189,6 +190,7 @@ public class FlippingPanel extends JPanel
 		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
 		clearMenuOption.addActionListener(e ->
 		{
+
 			plugin.getTradesList().clear();
 			resetPanel();
 			plugin.getStatPanel().resetPanel();
@@ -219,7 +221,7 @@ public class FlippingPanel extends JPanel
 		add(container, BorderLayout.CENTER);
 	}
 
-	private void initializeFlippingPanel(ArrayList<FlippingItem> flippingItems)
+	private void initializeFlippingPanel(List<FlippingItem> flippingItems)
 	{
 		if (flippingItems == null || flippingItems.size() == 0)
 		{
@@ -252,7 +254,7 @@ public class FlippingPanel extends JPanel
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
 							deleteItemPanel(newPanel);
-							rebuildFlippingPanel(plugin.getTradesList());
+							rebuild(plugin.getTradesList());
 						}
 					}
 				});
@@ -281,7 +283,7 @@ public class FlippingPanel extends JPanel
 
 	}
 
-	public void rebuildFlippingPanel(ArrayList<FlippingItem> flippingItems)
+	public void rebuild(List<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
 
@@ -307,7 +309,7 @@ public class FlippingPanel extends JPanel
 
 		if (!itemToHighlight.isEmpty())
 		{
-			rebuildFlippingPanel(itemToHighlight);
+			rebuild(itemToHighlight);
 			itemHighlighted = true;
 		}
 	}
@@ -321,7 +323,7 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		rebuildFlippingPanel(plugin.getTradesList());
+		rebuild(plugin.getTradesList());
 		itemHighlighted = false;
 		plugin.setPrevHighlight(0);
 	}
@@ -399,7 +401,7 @@ public class FlippingPanel extends JPanel
 		//When the clear button is pressed, this is run.
 		if (Strings.isNullOrEmpty(lookup))
 		{
-			rebuildFlippingPanel(plugin.getTradesList());
+			rebuild(plugin.getTradesList());
 			return;
 		}
 
@@ -417,12 +419,12 @@ public class FlippingPanel extends JPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBar.setEditable(true);
-			rebuildFlippingPanel(plugin.getTradesList());
+			rebuild(plugin.getTradesList());
 			return;
 		}
 
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		rebuildFlippingPanel(result);
+		rebuild(result);
 	}
 
 }

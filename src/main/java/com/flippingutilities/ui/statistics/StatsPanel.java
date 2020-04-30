@@ -430,7 +430,7 @@ public class StatsPanel extends JPanel
 	 *
 	 * @param tradesList The list of flipping items that get shown on the stat panel.
 	 */
-	public void rebuild(ArrayList<FlippingItem> tradesList)
+	public void rebuild(List<FlippingItem> tradesList)
 	{
 		//Remove old stats
 		activePanels = new ArrayList<>();
@@ -504,7 +504,7 @@ public class StatsPanel extends JPanel
 		totalQuantity = 0;
 		totalFlips = 0;
 
-		ArrayList<FlippingItem> tradesList = plugin.getTradesList();
+		List<FlippingItem> tradesList = plugin.getTradesList();
 
 		for (FlippingItem item : tradesList)
 		{
@@ -759,7 +759,6 @@ public class StatsPanel extends JPanel
 
 		if (!isStartUp)
 		{
-			updateDisplays();
 			rebuild(plugin.getTradesList());
 		}
 	}
@@ -797,7 +796,7 @@ public class StatsPanel extends JPanel
 	 *
 	 * @param tradeList The soon-to-be drawn tradeList whose items are getting sorted.
 	 */
-	public void sortTradeList(ArrayList<FlippingItem> tradeList)
+	public void sortTradeList(List<FlippingItem> tradeList)
 	{
 		if (selectedSort == null || tradeList.isEmpty())
 		{
