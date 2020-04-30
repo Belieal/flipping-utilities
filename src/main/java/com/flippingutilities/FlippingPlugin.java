@@ -39,8 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -141,9 +139,6 @@ public class FlippingPlugin extends Plugin
 
 	private boolean previouslyLoggedIn;
 
-
-	private ExecutorService executor = Executors.newSingleThreadExecutor();
-
 	//used to load and store trades from a file on disk.
 	private TradePersister tradePersister = new TradePersister();
 
@@ -190,19 +185,23 @@ public class FlippingPlugin extends Plugin
 				}
 			}
 
-			statPanel.setTimeInterval(configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY), true);
-
 			scheduledExecutor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
 			{
 				if (tradesList != null)
 				{
-					for (FlippingItem flippingItem : tradesList)
-					{
-						//it may have been four hours since the first time the user bought the item, so
-						//it might be displaying old values, so this is a way to clear them on start up.
-						flippingItem.validateGeProperties();
+					//it may have been four hours since the first time the user bought the item, so
+					//it might be displaying old values, so this is a way to clear them on start up.
+					tradesList.forEach(flippingItem -> flippingItem.validateGeProperties());
+
+					flippingPanel.rebuild(tradesList);
+					String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
+					if (lastSelectedInterval == null) {
+						statPanel.setTimeInterval("All", true);
 					}
-					flippingPanel.rebuildFlippingPanel(tradesList);
+					else {
+						statPanel.setTimeInterval(lastSelectedInterval, true);
+					}
+
 					statPanel.rebuild(tradesList);
 				}
 			})));
@@ -225,7 +224,7 @@ public class FlippingPlugin extends Plugin
 	 *
 	 * @param clientShutdownEvent even that we receive when the client is shutting down
 	 */
-	@Subscribe
+
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		log.info("Shutting down, saving trades!");
@@ -247,6 +246,7 @@ public class FlippingPlugin extends Plugin
 
 		if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
+			log.info("logging out");
 			storeTrades(tradesList);
 		}
 	}
@@ -274,7 +274,7 @@ public class FlippingPlugin extends Plugin
 			clientThread.invokeLater(() ->
 			{
 				tradesList = loadTrades();
-				SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
+				SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
 				return true;
 			});
 		}
@@ -287,7 +287,7 @@ public class FlippingPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 			tradesList = loadTrades();
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
+			SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
 			return true;
 		});
 	}
@@ -337,7 +337,7 @@ public class FlippingPlugin extends Plugin
 				addToTradesList(newOffer);
 			}
 
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuildFlippingPanel(tradesList));
+			SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
 		}
 
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
@@ -522,7 +522,7 @@ public class FlippingPlugin extends Plugin
 	 */
 	public Future<Void> storeTrades(List<FlippingItem> trades)
 	{
-		Future<Void> tradeStoringTask = executor.submit(() -> {
+		Future<Void> tradeStoringTask = scheduledExecutor.submit(() -> {
 			try
 			{
 				tradePersister.storeTrades(trades);
@@ -581,7 +581,7 @@ public class FlippingPlugin extends Plugin
 			}
 
 			statPanel.rebuild(tradesList);
-			flippingPanel.rebuildFlippingPanel(tradesList);
+			flippingPanel.rebuild(tradesList);
 		}
 	}
 

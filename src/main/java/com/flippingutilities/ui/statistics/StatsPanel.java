@@ -759,7 +759,6 @@ public class StatsPanel extends JPanel
 
 		if (!isStartUp)
 		{
-			updateDisplays();
 			rebuild(plugin.getTradesList());
 		}
 	}

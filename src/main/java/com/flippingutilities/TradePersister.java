@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -88,6 +89,8 @@ public class TradePersister
 	{
 		final Gson gson = new Gson();
 		final String json = gson.toJson(trades);
+		TRADE_DATA_FILE.delete();
+		TRADE_DATA_FILE.createNewFile();
 		Files.write(TRADE_DATA_FILE.toPath(), json.getBytes());
 	}
 
