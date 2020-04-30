@@ -225,6 +225,7 @@ public class FlippingPlugin extends Plugin
 	 * @param clientShutdownEvent even that we receive when the client is shutting down
 	 */
 
+	@Subscribe
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		log.info("Shutting down, saving trades!");
