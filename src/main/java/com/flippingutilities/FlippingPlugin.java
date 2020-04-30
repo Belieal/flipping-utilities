@@ -145,7 +145,7 @@ public class FlippingPlugin extends Plugin
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	//used to load and store trades from a file on disk.
-	private TradePersistor tradePersistor = new TradePersistor();
+	private TradePersister tradePersister = new TradePersister();
 
 	@Override
 	protected void startUp()
@@ -180,7 +180,7 @@ public class FlippingPlugin extends Plugin
 			{
 				try
 				{
-					tradePersistor.setup();
+					tradePersister.setup();
 					tradesList = loadTrades();
 				}
 				catch (IOException e)
@@ -525,7 +525,7 @@ public class FlippingPlugin extends Plugin
 		Future<Void> tradeStoringTask = executor.submit(() -> {
 			try
 			{
-				tradePersistor.storeTrades(trades);
+				tradePersister.storeTrades(trades);
 				log.info("successfully stored trades");
 			}
 			catch (IOException e)
@@ -543,7 +543,7 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			List<FlippingItem> trades = tradePersistor.loadTrades();
+			List<FlippingItem> trades = tradePersister.loadTrades();
 			log.info("successfully loaded trades");
 			return trades;
 		}

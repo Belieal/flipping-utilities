@@ -15,7 +15,7 @@ import net.runelite.client.RuneLite;
  * This class is responsible for storing the trades on disk.
  */
 @Slf4j
-public class TradePersistor
+public class TradePersister
 {
 
 	//this is in {user's home directory}/.runelite/flipping
