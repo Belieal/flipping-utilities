@@ -44,7 +44,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
-import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -185,7 +184,7 @@ public class FlippingPlugin extends Plugin
 				}
 			}
 
-			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
+			executor.submit(() -> clientThread.invokeLater(() ->
 			{
 				if (tradesList != null)
 				{
@@ -195,16 +194,18 @@ public class FlippingPlugin extends Plugin
 
 					flippingPanel.rebuild(tradesList);
 					String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-					if (lastSelectedInterval == null) {
+					if (lastSelectedInterval == null)
+					{
 						statPanel.setTimeInterval("All", true);
 					}
-					else {
+					else
+					{
 						statPanel.setTimeInterval(lastSelectedInterval, true);
 					}
 
 					statPanel.rebuild(tradesList);
 				}
-			})));
+			}));
 			return true;
 		});
 
@@ -214,7 +215,7 @@ public class FlippingPlugin extends Plugin
 		{
 			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 			flippingPanel.updateActivePanelsGePropertiesDisplay();
-			statPanel.updateDisplays();
+			statPanel.updateSessionTime();
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
@@ -275,7 +276,7 @@ public class FlippingPlugin extends Plugin
 			clientThread.invokeLater(() ->
 			{
 				tradesList = loadTrades();
-				SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
+				flippingPanel.rebuild(tradesList);
 				return true;
 			});
 		}
@@ -284,11 +285,11 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onSessionClose(SessionClose event)
 	{
-		//Config is now locally stored
+		//Config is now only stored locally
 		clientThread.invokeLater(() ->
 		{
 			tradesList = loadTrades();
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
+			flippingPanel.rebuild(tradesList);
 			return true;
 		});
 	}
@@ -321,6 +322,9 @@ public class FlippingPlugin extends Plugin
 		}
 
 		System.out.println(newOffer.toString());
+		System.out.println(newOffer.getState() == GrandExchangeOfferState.BOUGHT
+			|| newOffer.getState() == GrandExchangeOfferState.SOLD
+			? "\n" + itemManager.getItemComposition(newOffer.getItemId()).getName() + " " + newOffer.getState() + "\n" : "");
 
 		Optional<FlippingItem> flippingItem = findItemInTradesList(newOffer.getItemId());
 
@@ -338,7 +342,7 @@ public class FlippingPlugin extends Plugin
 				addToTradesList(newOffer);
 			}
 
-			SwingUtilities.invokeLater(() -> flippingPanel.rebuild(tradesList));
+			flippingPanel.rebuild(tradesList);
 		}
 
 		//if its not a margin check and the item isn't present, you don't know what to put as the buy/sell price
@@ -523,7 +527,8 @@ public class FlippingPlugin extends Plugin
 	 */
 	public Future<Void> storeTrades(List<FlippingItem> trades)
 	{
-		Future<Void> tradeStoringTask = executor.submit(() -> {
+		return executor.submit(() ->
+		{
 			try
 			{
 				tradePersister.storeTrades(trades);
@@ -536,8 +541,6 @@ public class FlippingPlugin extends Plugin
 			;
 			return null;
 		});
-
-		return tradeStoringTask;
 	}
 
 	public List<FlippingItem> loadTrades()

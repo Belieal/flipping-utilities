@@ -524,7 +524,7 @@ public class StatsPanel extends JPanel
 		mostFlips = 0;
 		for (StatItemPanel panel : activePanels)
 		{
-			panel.updateDisplays();
+
 			totalFlips += panel.getTotalFlips();
 
 			if (mostCommonItemName == null || mostFlips < panel.getTotalFlips())
@@ -665,7 +665,7 @@ public class StatsPanel extends JPanel
 		mostCommonFlipVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 	}
 
-	private void updateSessionTime()
+	public void updateSessionTime()
 	{
 		sessionTimeVal.setText(UIUtilities.formatDuration(sessionTime));
 		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
@@ -673,6 +673,11 @@ public class StatsPanel extends JPanel
 		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
 		{
 			subInfoContainer.remove(sessionTimePanel);
+		}
+
+		for (StatItemPanel panel : activePanels)
+		{
+			panel.updateTimeDisplay();
 		}
 	}
 

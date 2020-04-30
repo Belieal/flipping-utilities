@@ -43,7 +43,7 @@ public interface FlippingConfig extends Config
 
 	@ConfigItem(
 		keyName = "storeTradeHistory",
-		name = "Store session trade history locally",
+		name = "Store session trade history",
 		description = "Store your trade history to have your previous trade data show up on new game sessions"
 	)
 	default boolean storeTradeHistory()
@@ -96,7 +96,7 @@ public interface FlippingConfig extends Config
 	@ConfigItem(
 		keyName = "remainingGELimitProfit",
 		name = "Calculate potential profit from remaining GE limit",
-		description = "If unchecked, the potential profit will be calculated from total GE limit."
+		description = "If unchecked, the potential profit will be calculated from total GE limit"
 	)
 	default boolean geLimitProfit()
 	{

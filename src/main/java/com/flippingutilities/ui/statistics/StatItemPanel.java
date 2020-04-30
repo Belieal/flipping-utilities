@@ -50,7 +50,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -381,7 +380,7 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
 		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
 
-		SwingUtilities.invokeLater(this::rebuildTradeHistory);
+		rebuildTradeHistory();
 
 		add(titlePanel, BorderLayout.NORTH);
 		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
@@ -449,13 +448,9 @@ public class StatItemPanel extends JPanel
 			return;
 		}
 
-		for (StatItemHistoryPanel panel : activePanels)
-		{
-			panel.updateTime();
-		}
-
 		updateTitleDisplay();
 		updateItemSubInfosDisplay();
+		updateTimeDisplay();
 	}
 
 	/* Total profit and name label */
@@ -487,17 +482,25 @@ public class StatItemPanel extends JPanel
 		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalExpense / itemCountFlipped)) + " gp");
 		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalRevenue / itemCountFlipped)) + " gp");
 
+		float roi = (float) totalProfit / totalExpense * 100;
+
+		roiValLabel.setText(String.format("%.2f", roi) + "%");
+		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+	}
+
+	public void updateTimeDisplay()
+	{
 		if (!tradeHistory.isEmpty())
 		{
 			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
 			timeOfLastFlipValLabel.setText(UIUtilities.formatDuration(lastRecordedTrade.getTime()) + " ago");
 			timeOfLastFlipValLabel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
+
+			for (StatItemHistoryPanel panel : activePanels)
+			{
+				panel.updateTime();
+			}
 		}
-
-		float roi = (float) totalProfit / totalExpense * 100;
-
-		roiValLabel.setText(String.format("%.2f", roi) + "%");
-		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
 	}
 
 	private void deletePanel()

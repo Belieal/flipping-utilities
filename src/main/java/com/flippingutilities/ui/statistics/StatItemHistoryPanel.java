@@ -32,7 +32,6 @@ import java.awt.BorderLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -117,18 +116,15 @@ public class StatItemHistoryPanel extends JPanel
 
 	public void updateTime()
 	{
-		SwingUtilities.invokeLater(() ->
+		if (flip.isMarginCheck())
 		{
-			if (flip.isMarginCheck())
-			{
-				timeSince.setText("Margin Checked (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
-			}
-			else
-			{
-				timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
-					+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
-			}
-		});
+			timeSince.setText("Margin Checked (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+		}
+		else
+		{
+			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
+				+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+		}
 	}
 
 }
