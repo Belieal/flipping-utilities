@@ -195,10 +195,12 @@ public class FlippingPlugin extends Plugin
 
 					flippingPanel.rebuild(tradesList);
 					String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-					if (lastSelectedInterval == null) {
+					if (lastSelectedInterval == null)
+					{
 						statPanel.setTimeInterval("All", true);
 					}
-					else {
+					else
+					{
 						statPanel.setTimeInterval(lastSelectedInterval, true);
 					}
 
@@ -229,11 +231,7 @@ public class FlippingPlugin extends Plugin
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		log.info("Shutting down, saving trades!");
-
-		Future<Void> storeTradeTaskStatus = storeTrades(tradesList);
-
-		clientShutdownEvent.waitFor(storeTradeTaskStatus);
-
+		storeTrades(tradesList);
 	}
 
 	@Subscribe
@@ -521,23 +519,17 @@ public class FlippingPlugin extends Plugin
 	 * @param trades user's trade list
 	 * @return a future that can be queried to figure out whether the task has been completed.
 	 */
-	public Future<Void> storeTrades(List<FlippingItem> trades)
+	public void storeTrades(List<FlippingItem> trades)
 	{
-		Future<Void> tradeStoringTask = executor.submit(() -> {
-			try
-			{
-				tradePersister.storeTrades(trades);
-				log.info("successfully stored trades");
-			}
-			catch (IOException e)
-			{
-				log.info("couldn't store trades, error = " + e);
-			}
-			;
-			return null;
-		});
-
-		return tradeStoringTask;
+		try
+		{
+			tradePersister.storeTrades(trades);
+			log.info("successfully stored trades");
+		}
+		catch (IOException e)
+		{
+			log.info("couldn't store trades, error = " + e);
+		}
 	}
 
 	public List<FlippingItem> loadTrades()
