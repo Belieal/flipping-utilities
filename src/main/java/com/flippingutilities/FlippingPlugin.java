@@ -230,11 +230,7 @@ public class FlippingPlugin extends Plugin
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		log.info("Shutting down, saving trades!");
-
-		Future<Void> storeTradeTaskStatus = storeTrades(tradesList);
-
-		clientShutdownEvent.waitFor(storeTradeTaskStatus);
-
+		storeTrades(tradesList);
 	}
 
 	@Subscribe
@@ -322,9 +318,6 @@ public class FlippingPlugin extends Plugin
 		}
 
 		System.out.println(newOffer.toString());
-		System.out.println(newOffer.getState() == GrandExchangeOfferState.BOUGHT
-			|| newOffer.getState() == GrandExchangeOfferState.SOLD
-			? "\n" + itemManager.getItemComposition(newOffer.getItemId()).getName() + " " + newOffer.getState() + "\n" : "");
 
 		Optional<FlippingItem> flippingItem = findItemInTradesList(newOffer.getItemId());
 
