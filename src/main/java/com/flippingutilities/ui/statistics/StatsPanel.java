@@ -189,10 +189,10 @@ public class StatsPanel extends JPanel
 		this.plugin = plugin;
 		this.itemManager = itemManager;
 
-		setLayout(new BorderLayout());
-
 		//Record start of session time.
 		sessionTime = Instant.now();
+
+		setLayout(new BorderLayout());
 
 		//Constraints for statItems later on.
 		constraints.fill = GridBagConstraints.HORIZONTAL;
@@ -213,6 +213,7 @@ public class StatsPanel extends JPanel
 		timeIntervalList.setFocusable(false);
 		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		timeIntervalList.addActionListener(comboboxListener);
+		timeIntervalList.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
 		final JLabel resetIcon = new JLabel(RESET_ICON);
@@ -243,13 +244,13 @@ public class StatsPanel extends JPanel
 			}
 		});
 
-		//Adds option completely reset the trade history.
+		//Adds option to completely reset the trade history.
 		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
 		clearMenuOption.addActionListener(e ->
 		{
-			plugin.getTradesForCurrentView().clear();
 			resetPanel();
 			plugin.getFlippingPanel().resetPanel();
+			rebuild(plugin.getTradesForCurrentView());
 		});
 
 		final JPopupMenu popupMenu = new JPopupMenu();

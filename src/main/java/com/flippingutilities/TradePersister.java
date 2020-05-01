@@ -68,15 +68,15 @@ public class TradePersister
 	 * @return all of user's accounts' trades.
 	 * @throws IOException handled in flipping plugin
 	 */
-	public Map<String,List<FlippingItem>> loadTrades() throws IOException
+	public Map<String, List<FlippingItem>> loadTrades() throws IOException
 	{
 		String tradesJson = new String(Files.readAllBytes(TRADE_DATA_FILE.toPath()));
 
 		final Gson gson = new Gson();
-		Type type = new TypeToken<Map<String,ArrayList<FlippingItem>>>()
+		Type type = new TypeToken<Map<String, ArrayList<FlippingItem>>>()
 		{
 		}.getType();
-		Map<String,List<FlippingItem>> trades = gson.fromJson(tradesJson, type);
+		Map<String, List<FlippingItem>> trades = gson.fromJson(tradesJson, type);
 
 		return trades == null ? new HashMap<>() : trades;
 	}
@@ -87,7 +87,7 @@ public class TradePersister
 	 * @param tradesCache all of user's accounts' trades.
 	 * @throws IOException handled in flipping plugin
 	 */
-	public void storeTrades(Map<String,List<FlippingItem>> tradesCache) throws IOException
+	public void storeTrades(Map<String, List<FlippingItem>> tradesCache) throws IOException
 	{
 		final Gson gson = new Gson();
 		final String json = gson.toJson(tradesCache);

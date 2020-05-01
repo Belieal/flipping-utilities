@@ -94,7 +94,7 @@ public class FlippingPlugin extends Plugin
 	public static final String CONFIG_GROUP = "flipping";
 	public static final String ITEMS_CONFIG_KEY = "items";
 	public static final String TIME_INTERVAL_CONFIG_KEY = "selectedinterval";
-	public static final String ACCOUNT_WIDE = "accountWide";
+	public static final String ACCOUNT_WIDE = "Accountwide";
 
 	@Inject
 	private Client client;
@@ -189,7 +189,7 @@ public class FlippingPlugin extends Plugin
 				}
 				catch (IOException e)
 				{
-					log.info("couldn't set up trade persistor, error message = " + e);
+					log.info("couldn't set up trade persistor: " + e);
 					tradeCache = new HashMap<>();
 				}
 
@@ -203,7 +203,8 @@ public class FlippingPlugin extends Plugin
 			//and flipping panel to rebuild.
 			tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
 
-			tradeCache.keySet().forEach(displayName -> {
+			tradeCache.keySet().forEach(displayName ->
+			{
 				if (!displayName.equals(ACCOUNT_WIDE))
 				{
 					tabManager.getViewSelector().addItem(displayName);
@@ -288,10 +289,7 @@ public class FlippingPlugin extends Plugin
 				}
 				log.info("{} just logged in", name);
 				previouslyLoggedIn = true;
-				if (config.multiAccTracking())
-				{
-					handleLogin(name);
-				}
+				handleLogin(name);
 
 				return true;
 			});

@@ -30,10 +30,7 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import java.awt.BorderLayout;
 import java.awt.event.ItemEvent;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
@@ -71,14 +68,19 @@ public class TabManager extends PluginPanel
 		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelector.setRenderer(new ComboBoxListRenderer());
 		viewSelector.setToolTipText("select which of your account's trades list you want to view");
-		viewSelector.addItemListener(event -> {
-			if (event.getStateChange() == ItemEvent.SELECTED) {
+		viewSelector.addItemListener(event ->
+		{
+			if (event.getStateChange() == ItemEvent.SELECTED)
+			{
 
 				String selectedDisplayName = (String) event.getItem();
 
-				if (selectedDisplayName == null) {
+				if (selectedDisplayName == null)
+				{
 					return;
-				} else {
+				}
+				else
+				{
 					viewChangerMethod.accept(selectedDisplayName);
 				}
 			}

@@ -66,7 +66,6 @@ import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
 
 
-
 @Slf4j
 public class FlippingPanel extends JPanel
 {
@@ -192,10 +191,9 @@ public class FlippingPanel extends JPanel
 		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
 		clearMenuOption.addActionListener(e ->
 		{
-
-			plugin.getTradesForCurrentView().clear();
 			resetPanel();
 			plugin.getStatPanel().resetPanel();
+			rebuild(plugin.getTradesForCurrentView());
 		});
 
 		final JPopupMenu popupMenu = new JPopupMenu();
@@ -286,7 +284,8 @@ public class FlippingPanel extends JPanel
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
-		SwingUtilities.invokeLater(() -> {
+		SwingUtilities.invokeLater(() ->
+		{
 			initializeFlippingPanel(flippingItems);
 			revalidate();
 			repaint();
