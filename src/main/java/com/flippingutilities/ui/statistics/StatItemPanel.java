@@ -206,7 +206,7 @@ public class StatItemPanel extends JPanel
 			public void mousePressed(MouseEvent e)
 			{
 				deletePanel();
-				statsPanel.rebuild(plugin.getTradesList());
+				statsPanel.rebuild(plugin.getTradesForCurrentView());
 			}
 
 			@Override

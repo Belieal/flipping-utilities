@@ -170,7 +170,7 @@ public class FlippingPanel extends JPanel
 				{
 					resetPanel();
 					cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
-					rebuild(plugin.getTradesList());
+					rebuild(plugin.getTradesForCurrentView());
 				}
 			}
 
@@ -191,7 +191,7 @@ public class FlippingPanel extends JPanel
 		clearMenuOption.addActionListener(e ->
 		{
 
-			plugin.getTradesList().clear();
+			plugin.getTradesForCurrentView().clear();
 			resetPanel();
 			plugin.getStatPanel().resetPanel();
 		});
@@ -254,7 +254,7 @@ public class FlippingPanel extends JPanel
 						if (e.getButton() == MouseEvent.BUTTON1)
 						{
 							deleteItemPanel(newPanel);
-							rebuild(plugin.getTradesList());
+							rebuild(plugin.getTradesForCurrentView());
 						}
 					}
 				});
@@ -323,7 +323,7 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		rebuild(plugin.getTradesList());
+		rebuild(plugin.getTradesForCurrentView());
 		itemHighlighted = false;
 		plugin.setPrevHighlight(0);
 	}
@@ -331,12 +331,13 @@ public class FlippingPanel extends JPanel
 	public ArrayList<FlippingItem> findItemPanel(int itemId)
 	{
 		//We only expect one item.
-		return plugin.getTradesList().stream()
+		return plugin.getTradesForCurrentView().stream()
 			.filter(item -> item.getItemId() == itemId && item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
 			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	//Updates tooltips on prices to show how long ago the latest margin check was.
+
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
 	 * This method is called in FlippingPLugin every second by the scheduler.
@@ -351,8 +352,13 @@ public class FlippingPanel extends JPanel
 
 	/**
 	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is invoked
-	 * in the FlippingPlugin in two places: Everytime an offer comes in (in onGrandExchangeOfferChanged) and
-	 * in a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
+	 * in the FlippingPlugin in two places:
+	 *
+	 * 1. Everytime an offer comes in (in onGrandExchangeOfferChanged) and the user
+	 *    is currently looking at either the account wide trade list or trades list of the account currently
+	 *    logged in
+	 *
+	 * 2. In a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
 	 */
 	public void updateActivePanelsGePropertiesDisplay()
 	{
@@ -398,12 +404,12 @@ public class FlippingPanel extends JPanel
 		//When the clear button is pressed, this is run.
 		if (Strings.isNullOrEmpty(lookup))
 		{
-			rebuild(plugin.getTradesList());
+			rebuild(plugin.getTradesForCurrentView());
 			return;
 		}
 
 		ArrayList<FlippingItem> result = new ArrayList<>();
-		for (FlippingItem item : plugin.getTradesList())
+		for (FlippingItem item : plugin.getTradesForCurrentView())
 		{
 			//Contains makes it a little more forgiving when searching.
 			if (item.getItemName().toLowerCase().contains(lookup))
@@ -416,7 +422,7 @@ public class FlippingPanel extends JPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBar.setEditable(true);
-			rebuild(plugin.getTradesList());
+			rebuild(plugin.getTradesForCurrentView());
 			return;
 		}
 

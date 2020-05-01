@@ -226,7 +226,7 @@ public class StatsPanel extends JPanel
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
 					resetPanel();
-					rebuild(plugin.getTradesList());
+					rebuild(plugin.getTradesForCurrentView());
 				}
 			}
 
@@ -247,7 +247,7 @@ public class StatsPanel extends JPanel
 		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
 		clearMenuOption.addActionListener(e ->
 		{
-			plugin.getTradesList().clear();
+			plugin.getTradesForCurrentView().clear();
 			resetPanel();
 			plugin.getFlippingPanel().resetPanel();
 		});
@@ -395,7 +395,7 @@ public class StatsPanel extends JPanel
 				return;
 			}
 
-			rebuild(plugin.getTradesList());
+			rebuild(plugin.getTradesForCurrentView());
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -504,7 +504,7 @@ public class StatsPanel extends JPanel
 		totalQuantity = 0;
 		totalFlips = 0;
 
-		List<FlippingItem> tradesList = plugin.getTradesList();
+		List<FlippingItem> tradesList = plugin.getTradesForCurrentView();
 
 		for (FlippingItem item : tradesList)
 		{
@@ -547,11 +547,11 @@ public class StatsPanel extends JPanel
 
 	/**
 	 * Responsible for updating the total profit label at the very top.
-	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesList()}.
+	 * Sets the new total profit value from the items in tradesList from {@link FlippingPlugin#getTradesForCurrentView()}.
 	 */
 	private void updateTotalProfitDisplay()
 	{
-		if (plugin.getTradesList() == null)
+		if (plugin.getTradesForCurrentView() == null)
 		{
 			totalProfitVal.setText("0");
 			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -764,7 +764,7 @@ public class StatsPanel extends JPanel
 
 		if (!isStartUp)
 		{
-			rebuild(plugin.getTradesList());
+			rebuild(plugin.getTradesForCurrentView());
 		}
 	}
 

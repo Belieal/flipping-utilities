@@ -4,11 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 
@@ -60,35 +61,36 @@ public class TradePersister
 	}
 
 	/**
-	 * Loads the json as a byte array, converts it into a string, then converts it into flipping
-	 * items. If there is no previous trades stores, it just returns an empty arraylist.
+	 * Loads the json as a byte array, converts it into a string, then converts it into hashmap
+	 * that associated a display name to an arraylist of flipping items. If there is no previous trades
+	 * stored, it just returns an empty hashmap.
 	 *
-	 * @return the user's previous trades
-	 * @throws IOException to be handled in flipping plugin
+	 * @return all of user's accounts' trades.
+	 * @throws IOException handled in flipping plugin
 	 */
-	public List<FlippingItem> loadTrades() throws IOException
+	public Map<String,List<FlippingItem>> loadTrades() throws IOException
 	{
 		String tradesJson = new String(Files.readAllBytes(TRADE_DATA_FILE.toPath()));
 
 		final Gson gson = new Gson();
-		Type type = new TypeToken<ArrayList<FlippingItem>>()
+		Type type = new TypeToken<Map<String,ArrayList<FlippingItem>>>()
 		{
 		}.getType();
-		List<FlippingItem> trades = gson.fromJson(tradesJson, type);
+		Map<String,List<FlippingItem>> trades = gson.fromJson(tradesJson, type);
 
-		return trades == null ? new ArrayList<>() : trades;
+		return trades == null ? new HashMap<>() : trades;
 	}
 
 	/**
 	 * Stores the user's trades in a file located at {user's home directory}/.runelite/flipping/trades.json
 	 *
-	 * @param trades the user's trades
-	 * @throws IOException to be handled in flipping plugin
+	 * @param tradesCache all of user's accounts' trades.
+	 * @throws IOException handled in flipping plugin
 	 */
-	public void storeTrades(List<FlippingItem> trades) throws IOException
+	public void storeTrades(Map<String,List<FlippingItem>> tradesCache) throws IOException
 	{
 		final Gson gson = new Gson();
-		final String json = gson.toJson(trades);
+		final String json = gson.toJson(tradesCache);
 		TRADE_DATA_FILE.delete();
 		TRADE_DATA_FILE.createNewFile();
 		Files.write(TRADE_DATA_FILE.toPath(), json.getBytes());
