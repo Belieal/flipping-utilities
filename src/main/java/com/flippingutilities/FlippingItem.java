@@ -101,11 +101,16 @@ public class FlippingItem
 	@SerializedName("h")
 	private HistoryManager history = new HistoryManager();
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit)
+	@SerializedName("fB")
+	@Getter
+	private String flippedBy;
+
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
 		this.itemId = itemId;
 		this.itemName = itemName;
 		this.totalGELimit = totalGeLimit;
+		this.flippedBy = flippedBy;
 	}
 
 	/**

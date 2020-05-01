@@ -44,7 +44,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -78,7 +77,6 @@ public class StatItemPanel extends JPanel
 		BorderFactory.createEmptyBorder(3, 5, 3, 5));
 
 	private FlippingPlugin plugin;
-	private ScheduledExecutorService executor;
 	@Getter
 	private FlippingItem flippingItem;
 
@@ -206,7 +204,7 @@ public class StatItemPanel extends JPanel
 			public void mousePressed(MouseEvent e)
 			{
 				deletePanel();
-				statsPanel.rebuild(plugin.getTradesList());
+				statsPanel.rebuild(plugin.getTradesForCurrentView());
 			}
 
 			@Override

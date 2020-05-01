@@ -273,6 +273,7 @@ public class FlippingItemPanel extends JPanel
 		updateGePropertiesDisplay();
 		updatePriceOutdatedDisplay();
 
+		setToolTipText("flipped by " + flippingItem.getFlippedBy());
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 	}
