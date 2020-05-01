@@ -29,6 +29,7 @@ package com.flippingutilities.ui;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import java.awt.BorderLayout;
+import java.awt.event.ItemEvent;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -48,8 +49,6 @@ public class TabManager extends PluginPanel
 {
 	@Getter
 	private JComboBox<String> viewSelector = new JComboBox();
-
-	private String prevSelectedUsername;
 
 	/**
 	 * This manages the tab navigation bar at the top of the panel.
@@ -72,19 +71,16 @@ public class TabManager extends PluginPanel
 		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelector.setRenderer(new ComboBoxListRenderer());
 		viewSelector.setToolTipText("select which of your account's trades list you want to view");
-		viewSelector.addActionListener(event ->
-		{
-			String selectedUsername = (String) viewSelector.getSelectedItem();
+		viewSelector.addItemListener(event -> {
+			if (event.getStateChange() == ItemEvent.SELECTED) {
 
-			if (selectedUsername == null)
-			{
-				return;
-			}
+				String selectedDisplayName = (String) event.getItem();
 
-			if (!selectedUsername.equals(prevSelectedUsername) || prevSelectedUsername == null)
-			{
-				prevSelectedUsername = selectedUsername;
-				viewChangerMethod.accept(selectedUsername);
+				if (selectedDisplayName == null) {
+					return;
+				} else {
+					viewChangerMethod.accept(selectedDisplayName);
+				}
 			}
 		});
 

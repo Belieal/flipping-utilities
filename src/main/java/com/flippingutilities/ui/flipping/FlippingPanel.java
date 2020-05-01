@@ -65,6 +65,8 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
 
+
+
 @Slf4j
 public class FlippingPanel extends JPanel
 {
@@ -232,65 +234,63 @@ public class FlippingPanel extends JPanel
 		//Reset active panel list.
 		activePanels.clear();
 
-		SwingUtilities.invokeLater(() ->
+
+		cardLayout.show(centerPanel, ITEMS_PANEL);
+
+		int index = 0;
+		for (FlippingItem item : flippingItems)
 		{
-			cardLayout.show(centerPanel, ITEMS_PANEL);
-
-			int index = 0;
-			for (FlippingItem item : flippingItems)
+			if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
 			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
-				{
-					continue;
-				}
+				continue;
+			}
 
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
+			FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
 
-				newPanel.clearButton.addMouseListener(new MouseAdapter()
+			newPanel.clearButton.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mouseClicked(MouseEvent e)
 				{
-					@Override
-					public void mouseClicked(MouseEvent e)
+					if (e.getButton() == MouseEvent.BUTTON1)
 					{
-						if (e.getButton() == MouseEvent.BUTTON1)
-						{
-							deleteItemPanel(newPanel);
-							rebuild(plugin.getTradesForCurrentView());
-						}
+						deleteItemPanel(newPanel);
+						rebuild(plugin.getTradesForCurrentView());
 					}
-				});
-
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					flippingItemsPanel.add(marginWrapper, constraints);
 				}
-				else
-				{
-					flippingItemsPanel.add(newPanel, constraints);
-				}
-				constraints.gridy++;
-				activePanels.add(newPanel);
-			}
+			});
 
-			if (activePanels.isEmpty())
+			if (index++ > 0)
 			{
-				cardLayout.show(centerPanel, WELCOME_PANEL);
+				JPanel marginWrapper = new JPanel(new BorderLayout());
+				marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+				marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
+				marginWrapper.add(newPanel, BorderLayout.NORTH);
+				flippingItemsPanel.add(marginWrapper, constraints);
 			}
-		});
+			else
+			{
+				flippingItemsPanel.add(newPanel, constraints);
+			}
+			constraints.gridy++;
+			activePanels.add(newPanel);
+		}
+
+		if (activePanels.isEmpty())
+		{
+			cardLayout.show(centerPanel, WELCOME_PANEL);
+		}
 
 	}
 
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
-
-		initializeFlippingPanel(flippingItems);
-
-		revalidate();
-		repaint();
+		SwingUtilities.invokeLater(() -> {
+			initializeFlippingPanel(flippingItems);
+			revalidate();
+			repaint();
+		});
 	}
 
 	@Getter
@@ -353,11 +353,11 @@ public class FlippingPanel extends JPanel
 	/**
 	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is invoked
 	 * in the FlippingPlugin in two places:
-	 *
+	 * <p>
 	 * 1. Everytime an offer comes in (in onGrandExchangeOfferChanged) and the user
-	 *    is currently looking at either the account wide trade list or trades list of the account currently
-	 *    logged in
-	 *
+	 * is currently looking at either the account wide trade list or trades list of the account currently
+	 * logged in
+	 * <p>
 	 * 2. In a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
 	 */
 	public void updateActivePanelsGePropertiesDisplay()

@@ -193,33 +193,36 @@ public class FlippingPlugin extends Plugin
 					tradeCache = new HashMap<>();
 				}
 
-				if (!tradeCache.containsKey(ACCOUNT_WIDE)) {
+				if (!tradeCache.containsKey(ACCOUNT_WIDE))
+				{
 					tradeCache.put(ACCOUNT_WIDE, new ArrayList<>());
 				}
 			}
 
-			executor.submit(() -> clientThread.invokeLater(() ->
-			{
-				if (tradeCache != null)
+			//adding an item causes the event listener (changeView) to fire which causes stat panel
+			//and flipping panel to rebuild.
+			tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+
+			tradeCache.keySet().forEach(displayName -> {
+				if (!displayName.equals(ACCOUNT_WIDE))
 				{
-					//it may have been four hours since the first time the user bought the item, so
-					//it might be displaying old values, so this is a way to clear them on start up.
-					tradeCache.keySet().forEach(displayName -> tabManager.getViewSelector().addItem(displayName));
-
-					flippingPanel.rebuild(getTradesForCurrentView());
-					String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-					if (lastSelectedInterval == null)
-					{
-						statPanel.setTimeInterval("All", true);
-					}
-					else
-					{
-						statPanel.setTimeInterval(lastSelectedInterval, true);
-					}
-
-					statPanel.rebuild(getTradesForCurrentView());
+					tabManager.getViewSelector().addItem(displayName);
 				}
-			}));
+			});
+
+			//sets the account selector dropdown to visible or not depending on whether the config option has been selected.
+			tabManager.getViewSelector().setVisible(config.multiAccTracking());
+
+			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
+			if (lastSelectedInterval == null)
+			{
+				statPanel.setTimeInterval("All", true);
+			}
+			else
+			{
+				statPanel.setTimeInterval(lastSelectedInterval, true);
+			}
+
 			return true;
 		});
 
@@ -312,6 +315,8 @@ public class FlippingPlugin extends Plugin
 
 		currentlyLoggedInAccount = displayName;
 		accountCurrentlyViewed = displayName;
+		//this will cause changeView to be invoked which will cause a rebuild of
+		//flipping and stats panel
 		tabManager.getViewSelector().setSelectedItem(displayName);
 
 	}
@@ -336,25 +341,21 @@ public class FlippingPlugin extends Plugin
 		final AccountSession session = sessionManager.getAccountSession();
 		if (session != null && session.getUsername() != null)
 		{
-			clientThread.invokeLater(() ->
-			{
-				tradeCache = loadTrades();
-				flippingPanel.rebuild(getTradesForCurrentView());
-				return true;
-			});
+
+			//tradeCache = loadTrades();
+			//flippingPanel.rebuild(getTradesForCurrentView());
+
+
 		}
 	}
 
 	@Subscribe
 	public void onSessionClose(SessionClose event)
 	{
-		//Config is now only stored locally
-		clientThread.invokeLater(() ->
-		{
-			tradeCache = loadTrades();
-			flippingPanel.rebuild(getTradesForCurrentView());
-			return true;
-		});
+
+		//tradeCache = loadTrades();
+		//flippingPanel.rebuild(getTradesForCurrentView());
+
 	}
 
 	/**
@@ -395,8 +396,8 @@ public class FlippingPlugin extends Plugin
 			accountWideTrades,
 			(item) -> item.getItemId() == newOffer.getItemId() && item.getFlippedBy().equals(currentlyLoggedInAccount));
 
-		updateTradesList(accountWideTrades, accountWideItem, newOffer);
-		updateTradesList(currentlyLoggedInAccountsTrades, accountSpecificItem, newOffer);
+		updateTradesList(accountWideTrades, accountWideItem, newOffer.clone());
+		updateTradesList(currentlyLoggedInAccountsTrades, accountSpecificItem, newOffer.clone());
 
 		//only way items can float to the top of the list (hence requiring a rebuild) is when
 		//the offer is a margin check. Additionally, there is no point rebuilding the panel when
@@ -410,7 +411,11 @@ public class FlippingPlugin extends Plugin
 		if (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE))
 		{
 			statPanel.rebuild(getTradesForCurrentView());
-			flippingPanel.updateActivePanelsGePropertiesDisplay();
+			if (!newOffer.isMarginCheck())
+			{
+				flippingPanel.updateActivePanelsGePropertiesDisplay();
+			}
+
 		}
 	}
 
@@ -709,7 +714,8 @@ public class FlippingPlugin extends Plugin
 				return;
 			}
 
-			if (event.getKey().equals("multiAccTracking")) {
+			if (event.getKey().equals("multiAccTracking"))
+			{
 				if (config.multiAccTracking())
 				{
 					tabManager.getViewSelector().setVisible(true);
