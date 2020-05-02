@@ -62,15 +62,12 @@ import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.events.SessionClose;
-import net.runelite.client.events.SessionOpen;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -330,30 +327,6 @@ public class FlippingPlugin extends Plugin
 		}
 
 		clientToolbar.removeNavigation(navButton);
-	}
-
-	@Subscribe
-	public void onSessionOpen(SessionOpen event)
-	{
-		//Load new account config
-		final AccountSession session = sessionManager.getAccountSession();
-		if (session != null && session.getUsername() != null)
-		{
-
-			//tradeCache = loadTrades();
-			//flippingPanel.rebuild(getTradesForCurrentView());
-
-
-		}
-	}
-
-	@Subscribe
-	public void onSessionClose(SessionClose event)
-	{
-
-		//tradeCache = loadTrades();
-		//flippingPanel.rebuild(getTradesForCurrentView());
-
 	}
 
 	/**
