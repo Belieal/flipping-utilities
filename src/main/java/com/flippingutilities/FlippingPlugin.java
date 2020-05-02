@@ -440,7 +440,7 @@ public class FlippingPlugin extends Plugin
 		//they switch to runelite/get the plugin, there will be no last offer for the slot.
 		if (lastOfferForSlot == null) {
 			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
-			return true;
+			return false;
 		}
 
 		//if its a duplicate as the last seen event
