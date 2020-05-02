@@ -291,6 +291,7 @@ public class FlippingPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
 			log.info("{} just logged out", currentlyLoggedInAccount);
+			currentlyLoggedInAccount = null;
 			storeTrades(allAccountsData);
 		}
 	}
@@ -402,16 +403,20 @@ public class FlippingPlugin extends Plugin
 	 */
 	private boolean isBadOffer(OfferInfo newOffer)
 	{
-		Map<Integer, OfferInfo> loggedInAccsLastOffers = allAccountsData.get(currentlyLoggedInAccount).getLastOffers();
 
 		//i am mutating offers and they are being passed around, so i'm cloning to avoid passing the same reference around.
 		OfferInfo clonedNewOffer = newOffer.clone();
 
-		//Check empty offers.
+		//Check empty offers (we always get them for every empty slot there is)
 		if (clonedNewOffer.getItemId() == 0 || clonedNewOffer.getState() == GrandExchangeOfferState.EMPTY)
 		{
 			return true;
 		}
+
+		//empty offers (handled right above) come before currentlyLoggedInAccount is set which is why this is put after
+		//the empty offer check and empty offers should always be rejected anyway.
+		Map<Integer, OfferInfo> loggedInAccsLastOffers = allAccountsData.get(currentlyLoggedInAccount).getLastOffers();
+
 
 		//this is always the start of any offer (when you first put in an offer)
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
@@ -429,6 +434,14 @@ public class FlippingPlugin extends Plugin
 		}
 
 		OfferInfo lastOfferForSlot = loggedInAccsLastOffers.get(clonedNewOffer.getSlot());
+
+		//this occurs when the user made the trade on a different client (not runelite) or doesn't have
+		//the plugin. In both cases, when the offer was made no history for the slot was recorded, so when
+		//they switch to runelite/get the plugin, there will be no last offer for the slot.
+		if (lastOfferForSlot == null) {
+			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+			return true;
+		}
 
 		//if its a duplicate as the last seen event
 		if (lastOfferForSlot.equals(clonedNewOffer))
