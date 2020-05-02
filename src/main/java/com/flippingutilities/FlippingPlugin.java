@@ -34,7 +34,6 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,9 +126,6 @@ public class FlippingPlugin extends Plugin
 
 	private TabManager tabManager;
 
-	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
-	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
-
 	private boolean previouslyLoggedIn;
 
 	//used to load and store trades from a file on disk.
@@ -138,7 +134,7 @@ public class FlippingPlugin extends Plugin
 	//holds all the trades each of the user's accounts that has a flipping history. This is a map
 	//of display name to flipping items.
 	@Getter
-	private Map<String, List<FlippingItem>> tradeCache = new HashMap<>();
+	private Map<String, AccountData> allAccountsData = new HashMap<>();
 
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
@@ -182,17 +178,17 @@ public class FlippingPlugin extends Plugin
 				try
 				{
 					tradePersister.setup();
-					tradeCache = loadTrades();
+					allAccountsData = loadTrades();
 				}
 				catch (IOException e)
 				{
 					log.info("couldn't set up trade persistor: " + e);
-					tradeCache = new HashMap<>();
+					allAccountsData = new HashMap<>();
 				}
 
-				if (!tradeCache.containsKey(ACCOUNT_WIDE))
+				if (!allAccountsData.containsKey(ACCOUNT_WIDE))
 				{
-					tradeCache.put(ACCOUNT_WIDE, new ArrayList<>());
+					allAccountsData.put(ACCOUNT_WIDE, new AccountData());
 				}
 			}
 
@@ -200,7 +196,7 @@ public class FlippingPlugin extends Plugin
 			//and flipping panel to rebuild.
 			tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
 
-			tradeCache.keySet().forEach(displayName ->
+			allAccountsData.keySet().forEach(displayName ->
 			{
 				if (!displayName.equals(ACCOUNT_WIDE))
 				{
@@ -246,7 +242,7 @@ public class FlippingPlugin extends Plugin
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		log.info("Shutting down, saving trades!");
-		storeTrades(tradeCache);
+		storeTrades(allAccountsData);
 	}
 
 	@Subscribe
@@ -295,16 +291,16 @@ public class FlippingPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
 			log.info("{} just logged out", currentlyLoggedInAccount);
-			storeTrades(tradeCache);
+			storeTrades(allAccountsData);
 		}
 	}
 
 	public void handleLogin(String displayName)
 	{
 		//if the account has no trade history, add its name to the cache and give it a blank history.
-		if (!tradeCache.containsKey(displayName))
+		if (!allAccountsData.containsKey(displayName))
 		{
-			tradeCache.put(displayName, new ArrayList<>());
+			allAccountsData.put(displayName, new AccountData());
 			tabManager.getViewSelector().addItem(displayName);
 		}
 
@@ -360,8 +356,8 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		List<FlippingItem> currentlyLoggedInAccountsTrades = tradeCache.get(currentlyLoggedInAccount);
-		List<FlippingItem> accountWideTrades = tradeCache.get(ACCOUNT_WIDE);
+		List<FlippingItem> currentlyLoggedInAccountsTrades = allAccountsData.get(currentlyLoggedInAccount).getTrades();
+		List<FlippingItem> accountWideTrades = allAccountsData.get(ACCOUNT_WIDE).getTrades();
 
 		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
 			currentlyLoggedInAccountsTrades,
@@ -380,7 +376,7 @@ public class FlippingPlugin extends Plugin
 		//trades list won't be being updated.
 		if (newOffer.isMarginCheck() && (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
-			flippingPanel.rebuild(tradeCache.get(accountCurrentlyViewed));
+			flippingPanel.rebuild(allAccountsData.get(accountCurrentlyViewed).getTrades());
 		}
 
 		if (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE))
@@ -406,6 +402,8 @@ public class FlippingPlugin extends Plugin
 	 */
 	private boolean isBadOffer(OfferInfo newOffer)
 	{
+		Map<Integer, OfferInfo> loggedInAccsLastOffers = allAccountsData.get(currentlyLoggedInAccount).getLastOffers();
+
 		//i am mutating offers and they are being passed around, so i'm cloning to avoid passing the same reference around.
 		OfferInfo clonedNewOffer = newOffer.clone();
 
@@ -418,7 +416,7 @@ public class FlippingPlugin extends Plugin
 		//this is always the start of any offer (when you first put in an offer)
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
-			lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
+			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
 			return true;
 		}
 
@@ -430,7 +428,7 @@ public class FlippingPlugin extends Plugin
 			return true;
 		}
 
-		OfferInfo lastOfferForSlot = lastOffers.get(clonedNewOffer.getSlot());
+		OfferInfo lastOfferForSlot = loggedInAccsLastOffers.get(clonedNewOffer.getSlot());
 
 		//if its a duplicate as the last seen event
 		if (lastOfferForSlot.equals(clonedNewOffer))
@@ -440,7 +438,7 @@ public class FlippingPlugin extends Plugin
 
 		int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
 		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
-		lastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		return false; //not a bad event
 
@@ -566,7 +564,7 @@ public class FlippingPlugin extends Plugin
 	 */
 	public List<FlippingItem> getTradesForCurrentView()
 	{
-		return tradeCache.get(accountCurrentlyViewed);
+		return allAccountsData.get(accountCurrentlyViewed).getTrades();
 	}
 
 	@Provides
@@ -618,7 +616,7 @@ public class FlippingPlugin extends Plugin
 		flippingPanel.highlightItem(currentGEItemId);
 	}
 
-	public void storeTrades(Map<String, List<FlippingItem>> trades)
+	public void storeTrades(Map<String, AccountData> trades)
 	{
 		try
 		{
@@ -631,11 +629,11 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public Map<String, List<FlippingItem>> loadTrades()
+	public Map<String, AccountData> loadTrades()
 	{
 		try
 		{
-			Map<String, List<FlippingItem>> trades = tradePersister.loadTrades();
+			Map<String, AccountData> trades = tradePersister.loadTrades();
 			log.info("successfully loaded trades");
 			return trades;
 		}
@@ -672,7 +670,7 @@ public class FlippingPlugin extends Plugin
 	public void changeView(String selectedUsername)
 	{
 		log.info("changing view to {}", selectedUsername);
-		List<FlippingItem> tradesListToDisplay = tradeCache.get(selectedUsername);
+		List<FlippingItem> tradesListToDisplay = allAccountsData.get(selectedUsername).getTrades();
 		accountCurrentlyViewed = selectedUsername;
 		statPanel.rebuild(tradesListToDisplay);
 		flippingPanel.rebuild(tradesListToDisplay);
