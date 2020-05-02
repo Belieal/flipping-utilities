@@ -309,10 +309,14 @@ public class FlippingPlugin extends Plugin
 		}
 
 		currentlyLoggedInAccount = displayName;
-		accountCurrentlyViewed = displayName;
-		//this will cause changeView to be invoked which will cause a rebuild of
-		//flipping and stats panel
-		tabManager.getViewSelector().setSelectedItem(displayName);
+
+		if (config.multiAccTracking()) {
+			accountCurrentlyViewed = displayName;
+			//this will cause changeView to be invoked which will cause a rebuild of
+			//flipping and stats panel
+			tabManager.getViewSelector().setSelectedItem(displayName);
+		}
+
 
 	}
 
