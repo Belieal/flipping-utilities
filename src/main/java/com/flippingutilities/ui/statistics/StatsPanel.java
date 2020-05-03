@@ -205,7 +205,7 @@ public class StatsPanel extends JPanel
 			selectedInterval = (String) timeIntervalList.getSelectedItem();
 
 			//Handle new time interval selected
-			setTimeInterval(selectedInterval, false);
+			setTimeInterval(selectedInterval);
 		};
 
 		//Start off with "Session" selected in the combobox.
@@ -729,10 +729,8 @@ public class StatsPanel extends JPanel
 	 * Sets the start interval of the profit calculation.
 	 *
 	 * @param selectedInterval The string from TIME_INTERVAL_STRINGS that is selected in the time interval combobox
-	 * @param isStartUp        Boolean determines if the switch is called from the startUp or an actionListener.
-	 *                         This is so we don't call it twice unnecessarily.
 	 */
-	public void setTimeInterval(String selectedInterval, boolean isStartUp)
+	public void setTimeInterval(String selectedInterval)
 	{
 		if (selectedInterval == null)
 		{
@@ -774,10 +772,7 @@ public class StatsPanel extends JPanel
 		timeIntervalList.setSelectedItem(selectedInterval);
 		timeIntervalList.addActionListener(comboboxListener);
 
-		if (!isStartUp)
-		{
-			rebuild(plugin.getTradesForCurrentView());
-		}
+		rebuild(plugin.getTradesForCurrentView());
 	}
 
 	/**

@@ -215,11 +215,11 @@ public class FlippingPlugin extends Plugin
 			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
 			if (lastSelectedInterval == null)
 			{
-				statPanel.setTimeInterval("All", true);
+				statPanel.setTimeInterval("All");
 			}
 			else
 			{
-				statPanel.setTimeInterval(lastSelectedInterval, true);
+				statPanel.setTimeInterval(lastSelectedInterval);
 			}
 
 			return true;
@@ -394,7 +394,9 @@ public class FlippingPlugin extends Plugin
 		//trades list won't be being updated.
 		if (newOffer.isMarginCheck() && (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
-			flippingPanel.rebuild(allAccountsData.get(accountCurrentlyViewed).getTrades());
+			List<FlippingItem> trades = allAccountsData.get(accountCurrentlyViewed).getTrades();
+			flippingPanel.rebuild(trades);
+			statPanel.rebuild(trades);
 		}
 
 		if (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE))
