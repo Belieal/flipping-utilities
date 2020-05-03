@@ -34,6 +34,7 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +144,10 @@ public class FlippingPlugin extends Plugin
 	//the display name of the currently logged in user. This is the only account that can actually receive offers
 	//as this is the only account currently logged in.
 	private String currentlyLoggedInAccount;
+
+	//some events come before a display name has been retrieved and since a display name is crucial for figuring out
+	//which account's trade list to add to, we queue the events here to be processed as soon as a display name is set.
+	private List<GrandExchangeOfferChanged> eventsBeforeNameSet = new ArrayList<>();
 
 	@Override
 	protected void startUp()
@@ -307,6 +312,11 @@ public class FlippingPlugin extends Plugin
 
 		currentlyLoggedInAccount = displayName;
 
+		//now that we have a display name we can process any events that we received before the display name
+		//was set.
+		eventsBeforeNameSet.forEach(event -> onGrandExchangeOfferChanged(event));
+		eventsBeforeNameSet.clear();
+
 		if (config.multiAccTracking()) {
 			accountCurrentlyViewed = displayName;
 			//this will cause changeView to be invoked which will cause a rebuild of
@@ -350,6 +360,11 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
+		if (currentlyLoggedInAccount == null) {
+			eventsBeforeNameSet.add(newOfferEvent);
+			return;
+		}
+
 		OfferInfo newOffer = extractRelevantInfo(newOfferEvent);
 
 		if (isBadOffer(newOffer))
