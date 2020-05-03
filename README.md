@@ -6,7 +6,7 @@ This external plugin seeks to help users with flipping in OSRS. It provides the 
 ## How it works
 The plugin is designed to be "hands-free". This means you can just margin check an item you want to flip and the plugin will detect, store and display prices along with calculating the profits and return on investments (ROI).
 
-**The plugin will only record bought and sold trades with a quantity of one.** I hope to address this in a future update.
+**The plugin will only record bought and sold trades with a quantity of one.**
 
 ![](demo.gif)
 
@@ -78,4 +78,40 @@ v1.1.1 - 12 hour format for clocks and various bug fixes.
 
 * Various optimizations and smaller bug fixes.
 
-## v1.3 - Statistics tab update (Coming soon!)
+## v1.3 - Statistics Tab update
+
+This update added the statistics tab which contains a variety of useful stats about your flips! The panel features a large variety of sub information panels that tell you things such as:
+
+* The amount of gp you've gained or lost along with the return on investment over the time span
+
+* The total combined profits your flips accrued during the interval
+
+* The hourly profit you've obtained during your session
+
+* Statistics over every single item you've flipped
+
+* View the flip history behind every item that you've flipped
+
+... and much more!
+
+This update also features all new multi-account support! You can now view the stats or flips your individual accounts have made separately. To turn it on, head to the config menu and check "Enable multi account tracking".
+
+We've also added a whole new margin check detection system. This means we now determine if trades are margin checks by making sure that it completed instantly (2 game ticks, one for the RuneScape server to receive the trade offer and one for when it completes). We're confident that this will be the most accurate representation of a margin check detection system and thusly we've removed the old margin freezing feature, as it no longer serves a purpose. 
+
+Lastly, we've added a ton of small bug fixes and general optimizations of the plugin. Unfortunately, we've had to disable the cloud sync feature, which means all your flips and stats are now stored locally. This was due to the amount of data we're requiring with this new statistics tab being too large for the way we synced RuneLite data. This local data is stored within your RuneLite directory (/flipping/trades.json). If you're a heavy user of this plugin, this may become a pretty large file so it is recommended that you reset your panels once in a while. This can be done by right-clicking the reset button in the top right of the panel.
+
+This update has been long in the making and it definitely took a lot of work behind the scenes. Therefore, I couldn't have done it without the help from [Zumaad](https://github.com/zumaad), whose amazing work on the backend really made it all possible. Big thanks to you, my friend! ❤
+
+*If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or PM me on Discord (#Belieal6600)! I'm also happy to answer any questions that you may have. :)*
+
+
+
+
+
+
+
+
+
+
+
+
