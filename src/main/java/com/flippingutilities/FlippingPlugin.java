@@ -285,7 +285,7 @@ public class FlippingPlugin extends Plugin
 				{
 					return false;
 				}
-				log.info("{} just logged in", name);
+				log.info("{} has logged in", name);
 				previouslyLoggedIn = true;
 				handleLogin(name);
 
@@ -295,7 +295,7 @@ public class FlippingPlugin extends Plugin
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
-			log.info("{} just logged out", currentlyLoggedInAccount);
+			log.info("{} has logged out", currentlyLoggedInAccount);
 			currentlyLoggedInAccount = null;
 			storeTrades(allAccountsData);
 		}
@@ -314,10 +314,11 @@ public class FlippingPlugin extends Plugin
 
 		//now that we have a display name we can process any events that we received before the display name
 		//was set.
-		eventsBeforeNameSet.forEach(event -> onGrandExchangeOfferChanged(event));
+		eventsBeforeNameSet.forEach(this::onGrandExchangeOfferChanged);
 		eventsBeforeNameSet.clear();
 
-		if (config.multiAccTracking()) {
+		if (config.multiAccTracking())
+		{
 			accountCurrentlyViewed = displayName;
 			//this will cause changeView to be invoked which will cause a rebuild of
 			//flipping and stats panel
@@ -360,7 +361,8 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		if (currentlyLoggedInAccount == null) {
+		if (currentlyLoggedInAccount == null)
+		{
 			eventsBeforeNameSet.add(newOfferEvent);
 			return;
 		}
@@ -432,7 +434,6 @@ public class FlippingPlugin extends Plugin
 		//the empty offer check and empty offers should always be rejected anyway.
 		Map<Integer, OfferInfo> loggedInAccsLastOffers = allAccountsData.get(currentlyLoggedInAccount).getLastOffers();
 
-
 		//this is always the start of any offer (when you first put in an offer)
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
@@ -453,7 +454,8 @@ public class FlippingPlugin extends Plugin
 		//this occurs when the user made the trade on a different client (not runelite) or doesn't have
 		//the plugin. In both cases, when the offer was made no history for the slot was recorded, so when
 		//they switch to runelite/get the plugin, there will be no last offer for the slot.
-		if (lastOfferForSlot == null) {
+		if (lastOfferForSlot == null)
+		{
 			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 			return false;
 		}
@@ -667,7 +669,7 @@ public class FlippingPlugin extends Plugin
 		}
 		catch (IOException e)
 		{
-			log.info("couldn't load trades, error = " + e);
+			log.info("couldn't load trades, error: " + e);
 			return new HashMap<>();
 		}
 	}

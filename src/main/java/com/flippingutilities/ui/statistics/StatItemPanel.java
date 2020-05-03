@@ -471,9 +471,11 @@ public class StatItemPanel extends JPanel
 	{
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(totalProfit, true) + " gp");
 		totalProfitValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		totalProfitPanel.setToolTipText(QuantityFormatter.formatNumber(totalProfit) + " gp");
 
 		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((totalProfit / itemCountFlipped), true) + " gp/ea");
 		profitEachValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitEachPanel.setToolTipText(QuantityFormatter.formatNumber(totalProfit / itemCountFlipped) + " gp/ea");
 
 		quantityValLabel.setText(itemCountFlipped + " Items");
 
@@ -484,6 +486,7 @@ public class StatItemPanel extends JPanel
 
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+		roiPanel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 	}
 
 	public void updateTimeDisplay()
@@ -492,7 +495,7 @@ public class StatItemPanel extends JPanel
 		{
 			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
 			timeOfLastFlipValLabel.setText(UIUtilities.formatDuration(lastRecordedTrade.getTime()) + " ago");
-			timeOfLastFlipValLabel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
+			timeOfLastFlipPanel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
 
 			for (StatItemHistoryPanel panel : activePanels)
 			{
@@ -503,7 +506,7 @@ public class StatItemPanel extends JPanel
 
 	private void deletePanel()
 	{
-		statsPanel.deletePanel(this);
+		statsPanel.deletePanel(this, false);
 	}
 
 }

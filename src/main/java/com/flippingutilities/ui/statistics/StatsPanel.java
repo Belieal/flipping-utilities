@@ -569,12 +569,12 @@ public class StatsPanel extends JPanel
 			//]-inf, 0[
 			totalProfitVal.setForeground(UIUtilities.OUTDATED_COLOR);
 		}
-		else if (totalProfit < 99999)
+		else if (totalProfit <= 100000)
 		{
 			//[0,100k[
 			totalProfitVal.setForeground(Color.YELLOW);
 		}
-		else if (totalProfit < 99999999)
+		else if (totalProfit <= 10000000)
 		{
 			//[100k,10m[
 			totalProfitVal.setForeground(Color.WHITE);
@@ -606,6 +606,7 @@ public class StatsPanel extends JPanel
 		}
 
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");
 	}
 
 	/**
@@ -627,6 +628,7 @@ public class StatsPanel extends JPanel
 		}
 
 		roiVal.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+		roiPanel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 	}
 
 	/**
@@ -636,21 +638,26 @@ public class StatsPanel extends JPanel
 	{
 		totalRevenueVal.setText(UIUtilities.quantityToRSDecimalStack(totalRevenues, true) + " gp");
 		totalRevenueVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		totalRevenueVal.setToolTipText("Total amount of gp collected");
 
 		totalExpenseVal.setText(UIUtilities.quantityToRSDecimalStack(totalExpenses, true) + " gp");
 		totalExpenseVal.setForeground(UIUtilities.OUTDATED_COLOR);
+		totalExpensePanel.setToolTipText("Total amount of gp invested");
 	}
 
 	private void updateTotalQuantityDisplay()
 	{
 		totalQuantityVal.setText(QuantityFormatter.formatNumber(totalQuantity));
 		totalQuantityVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		totalQuantityPanel.setToolTipText("Total quantity of items flipped");
 	}
 
 	private void updateTotalFlipsDisplay()
 	{
 		totalFlipsVal.setText(QuantityFormatter.formatNumber(totalFlips));
 		totalFlipsVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		totalFlipsPanel.setToolTipText("<html>Total amount of flips completed" +
+			"<br>Does not count margin checks</html>");
 	}
 
 	private void updateMostCommonFlip()
@@ -664,6 +671,8 @@ public class StatsPanel extends JPanel
 		mostCommonFlipVal.setText(mostCommonItemName);
 		mostCommonFlipVal.setToolTipText("Flipped " + mostFlips + (mostFlips == 1 ? " time" : " times"));
 		mostCommonFlipVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		mostCommonFlipPanel.setToolTipText("<html>Most commonly flipped item determined by the item with most flips completed" +
+			"<br>Does not count margin checks</html>");
 	}
 
 	public void updateSessionTime()
@@ -680,6 +689,7 @@ public class StatsPanel extends JPanel
 		{
 			panel.updateTimeDisplay();
 		}
+		sessionTimePanel.setToolTipText("Resets after each client reboot");
 	}
 
 	/**
@@ -687,8 +697,9 @@ public class StatsPanel extends JPanel
 	 * This means the panel will not be built upon the next rebuild calls of StatPanel.
 	 *
 	 * @param itemPanel The panel which holds the FlippingItem to be terminated.
+	 * @param reset     Determines if this was called by the resetPanel method so that the interval is set to all
 	 */
-	public void deletePanel(StatItemPanel itemPanel)
+	public void deletePanel(StatItemPanel itemPanel, boolean reset)
 	{
 		if (!activePanels.contains(itemPanel))
 		{
@@ -697,7 +708,7 @@ public class StatsPanel extends JPanel
 
 		FlippingItem item = itemPanel.getFlippingItem();
 
-		item.invalidateOffers(HistoryManager.PanelSelection.STATS, item.getIntervalHistory(startOfInterval));
+		item.invalidateOffers(HistoryManager.PanelSelection.STATS, item.getIntervalHistory(reset ? Instant.EPOCH : startOfInterval));
 		plugin.truncateTradeList();
 	}
 
@@ -709,7 +720,7 @@ public class StatsPanel extends JPanel
 	{
 		for (StatItemPanel itemPanel : activePanels)
 		{
-			deletePanel(itemPanel);
+			deletePanel(itemPanel, true);
 		}
 	}
 
