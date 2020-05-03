@@ -6,9 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
@@ -62,35 +60,36 @@ public class TradePersister
 
 	/**
 	 * Loads the json as a byte array, converts it into a string, then converts it into hashmap
-	 * that associated a display name to an arraylist of flipping items. If there is no previous trades
+	 * that associates a display name to an AccountData object. If there is no previous trades
 	 * stored, it just returns an empty hashmap.
 	 *
-	 * @return all of user's accounts' trades.
+	 * @return all of user's trade related data such as their trades and the last offers for each slot
+	 * to helps screen out duplicate events.
 	 * @throws IOException handled in flipping plugin
 	 */
-	public Map<String, List<FlippingItem>> loadTrades() throws IOException
+	public Map<String, AccountData> loadTrades() throws IOException
 	{
 		String tradesJson = new String(Files.readAllBytes(TRADE_DATA_FILE.toPath()));
 
 		final Gson gson = new Gson();
-		Type type = new TypeToken<Map<String, ArrayList<FlippingItem>>>()
+		Type type = new TypeToken<Map<String, AccountData>>()
 		{
 		}.getType();
-		Map<String, List<FlippingItem>> trades = gson.fromJson(tradesJson, type);
+		Map<String, AccountData> accountData = gson.fromJson(tradesJson, type);
 
-		return trades == null ? new HashMap<>() : trades;
+		return accountData == null ? new HashMap<>() : accountData;
 	}
 
 	/**
-	 * Stores the user's trades in a file located at {user's home directory}/.runelite/flipping/trades.json
+	 * Stores the user's trade related data in a file located at {user's home directory}/.runelite/flipping/trades.json
 	 *
-	 * @param tradesCache all of user's accounts' trades.
+	 * @param accountDataCache all of user's accounts' trades and last offers for their slots.
 	 * @throws IOException handled in flipping plugin
 	 */
-	public void storeTrades(Map<String, List<FlippingItem>> tradesCache) throws IOException
+	public void storeTrades(Map<String, AccountData> accountDataCache) throws IOException
 	{
 		final Gson gson = new Gson();
-		final String json = gson.toJson(tradesCache);
+		final String json = gson.toJson(accountDataCache);
 		TRADE_DATA_FILE.delete();
 		TRADE_DATA_FILE.createNewFile();
 		Files.write(TRADE_DATA_FILE.toPath(), json.getBytes());
