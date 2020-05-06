@@ -83,8 +83,6 @@ The Flipping widget seeks to help you set up your offers quickly! The widget wil
 Simply click the red text and press enter. 
 
 ## Potential future features
-* Statistics tab that show how much profit you've earned during a time frame.
-* Trade history
 * Optional notification when a GE limit expires.
 * Favorited items.
 * When setting up buy offers, provide an option to set quantity to only what you have gold for.
