@@ -477,7 +477,7 @@ public class StatItemPanel extends JPanel
 		profitEachValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		profitEachPanel.setToolTipText(QuantityFormatter.formatNumber(totalProfit / itemCountFlipped) + " gp/ea");
 
-		quantityValLabel.setText(itemCountFlipped + " Items");
+		quantityValLabel.setText(QuantityFormatter.formatNumber(itemCountFlipped) + " Items");
 
 		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalExpense / itemCountFlipped)) + " gp");
 		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalRevenue / itemCountFlipped)) + " gp");
