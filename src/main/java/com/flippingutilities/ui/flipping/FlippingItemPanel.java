@@ -105,6 +105,11 @@ public class FlippingItemPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
+		if (plugin.getConfig().multiAccTracking())
+		{
+			setToolTipText("Flipped by " + flippingItem.getFlippedBy());
+		}
+
 		Color background = getBackground();
 
 		/* Item icon */
@@ -273,7 +278,6 @@ public class FlippingItemPanel extends JPanel
 		updateGePropertiesDisplay();
 		updatePriceOutdatedDisplay();
 
-		setToolTipText("flipped by " + flippingItem.getFlippedBy());
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 	}

@@ -744,7 +744,8 @@ public class FlippingPlugin extends Plugin
 		//Check that it was the chat input that got enabled.
 		if (event.getIndex() != VarClientInt.INPUT_TYPE.getIndex()
 			|| client.getWidget(WidgetInfo.CHATBOX_TITLE) == null
-			|| client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) != 7)
+			|| client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) != 7
+			|| client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER) == null)
 		{
 			return;
 		}

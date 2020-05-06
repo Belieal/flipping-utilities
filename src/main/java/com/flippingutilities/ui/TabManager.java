@@ -67,7 +67,7 @@ public class TabManager extends PluginPanel
 		viewSelector.setFocusable(false);
 		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelector.setRenderer(new ComboBoxListRenderer());
-		viewSelector.setToolTipText("select which of your account's trades list you want to view");
+		viewSelector.setToolTipText("Select which of your account's trades list you want to view");
 		viewSelector.addItemListener(event ->
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
