@@ -26,108 +26,234 @@
 
 package com.flippingutilities;
 
+import com.flippingutilities.ui.flipping.FlippingItemPanel;
+import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
-import lombok.AllArgsConstructor;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.http.api.ge.GrandExchangeTrade;
+import net.runelite.api.events.GrandExchangeOfferChanged;
 
-@Slf4j
-@AllArgsConstructor
+/**
+ * This class is the representation of an item that a user is flipping. It contains information about the
+ * margin of the item (buying and selling price), the latest buy and sell times, and the history of the item
+ * which is all of the offers that make up the trade history of that item. This history is managed by the
+ * {@link HistoryManager} and is used to get the profits for this item, how many more of it you can buy
+ * until the ge limit refreshes, and when the next ge limit refreshes.
+ * <p>
+ * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
+ * of a panel which is then displayed.
+ */
 public class FlippingItem
 {
-	private static int GE_RESET_TIME_SECONDS = 60 * 60 * 4;
-
-	@Getter
-	private ArrayList<GrandExchangeTrade> tradeHistory;
-
+	@SerializedName("id")
 	@Getter
 	private final int itemId;
 
+	@SerializedName("name")
 	@Getter
 	private final String itemName;
 
+	@SerializedName("tGL")
 	@Getter
 	private final int totalGELimit;
 
+	@SerializedName("mCBP")
 	@Getter
-	private int remainingGELimit;
+	private int marginCheckBuyPrice;
 
+	@SerializedName("mCSP")
 	@Getter
-	@Setter
-	private int latestBuyPrice;
+	private int marginCheckSellPrice;
 
+	@SerializedName("mCBT")
 	@Getter
-	@Setter
-	private int latestSellPrice;
+	private Instant marginCheckBuyTime;
 
+	@SerializedName("mCST")
 	@Getter
-	@Setter
+	private Instant marginCheckSellTime;
+
+	@SerializedName("lBT")
+	@Getter
 	private Instant latestBuyTime;
 
+	@SerializedName("lST")
 	@Getter
-	@Setter
 	private Instant latestSellTime;
 
+	//An activity is described as a completed offer event.
+	@SerializedName("lAT")
 	@Getter
-	private Instant geLimitResetTime;
+	private Instant latestActivityTime = Instant.now();
 
+	@SerializedName("sESI")
 	@Getter
 	@Setter
-	private boolean isFrozen;
+	private boolean shouldExpandStatItem = false;
 
-	public void addTradeHistory(final GrandExchangeTrade trade)
+	@SerializedName("sEH")
+	@Getter
+	@Setter
+	private boolean shouldExpandHistory = false;
+
+	@SerializedName("h")
+	private HistoryManager history = new HistoryManager();
+
+	@SerializedName("fB")
+	@Getter
+	private String flippedBy;
+
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
-		tradeHistory.add(trade);
+		this.itemId = itemId;
+		this.itemName = itemName;
+		this.totalGELimit = totalGeLimit;
+		this.flippedBy = flippedBy;
 	}
 
-	public void updateGELimitReset()
+	/**
+	 * This method updates the history of an item and the latest buy and sell times.
+	 * It is invoked every time a new offer is received as every new offer will change the history
+	 * and either the latest buy or sell times.
+	 * See {@link FlippingPlugin#onGrandExchangeOfferChanged(GrandExchangeOfferChanged)}
+	 *
+	 * @param newOffer new offer just received
+	 */
+	public void update(OfferInfo newOffer)
 	{
-		if (tradeHistory != null)
+		updateHistory(newOffer);
+		updateLatestTimes(newOffer);
+	}
+
+	/**
+	 * This method updates the history of a FlippingItem. This history is used to calculate profits,
+	 * next ge limit refresh, and how many items were bought during this limit window.
+	 *
+	 * @param newOffer the new offer that just came in
+	 */
+	public void updateHistory(OfferInfo newOffer)
+	{
+		history.updateHistory(newOffer);
+	}
+
+	/**
+	 * Updates the latest buy/sell times of an item. This will be used to display an overlay on
+	 * GE slots to show whether an item is active or not.
+	 *
+	 * @param newOffer new offer just received
+	 */
+	public void updateLatestTimes(OfferInfo newOffer)
+	{
+		if (newOffer.isBuy())
 		{
-			GrandExchangeTrade oldestTrade = null;
-			remainingGELimit = totalGELimit;
-
-			//Check for the oldest trade within the last 4 hours.
-			for (GrandExchangeTrade trade : tradeHistory)
-			{
-				if (trade.isBuy() && trade.getTime().getEpochSecond() >= Instant.now().minusSeconds(GE_RESET_TIME_SECONDS).getEpochSecond())
-				{
-					//Check if trade is older than oldest trade.
-					if (oldestTrade == null || oldestTrade.getTime().getEpochSecond() > trade.getTime().getEpochSecond())
-					{
-						oldestTrade = trade;
-					}
-					remainingGELimit -= trade.getQuantity();
-				}
-			}
-
-			//No buy trade found in the last 4 hours.
-			if (oldestTrade == null)
-			{
-				remainingGELimit = totalGELimit;
-				geLimitResetTime = null;
-			}
-			else
-			{
-				geLimitResetTime = oldestTrade.getTime().plusSeconds(GE_RESET_TIME_SECONDS);
-			}
-
+			latestBuyTime = newOffer.getTime();
 		}
 		else
 		{
-			//No previous trade history; assume no trades made.
-			geLimitResetTime = null;
-			remainingGELimit = totalGELimit;
+			latestSellTime = newOffer.getTime();
+		}
+
+		if (newOffer.isComplete())
+		{
+			latestActivityTime = newOffer.getTime();
 		}
 	}
 
-	public void resetGELimit()
+	/**
+	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
+	 * margin check. It is invoked by FlippingPlugin's updateFlippingItem method in the plugin class which itself is only
+	 * invoked when an offer is a margin check.
+	 *
+	 * @param newOffer the new offer just received.
+	 */
+	public void updateMargin(OfferInfo newOffer)
 	{
-		tradeHistory.clear();
-		remainingGELimit = totalGELimit;
-		geLimitResetTime = null;
+		int tradePrice = newOffer.getPrice();
+		Instant tradeTime = newOffer.getTime();
+
+		if (newOffer.isValidFlippingOffer())
+		{
+			if (newOffer.isBuy())
+			{
+				marginCheckSellPrice = tradePrice;
+				marginCheckSellTime = tradeTime;
+			}
+			else
+			{
+				marginCheckBuyPrice = tradePrice;
+				marginCheckBuyTime = tradeTime;
+			}
+		}
 	}
+
+	public long currentProfit(List<OfferInfo> tradeList)
+	{
+		return history.currentProfit(tradeList);
+	}
+
+	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
+	{
+		return history.getCashflow(tradeList, getExpense);
+	}
+
+	public long getCashflow(Instant earliestTime, boolean getExpense)
+	{
+		return history.getCashflow(getIntervalHistory(earliestTime), getExpense);
+	}
+
+	public int countItemsFlipped(List<OfferInfo> tradeList)
+	{
+		return history.countItemsFlipped(tradeList);
+	}
+
+	public ArrayList<OfferInfo> getIntervalHistory(Instant earliestTime)
+	{
+		return history.getIntervalsHistory(earliestTime);
+	}
+
+	public int remainingGeLimit()
+	{
+		return totalGELimit - history.getItemsBoughtThisLimitWindow();
+	}
+
+	public Instant getGeLimitResetTime()
+	{
+		return history.getNextGeLimitRefresh();
+	}
+
+	public void validateGeProperties()
+	{
+		history.validateGeProperties();
+	}
+
+	public ArrayList<Flip> getFlips(Instant earliestTime)
+	{
+		return history.getFlips(earliestTime);
+	}
+
+	public boolean hasValidOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		return history.hasValidOffers(panelSelection);
+	}
+
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection)
+	{
+		if (panelSelection == HistoryManager.PanelSelection.FLIPPING)
+		{
+			marginCheckSellPrice = 0;
+			marginCheckSellTime = null;
+
+			marginCheckBuyPrice = 0;
+			marginCheckBuyTime = null;
+		}
+		history.invalidateOffers(panelSelection);
+	}
+
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferInfo> offerList)
+	{
+		history.invalidateOffers(panelSelection, offerList);
+	}
+
 }

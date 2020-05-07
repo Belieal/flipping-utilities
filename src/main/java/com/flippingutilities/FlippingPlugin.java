@@ -26,29 +26,35 @@
 
 package com.flippingutilities;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.flippingutilities.ui.TabManager;
+import com.flippingutilities.ui.flipping.FlippingItemWidget;
+import com.flippingutilities.ui.flipping.FlippingPanel;
+import com.flippingutilities.ui.statistics.StatsPanel;
 import com.google.inject.Provides;
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import javax.inject.Inject;
-import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
+import net.runelite.api.Player;
 import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
@@ -56,21 +62,18 @@ import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.events.SessionClose;
-import net.runelite.client.events.SessionOpen;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.http.api.ge.GrandExchangeTrade;
 import net.runelite.http.api.item.ItemStats;
 
 @Slf4j
@@ -81,18 +84,14 @@ import net.runelite.http.api.item.ItemStats;
 
 public class FlippingPlugin extends Plugin
 {
-
-	//Limit the amount of trades every item holds.
-	private static final int TRADE_HISTORY_MAX_SIZE = 20;
-	//Limit the amount of items stored.
-	private static final int TRADES_LIST_MAX_SIZE = 200;
-
 	private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
 	private static final int GE_BACK_BUTTON_WIDGET_ID = 30474244;
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
-	public static final String CONFIG_KEY = "items";
+	public static final String ITEMS_CONFIG_KEY = "items";
+	public static final String TIME_INTERVAL_CONFIG_KEY = "selectedinterval";
+	public static final String ACCOUNT_WIDE = "Accountwide";
 
 	@Inject
 	private Client client;
@@ -116,34 +115,56 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
-	private FlippingPanel panel;
-	private FlippingItemWidget flippingWidget;
-	private int lastTick;
-
-	//Stores all bought or sold trades.
-	@Getter
-	private ArrayList<FlippingItem> tradesList = new ArrayList<>();
-
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
 	private int prevHighlight;
 
+	@Getter
+	private FlippingPanel flippingPanel;
+	@Getter
+	private StatsPanel statPanel;
+	private FlippingItemWidget flippingWidget;
 
-	//will store the last seen events for each GE slot and so that we can screen out duplicate/bad events
-	private Map<Integer, GrandExchangeOffer> lastOffers = new HashMap<>();
+	private TabManager tabManager;
+
+	private boolean previouslyLoggedIn;
+
+	//used to load and store trades from a file on disk.
+	private TradePersister tradePersister = new TradePersister();
+
+	//holds all the trades each of the user's accounts that has a flipping history. This is a map
+	//of display name to flipping items.
+	@Getter
+	private Map<String, AccountData> allAccountsData = new HashMap<>();
+
+	//the display name of the account whose trade list the user is currently looking at as selected
+	//through the dropdown menu
+	private String accountCurrentlyViewed = ACCOUNT_WIDE;
+
+	//the display name of the currently logged in user. This is the only account that can actually receive offers
+	//as this is the only account currently logged in.
+	private String currentlyLoggedInAccount;
+
+	//some events come before a display name has been retrieved and since a display name is crucial for figuring out
+	//which account's trade list to add to, we queue the events here to be processed as soon as a display name is set.
+	private List<GrandExchangeOfferChanged> eventsBeforeNameSet = new ArrayList<>();
 
 	@Override
 	protected void startUp()
 	{
 		//Main visuals.
-		panel = new FlippingPanel(this, itemManager, clientThread, executor);
+		flippingPanel = new FlippingPanel(this, itemManager, executor);
+		statPanel = new StatsPanel(this, itemManager);
 
-		// I wanted to put it below the GE plugin, but can't as the GE and world switcher buttonhave the same priority...
+		//Represents the panel navigation that switches between panels using tabs at the top.
+		tabManager = new TabManager(this::changeView, flippingPanel, statPanel);
+
+		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
-			.tooltip("Flipping Plugin")
-			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graphIconGreen.png"))
+			.tooltip("Flipping Utilities")
+			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
 			.priority(3)
-			.panel(panel)
+			.panel(tabManager)
 			.build();
 
 		clientToolbar.addNavigation(navButton);
@@ -159,29 +180,150 @@ public class FlippingPlugin extends Plugin
 			//Loads tradesList with data from previous sessions.
 			if (config.storeTradeHistory())
 			{
-				loadConfig();
+				try
+				{
+					tradePersister.setup();
+					allAccountsData = loadTrades();
+				}
+				catch (IOException e)
+				{
+					log.info("couldn't set up trade persistor: " + e);
+					allAccountsData = new HashMap<>();
+				}
+
+				if (!allAccountsData.containsKey(ACCOUNT_WIDE))
+				{
+					allAccountsData.put(ACCOUNT_WIDE, new AccountData());
+				}
 			}
 
-			executor.submit(() -> clientThread.invokeLater(() -> SwingUtilities.invokeLater(() ->
+			//adding an item causes the event listener (changeView) to fire which causes stat panel
+			//and flipping panel to rebuild.
+			tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+
+			allAccountsData.keySet().forEach(displayName ->
 			{
-				if (tradesList != null)
+				if (!displayName.equals(ACCOUNT_WIDE))
 				{
-					for (FlippingItem flippingItem : tradesList)
-					{
-						flippingItem.updateGELimitReset();
-					}
-					panel.rebuildFlippingPanel(tradesList);
+					tabManager.getViewSelector().addItem(displayName);
 				}
-			})));
+			});
+
+			//sets the account selector dropdown to visible or not depending on whether the config option has been selected.
+			tabManager.getViewSelector().setVisible(config.multiAccTracking());
+
+			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
+			if (lastSelectedInterval == null)
+			{
+				statPanel.setTimeInterval("All");
+			}
+			else
+			{
+				statPanel.setTimeInterval(lastSelectedInterval);
+			}
+
 			return true;
 		});
 
-		//Ensures the panel timers are updated at 10 times per second.
+
+		//Ensures the panel displays for the margin check being outdated and the next ge reset
+		//are updated every second.
 		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
 		{
-			panel.updateTimes();
-			updateGELimitRemaining();
-		}, 100, 100, TimeUnit.MILLISECONDS);
+			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
+			flippingPanel.updateActivePanelsGePropertiesDisplay();
+			statPanel.updateSessionTime();
+		}, 100, 1000, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Gets invoked when the client is shutting down. This method calls storeTrades and blocks the main
+	 * thread until it finishes, thus allowing trades to be stored safely.
+	 *
+	 * @param clientShutdownEvent even that we receive when the client is shutting down
+	 */
+
+	@Subscribe
+	public void onClientShutdown(ClientShutdown clientShutdownEvent)
+	{
+		log.info("Shutting down, saving trades!");
+		storeTrades(allAccountsData);
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			//keep scheduling this task until it returns true (when we have access to a display name)
+			clientThread.invokeLater(() ->
+			{
+				//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
+				//want to keep scheduling this task.
+				if (client.getGameState() != GameState.LOGGED_IN)
+				{
+					return true;
+				}
+
+				final Player player = client.getLocalPlayer();
+
+				//player is null, so we can't get the display name so, return false, which will schedule
+				//the task on the client thread again.
+				if (player == null)
+				{
+					return false;
+				}
+
+				final String name = player.getName();
+
+				if (name == null)
+				{
+					return false;
+				}
+
+				if (name.equals(""))
+				{
+					return false;
+				}
+				previouslyLoggedIn = true;
+				handleLogin(name);
+
+				return true;
+			});
+		}
+
+		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
+		{
+			currentlyLoggedInAccount = null;
+			storeTrades(allAccountsData);
+		}
+	}
+
+	public void handleLogin(String displayName)
+	{
+		//if the account has no trade history, add its name to the cache and give it a blank history.
+		if (!allAccountsData.containsKey(displayName))
+		{
+			allAccountsData.put(displayName, new AccountData());
+			tabManager.getViewSelector().addItem(displayName);
+		}
+
+		currentlyLoggedInAccount = displayName;
+
+		//now that we have a display name we can process any events that we received before the display name
+		//was set.
+		eventsBeforeNameSet.forEach(this::onGrandExchangeOfferChanged);
+		eventsBeforeNameSet.clear();
+
+		if (config.multiAccTracking())
+		{
+			accountCurrentlyViewed = displayName;
+			//this will cause changeView to be invoked which will cause a rebuild of
+			//flipping and stats panel
+			tabManager.getViewSelector().setSelectedItem(displayName);
+		}
+
+
 	}
 
 	@Override
@@ -197,253 +339,262 @@ public class FlippingPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 	}
 
-	@Subscribe
-	public void onSessionOpen(SessionOpen event)
-	{
-		//Load new account config
-		final AccountSession session = sessionManager.getAccountSession();
-		if (session != null && session.getUsername() != null)
-		{
-			clientThread.invokeLater(() ->
-			{
-				loadConfig();
-				SwingUtilities.invokeLater(() -> panel.rebuildFlippingPanel(tradesList));
-				return true;
-			});
-		}
-	}
-
-	@Subscribe
-	public void onSessionClose(SessionClose event)
-	{
-		//Config is now locally stored
-		clientThread.invokeLater(() ->
-		{
-			loadConfig();
-			SwingUtilities.invokeLater(() -> panel.rebuildFlippingPanel(tradesList));
-			return true;
-		});
-	}
-
 	/**
-	 * Runelite has some wonky events at times. For example, every buy/sell/cancelled buy/cancelled
-	 * sell spawns two identical events. And when you fully buy/sell item, it also spawns two events
-	 * (a buying/selling event and a bought/sold event). This screens out the unwanted
-	 * events/duplicate events
+	 * This method is invoked every time the plugin receives a GrandExchangeOfferChanged event.
+	 * The events are handled in one of two ways:
+	 * <p>
+	 * if the offer is deemed a margin check, its either added
+	 * to the tradesForCurrentView (if it doesn't exist), or, if the item exists, it is updated to reflect the margins as
+	 * discovered by the margin check.
+	 * <p>
+	 * The second way events are handled is in all other cases except for margin checks. If an offer is
+	 * not a margin check and the offer exists, you don't need to update the margins of the item, but you do need
+	 * to update its history (which updates its ge limit/reset time and the profit a user made for that item.
+	 * <p>
+	 * The history of a flipping item is updated in every branch of this method.
 	 *
-	 * @return a boolean representing whether the offer should be passed on or discarded
+	 * @param newOfferEvent the offer event that represents when an offer is updated
+	 *                      (buying, selling, bought, sold, cancelled sell, or cancelled buy)
 	 */
-	public boolean isBadEvent(GrandExchangeOfferChanged newOfferEvent)
-	{
-		GrandExchangeOffer newOffer = newOfferEvent.getOffer();
-		int newOfferSlot = newOfferEvent.getSlot();
-
-		//Check for login screen and empty offers.
-		if (newOffer.getQuantitySold() == 0 || newOfferEvent.getOffer().getItemId() == 0
-			|| client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null)
-		{
-			return true;
-		}
-
-		//if its the last selling/buying event, as evidenced by the quantity sold/bought being
-		//equal to the total quantity of the offer, record it but return true so it doesn't go through
-		//as the next event will be a BOUGHT/SOLD event, and only that should go through.
-		if ((newOffer.getState() == GrandExchangeOfferState.BUYING
-			|| newOffer.getState() == GrandExchangeOfferState.SELLING)
-			&& newOffer.getQuantitySold() == newOffer.getTotalQuantity())
-		{
-			lastOffers.put(newOfferSlot, newOffer);
-			return true;
-		}
-
-		//if there is a last seen offer for that slot
-		if (lastOffers.containsKey(newOfferSlot))
-		{
-
-			GrandExchangeOffer lastOfferForSlot = lastOffers.get(newOfferSlot);
-
-			//if its a duplicate as the last seen event
-			if (lastOfferForSlot.getState().equals(newOffer.getState())
-				&& lastOfferForSlot.getQuantitySold() == newOffer.getQuantitySold())
-			{
-				return true; //its a bad event!
-			}
-			else
-			{
-				//update hashmap to include latest offer
-				lastOffers.put(newOfferSlot, newOffer);
-				return false; //not a bad event
-			}
-		}
-		//if there isn't a last seen offer for that slot
-		else
-		{
-			//put the offer in the hashmap with the corresponding slot
-			lastOffers.put(newOfferSlot, newOffer);
-			return false;
-		}
-	}
-
-	//When flipping via margin checking, we look for the lowest instant buy price
-	// to determine what our sell price should be to undercut existing offers, and vice versa for our buy price.
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
+		if (currentlyLoggedInAccount == null)
+		{
+			eventsBeforeNameSet.add(newOfferEvent);
+			return;
+		}
 
-		if (isBadEvent(newOfferEvent))
+		OfferInfo newOffer = extractRelevantInfo(newOfferEvent);
+
+		if (isBadOffer(newOffer))
 		{
 			return;
 		}
 
-		final GrandExchangeOffer newOffer = newOfferEvent.getOffer();
-		final GrandExchangeOfferState newOfferState = newOffer.getState();
+		List<FlippingItem> currentlyLoggedInAccountsTrades = allAccountsData.get(currentlyLoggedInAccount).getTrades();
+		List<FlippingItem> accountWideTrades = allAccountsData.get(ACCOUNT_WIDE).getTrades();
 
-		//Offer is a margin check.
-		//May change this in the future to be able to update prices independent of quantity.
-		//Perhaps some way of timing the state change from buying to bought such that we know it was "instantly" bought/sold?
-		if ((newOfferState == GrandExchangeOfferState.BOUGHT
-			|| newOfferState == GrandExchangeOfferState.SOLD) && newOffer.getQuantitySold() == 1)
+		Optional<FlippingItem> accountSpecificItem = findItemInTradesList(
+			currentlyLoggedInAccountsTrades,
+			(item) -> item.getItemId() == newOffer.getItemId());
+
+		Optional<FlippingItem> accountWideItem = findItemInTradesList(
+			accountWideTrades,
+			(item) -> item.getItemId() == newOffer.getItemId() && item.getFlippedBy().equals(currentlyLoggedInAccount));
+
+		updateTradesList(accountWideTrades, accountWideItem, newOffer.clone());
+		updateTradesList(currentlyLoggedInAccountsTrades, accountSpecificItem, newOffer.clone());
+
+		//only way items can float to the top of the list (hence requiring a rebuild) is when
+		//the offer is a margin check. Additionally, there is no point rebuilding the panel when
+		//the user is looking at the trades list of another one of their accounts that isn't logged in as that
+		//trades list won't be being updated.
+		if (newOffer.isMarginCheck() && (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
-			addFlipTrade(tradeConstructor(newOffer));
-			panel.rebuildFlippingPanel(tradesList);
-		}
-		//If the new offer is of state BOUGHT Record the trade to keep track of GE limit.
-		else if (newOffer.getQuantitySold() > 0 && (newOfferState == GrandExchangeOfferState.BOUGHT || newOfferState == GrandExchangeOfferState.CANCELLED_BUY))
-		{
-			addFlipTrade(tradeConstructor(newOffer));
-		}
-
-		updateConfig();
-		panel.updateGELimit();
-	}
-
-	private GrandExchangeTrade tradeConstructor(GrandExchangeOffer offer)
-	{
-		GrandExchangeTrade result = new GrandExchangeTrade();
-		result.setBuy(offer.getState() == GrandExchangeOfferState.BOUGHT
-			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY);
-		result.setItemId(offer.getItemId());
-		result.setPrice(offer.getSpent() / offer.getQuantitySold());
-		result.setQuantity(offer.getQuantitySold());
-		result.setTime(Instant.now());
-
-		return result;
-	}
-
-	//Adds GE trade data to the trades list.
-	public void addFlipTrade(GrandExchangeTrade trade)
-	{
-		if (tradesList == null)
-		{
-			addToTradesList(trade);
-			return;
-		}
-		//Check if item is already present
-		final List<FlippingItem> matchingItem = tradesList.stream()
-			.filter((item) -> item.getItemId() == trade.getItemId())
-			.collect(Collectors.toList());
-
-		//No match found
-		if (matchingItem.size() == 0)
-		{
-			addToTradesList(trade);
-		}
-		else if (trade.getQuantity() == 1)
-		{
-			//Found a match, update the existing flipping item.
-			updateFlip(matchingItem.get(0), trade);
-
-			//Move item to top
-			tradesList.remove(matchingItem.get(0));
-			tradesList.add(0, matchingItem.get(0));
-		}
-		else
-		{
-			//Trade isn't a margin check, exclude updating prices.
-			matchingItem.get(0).addTradeHistory(trade);
-			matchingItem.get(0).updateGELimitReset();
-		}
-	}
-
-	//Constructs a FlippingItem and adds it to the tradeList.
-	private void addToTradesList(GrandExchangeTrade trade)
-	{
-		int tradeItemId = trade.getItemId();
-		String itemName = itemManager.getItemComposition(tradeItemId).getName();
-
-		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
-		int tradeGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-		ArrayList<GrandExchangeTrade> tradeHistory = new ArrayList<GrandExchangeTrade>()
-		{{
-			add(trade);
-		}};
-
-		int tradeBuyPrice = 0;
-		int tradeSellPrice = 0;
-
-		Instant tradeBuyTime = null;
-		Instant tradeSellTime = null;
-
-		if (trade.getQuantity() == 1)
-		{
-			tradeBuyPrice = !trade.isBuy() ? trade.getPrice() : 0;
-			tradeSellPrice = trade.isBuy() ? trade.getPrice() : 0;
-
-			tradeBuyTime = !trade.isBuy() ? trade.getTime() : null;
-			tradeSellTime = trade.isBuy() ? trade.getTime() : null;
+			List<FlippingItem> trades = allAccountsData.get(accountCurrentlyViewed).getTrades();
+			flippingPanel.rebuild(trades);
+			statPanel.rebuild(trades);
 		}
 
-		FlippingItem flippingItem = new FlippingItem(tradeHistory, tradeItemId, itemName, tradeGELimit,
-			0,
-			tradeBuyPrice, tradeSellPrice, tradeBuyTime, tradeSellTime, null, false);
-
-		flippingItem.updateGELimitReset();
-
-		tradesList.add(0, flippingItem);
-
-		//Make sure we don't have too much data.
-		if (tradesList.size() > TRADES_LIST_MAX_SIZE)
+		if (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE))
 		{
-			tradesList.remove(tradesList.size() - 1);
-		}
-	}
-
-	//Updates the latest margins writes history for a Flipping Item
-	private void updateFlip(FlippingItem flippingItem, GrandExchangeTrade trade)
-	{
-		boolean tradeBuyState = trade.isBuy();
-		int tradePrice = trade.getPrice();
-		Instant tradeTime = trade.getTime();
-
-		flippingItem.addTradeHistory(trade);
-		//Make sure the individual item objects aren't massive.
-		if (flippingItem.getTradeHistory().size() > TRADE_HISTORY_MAX_SIZE)
-		{
-			flippingItem.getTradeHistory().remove(flippingItem.getTradeHistory().size() - 1);
-		}
-		//Bought
-		if (!flippingItem.isFrozen())
-		{
-			if (tradeBuyState)
+			statPanel.rebuild(getTradesForCurrentView());
+			if (!newOffer.isMarginCheck())
 			{
-				flippingItem.setLatestSellPrice(tradePrice);
-				flippingItem.setLatestSellTime(tradeTime);
+				flippingPanel.updateActivePanelsGePropertiesDisplay();
+			}
+
+		}
+	}
+
+	/**
+	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
+	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
+	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
+	 * events and also sets the ticks since the first offer in that slot to help with figuring out whether
+	 * an offer is a margin check.
+	 *
+	 * @param newOffer
+	 * @return a boolean representing whether the offer should be passed on or discarded
+	 */
+	private boolean isBadOffer(OfferInfo newOffer)
+	{
+
+		//i am mutating offers and they are being passed around, so i'm cloning to avoid passing the same reference around.
+		OfferInfo clonedNewOffer = newOffer.clone();
+
+		//Check empty offers (we always get them for every empty slot there is)
+		if (clonedNewOffer.getItemId() == 0 || clonedNewOffer.getState() == GrandExchangeOfferState.EMPTY)
+		{
+			return true;
+		}
+
+		//empty offers (handled right above) come before currentlyLoggedInAccount is set which is why this is put after
+		//the empty offer check and empty offers should always be rejected anyway.
+		Map<Integer, OfferInfo> loggedInAccsLastOffers = allAccountsData.get(currentlyLoggedInAccount).getLastOffers();
+
+		//this is always the start of any offer (when you first put in an offer)
+		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
+		{
+			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
+			return true;
+		}
+
+		//when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
+		//this clause ignores the buying/selling event as it conveys the same info. We can tell its the buying/selling
+		//event right before a bought/sold event due to the currentQuantityInTrade of the offer being == to the total currentQuantityInTrade of the offer.
+		if ((clonedNewOffer.getState() == GrandExchangeOfferState.BUYING || clonedNewOffer.getState() == GrandExchangeOfferState.SELLING) && clonedNewOffer.getCurrentQuantityInTrade() == newOffer.getTotalQuantityInTrade())
+		{
+			return true;
+		}
+
+		OfferInfo lastOfferForSlot = loggedInAccsLastOffers.get(clonedNewOffer.getSlot());
+
+		//this occurs when the user made the trade on a different client (not runelite) or doesn't have
+		//the plugin. In both cases, when the offer was made no history for the slot was recorded, so when
+		//they switch to runelite/get the plugin, there will be no last offer for the slot.
+		if (lastOfferForSlot == null)
+		{
+			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+			return false;
+		}
+
+		//if its a duplicate as the last seen event
+		if (lastOfferForSlot.equals(clonedNewOffer))
+		{
+			return true;
+		}
+
+		int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
+		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
+		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+		return false; //not a bad event
+
+	}
+
+	/**
+	 * This method extracts the data from the GrandExchangeOfferChanged event, which is a nested
+	 * data structure, and puts it into a flat data structure- OfferInfo. It also adds time to the offer.
+	 *
+	 * @param newOfferEvent new offer event just received
+	 * @return an OfferInfo with the relevant information.
+	 */
+	private OfferInfo extractRelevantInfo(GrandExchangeOfferChanged newOfferEvent)
+	{
+		GrandExchangeOffer offer = newOfferEvent.getOffer();
+
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
+			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
+			|| offer.getState() == GrandExchangeOfferState.BUYING;
+
+		return new OfferInfo(
+			isBuy,
+			offer.getItemId(),
+			offer.getQuantitySold(),
+			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
+			Instant.now().truncatedTo(ChronoUnit.SECONDS),
+			newOfferEvent.getSlot(),
+			offer.getState(),
+			client.getTickCount(),
+			0,
+			offer.getTotalQuantity(),
+			0,
+			true,
+			true);
+	}
+
+	/**
+	 * Finds an item in the given trades list that matches the given criteria.
+	 *
+	 * @param trades   the trades list to search through
+	 * @param criteria a function that needs to return true for the item to be returned
+	 * @return the item that matches the criteria
+	 */
+	private Optional<FlippingItem> findItemInTradesList(List<FlippingItem> trades, Predicate<FlippingItem> criteria)
+	{
+		return trades.stream().filter(criteria).findFirst();
+	}
+
+	/**
+	 * This method updates the given trade list in response to an OfferInfo based on whether an item
+	 * that matches what the offer was for already exists and whether the offer was a margin check.
+	 * <p>
+	 * If the offer was a margin check, and the item is present, that item's history and margin need
+	 * to be updated. If the item isn't present, a FlippingItem for the item in that offer and added to the trades
+	 * list.
+	 * <p>
+	 * If the offer was not a margin check and the item was present, just update the history and last traded
+	 * times of the object. (no need to update margins as the offer was not a margin check)
+	 * <p>
+	 * if the offer was not a margin check and the item wasn't present, we don't do anything as there
+	 * is no way to know what to display for the margin checked prices (as it wasn't a margin check) when
+	 * updating the FlippingItem that would have had to be constructed.
+	 *
+	 * @param trades       the trades list to update
+	 * @param flippingItem the flipping item to be updated in the tradeslist, if it even exists
+	 * @param newOffer     new offer that just came in
+	 */
+	private void updateTradesList(List<FlippingItem> trades, Optional<FlippingItem> flippingItem, OfferInfo newOffer)
+	{
+		if (newOffer.isMarginCheck())
+		{
+			if (flippingItem.isPresent())
+			{
+				FlippingItem item = flippingItem.get();
+				item.updateMargin(newOffer);
+				item.update(newOffer);
+
+				trades.remove(item);
+				trades.add(0, item);
 			}
 			else
 			{
-				flippingItem.setLatestBuyPrice(tradePrice);
-				flippingItem.setLatestBuyTime(tradeTime);
+				addToTradesList(trades, newOffer);
 			}
 		}
 
-		//When you have finished margin checking an item (when both the buy and sell prices have been set) and the auto
-		//freeze config option has been selected, freeze the item's margin.
-		if (!(flippingItem.getLatestBuyPrice() == 0) && !(flippingItem.getLatestSellPrice() == 0)
-			&& config.autoFreezeMargin())
+		//if the item exists in the trades list but its not a margin check, you only need to update its history and
+		//last traded times, not its margin.
+		else if (flippingItem.isPresent())
 		{
-			flippingItem.setFrozen(true);
+			flippingItem.get().update(newOffer);
 		}
-		flippingItem.updateGELimitReset();
+	}
+
+	/**
+	 * Given a new offer, this method creates a FlippingItem, the data structure that represents an item
+	 * you are currently flipping, and adds it to the loggedInUserTrades. The loggedInUserTrades is a crucial part of the state
+	 * of the flippingPlugin, as only items from the loggedInUserTrades are rendered and updated.
+	 *
+	 * @param newOffer new offer just received
+	 */
+	private void addToTradesList(List<FlippingItem> tradesList, OfferInfo newOffer)
+	{
+		int tradeItemId = newOffer.getItemId();
+		String itemName = itemManager.getItemComposition(tradeItemId).getName();
+
+		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+
+		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
+
+		flippingItem.updateMargin(newOffer);
+		flippingItem.update(newOffer);
+
+		tradesList.add(0, flippingItem);
+
+	}
+
+	/**
+	 * gets the trade list the user is currently looking at
+	 *
+	 * @return the trades.
+	 */
+	public List<FlippingItem> getTradesForCurrentView()
+	{
+		return allAccountsData.get(accountCurrentlyViewed).getTrades();
 	}
 
 	@Provides
@@ -467,10 +618,9 @@ public class FlippingPlugin extends Plugin
 	{
 		Widget widget = event.getWidget();
 		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (panel.isItemHighlighted() && widget.isHidden()
-			&& widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
+		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
 		{
-			panel.dehighlightItem();
+			flippingPanel.dehighlightItem();
 		}
 	}
 
@@ -478,9 +628,9 @@ public class FlippingPlugin extends Plugin
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		// The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
-		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && panel.isItemHighlighted())
+		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
-			panel.dehighlightItem();
+			flippingPanel.dehighlightItem();
 		}
 	}
 
@@ -488,96 +638,101 @@ public class FlippingPlugin extends Plugin
 	private void highlightOffer()
 	{
 		int currentGEItemId = client.getVar(CURRENT_GE_ITEM);
-		if (currentGEItemId == prevHighlight || panel.isItemHighlighted())
+		if (currentGEItemId == prevHighlight || flippingPanel.isItemHighlighted())
 		{
 			return;
 		}
 		prevHighlight = currentGEItemId;
-		panel.highlightItem(currentGEItemId);
+		flippingPanel.highlightItem(currentGEItemId);
 	}
 
-	private void updateGELimitRemaining()
+	public void storeTrades(Map<String, AccountData> trades)
 	{
-		long unitTime = Instant.now().toEpochMilli() / 100;
-
-		if (unitTime % 50 == 0)
+		try
 		{
-			for (FlippingItem flippingItem : tradesList)
+			tradePersister.storeTrades(trades);
+			log.info("successfully stored trades");
+		}
+		catch (IOException e)
+		{
+			log.info("couldn't store trades, error = " + e);
+		}
+	}
+
+	public Map<String, AccountData> loadTrades()
+	{
+		try
+		{
+			Map<String, AccountData> trades = tradePersister.loadTrades();
+			log.info("successfully loaded trades");
+			return trades;
+		}
+		catch (IOException e)
+		{
+			log.info("couldn't load trades, error: " + e);
+			return new HashMap<>();
+		}
+	}
+
+	public void truncateTradeList()
+	{
+		getTradesForCurrentView().removeIf((item) ->
+		{
+			if (item.getGeLimitResetTime() != null)
 			{
-				panel.updateGELimit();
+				Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
+
+				return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS)
+					&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
 			}
-		}
-	}
-
-	//Functionality to the top right reset button.
-	public void resetTradeHistory()
-	{
-		tradesList.clear();
-		panel.setItemHighlighted(false);
-		configManager.unsetConfiguration(CONFIG_GROUP, CONFIG_KEY);
-		panel.cardLayout.show(panel.getCenterPanel(), FlippingPanel.getWELCOME_PANEL());
-		panel.rebuildFlippingPanel(tradesList);
-	}
-
-	//Stores all the session trade data in config.
-	public void updateConfig()
-	{
-		if (tradesList.isEmpty())
-		{
-			return;
-		}
-		final Gson gson = new Gson();
-		executor.submit(() ->
-		{
-			final String json = gson.toJson(tradesList);
-			configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, json);
+			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS);
 		});
 	}
 
-	//Loads previous session data to tradeList.
-	public void loadConfig()
+	/**
+	 * This method is invoked every time a user selects a username from the dropdown at the top of the
+	 * panel. If the username selected does not exist in the cache, it uses loadTradeHistory to load it from
+	 * disk and set the cache. Otherwise, it just reads what in the cache for that username. It updates the displays
+	 * with the trades it either found in the cache or from disk.
+	 *
+	 * @param selectedUsername the username the user selected from the dropdown menu.
+	 */
+	public void changeView(String selectedUsername)
 	{
-		log.info("Loading flipping config");
-		final String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
-
-		if (json == null)
-		{
-			return;
-		}
-
-		try
-		{
-			final Gson gson = new Gson();
-			Type type = new TypeToken<ArrayList<FlippingItem>>()
-			{
-
-			}.getType();
-			tradesList = gson.fromJson(json, type);
-		}
-		catch (Exception e)
-		{
-			log.info("Error loading flipping data: " + e);
-		}
+		log.info("changing view to {}", selectedUsername);
+		List<FlippingItem> tradesListToDisplay = allAccountsData.get(selectedUsername).getTrades();
+		accountCurrentlyViewed = selectedUsername;
+		statPanel.rebuild(tradesListToDisplay);
+		flippingPanel.rebuild(tradesListToDisplay);
 	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		//Ensure that user configs are updated after being changed
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
-			//Ensure that user configs are updated after being changed
-			switch (event.getKey())
+			if (event.getKey().equals(ITEMS_CONFIG_KEY) || event.getKey().equals(TIME_INTERVAL_CONFIG_KEY))
 			{
-				case ("storeTradeHistory"):
-				case ("outOfDateWarning"):
-				case ("roiGradientMax"):
-				case ("marginCheckLoss"):
-				case ("twelveHourFormat"):
-					panel.rebuildFlippingPanel(tradesList);
-					break;
-				default:
-					break;
+				return;
 			}
+
+			if (event.getKey().equals("multiAccTracking"))
+			{
+				if (config.multiAccTracking())
+				{
+					tabManager.getViewSelector().setVisible(true);
+				}
+				else
+				{
+					tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
+					tabManager.getViewSelector().setVisible(false);
+				}
+				return;
+			}
+
+			statPanel.rebuild(getTradesForCurrentView());
+			flippingPanel.rebuild(getTradesForCurrentView());
 		}
 	}
 
@@ -587,7 +742,8 @@ public class FlippingPlugin extends Plugin
 		//Check that it was the chat input that got enabled.
 		if (event.getIndex() != VarClientInt.INPUT_TYPE.getIndex()
 			|| client.getWidget(WidgetInfo.CHATBOX_TITLE) == null
-			|| client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) != 7)
+			|| client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) != 7
+			|| client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER) == null)
 		{
 			return;
 		}
@@ -595,12 +751,12 @@ public class FlippingPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 
-			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER),
-				client);
+			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
-			for (FlippingItem item : tradesList)
+			for (FlippingItem item : getTradesForCurrentView())
 			{
 				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
 				{
@@ -610,8 +766,7 @@ public class FlippingPlugin extends Plugin
 			}
 
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
-			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER)
-				.getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
 			if (chatInputText.equals("How many do you wish to buy?"))
 			{
 				//No recorded data; default to total GE limit
@@ -619,11 +774,11 @@ public class FlippingPlugin extends Plugin
 				{
 					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
 					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-					flippingWidget.showWidget("setQuantity", itemGELimit);
+					flippingWidget.showWidget("setCurrentQuantityInTrade", itemGELimit);
 				}
 				else
 				{
-					flippingWidget.showWidget("setQuantity", selectedItem.getRemainingGELimit());
+					flippingWidget.showWidget("setCurrentQuantityInTrade", selectedItem.remainingGeLimit());
 				}
 			}
 			else if (chatInputText.equals("Set a price for each item:"))
@@ -631,25 +786,25 @@ public class FlippingPlugin extends Plugin
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestBuyPrice() == 0)
+					if (selectedItem == null || selectedItem.getMarginCheckBuyPrice() == 0)
 					{
 						flippingWidget.showWidget("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setBuyPrice", selectedItem.getLatestBuyPrice());
+						flippingWidget.showWidget("setBuyPrice", selectedItem.getMarginCheckBuyPrice());
 					}
 				}
 				else if (offerText.equals("Sell offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestSellPrice() == 0)
+					if (selectedItem == null || selectedItem.getMarginCheckSellPrice() == 0)
 					{
 						flippingWidget.showWidget("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setSellPrice", selectedItem.getLatestSellPrice());
+						flippingWidget.showWidget("setSellPrice", selectedItem.getMarginCheckSellPrice());
 					}
 				}
 			}

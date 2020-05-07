@@ -34,9 +34,16 @@ import net.runelite.client.config.Units;
 @ConfigGroup(FlippingPlugin.CONFIG_GROUP)
 public interface FlippingConfig extends Config
 {
+	enum Fonts
+	{
+		SMALL_FONT,
+		REGULAR_FONT,
+		BOLD_FONT
+	}
+
 	@ConfigItem(
 		keyName = "storeTradeHistory",
-		name = "Store session trade history locally",
+		name = "Store session trade history",
 		description = "Store your trade history to have your previous trade data show up on new game sessions"
 	)
 	default boolean storeTradeHistory()
@@ -89,7 +96,7 @@ public interface FlippingConfig extends Config
 	@ConfigItem(
 		keyName = "remainingGELimitProfit",
 		name = "Calculate potential profit from remaining GE limit",
-		description = "If unchecked, the potential profit will be calculated from total GE limit."
+		description = "If unchecked, the potential profit will be calculated from total GE limit"
 	)
 	default boolean geLimitProfit()
 	{
@@ -97,13 +104,23 @@ public interface FlippingConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "autoFreezeMargin",
-			name = "Automatically freeze the margin of new items.",
-
-			description = "Ensures that every item that gets added has its margin frozen to prevent its "
-					+ "margin from being updated by subsequent buys/sells of one."
+		keyName = "subInfoFont",
+		name = "Set sub info font",
+		description = "Choose the font for sub information on the panel"
 	)
-	default boolean autoFreezeMargin()
+	default Fonts subInfoFontStyle()
+	{
+		return Fonts.SMALL_FONT;
+	}
+
+	@ConfigItem(
+		keyName = "multiAccTracking",
+		name = "Enable multi account tracking",
+		description = "<html>Enabling this feature gives you access to a dropdown"
+			+ "<br>which allows you to see each of your accounts flips and profits in isolation."
+			+ "<br>This is very useful if you flip on multiple accounts.</html>"
+	)
+	default boolean multiAccTracking()
 	{
 		return false;
 	}
