@@ -285,7 +285,6 @@ public class FlippingPlugin extends Plugin
 				{
 					return false;
 				}
-				log.info("{} has logged in", name);
 				previouslyLoggedIn = true;
 				handleLogin(name);
 
@@ -295,7 +294,6 @@ public class FlippingPlugin extends Plugin
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
-			log.info("{} has logged out", currentlyLoggedInAccount);
 			currentlyLoggedInAccount = null;
 			storeTrades(allAccountsData);
 		}
