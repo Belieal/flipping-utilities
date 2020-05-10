@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
@@ -60,6 +61,7 @@ public class HistoryManager
 	//you the current currentQuantityInTrade bought/sold overall in the trade.
 	@SerializedName("sO")
 	@Getter
+	@Setter
 	private List<OfferInfo> standardizedOffers = new ArrayList<>();
 
 	@SerializedName("nGLR")
@@ -452,6 +454,8 @@ public class HistoryManager
 		List<OfferInfo> sellMarginChecks = new ArrayList<>();
 		List<OfferInfo> nonMarginCheckBuys = new ArrayList<>();
 		List<OfferInfo> nonMarginCheckSells = new ArrayList<>();
+		List<OfferInfo> allBuyOffers = new ArrayList<>();
+		List<OfferInfo> allSellOffers = new ArrayList<>();
 
 		ArrayList<Flip> flips = new ArrayList<>();
 
@@ -482,8 +486,16 @@ public class HistoryManager
 			}
 		}
 
-		flips.addAll(combineToFlips(clone(buyMarginChecks), clone(sellMarginChecks)));
-		flips.addAll(combineToFlips(clone(nonMarginCheckBuys), clone(nonMarginCheckSells)));
+		//add margin checks to the start of the list so that they are matched with each other in the combineToFlips
+		//process
+
+		allBuyOffers.addAll(buyMarginChecks);
+		allBuyOffers.addAll(nonMarginCheckBuys);
+
+		allSellOffers.addAll(sellMarginChecks);
+		allSellOffers.addAll(nonMarginCheckSells);
+
+		flips.addAll(combineToFlips(clone(allBuyOffers), clone(allSellOffers)));
 		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
 
