@@ -420,17 +420,17 @@ public class FlippingItemPanel extends JPanel
 	public void updateGePropertiesDisplay()
 	{
 		flippingItem.validateGeProperties();
+		boolean unknownLimit = false;
 
 		//New items can show as having a total GE limit of 0.
-		if (flippingItem.getTotalGELimit() != 0)
+		if (flippingItem.getTotalGELimit() > 0)
 		{
 			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
 		}
 		else
 		{
-			limitLabel.setText("GE limit: ???");
-			limitLabel.setToolTipText("This item does not have a total GE limit.");
-			return;
+			limitLabel.setText("GE limit: Unknown");
+			unknownLimit = true;
 		}
 
 		if (flippingItem.getGeLimitResetTime() == null)
@@ -439,17 +439,24 @@ public class FlippingItemPanel extends JPanel
 		}
 		else
 		{
-			final long remainingSeconds =
-				flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
+			final long remainingSeconds = flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
 			final long remainingMinutes = remainingSeconds / 60 % 60;
 			final long remainingHours = remainingSeconds / 3600 % 24;
-			String timeString =
-				String.format("%02d:%02d ", remainingHours, remainingMinutes) + (remainingHours > 1
-					? "hours" : "hour");
+			String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes)
+				+ (remainingHours > 1 ? "hours" : "hour");
 
-			limitLabel.setToolTipText("<html>" + "GE limit is reset in " + timeString + "."
+			String tooltipText = "";
+
+			if (unknownLimit)
+			{
+				tooltipText = "<html>This item's total GE limit is unknown.<br>";
+			}
+
+			tooltipText += "<html>GE limit is reset in " + timeString + "."
 				+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
-				+ ".<html>");
+				+ ".</html>";
+
+			limitLabel.setToolTipText(tooltipText);
 		}
 	}
 }

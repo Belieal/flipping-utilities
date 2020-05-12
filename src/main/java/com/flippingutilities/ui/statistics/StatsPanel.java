@@ -321,7 +321,7 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				if (e.getButton() == MouseEvent.BUTTON1)
+				if (SwingUtilities.isLeftMouseButton(e))
 				{
 					if (subInfoContainer.isVisible())
 					{
@@ -374,6 +374,28 @@ public class StatsPanel extends JPanel
 
 		//To ensure the item's name won't wrap the whole panel.
 		mostCommonFlipVal.setMaximumSize(new Dimension(145, 0));
+
+		sessionTimePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (SwingUtilities.isRightMouseButton(e))
+				{
+					//Display warning message
+					final int result = JOptionPane.showOptionDialog(resetIcon, "Are you sure you want to reset the session time?",
+						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+						null, new String[] {"Yes", "No"}, "No");
+
+					//If the user pressed "Yes"
+					if (result == JOptionPane.YES_OPTION)
+					{
+						sessionTime = Instant.now();
+						rebuild(plugin.getTradesForCurrentView());
+					}
+				}
+			}
+		});
 
 		//Wraps the total profit labels.
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
@@ -700,7 +722,7 @@ public class StatsPanel extends JPanel
 		{
 			panel.updateTimeDisplay();
 		}
-		sessionTimePanel.setToolTipText("Resets after each client reboot");
+		sessionTimePanel.setToolTipText("Right-click to reset session timer");
 	}
 
 	/**
