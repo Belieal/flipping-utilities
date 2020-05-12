@@ -242,7 +242,6 @@ public class FlippingPanel extends JPanel
 		//Reset active panel list.
 		activePanels.clear();
 
-
 		cardLayout.show(centerPanel, ITEMS_PANEL);
 
 		int index = 0;
@@ -294,12 +293,9 @@ public class FlippingPanel extends JPanel
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
 		flippingItemsPanel.removeAll();
-		SwingUtilities.invokeLater(() ->
-		{
-			initializeFlippingPanel(flippingItems);
-			revalidate();
-			repaint();
-		});
+		SwingUtilities.invokeLater(() -> initializeFlippingPanel(flippingItems));
+		revalidate();
+		repaint();
 	}
 
 	@Getter

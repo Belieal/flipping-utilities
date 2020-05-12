@@ -298,7 +298,7 @@ public class FlippingItemPanel extends JPanel
 
 		profitEachVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A"
 			: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A" : QuantityFormatter
+		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0 || profitTotal < 0) ? "N/A" : QuantityFormatter
 			.quantityToRSDecimalStack(profitTotal) + " gp");
 
 		roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
@@ -334,24 +334,23 @@ public class FlippingItemPanel extends JPanel
 	//Recalculates profits.
 	public void updatePotentialProfit()
 	{
-		this.profitEach = sellPrice - buyPrice;
+		profitEach = sellPrice - buyPrice;
 
 		/*
 		If the user wants, we calculate the total profit while taking into account
 		the margin check loss. */
 		if (plugin.getConfig().geLimitProfit())
 		{
-			this.profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
+			profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
 				: flippingItem.remainingGeLimit() * profitEach - (plugin.getConfig().marginCheckLoss()
 				? profitEach : 0);
 		}
 		else
 		{
-			this.profitTotal =
-				flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
-					? profitEach : 0);
+			profitTotal = flippingItem.getTotalGELimit() * profitEach
+				- (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
 		}
-		this.roi = calculateROI();
+		roi = calculateROI();
 	}
 
 	//Calculates the return on investment percentage.
