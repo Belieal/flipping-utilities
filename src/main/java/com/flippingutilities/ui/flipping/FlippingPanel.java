@@ -231,6 +231,14 @@ public class FlippingPanel extends JPanel
 		add(container, BorderLayout.CENTER);
 	}
 
+	public void rebuild(List<FlippingItem> flippingItems)
+	{
+		flippingItemsPanel.removeAll();
+		SwingUtilities.invokeLater(() -> initializeFlippingPanel(flippingItems));
+		revalidate();
+		repaint();
+	}
+
 	private void initializeFlippingPanel(List<FlippingItem> flippingItems)
 	{
 		if (flippingItems == null || flippingItems.size() == 0)
@@ -288,14 +296,6 @@ public class FlippingPanel extends JPanel
 			cardLayout.show(centerPanel, WELCOME_PANEL);
 		}
 
-	}
-
-	public void rebuild(List<FlippingItem> flippingItems)
-	{
-		flippingItemsPanel.removeAll();
-		SwingUtilities.invokeLater(() -> initializeFlippingPanel(flippingItems));
-		revalidate();
-		repaint();
 	}
 
 	@Getter

@@ -468,13 +468,12 @@ public class StatsPanel extends JPanel
 	{
 		//Remove old stats
 		activePanels = new ArrayList<>();
-		sortTradeList(tradesList);
 
 		SwingUtilities.invokeLater(() ->
 		{
 			statItemContainer.removeAll();
 			int index = 0;
-			for (FlippingItem item : tradesList)
+			for (FlippingItem item : sortTradeList(tradesList))
 			{
 				if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
 				{
@@ -837,21 +836,24 @@ public class StatsPanel extends JPanel
 	}
 
 	/**
-	 * Sorts the to-be-built tradeList items according to the selectedSort string.
+	 * Clones and sorts the to-be-built tradeList items according to the selectedSort string.
 	 *
 	 * @param tradeList The soon-to-be drawn tradeList whose items are getting sorted.
+	 * @return Returns a cloned and sorted tradeList as specified by the selectedSort string.
 	 */
-	public void sortTradeList(List<FlippingItem> tradeList)
+	public List<FlippingItem> sortTradeList(List<FlippingItem> tradeList)
 	{
-		if (selectedSort == null || tradeList.isEmpty())
+		List<FlippingItem> result = new ArrayList<>(tradeList);
+
+		if (selectedSort == null || result.isEmpty())
 		{
-			return;
+			return result;
 		}
 
 		switch (selectedSort)
 		{
 			case "Most Recent":
-				tradeList.sort((item1, item2) ->
+				result.sort((item1, item2) ->
 				{
 					if (item1 == null || item2 == null)
 					{
@@ -863,11 +865,11 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Most Total Profit":
-				tradeList.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
+				result.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
 				break;
 
 			case "Most Profit Each":
-				tradeList.sort(Comparator.comparing(item ->
+				result.sort(Comparator.comparing(item ->
 				{
 					ArrayList<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
 					int quantity = item.countItemsFlipped(intervalHistory);
@@ -882,7 +884,7 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Highest ROI":
-				tradeList.sort((item1, item2) ->
+				result.sort((item1, item2) ->
 				{
 					ArrayList<OfferInfo> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
 					ArrayList<OfferInfo> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
@@ -900,13 +902,15 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Highest Quantity":
-				tradeList.sort(Comparator.comparing(item -> item.countItemsFlipped(item.getIntervalHistory(startOfInterval))));
+				result.sort(Comparator.comparing(item -> item.countItemsFlipped(item.getIntervalHistory(startOfInterval))));
 				break;
 
 			default:
 				throw new IllegalStateException("Unexpected value: " + selectedSort);
 		}
-		Collections.reverse(tradeList);
+		Collections.reverse(result);
+
+		return result;
 	}
 
 }
