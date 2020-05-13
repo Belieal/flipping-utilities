@@ -56,6 +56,7 @@ import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
@@ -178,23 +179,20 @@ public class FlippingPlugin extends Plugin
 					return false;
 			}
 			//Loads tradesList with data from previous sessions.
-			if (config.storeTradeHistory())
+			try
 			{
-				try
-				{
-					tradePersister.setup();
-					allAccountsData = loadTrades();
-				}
-				catch (IOException e)
-				{
-					log.info("couldn't set up trade persistor: " + e);
-					allAccountsData = new HashMap<>();
-				}
+				tradePersister.setup();
+				allAccountsData = loadTrades();
+			}
+			catch (IOException e)
+			{
+				log.info("couldn't set up trade persistor: " + e);
+				allAccountsData = new HashMap<>();
+			}
 
-				if (!allAccountsData.containsKey(ACCOUNT_WIDE))
-				{
-					allAccountsData.put(ACCOUNT_WIDE, new AccountData());
-				}
+			if (!allAccountsData.containsKey(ACCOUNT_WIDE))
+			{
+				allAccountsData.put(ACCOUNT_WIDE, new AccountData());
 			}
 
 			//adding an item causes the event listener (changeView) to fire which causes stat panel
@@ -809,5 +807,16 @@ public class FlippingPlugin extends Plugin
 				}
 			}
 		});
+	}
+
+	@Subscribe
+	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	{
+		if (!event.getEventName().equals("test"))
+		{
+			return;
+		}
+
+		System.out.println(event);
 	}
 }
