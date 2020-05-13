@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -169,9 +170,18 @@ public class FlippingPanel extends JPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
-					resetPanel();
-					cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
-					rebuild(plugin.getTradesForCurrentView());
+					//Display warning message
+					final int result = JOptionPane.showOptionDialog(resetIcon, "Are you sure you want to reset the flipping panel?",
+						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+						null, new String[] {"Yes", "No"}, "No");
+
+					//If the user pressed "Yes"
+					if (result == JOptionPane.YES_OPTION)
+					{
+						resetPanel();
+						cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
+						rebuild(plugin.getTradesForCurrentView());
+					}
 				}
 			}
 
@@ -221,6 +231,14 @@ public class FlippingPanel extends JPanel
 		add(container, BorderLayout.CENTER);
 	}
 
+	public void rebuild(List<FlippingItem> flippingItems)
+	{
+		flippingItemsPanel.removeAll();
+		SwingUtilities.invokeLater(() -> initializeFlippingPanel(flippingItems));
+		revalidate();
+		repaint();
+	}
+
 	private void initializeFlippingPanel(List<FlippingItem> flippingItems)
 	{
 		if (flippingItems == null || flippingItems.size() == 0)
@@ -231,7 +249,6 @@ public class FlippingPanel extends JPanel
 
 		//Reset active panel list.
 		activePanels.clear();
-
 
 		cardLayout.show(centerPanel, ITEMS_PANEL);
 
@@ -279,17 +296,6 @@ public class FlippingPanel extends JPanel
 			cardLayout.show(centerPanel, WELCOME_PANEL);
 		}
 
-	}
-
-	public void rebuild(List<FlippingItem> flippingItems)
-	{
-		flippingItemsPanel.removeAll();
-		SwingUtilities.invokeLater(() ->
-		{
-			initializeFlippingPanel(flippingItems);
-			revalidate();
-			repaint();
-		});
 	}
 
 	@Getter
