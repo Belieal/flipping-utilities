@@ -432,9 +432,16 @@ public class FlippingItemPanel extends JPanel
 			unknownLimit = true;
 		}
 
+		String tooltipText = "";
+
+		if (unknownLimit)
+		{
+			tooltipText = "<html>This item's total GE limit is unknown.<br>";
+		}
+
 		if (flippingItem.getGeLimitResetTime() == null)
 		{
-			limitLabel.setToolTipText("None has been bought in the past 4 hours.");
+			tooltipText += "<html>None has been bought in the past 4 hours.</html>";
 		}
 		else
 		{
@@ -444,18 +451,10 @@ public class FlippingItemPanel extends JPanel
 			String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes)
 				+ (remainingHours > 1 ? "hours" : "hour");
 
-			String tooltipText = "";
-
-			if (unknownLimit)
-			{
-				tooltipText = "<html>This item's total GE limit is unknown.<br>";
-			}
-
 			tooltipText += "<html>GE limit is reset in " + timeString + "."
 				+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
 				+ ".</html>";
-
-			limitLabel.setToolTipText(tooltipText);
 		}
+		limitLabel.setToolTipText(tooltipText);
 	}
 }

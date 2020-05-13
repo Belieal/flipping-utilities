@@ -56,7 +56,6 @@ import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
-import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
@@ -809,14 +808,4 @@ public class FlippingPlugin extends Plugin
 		});
 	}
 
-	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
-	{
-		if (!event.getEventName().equals("test"))
-		{
-			return;
-		}
-
-		System.out.println(event);
-	}
 }
