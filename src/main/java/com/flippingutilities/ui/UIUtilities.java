@@ -39,6 +39,7 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
@@ -66,6 +67,7 @@ public class UIUtilities
 	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
 	private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
+	private static final String[] PARENTHESIS_EXCLUDED_WORDS = {"empty", "sk", "lg", "dark", "dusk", "light", "unf"};
 	private static final NumberFormat PRECISE_DECIMAL_FORMATTER = new DecimalFormat(
 		"#,###.###",
 		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
@@ -268,8 +270,11 @@ public class UIUtilities
 		boolean containsParentheses = splitString.length != 1;
 		if (containsParentheses)
 		{
-			//Every character inside parentheses need to be slugged.
-			itemName = splitString[0] + splitString[1].replace("", "-");
+			if (Arrays.stream(PARENTHESIS_EXCLUDED_WORDS).parallel().noneMatch(itemName::contains))
+			{
+				//Every character inside parentheses need to be slugged.
+				itemName = splitString[0] + splitString[1].replace("", "-");
+			}
 		}
 
 		//'+' is slugged to "plus"
@@ -284,8 +289,11 @@ public class UIUtilities
 
 		if (containsParentheses)
 		{
-			//If we removed the parentheses earlier, we're guaranteed to have a trailing slug
-			slug = slug.substring(0, slug.length() - 1);
+			if (Arrays.stream(PARENTHESIS_EXCLUDED_WORDS).parallel().noneMatch(itemName::contains))
+			{
+				//If we removed the parentheses earlier, we're guaranteed to have a trailing slug
+				slug = slug.substring(0, slug.length() - 1);
+			}
 		}
 
 		//Build the url
