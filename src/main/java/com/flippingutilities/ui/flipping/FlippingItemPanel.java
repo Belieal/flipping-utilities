@@ -149,6 +149,7 @@ public class FlippingItemPanel extends JPanel
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(background.darker());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemName, BorderLayout.CENTER);
@@ -457,4 +458,5 @@ public class FlippingItemPanel extends JPanel
 		}
 		limitLabel.setToolTipText(tooltipText);
 	}
+
 }
