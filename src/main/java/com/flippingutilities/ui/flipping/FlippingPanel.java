@@ -96,6 +96,9 @@ public class FlippingPanel extends JPanel
 	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
+	@Getter
+	JLabel resetIcon;
+
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
@@ -159,7 +162,7 @@ public class FlippingPanel extends JPanel
 			"For items to show up, margin check an item.");
 
 		//Clears the config and resets the items panel.
-		final JLabel resetIcon = new JLabel(RESET_ICON);
+		resetIcon = new JLabel(RESET_ICON);
 		resetIcon.setToolTipText("Reset trade history");
 		resetIcon.setPreferredSize(ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -194,6 +197,7 @@ public class FlippingPanel extends JPanel
 			resetPanel();
 			plugin.getStatPanel().resetPanel();
 			rebuild(plugin.getTradesForCurrentView());
+			plugin.getStatPanel().rebuild(plugin.getTradesForCurrentView());
 		});
 
 		final JPopupMenu popupMenu = new JPopupMenu();
