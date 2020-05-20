@@ -53,6 +53,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -229,8 +230,18 @@ public class StatsPanel extends JPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
-					resetPanel();
-					rebuild(plugin.getTradesForCurrentView());
+					//Display warning message
+					final int result = JOptionPane.showOptionDialog(resetIcon, "<html>Are you sure you want to reset the statistics?" +
+							"<br>This only resets the statistics within the time span</html>",
+						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+						null, new String[] {"Yes", "No"}, "No");
+
+					//If the user pressed "Yes"
+					if (result == JOptionPane.YES_OPTION)
+					{
+						resetPanel();
+						rebuild(plugin.getTradesForCurrentView());
+					}
 				}
 			}
 
@@ -314,7 +325,7 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				if (e.getButton() == MouseEvent.BUTTON1)
+				if (SwingUtilities.isLeftMouseButton(e))
 				{
 					if (subInfoContainer.isVisible())
 					{
@@ -367,6 +378,28 @@ public class StatsPanel extends JPanel
 
 		//To ensure the item's name won't wrap the whole panel.
 		mostCommonFlipVal.setMaximumSize(new Dimension(145, 0));
+
+		sessionTimePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (SwingUtilities.isRightMouseButton(e))
+				{
+					//Display warning message
+					final int result = JOptionPane.showOptionDialog(resetIcon, "Are you sure you want to reset the session time?",
+						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+						null, new String[] {"Yes", "No"}, "No");
+
+					//If the user pressed "Yes"
+					if (result == JOptionPane.YES_OPTION)
+					{
+						sessionTime = Instant.now();
+						rebuild(plugin.getTradesForCurrentView());
+					}
+				}
+			}
+		});
 
 		//Wraps the total profit labels.
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
@@ -439,13 +472,12 @@ public class StatsPanel extends JPanel
 	{
 		//Remove old stats
 		activePanels = new ArrayList<>();
-		sortTradeList(tradesList);
 
 		SwingUtilities.invokeLater(() ->
 		{
 			statItemContainer.removeAll();
 			int index = 0;
-			for (FlippingItem item : tradesList)
+			for (FlippingItem item : sortTradeList(tradesList))
 			{
 				if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
 				{
@@ -691,7 +723,7 @@ public class StatsPanel extends JPanel
 		{
 			panel.updateTimeDisplay();
 		}
-		sessionTimePanel.setToolTipText("Resets after each client reboot");
+		sessionTimePanel.setToolTipText("Right-click to reset session timer");
 	}
 
 	/**
@@ -806,21 +838,24 @@ public class StatsPanel extends JPanel
 	}
 
 	/**
-	 * Sorts the to-be-built tradeList items according to the selectedSort string.
+	 * Clones and sorts the to-be-built tradeList items according to the selectedSort string.
 	 *
 	 * @param tradeList The soon-to-be drawn tradeList whose items are getting sorted.
+	 * @return Returns a cloned and sorted tradeList as specified by the selectedSort string.
 	 */
-	public void sortTradeList(List<FlippingItem> tradeList)
+	public List<FlippingItem> sortTradeList(List<FlippingItem> tradeList)
 	{
-		if (selectedSort == null || tradeList.isEmpty())
+		List<FlippingItem> result = new ArrayList<>(tradeList);
+
+		if (selectedSort == null || result.isEmpty())
 		{
-			return;
+			return result;
 		}
 
 		switch (selectedSort)
 		{
 			case "Most Recent":
-				tradeList.sort((item1, item2) ->
+				result.sort((item1, item2) ->
 				{
 					if (item1 == null || item2 == null)
 					{
@@ -832,11 +867,11 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Most Total Profit":
-				tradeList.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
+				result.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
 				break;
 
 			case "Most Profit Each":
-				tradeList.sort(Comparator.comparing(item ->
+				result.sort(Comparator.comparing(item ->
 				{
 					ArrayList<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
 					int quantity = item.countItemsFlipped(intervalHistory);
@@ -851,7 +886,7 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Highest ROI":
-				tradeList.sort((item1, item2) ->
+				result.sort((item1, item2) ->
 				{
 					ArrayList<OfferInfo> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
 					ArrayList<OfferInfo> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
@@ -869,13 +904,15 @@ public class StatsPanel extends JPanel
 				break;
 
 			case "Highest Quantity":
-				tradeList.sort(Comparator.comparing(item -> item.countItemsFlipped(item.getIntervalHistory(startOfInterval))));
+				result.sort(Comparator.comparing(item -> item.countItemsFlipped(item.getIntervalHistory(startOfInterval))));
 				break;
 
 			default:
 				throw new IllegalStateException("Unexpected value: " + selectedSort);
 		}
-		Collections.reverse(tradeList);
+		Collections.reverse(result);
+
+		return result;
 	}
 
 }

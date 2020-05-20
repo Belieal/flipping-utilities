@@ -40,7 +40,7 @@ public interface FlippingConfig extends Config
 		REGULAR_FONT,
 		BOLD_FONT
 	}
-	
+
 	@ConfigItem(
 		keyName = "outOfDateWarning",
 		name = "Set how long before prices are outdated",

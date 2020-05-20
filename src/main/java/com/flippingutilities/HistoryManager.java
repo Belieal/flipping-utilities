@@ -540,7 +540,6 @@ public class HistoryManager
 			}
 		});
 
-
 		//we sort the offers because we added the unpaired margin checks back to the offer list and it should be
 		//placed in the appropriate place in the list so it doesn't get matched with an offer from many days ago or something.
 		nonMarginCheckBuys.sort(Comparator.comparing(OfferInfo::getTime));
@@ -613,8 +612,7 @@ public class HistoryManager
 			}
 
 		}
-		List<OfferInfo> p = sells.subList(sellIdx, sells.size());
-		List<OfferInfo> d = buys.subList(buyIdx, buys.size());
+
 		//if the sells were exhausted, it won't add anything as "i" will be equal to sells.size. The same applies with
 		//the buys
 		remainder.addAll(sells.subList(sellIdx, sells.size()));
