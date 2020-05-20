@@ -178,23 +178,20 @@ public class FlippingPlugin extends Plugin
 					return false;
 			}
 			//Loads tradesList with data from previous sessions.
-			if (config.storeTradeHistory())
+			try
 			{
-				try
-				{
-					tradePersister.setup();
-					allAccountsData = loadTrades();
-				}
-				catch (IOException e)
-				{
-					log.info("couldn't set up trade persistor: " + e);
-					allAccountsData = new HashMap<>();
-				}
+				tradePersister.setup();
+				allAccountsData = loadTrades();
+			}
+			catch (IOException e)
+			{
+				log.info("couldn't set up trade persistor: " + e);
+				allAccountsData = new HashMap<>();
+			}
 
-				if (!allAccountsData.containsKey(ACCOUNT_WIDE))
-				{
-					allAccountsData.put(ACCOUNT_WIDE, new AccountData());
-				}
+			if (!allAccountsData.containsKey(ACCOUNT_WIDE))
+			{
+				allAccountsData.put(ACCOUNT_WIDE, new AccountData());
 			}
 
 			//adding an item causes the event listener (changeView) to fire which causes stat panel
@@ -810,4 +807,5 @@ public class FlippingPlugin extends Plugin
 			}
 		});
 	}
+
 }
