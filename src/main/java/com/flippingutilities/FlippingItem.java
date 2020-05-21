@@ -236,6 +236,11 @@ public class FlippingItem
 	 */
 	public static FlippingItem merge(FlippingItem item1, FlippingItem item2)
 	{
+		if (item1 == null)
+		{
+			return item2;
+		}
+
 		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
 		{
 			item1.getHistory().getStandardizedOffers().addAll(item2.getHistory().getStandardizedOffers());
