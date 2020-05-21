@@ -9,6 +9,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +38,9 @@ public class CacheUpdater
 	Map<String, Long> lastEvents = new HashMap<>();
 
 
-	public CacheUpdater(ScheduledExecutorService executor, Consumer<String> onDirectoryUpdate)
+	public CacheUpdater(Consumer<String> onDirectoryUpdate)
 	{
-		this.executor = executor;
+		this.executor = Executors.newSingleThreadScheduledExecutor();
 		this.onDirectoryUpdate = onDirectoryUpdate;
 	}
 
