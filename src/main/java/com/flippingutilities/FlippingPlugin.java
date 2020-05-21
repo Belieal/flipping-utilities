@@ -807,8 +807,6 @@ public class FlippingPlugin extends Plugin
 		}
 
 		//take all flipping items from the account cache, regardless of account, and segregate them based on item name.
-		//Every offer is marked with which account it belong to so that in getFlips offers from different accounts are
-		//not matched together to create a flip.
 		Map<String, List<FlippingItem>> groupedItems = accountCache.values().stream().
 			flatMap(accountData -> accountData.getTrades().stream()).
 			map(FlippingItem::clone).
