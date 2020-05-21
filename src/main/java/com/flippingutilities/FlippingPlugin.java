@@ -153,10 +153,6 @@ public class FlippingPlugin extends Plugin
 	boolean updateSinceLastAccountWideBuild = true;
 	List<FlippingItem> prevBuiltAccountWideList;
 
-	//this stores the display name of the account the client last stored data for so that it doesn't reload when it
-	//gets an event for the file associated with that display name if it was the client to cause that event.
-	public String clientLastStored = "";
-
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	public CacheUpdater cacheUpdater;
 
@@ -659,7 +655,6 @@ public class FlippingPlugin extends Plugin
 		try
 		{
 			TradePersister.storeTrades(displayName, accountCache.get(displayName));
-			clientLastStored = displayName;
 			log.info("successfully stored trades");
 		}
 		catch (IOException e)
@@ -743,7 +738,6 @@ public class FlippingPlugin extends Plugin
 			tradesListToDisplay = accountCache.get(selectedName).getTrades();
 		}
 
-		//create shallow copy to prevent concurrent modification exceptions in rebuild
 		accountCurrentlyViewed = selectedName;
 		statPanel.rebuild(tradesListToDisplay);
 		flippingPanel.rebuild(tradesListToDisplay);
