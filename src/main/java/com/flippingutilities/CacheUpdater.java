@@ -7,7 +7,9 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,7 +31,7 @@ public class CacheUpdater
 
 	ScheduledExecutorService executor;
 
-	Consumer<String> onDirectoryUpdate;
+	List<Consumer<String>> callbacks = new ArrayList<>();
 
 	boolean isBeingShutdown = false;
 
@@ -38,10 +40,13 @@ public class CacheUpdater
 	Map<String, Long> lastEvents = new HashMap<>();
 
 
-	public CacheUpdater(Consumer<String> onDirectoryUpdate)
+	public CacheUpdater()
 	{
 		this.executor = Executors.newSingleThreadScheduledExecutor();
-		this.onDirectoryUpdate = onDirectoryUpdate;
+	}
+
+	public void registerCallback(Consumer<String> callback) {
+		callbacks.add(callback);
 	}
 
 	public void start()
@@ -75,12 +80,12 @@ public class CacheUpdater
 					log.info("change in directory for {} with event: {}", event.context(), event.kind());
 					if (!isDuplicateEvent(event.context().toString()))
 					{
-						log.info("not duplicate event, firing callback");
-						onDirectoryUpdate.accept(event.context().toString());
+						log.info("not duplicate event, firing callbacks");
+						callbacks.forEach(callback -> callback.accept(event.context().toString()));
 					}
 					else
 					{
-						log.info("duplicate event, not firing callback");
+						log.info("duplicate event, not firing callbacks");
 					}
 
 				}

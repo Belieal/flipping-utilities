@@ -227,7 +227,8 @@ public class FlippingPlugin extends Plugin
 				statPanel.setTimeInterval(lastSelectedInterval);
 			}
 
-			cacheUpdater = new CacheUpdater(this::onDirectoryUpdate);
+			cacheUpdater = new CacheUpdater();
+			cacheUpdater.registerCallback(this::onDirectoryUpdate);
 			cacheUpdater.start();
 			//stops scheduling this task
 			return true;
