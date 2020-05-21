@@ -310,9 +310,12 @@ public class FlippingPlugin extends Plugin
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
-			storeTrades(currentlyLoggedInAccount);
-			currentlyLoggedInAccount = null;
-
+			//this randomly fired at night hours after i had logged off...so i'm adding this guard here.
+			if (currentlyLoggedInAccount != null) {
+				log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
+				storeTrades(currentlyLoggedInAccount);
+				currentlyLoggedInAccount = null;
+			}
 		}
 	}
 
