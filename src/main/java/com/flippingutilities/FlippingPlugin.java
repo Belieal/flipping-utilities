@@ -252,9 +252,11 @@ public class FlippingPlugin extends Plugin
 	 *
 	 * @param clientShutdownEvent even that we receive when the client is shutting down
 	 */
-	@Subscribe
+	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
+		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
+
 		timeUpdateFuture.cancel(true);
 
 		cacheUpdater.stop();
