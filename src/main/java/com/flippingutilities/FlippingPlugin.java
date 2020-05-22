@@ -221,10 +221,12 @@ public class FlippingPlugin extends Plugin
 			if (lastSelectedInterval == null)
 			{
 				statPanel.setTimeInterval("All");
+				statPanel.setSelectedInterval("All");
 			}
 			else
 			{
 				statPanel.setTimeInterval(lastSelectedInterval);
+				statPanel.setSelectedInterval(lastSelectedInterval);
 			}
 
 			cacheUpdater = new CacheUpdater();

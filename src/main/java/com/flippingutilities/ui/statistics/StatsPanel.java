@@ -64,6 +64,7 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 import lombok.Getter;
+import lombok.Setter;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -165,6 +166,7 @@ public class StatsPanel extends JPanel
 	private Instant startOfInterval = Instant.now();
 
 	@Getter
+	@Setter
 	private String selectedInterval;
 
 	@Getter
