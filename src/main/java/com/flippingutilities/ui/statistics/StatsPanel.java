@@ -73,7 +73,7 @@ import net.runelite.client.util.QuantityFormatter;
 
 public class StatsPanel extends JPanel
 {
-	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
+	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past 12 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
@@ -780,6 +780,9 @@ public class StatsPanel extends JPanel
 				break;
 			case "Past 4 Hours":
 				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
+				break;
+			case "Past 12 Hours":
+				startOfInterval = timeNow.minus(12, ChronoUnit.HOURS);
 				break;
 			case "Past Day":
 				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
