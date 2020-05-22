@@ -311,7 +311,8 @@ public class FlippingPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
 			//this randomly fired at night hours after i had logged off...so i'm adding this guard here.
-			if (currentlyLoggedInAccount != null) {
+			if (currentlyLoggedInAccount != null)
+			{
 				log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
 				storeTrades(currentlyLoggedInAccount);
 				currentlyLoggedInAccount = null;
@@ -439,7 +440,6 @@ public class FlippingPlugin extends Plugin
 	 */
 	private boolean isBadOffer(OfferInfo newOffer)
 	{
-
 		//i am mutating offers and they are being passed around, so i'm cloning to avoid passing the same reference around.
 		OfferInfo clonedNewOffer = newOffer.clone();
 
@@ -449,14 +449,29 @@ public class FlippingPlugin extends Plugin
 			return true;
 		}
 
-		//empty offers (handled right above) come before currentlyLoggedInAccount is set which is why this is put after
-		//the empty offer check and empty offers should always be rejected anyway.
 		Map<Integer, OfferInfo> loggedInAccsLastOffers = accountCache.get(currentlyLoggedInAccount).getLastOffers();
 
-		//this is always the start of any offer (when you first put in an offer)
+		//this is always the start of any offer (when you first put in an offer), we use these offers to record when an
+		//offer was placed. Then, when an offer completes we can see how many ticks it took, thus determining whether it
+		//was a margin check or not.
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
-			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);//tickSinceFirstOffer is 0 here
+			if (clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL)
+			{
+				loggedInAccsLastOffers.remove(clonedNewOffer.getSlot());
+				return true;
+			}
+
+			if (loggedInAccsLastOffers.containsKey(clonedNewOffer.getSlot()))
+			{
+				//on login we get "these quantity of 0" offers again amd we don't want to overwrite it with the duplicate
+				//one on login as it would have a later tick count and can lead to erroneously marking offers as margin checks.
+				if (loggedInAccsLastOffers.get(clonedNewOffer.getSlot()).getCurrentQuantityInTrade() == 0)
+				{
+					return true;
+				}
+			}
+			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer); //tickSinceFirstOffer is 0 here
 			return true;
 		}
 
@@ -485,12 +500,11 @@ public class FlippingPlugin extends Plugin
 			return true;
 		}
 
-		int tickDiffFromLastOffer = clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt();
+		int tickDiffFromLastOffer = Math.abs(clonedNewOffer.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt());
 		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		return false; //not a bad event
-
 	}
 
 	/**
@@ -710,7 +724,8 @@ public class FlippingPlugin extends Plugin
 			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS);
 		});
 
-		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
 			accountCache.get(accountCurrentlyViewed).setTrades(currItems);
 
 		}
@@ -781,7 +796,8 @@ public class FlippingPlugin extends Plugin
 		updateSinceLastAccountWideBuild = true;
 
 		//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc)) {
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
+		{
 			List<FlippingItem> updatedList = getTradesForCurrentView();
 			flippingPanel.rebuild(updatedList);
 			statPanel.rebuild(updatedList);
