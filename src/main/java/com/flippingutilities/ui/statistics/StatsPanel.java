@@ -175,6 +175,9 @@ public class StatsPanel extends JPanel
 
 	private ArrayList<StatItemPanel> activePanels = new ArrayList<>();
 
+	@Getter
+	JLabel resetIcon;
+
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
 	 * This represents the front-end Statistics Tab.
@@ -217,7 +220,7 @@ public class StatsPanel extends JPanel
 		timeIntervalList.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
-		final JLabel resetIcon = new JLabel(RESET_ICON);
+		resetIcon = new JLabel(RESET_ICON);
 		resetIcon.setToolTipText("Reset Statistics");
 		resetIcon.setPreferredSize(ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -262,6 +265,7 @@ public class StatsPanel extends JPanel
 			resetPanel();
 			plugin.getFlippingPanel().resetPanel();
 			rebuild(plugin.getTradesForCurrentView());
+			plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
 		});
 
 		final JPopupMenu popupMenu = new JPopupMenu();
@@ -506,7 +510,7 @@ public class StatsPanel extends JPanel
 				activePanels.add(newPanel);
 				constraints.gridy++;
 			}
-			updateDisplays();
+			updateDisplays(tradesList);
 
 			revalidate();
 			repaint();
@@ -517,7 +521,7 @@ public class StatsPanel extends JPanel
 	 * Updates all profit labels on the stat panel using their respective update methods.
 	 * Gets called on startup, after the tradesList has been initialized, and after every new registered trade.
 	 */
-	public void updateDisplays()
+	public void updateDisplays(List<FlippingItem> tradesList)
 	{
 		subInfoContainer.removeAll();
 
@@ -536,8 +540,6 @@ public class StatsPanel extends JPanel
 		totalRevenues = 0;
 		totalQuantity = 0;
 		totalFlips = 0;
-
-		List<FlippingItem> tradesList = plugin.getTradesForCurrentView();
 
 		for (FlippingItem item : tradesList)
 		{

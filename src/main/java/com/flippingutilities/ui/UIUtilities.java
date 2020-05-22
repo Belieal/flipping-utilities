@@ -26,7 +26,6 @@
 
 package com.flippingutilities.ui;
 
-
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import java.awt.Color;
@@ -89,15 +88,18 @@ public class UIUtilities
 
 	static
 	{
-		final BufferedImage openIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/small_open_arrow.png");
+		final BufferedImage openIcon = ImageUtil
+        .getResourceStreamFromClass(FlippingPlugin.class, "/small_open_arrow.png");
 		CLOSE_ICON = new ImageIcon(openIcon);
 		OPEN_ICON = new ImageIcon(ImageUtil.rotateImage(openIcon, Math.toRadians(90)));
 
-		final BufferedImage resetIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
+		final BufferedImage resetIcon = ImageUtil
+        .getResourceStreamFromClass(FlippingPlugin.class, "/reset.png");
 		RESET_ICON = new ImageIcon(resetIcon);
 		RESET_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(resetIcon, 0.53f));
 
-		final BufferedImage deleteIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
+		final BufferedImage deleteIcon = ImageUtil
+        .getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
 		DELETE_ICON = new ImageIcon(deleteIcon);
 	}
 

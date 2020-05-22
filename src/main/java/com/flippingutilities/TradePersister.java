@@ -33,12 +33,16 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 
 /**
- * This class is responsible for storing the trades on disk.
+ * This class is responsible for handling all the IO related tasks for persisting trades. This class should contain
+ * any logic that pertains to reading/writing to disk. This includes logic related to whether it should reload things
+ * again, etc.
  */
 @Slf4j
 public class TradePersister
@@ -47,15 +51,15 @@ public class TradePersister
 	//this is in {user's home directory}/.runelite/flipping
 	public static final File PARENT_DIRECTORY = new File(RuneLite.RUNELITE_DIR, "flipping");
 
-	//this is {user's home directory}/.runelite/flipping/trades.json
-	public static final File TRADE_DATA_FILE = new File(PARENT_DIRECTORY, "trades.json");
+	public static final File OLD_FILE = new File(PARENT_DIRECTORY, "trades.json");
 
 	/**
-	 * Ensures that {user's home directory}/.runelite/flipping/trades.json exists
+	 * Creates flipping directory if it doesn't exist and partitions trades.json into individual files
+	 * for each account, if it exists.
 	 *
-	 * @throws IOException an exception that should be handled in flipping plugin
+	 * @throws IOException handled in FlippingPlugin
 	 */
-	public void setup() throws IOException
+	public static void setup() throws IOException
 	{
 		if (!PARENT_DIRECTORY.exists())
 		{
@@ -67,35 +71,29 @@ public class TradePersister
 		}
 		else
 		{
-			log.info("flipping directory already exists");
-		}
-
-		if (!TRADE_DATA_FILE.exists())
-		{
-			log.info("trades.json doesn't exist yet so it's being created");
-			if (!TRADE_DATA_FILE.createNewFile())
+			log.info("flipping directory already exists so it's not being created");
+			if (OLD_FILE.exists())
 			{
-				throw new IOException("unable to create trades.json!");
+				log.info("trades.json exists and is being partitioned into separate files to match the new way of storing" +
+					"trades");
+				partitionOldFile(OLD_FILE);
+				OLD_FILE.delete();
+
 			}
 		}
-		else
-		{
-			log.info("trades.json already exists");
-		}
+
 	}
 
 	/**
-	 * Loads the json as a byte array, converts it into a string, then converts it into hashmap
-	 * that associates a display name to an AccountData object. If there is no previous trades
-	 * stored, it just returns an empty hashmap.
+	 * Reads the data from trades.json and creates separate files for each account to conform with the
+	 * new way of saving data. It also sets the "madeBy" field on every OfferInfo object in the trade lists
+	 * as the old trades (in trades.json) would not have that field.
 	 *
-	 * @return all of user's trade related data such as their trades and the last offers for each slot
-	 * to helps screen out duplicate events.
-	 * @throws IOException handled in flipping plugin
+	 * @param f the old trades.json file.
 	 */
-	public Map<String, AccountData> loadTrades() throws IOException
+	private static void partitionOldFile(File f) throws IOException
 	{
-		String tradesJson = new String(Files.readAllBytes(TRADE_DATA_FILE.toPath()));
+		String tradesJson = new String(Files.readAllBytes(OLD_FILE.toPath()));
 
 		final Gson gson = new Gson();
 		Type type = new TypeToken<Map<String, AccountData>>()
@@ -103,22 +101,113 @@ public class TradePersister
 		}.getType();
 		Map<String, AccountData> accountData = gson.fromJson(tradesJson, type);
 
-		return accountData == null ? new HashMap<>() : accountData;
+		//they have no data to partition
+		if (!accountData.containsKey(FlippingPlugin.ACCOUNT_WIDE))
+		{
+			return;
+		}
+
+		//the account wide list might have different entries than the account specific lists. We want to use the
+		//list which has the most data. For example, it might be the case that a user has cleared one of their
+		//account's trade list but they haven't cleared the account wide list, which still has all the data.
+		Map<String, List<FlippingItem>> accountWideData = accountData.get(FlippingPlugin.ACCOUNT_WIDE).
+			getTrades().
+			stream().
+			collect(Collectors.groupingBy(FlippingItem::getFlippedBy));
+
+		for (String displayName : accountData.keySet())
+		{
+			if (displayName.equals(FlippingPlugin.ACCOUNT_WIDE))
+			{
+				continue;
+			}
+
+			AccountData accountSpecificData = accountData.get(displayName);
+
+			if (accountWideData.containsKey(displayName))
+			{
+				//if the account wide list has more items for that display name
+				if (accountWideData.get(displayName).size() > accountSpecificData.getTrades().size())
+				{
+					accountSpecificData.setTrades(accountWideData.get(displayName));
+				}
+			}
+
+			//sets the madeBy field on each offer as its required in the process for constructing the account wide tradelist.
+			//Every new offer that comes in (After this update) already gets it set, but the old offers won't have it and
+			//I don't want to have to delete all the user's data, so i am just making it conform to the new format.
+			accountSpecificData.getTrades().forEach(item -> item.getHistory().getStandardizedOffers().forEach(offer ->
+				offer.setMadeBy(item.getFlippedBy())));
+
+			try
+			{
+				storeTrades(displayName, accountSpecificData);
+			}
+			catch (IOException e)
+			{
+				log.info("error while partitioning trades.json into files for each account. error = {}, display name = {}.",
+					e, displayName);
+			}
+		}
 	}
 
 	/**
-	 * Stores the user's trade related data in a file located at {user's home directory}/.runelite/flipping/trades.json
+	 * loads each account's data from the parent directory located at {user's home directory}/.runelite/flipping/
+	 * Each account's data is stored in separate file in that directory and is named {displayName}.json
 	 *
-	 * @param accountDataCache all of user's accounts' trades and last offers for their slots.
-	 * @throws IOException handled in flipping plugin
+	 * @return a map of display name to that account's data
+	 * @throws IOException handled in FlippingPlugin
 	 */
-	public void storeTrades(Map<String, AccountData> accountDataCache) throws IOException
+	public static Map<String, AccountData> loadAllTrades() throws IOException
 	{
-		final Gson gson = new Gson();
-		final String json = gson.toJson(accountDataCache);
-		TRADE_DATA_FILE.delete();
-		TRADE_DATA_FILE.createNewFile();
-		Files.write(TRADE_DATA_FILE.toPath(), json.getBytes());
+		Map<String, AccountData> accountsData = new HashMap<>();
+		for (File f : PARENT_DIRECTORY.listFiles())
+		{
+			String displayName = f.getName().split("\\.")[0];
+			log.info("loading data for {}", displayName);
+			AccountData accountData = loadFromFile(f);
+			accountsData.put(displayName, accountData);
+		}
+
+		return accountsData;
 	}
 
+	public static AccountData loadTrades(String displayName) throws IOException
+	{
+		log.info("loading data for {}", displayName);
+		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
+		AccountData accountData = loadFromFile(accountFile);
+		return accountData;
+	}
+
+	private static AccountData loadFromFile(File f) throws IOException
+	{
+		String accountDataJson = new String(Files.readAllBytes(f.toPath()));
+		final Gson gson = new Gson();
+		Type type = new TypeToken<AccountData>()
+		{
+		}.getType();
+		AccountData accountData = gson.fromJson(accountDataJson, type);
+		return accountData;
+	}
+
+	/**
+	 * stores trades for an account in {user's home directory}/.runelite/flipping/{account's display name}.json
+	 *
+	 * @param displayName display name of the account the data is associated with
+	 * @param data        the trades and last offers of that account
+	 * @throws IOException
+	 */
+	public static void storeTrades(String displayName, AccountData data) throws IOException
+	{
+		log.info("storing trades for {}", displayName);
+		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
+		final Gson gson = new Gson();
+		final String json = gson.toJson(data);
+		Files.write(accountFile.toPath(), json.getBytes());
+	}
+
+	public static long lastModified(String fileName) {
+		return new File(PARENT_DIRECTORY, fileName).lastModified();
+	}
 }

@@ -28,6 +28,7 @@
 package com.flippingutilities;
 
 import com.google.gson.annotations.SerializedName;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -37,7 +38,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
@@ -73,6 +76,43 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
+	public HistoryManager()
+	{
+
+	}
+
+	public enum PanelSelection
+	{
+		FLIPPING,
+		STATS,
+		BOTH
+	}
+
+	//this constructor is just used for cloning purposes
+	private HistoryManager(Map<Integer, List<OfferInfo>> slotHistory, List<OfferInfo> standardizedOffers,
+						   Instant nextGeLimitRefresh, int itemsBoughtThisLimitWindow)
+	{
+		this.slotHistory = slotHistory;
+		this.standardizedOffers = standardizedOffers;
+		this.nextGeLimitRefresh = nextGeLimitRefresh;
+		this.itemsBoughtThisLimitWindow = itemsBoughtThisLimitWindow;
+	}
+
+	public HistoryManager clone()
+	{
+		Map<Integer, List<OfferInfo>> newSlotHistory = new HashMap<>();
+		for (int i : slotHistory.keySet())
+		{
+			newSlotHistory.put(i, clone(slotHistory.get(i)));
+		}
+
+		List<OfferInfo> newStandardizedOffers = clone(standardizedOffers);
+		Instant newGeLimitRefresh = nextGeLimitRefresh == null ? null : Instant.ofEpochMilli(nextGeLimitRefresh.toEpochMilli());
+
+		return new HistoryManager(newSlotHistory, newStandardizedOffers, newGeLimitRefresh, itemsBoughtThisLimitWindow);
+	}
+
+	//a utility to clone an offer list
 	private List<OfferInfo> clone(List<OfferInfo> offers)
 	{
 		return offers.stream().map(OfferInfo::clone).collect(Collectors.toList());
@@ -90,7 +130,7 @@ public class HistoryManager
 	public void updateHistory(OfferInfo newOffer)
 	{
 		storeStandardizedOffer(newOffer);
-		updateGeProperties(standardizedOffers);
+		updateGeProperties(standardizedOffers.get(standardizedOffers.size() - 1));
 		truncateOffers(standardizedOffers);
 	}
 
@@ -147,9 +187,8 @@ public class HistoryManager
 	 * Updates when the ge limit will refresh and how many items have been bought since the last
 	 * ge limit refresh.
 	 */
-	private void updateGeProperties(List<OfferInfo> offers)
+	private void updateGeProperties(OfferInfo mostRecentOffer)
 	{
-		OfferInfo mostRecentOffer = offers.get(offers.size() - 1);
 		if (!mostRecentOffer.isBuy())
 		{
 			return;
@@ -446,73 +485,145 @@ public class HistoryManager
 	 * @param earliestTime the time after which trades should be looked at
 	 * @return flips
 	 */
-	public ArrayList<Flip> getFlips(Instant earliestTime)
+	public List<Flip> getFlips(Instant earliestTime)
 	{
 		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
 
-		List<OfferInfo> buyMarginChecks = new ArrayList<>();
-		List<OfferInfo> sellMarginChecks = new ArrayList<>();
-		List<OfferInfo> nonMarginCheckBuys = new ArrayList<>();
-		List<OfferInfo> nonMarginCheckSells = new ArrayList<>();
-		List<OfferInfo> allBuyOffers = new ArrayList<>();
-		List<OfferInfo> allSellOffers = new ArrayList<>();
+		//group offers based on which account those offers belong to (this is really only relevant when getting the flips
+		//of the account wide tradelist as you don't want to match offers from diff accounts.
+		Map<String, List<OfferInfo>> groupedOffers = intervalHistory.stream().collect(Collectors.groupingBy(OfferInfo::getMadeBy));
 
-		ArrayList<Flip> flips = new ArrayList<>();
+		//take each offer list and create flips out of them, then put those flips into one list.
+		List<Flip> flips = new ArrayList<>();
+		groupedOffers.values().forEach(offers -> flips.addAll(createFlips(offers)));
 
-		for (OfferInfo offer : intervalHistory)
-		{
-			if (offer.isMarginCheck())
-			{
-				if (offer.isBuy())
-				{
-					buyMarginChecks.add(offer);
-				}
-				else
-				{
-					sellMarginChecks.add(offer);
-				}
-			}
-
-			else if (!offer.isMarginCheck() && offer.isComplete())
-			{
-				if (offer.isBuy())
-				{
-					nonMarginCheckBuys.add(offer);
-				}
-				else
-				{
-					nonMarginCheckSells.add(offer);
-				}
-			}
-		}
-
-		//add margin checks to the start of the list so that they are matched with each other in the combineToFlips
-		//process
-
-		allBuyOffers.addAll(buyMarginChecks);
-		allBuyOffers.addAll(nonMarginCheckBuys);
-
-		allSellOffers.addAll(sellMarginChecks);
-		allSellOffers.addAll(nonMarginCheckSells);
-
-		flips.addAll(combineToFlips(clone(allBuyOffers), clone(allSellOffers)));
 		flips.sort(Comparator.comparing(Flip::getTime));
 		Collections.reverse(flips);
 
 		return flips;
 	}
 
-	public enum PanelSelection
+	/**
+	 * Creates flips out of a list of offers. It does this by first pairing margin check offers together and then
+	 * pairing regular offers together.
+	 *
+	 * @param offers the offer list
+	 * @return flips
+	 */
+	public List<Flip> createFlips(List<OfferInfo> offers)
 	{
-		FLIPPING,
-		STATS,
-		BOTH
+		List<OfferInfo>[] subLists = partition(
+			offers.stream().map(OfferInfo::clone).collect(Collectors.toList()),
+			o -> o.isMarginCheck() && o.isBuy(),
+			o -> o.isMarginCheck() && !o.isBuy(),
+			o -> !o.isMarginCheck() && o.isComplete() && o.isBuy(),
+			o -> !o.isMarginCheck() && o.isComplete() && !o.isBuy());
+
+		List<OfferInfo> buyMarginChecks = subLists[0];
+		List<OfferInfo> sellMarginChecks = subLists[1];
+		List<OfferInfo> nonMarginCheckBuys = subLists[2];
+		List<OfferInfo> nonMarginCheckSells = subLists[3];
+
+		ArrayList<Flip> flips = new ArrayList<>();
+
+		List<OfferInfo> unPairedMarginChecks = new ArrayList<>();
+		List<Flip> flipsFromMarginChecks = pairMarginChecks(buyMarginChecks, sellMarginChecks, unPairedMarginChecks);
+
+		unPairedMarginChecks.forEach(offer -> {
+			if (offer.isBuy())
+			{
+				nonMarginCheckBuys.add(offer);
+			}
+			else
+			{
+				nonMarginCheckSells.add(offer);
+			}
+		});
+
+		//we sort the offers because we added the unpaired margin checks back to the offer list and it should be
+		//placed in the appropriate place in the list so it doesn't get matched with an offer from many days ago or something.
+		nonMarginCheckBuys.sort(Comparator.comparing(OfferInfo::getTime));
+		nonMarginCheckSells.sort(Comparator.comparing(OfferInfo::getTime));
+
+		flips.addAll(flipsFromMarginChecks);
+		flips.addAll(combineToFlips(nonMarginCheckBuys, nonMarginCheckSells));
+
+		return flips;
+
+	}
+
+	/**
+	 * We need to pair margin check offers together because we don't want them to be paired with a regular offer in the case
+	 * of an uneven quantity of items bought/sold. Pairing margin checks is tricky...A "whole" margin check is defined as a
+	 * buy margin check offer followed by a sell margin check offer. However, when flipping, one often insta
+	 * buys an item just to see its optimal sell price and likewise they might randomly insta sell an item to see
+	 * its optimal buy price. These "half" margin checks may not be followed by a corresponding buy/sell margin check offer
+	 * to make it a "whole" margin check. As such, if we are grouping margin check offers together to create flips,
+	 * if a user has done some of these "half" margin checks, we have to be careful not to accidently group them with a
+	 * buy/sell margin check offer that actually has its corresponding buy/sell margin check offer that makes it a whole
+	 * margin check. This can result in REALLY inaccurate Flips as half margin check (lets say its a margin check buy offer)
+	 * from a day before can be matched with a sell margin check offer from another day (when the margin's are totally
+	 * different). And since that buy margin check offer was erroneously matched to that sell margin check offer the
+	 * buy offer that was actually supposed to be matched to it, might match with some sell margin check offer that
+	 * IT doesn't correspond to, etc.
+	 *
+	 * @param buys      a list of buy margin check offers
+	 * @param sells     a list of sell margin check offers
+	 * @param remainder an empty list to be populated with margin check offers that don't have companion buy/sell offers.
+	 * @return a list of flips created from "whole" margin checks.
+	 */
+	public List<Flip> pairMarginChecks(List<OfferInfo> buys, List<OfferInfo> sells, List<OfferInfo> remainder)
+	{
+		List<Flip> flips = new ArrayList<>();
+		int buyIdx;
+		int sellIdx = 0;
+		for (buyIdx = 0; buyIdx < buys.size(); buyIdx++)
+		{
+
+			if (sellIdx == sells.size())
+			{
+				break;
+			}
+
+			OfferInfo buy = buys.get(buyIdx);
+			OfferInfo sell = sells.get(sellIdx);
+
+			//just a subjective heuristic i am using to determine whether a buy margin check has a companion sell margin
+			//check. Chances are, if there's a 1 minute difference
+			long millisBetweenBuyAndSell = Duration.between(buy.getTime(), sell.getTime()).toMillis();
+			if (millisBetweenBuyAndSell >= 0 && millisBetweenBuyAndSell < 60000) //60k milliseconds is a minute
+			{
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck()));
+				sellIdx++;
+			}
+
+			//if the buy is more than 1 minute before the sell, its probably not for that sell.
+			else if (millisBetweenBuyAndSell >= 0 && !(millisBetweenBuyAndSell < 60000))
+			{
+				remainder.add(buy);
+			}
+
+			//if the sell comes before the buy its a stand alone insta sell (a "half" margin check")
+			else if (millisBetweenBuyAndSell < 0)
+			{
+				remainder.add(sell);
+				sellIdx++;
+				buyIdx--; //stay on this buy offer
+			}
+
+		}
+
+		//if the sells were exhausted, it won't add anything as "i" will be equal to sells.size. The same applies with
+		//the buys
+		remainder.addAll(sells.subList(sellIdx, sells.size()));
+		remainder.addAll(buys.subList(buyIdx, buys.size()));
+		return flips;
 	}
 
 	/**
 	 * Creates flips based on the buy and sell list. It does this by going through the sell list and the buy list
 	 * and only moving onto the next sell offer when the current sell offer is exhausted (seen more items bought than it
-	 * has items sold). This ensures that a flip is only created on a completed sell offer.
+	 * has items sold). This ensures that a flip is only created on a completed sell offer
 	 *
 	 * @param buys  the buy offers
 	 * @param sells the sell offers
@@ -520,26 +631,65 @@ public class HistoryManager
 	 */
 	private ArrayList<Flip> combineToFlips(List<OfferInfo> buys, List<OfferInfo> sells)
 	{
+
 		ArrayList<Flip> flips = new ArrayList<>();
 
 		int buyIdx = 0;
 		for (OfferInfo sell : sells)
 		{
 			int numBuysSeen = 0;
+			int totalRevenue = 0;
 			while (buyIdx < buys.size())
 			{
 				OfferInfo buy = buys.get(buyIdx);
 				numBuysSeen += buy.getCurrentQuantityInTrade();
+
 				if (numBuysSeen >= sell.getCurrentQuantityInTrade())
 				{
-					buy.setCurrentQuantityInTrade(numBuysSeen - sell.getCurrentQuantityInTrade());
-					flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck()));
+					int leftOver = numBuysSeen - sell.getCurrentQuantityInTrade();
+					int amountTaken = buy.getCurrentQuantityInTrade() - leftOver;
+					totalRevenue += amountTaken * buy.getPrice();
+					buy.setCurrentQuantityInTrade(leftOver);
+					flips.add(new Flip(totalRevenue / sell.getCurrentQuantityInTrade(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck() && buy.isMarginCheck()));
 					break;
 				}
-				buyIdx++;
+				else
+				{
+					totalRevenue += buy.getCurrentQuantityInTrade() * buy.getPrice();
+					buyIdx++;
+				}
 			}
 		}
 
 		return flips;
+	}
+
+
+	/**
+	 * Partition a list of items into n sublists based on n conditions passed in. Perhaps this should be a static method?
+	 * The first condition puts items that meet its criteria in the first arraylist in the sublists array, the nth
+	 * conditions puts the items in the nth arraylist in the sublists array.
+	 *
+	 * @param items      to partition into sub lists
+	 * @param conditions conditions to partition on
+	 * @return
+	 */
+	private <T> List<T>[] partition(List<T> items, Predicate<T>... conditions)
+	{
+		List<T>[] subLists = new ArrayList[conditions.length];
+
+		IntStream.range(0, subLists.length).forEach(i -> subLists[i] = new ArrayList<>());
+
+		for (T item : items)
+		{
+			for (int i = 0; i < conditions.length; i++)
+			{
+				if (conditions[i].test(item))
+				{
+					subLists[i].add(item);
+				}
+			}
+		}
+		return subLists;
 	}
 }

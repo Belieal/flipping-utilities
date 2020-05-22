@@ -480,8 +480,10 @@ public class StatItemPanel extends JPanel
 
 		quantityValLabel.setText(QuantityFormatter.formatNumber(itemCountFlipped) + " Items");
 
-		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalExpense / itemCountFlipped)) + " gp");
-		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalRevenue / itemCountFlipped)) + " gp");
+		avgBuyPriceValLabel.setText(
+        QuantityFormatter.formatNumber((int) (totalExpense / itemCountFlipped)) + " gp");
+		avgSellPriceValLabel.setText(
+        QuantityFormatter.formatNumber((int) (totalRevenue / itemCountFlipped)) + " gp");
 
 		float roi = (float) totalProfit / totalExpense * 100;
 

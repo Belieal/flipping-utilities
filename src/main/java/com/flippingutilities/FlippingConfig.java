@@ -112,6 +112,6 @@ public interface FlippingConfig extends Config
 	)
 	default boolean multiAccTracking()
 	{
-		return false;
+		return true;
 	}
 }
