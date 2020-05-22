@@ -608,7 +608,6 @@ public class FlippingPlugin extends Plugin
 		flippingItem.update(newOffer);
 
 		tradesList.add(0, flippingItem);
-
 	}
 
 	/**

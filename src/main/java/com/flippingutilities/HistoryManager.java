@@ -41,7 +41,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -50,6 +52,8 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * an item along with tracking how many items they bought since the last ge limit refresh and when the
  * next ge limit refresh for this an item will be.
  */
+@AllArgsConstructor
+@NoArgsConstructor
 public class HistoryManager
 {
 	//contains the history for each slot so that when a new offer comes in for a slot, we can use the
@@ -76,26 +80,11 @@ public class HistoryManager
 	@Getter
 	private int itemsBoughtThisLimitWindow;
 
-	public HistoryManager()
-	{
-
-	}
-
 	public enum PanelSelection
 	{
 		FLIPPING,
 		STATS,
 		BOTH
-	}
-
-	//this constructor is just used for cloning purposes
-	private HistoryManager(Map<Integer, List<OfferInfo>> slotHistory, List<OfferInfo> standardizedOffers,
-						   Instant nextGeLimitRefresh, int itemsBoughtThisLimitWindow)
-	{
-		this.slotHistory = slotHistory;
-		this.standardizedOffers = standardizedOffers;
-		this.nextGeLimitRefresh = nextGeLimitRefresh;
-		this.itemsBoughtThisLimitWindow = itemsBoughtThisLimitWindow;
 	}
 
 	public HistoryManager clone()
@@ -529,7 +518,8 @@ public class HistoryManager
 		List<OfferInfo> unPairedMarginChecks = new ArrayList<>();
 		List<Flip> flipsFromMarginChecks = pairMarginChecks(buyMarginChecks, sellMarginChecks, unPairedMarginChecks);
 
-		unPairedMarginChecks.forEach(offer -> {
+		unPairedMarginChecks.forEach(offer ->
+		{
 			if (offer.isBuy())
 			{
 				nonMarginCheckBuys.add(offer);

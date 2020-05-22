@@ -30,7 +30,10 @@ import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -44,6 +47,8 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * This class is the model behind a FlippingItemPanel as its data is used to create the contents
  * of a panel which is then displayed.
  */
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class FlippingItem
 {
 	@SerializedName("id")
@@ -52,6 +57,7 @@ public class FlippingItem
 
 	@SerializedName("name")
 	@Getter
+	@NonNull
 	private final String itemName;
 
 	@SerializedName("tGL")
@@ -104,36 +110,8 @@ public class FlippingItem
 
 	@SerializedName("fB")
 	@Getter
+	@NonNull
 	private String flippedBy;
-
-	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
-	{
-		this.itemId = itemId;
-		this.itemName = itemName;
-		this.totalGELimit = totalGeLimit;
-		this.flippedBy = flippedBy;
-	}
-
-	private FlippingItem(int itemId, String itemName, int totalGeLimit, int marginCheckBuyPrice, int marginCheckSellPrice,
-						 Instant marginCheckBuyTime, Instant marginCheckSellTime, Instant latestBuyTime, Instant latestSellTime,
-						 Instant latestActivityTime, boolean shouldExpandStatItem, boolean shouldExpandHistory,
-						 HistoryManager history, String flippedBy)
-	{
-		this.itemId = itemId;
-		this.itemName = itemName;
-		this.totalGELimit = totalGeLimit;
-		this.marginCheckBuyPrice = marginCheckBuyPrice;
-		this.marginCheckSellPrice = marginCheckSellPrice;
-		this.marginCheckBuyTime = marginCheckBuyTime;
-		this.marginCheckSellTime = marginCheckSellTime;
-		this.latestBuyTime = latestBuyTime;
-		this.latestSellTime = latestSellTime;
-		this.latestActivityTime = latestActivityTime;
-		this.shouldExpandStatItem = shouldExpandStatItem;
-		this.shouldExpandHistory = shouldExpandHistory;
-		this.history = history;
-		this.flippedBy = flippedBy;
-	}
 
 	//utility for cloning an instant...
 	private Instant ci(Instant i)

@@ -207,7 +207,8 @@ public class TradePersister
 		Files.write(accountFile.toPath(), json.getBytes());
 	}
 
-	public static long lastModified(String fileName) {
+	public static long lastModified(String fileName)
+	{
 		return new File(PARENT_DIRECTORY, fileName).lastModified();
 	}
 }
