@@ -460,6 +460,8 @@ public class FlippingPlugin extends Plugin
 		//was a margin check or not.
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
+			//we need to delete the history for the slot in this case so when the user puts in another offer after
+			//cancelling, it doesn't ignore the newly generated "quantity of 0" event as a duplicate like we get on login.
 			if (clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL)
 			{
 				loggedInAccsLastOffers.remove(clonedNewOffer.getSlot());
