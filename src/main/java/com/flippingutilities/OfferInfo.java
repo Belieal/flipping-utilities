@@ -29,8 +29,10 @@ package com.flippingutilities;
 
 import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -164,6 +166,30 @@ public class OfferInfo
 
 		return state == otherOffer.getState() && currentQuantityInTrade == otherOffer.getCurrentQuantityInTrade()
 			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
+	}
+
+	public static OfferInfo fromGrandExchangeEvent(GrandExchangeOfferChanged event) {
+		GrandExchangeOffer offer = event.getOffer();
+
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
+			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
+			|| offer.getState() == GrandExchangeOfferState.BUYING;
+
+		return new OfferInfo(
+			isBuy,
+			offer.getItemId(),
+			offer.getQuantitySold(),
+			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
+			Instant.now().truncatedTo(ChronoUnit.SECONDS),
+			event.getSlot(),
+			offer.getState(),
+			0,
+			0,
+			offer.getTotalQuantity(),
+			0,
+			true,
+			true,
+			null);
 	}
 }
 

@@ -393,7 +393,7 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		OfferInfo newOffer = extractRelevantInfo(newOfferEvent);
+		OfferInfo newOffer = createOffer(newOfferEvent);
 
 		if (isBadOffer(newOffer))
 		{
@@ -514,35 +514,18 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * This method extracts the data from the GrandExchangeOfferChanged event, which is a nested
-	 * data structure, and puts it into a flat data structure- OfferInfo. It also adds time to the offer.
+	 * Creates an OfferInfo object out of a GrandExchangeOfferChanged event and adds additional attributes such as
+	 * tickArrivedAt to help identify margin check offers.
 	 *
-	 * @param newOfferEvent new offer event just received
-	 * @return an OfferInfo with the relevant information.
+	 * @param newOfferEvent event that we subscribe to.
+	 * @return an OfferInfo object with the relevant information from the event.
 	 */
-	private OfferInfo extractRelevantInfo(GrandExchangeOfferChanged newOfferEvent)
+	private OfferInfo createOffer(GrandExchangeOfferChanged newOfferEvent)
 	{
-		GrandExchangeOffer offer = newOfferEvent.getOffer();
-
-		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
-			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
-			|| offer.getState() == GrandExchangeOfferState.BUYING;
-
-		return new OfferInfo(
-			isBuy,
-			offer.getItemId(),
-			offer.getQuantitySold(),
-			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
-			Instant.now().truncatedTo(ChronoUnit.SECONDS),
-			newOfferEvent.getSlot(),
-			offer.getState(),
-			client.getTickCount(),
-			0,
-			offer.getTotalQuantity(),
-			0,
-			true,
-			true,
-			currentlyLoggedInAccount);
+		OfferInfo offer = OfferInfo.fromGrandExchangeEvent(newOfferEvent);
+		offer.setTickArrivedAt(client.getTickCount());
+		offer.setMadeBy(currentlyLoggedInAccount);
+		return offer;
 	}
 
 	/**
