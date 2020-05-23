@@ -30,6 +30,8 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import java.awt.BorderLayout;
 import java.awt.event.ItemEvent;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.swing.JComboBox;
@@ -109,6 +111,17 @@ public class TabManager extends PluginPanel
 
 		add(header, BorderLayout.NORTH);
 		add(display, BorderLayout.CENTER);
+	}
+
+
+	public Set<String> getViewSelectorItems()
+	{
+		Set<String> items = new HashSet<>();
+		for (int i = 0; i < viewSelector.getItemCount(); i++)
+		{
+			items.add(viewSelector.getItemAt(i));
+		}
+		return items;
 	}
 
 }
