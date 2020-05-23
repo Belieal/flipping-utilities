@@ -273,6 +273,7 @@ public class StatItemPanel extends JPanel
 			}
 		});
 
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
 

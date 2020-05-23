@@ -42,16 +42,6 @@ public interface FlippingConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "storeTradeHistory",
-		name = "Store session trade history",
-		description = "Store your trade history to have your previous trade data show up on new game sessions"
-	)
-	default boolean storeTradeHistory()
-	{
-		return true;
-	}
-
-	@ConfigItem(
 		keyName = "outOfDateWarning",
 		name = "Set how long before prices are outdated",
 		description = "Set how long before warning that prices are outdated"
@@ -122,6 +112,6 @@ public interface FlippingConfig extends Config
 	)
 	default boolean multiAccTracking()
 	{
-		return false;
+		return true;
 	}
 }

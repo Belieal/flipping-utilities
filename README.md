@@ -3,6 +3,23 @@ This external plugin seeks to help users with flipping in OSRS. It stores the la
 
 **Disclaimer: This is not an OSBuddy Exchange replacement, as it does not send or receive price data from other users.**
 
+# Table of Contents
+- [Features](#features)
+    + [The Flipping Panel](#the-flipping-panel)
+    + [The Statistics Panel](#the-statistics-panel)
+    + [Additional Features](#additional-features)
+    
+      - [GE limit tracking](#ge-limit-tracking--so-you-can-see-the-remaining-items-you-can-buy-in-the-limit-along-with-when-the-limit-expires)
+      - [Time of latest margin check.](#time-of-latest-margin-check--so-that-you-can-make-sure-your-prices-are-up-to-date)
+      - [Widgets](#widgets)
+      
+- [Potential future features](#potential-future-features)
+- [Changelog](#changelog)
+  * [v1.2](#v12)
+  * [v1.3 - Statistics Tab update](#v13---statistics-tab-update)
+    - [v1.3.1 - Multi-client support and GE tracking links](#v131---multi-client-support-and-ge-tracking-links)
+
+
 # Features
 The plugin is divided into two panels, the flipping panel and statistics panel. Each panel shows different information about the flips you've made.
 
@@ -89,9 +106,6 @@ Simply click the red text and press enter.
 * Collapsing trades after the GE limit has been bought.
 * Grouped checklist tab with import and export features so you can keep track of the items you like to flip most!
 
-## Support
-This is my first RuneLite project/contribution and there are guaranteed to be mistakes. But I am determined to improve and better my skills so therefore, if you notice any bugs, have any suggestions or want to contribute to the plugin, I would appreciate it a lot if you opened an issue here or messaged me online. (RSN: Beliael) You can also contact me on Discord at Belieal#6600.
-
 ## Changelog
 
 v1.0 - Plugin added!
@@ -143,5 +157,33 @@ We've also added a whole new margin check detection system. This means we now de
 Lastly, we've added a ton of small bug fixes and general optimizations of the plugin. Unfortunately, we've had to disable the cloud sync feature, which means all your flips and stats are now stored locally. This was due to the amount of data we're requiring with this new statistics tab being too large for the way we synced RuneLite data. This local data is stored within your RuneLite directory (/flipping/trades.json). If you're a heavy user of this plugin, this may become a pretty large file so it is recommended that you reset your panels once in a while. This can be done by right-clicking the reset button in the top right of the panel.
 
 This update has been long in the making and it definitely took a lot of work behind the scenes. Therefore, I couldn't have done it without the help from [Zumaad](https://github.com/zumaad), whose amazing work on the backend really made it all possible. Big thanks to you, my friend! ❤
+
+## v1.3.1 - Multi-client support and GE tracking links!
+
+This update adds all new multi-client support, GE tracking links and various smaller additions and bug fixes.
+
+### Multi-client support
+
+Previously, trade data would get overwritten whenever you had multiple clients open, rendering the plugin unable to properly store data. With this update, the plugin can now communicate, store and extract historical trade data between multiple simultaneous client sessions. Big thanks to [Zumaad](https://github.com/zumaad) for developing this! :)
+
+### GE tracking links
+
+By right-clicking an item on the plugin panel, you can now choose to open the item's respective OSRS GE or [Platinum Tokens](https://platinumtokens.com/) page. This makes it easy for you to check out the price movements on the items you want to flip! We're open to add more trackers, so long as the websites are respectable (No ads for private servers, cheats or RWT etc.) and that their owners give us permission to link to their sites.
+
+There may be some failed URLs when it comes to Platinum Tokens, particularly with items containing parentheses, so be sure to let me know if you come across any! :)
+
+#### The small stuff
+
+- Added warnings when clicking the reset button.
+
+- Added reset button on the session timer. You can now right-click the session timer to reset it.
+
+- Added additional indicators and tooltip explanations for items with unknown total GE limits.
+
+- Fixed flips showing the wrong prices when margin checks had uneven buy/sell offers.
+
+- Fixed inconsistencies with the statistics panel that caused sorting on the stat panel to also affect the sorting on the flipping panel.
+
+- Fixed errors causing trades not to register properly.
 
 *If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or PM me on Discord (#Belieal6600)! I'm also happy to answer any questions that you may have. :)*

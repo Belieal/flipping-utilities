@@ -35,14 +35,10 @@ import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
- * This class stores information from a {@link GrandExchangeOfferChanged} event.
- * A {@link GrandExchangeOfferChanged} event has all of the information needed already, but passing it
- * around when current methods like addFlipTrade, addToTradesList, and updateFlip expect a
- * {@Link GrandExchangeTrade} would require a lot of changes in existing code. Instead, by subclassing
- * GrandExchangeTrade and adding two new fields that are needed for future changes, backwards
- * compatibility is maintained, while allowing new work using the additional info stored in this class.
+ * This class stores information from a {@link GrandExchangeOfferChanged} event and is populated with
+ * extra information such as ticksSinceFirstOffer and quantitySinceLastOffer based on previous offers
+ * belonging to the same trade as it.
  */
-
 @Data
 @AllArgsConstructor
 public class OfferInfo
@@ -76,6 +72,17 @@ public class OfferInfo
 	private boolean validStatOffer;
 	@SerializedName("vFO")
 	private boolean validFlippingOffer;
+
+	/**
+	 * a offer always belongs to a flipping item. Every flipping item was flipped by an account and only one account and
+	 * has a flipped by attribute. So, the reason this attribute is here is because during the process of creating
+	 * the account wide trade list, we merge flipping items flipped by several different accounts into one. Thus, in that
+	 * case, a flipping item would have been flipped by multiple accounts so each offer needs to be marked to
+	 * differentiate offer. This functionality is currently only used in getFlips as, when getting the flips for the
+	 * account wide list, you don't want to match offers from different accounts!
+	 */
+	@SerializedName("mB")
+	private String madeBy;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -137,7 +144,8 @@ public class OfferInfo
 			totalQuantityInTrade,
 			quantitySinceLastOffer,
 			validStatOffer,
-			validFlippingOffer);
+			validFlippingOffer,
+			madeBy);
 	}
 
 	public boolean equals(Object other)

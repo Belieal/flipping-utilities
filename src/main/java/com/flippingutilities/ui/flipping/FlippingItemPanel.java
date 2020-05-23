@@ -149,6 +149,7 @@ public class FlippingItemPanel extends JPanel
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(background.darker());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemName, BorderLayout.CENTER);
@@ -298,7 +299,7 @@ public class FlippingItemPanel extends JPanel
 
 		profitEachVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A"
 			: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A" : QuantityFormatter
+		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0 || profitTotal < 0) ? "N/A" : QuantityFormatter
 			.quantityToRSDecimalStack(profitTotal) + " gp");
 
 		roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
@@ -334,24 +335,23 @@ public class FlippingItemPanel extends JPanel
 	//Recalculates profits.
 	public void updatePotentialProfit()
 	{
-		this.profitEach = sellPrice - buyPrice;
+		profitEach = sellPrice - buyPrice;
 
 		/*
 		If the user wants, we calculate the total profit while taking into account
 		the margin check loss. */
 		if (plugin.getConfig().geLimitProfit())
 		{
-			this.profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
+			profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
 				: flippingItem.remainingGeLimit() * profitEach - (plugin.getConfig().marginCheckLoss()
 				? profitEach : 0);
 		}
 		else
 		{
-			this.profitTotal =
-				flippingItem.getTotalGELimit() * profitEach - (plugin.getConfig().marginCheckLoss()
-					? profitEach : 0);
+			profitTotal = flippingItem.getTotalGELimit() * profitEach
+				- (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
 		}
-		this.roi = calculateROI();
+		roi = calculateROI();
 	}
 
 	//Calculates the return on investment percentage.
@@ -420,36 +420,43 @@ public class FlippingItemPanel extends JPanel
 	public void updateGePropertiesDisplay()
 	{
 		flippingItem.validateGeProperties();
+		boolean unknownLimit = false;
 
 		//New items can show as having a total GE limit of 0.
-		if (flippingItem.getTotalGELimit() != 0)
+		if (flippingItem.getTotalGELimit() > 0)
 		{
 			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
 		}
 		else
 		{
-			limitLabel.setText("GE limit: ???");
-			limitLabel.setToolTipText("This item does not have a total GE limit.");
-			return;
+			limitLabel.setText("GE limit: Unknown");
+			unknownLimit = true;
+		}
+
+		String tooltipText = "";
+
+		if (unknownLimit)
+		{
+			tooltipText = "<html>This item's total GE limit is unknown.<br>";
 		}
 
 		if (flippingItem.getGeLimitResetTime() == null)
 		{
-			limitLabel.setToolTipText("None has been bought in the past 4 hours.");
+			tooltipText += "<html>None has been bought in the past 4 hours.</html>";
 		}
 		else
 		{
-			final long remainingSeconds =
-				flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
+			final long remainingSeconds = flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
 			final long remainingMinutes = remainingSeconds / 60 % 60;
 			final long remainingHours = remainingSeconds / 3600 % 24;
-			String timeString =
-				String.format("%02d:%02d ", remainingHours, remainingMinutes) + (remainingHours > 1
-					? "hours" : "hour");
+			String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes)
+				+ (remainingHours > 1 ? "hours" : "hour");
 
-			limitLabel.setToolTipText("<html>" + "GE limit is reset in " + timeString + "."
+			tooltipText += "<html>GE limit is reset in " + timeString + "."
 				+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
-				+ ".<html>");
+				+ ".</html>";
 		}
+		limitLabel.setToolTipText(tooltipText);
 	}
+
 }

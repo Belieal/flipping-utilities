@@ -26,12 +26,14 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.flipping.FlippingItemPanel;
 import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 
@@ -42,9 +44,11 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  * {@link HistoryManager} and is used to get the profits for this item, how many more of it you can buy
  * until the ge limit refreshes, and when the next ge limit refreshes.
  * <p>
- * This class is the model behind a {@link FlippingItemPanel} as its data is used to create the contents
+ * This class is the model behind a FlippingItemPanel as its data is used to create the contents
  * of a panel which is then displayed.
  */
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class FlippingItem
 {
 	@SerializedName("id")
@@ -53,6 +57,7 @@ public class FlippingItem
 
 	@SerializedName("name")
 	@Getter
+	@NonNull
 	private final String itemName;
 
 	@SerializedName("tGL")
@@ -99,19 +104,32 @@ public class FlippingItem
 	private boolean shouldExpandHistory = false;
 
 	@SerializedName("h")
+	@Getter
+	@Setter
 	private HistoryManager history = new HistoryManager();
 
 	@SerializedName("fB")
 	@Getter
+	@NonNull
 	private String flippedBy;
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
+	//utility for cloning an instant...
+	private Instant ci(Instant i)
 	{
-		this.itemId = itemId;
-		this.itemName = itemName;
-		this.totalGELimit = totalGeLimit;
-		this.flippedBy = flippedBy;
+		if (i == null)
+		{
+			return null;
+		}
+		return Instant.ofEpochMilli(i.toEpochMilli());
 	}
+
+	public FlippingItem clone()
+	{
+		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
+			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
+			shouldExpandStatItem, shouldExpandHistory, history.clone(), flippedBy);
+	}
+
 
 	/**
 	 * This method updates the history of an item and the latest buy and sell times.
@@ -188,6 +206,33 @@ public class FlippingItem
 		}
 	}
 
+	/**
+	 * combines two flipping items together (this only make sense if they are for the same item) by adding
+	 * their histories together and retaining the other properties of the latest active item.
+	 *
+	 * @return merged flipping item
+	 */
+	public static FlippingItem merge(FlippingItem item1, FlippingItem item2)
+	{
+		if (item1 == null)
+		{
+			return item2;
+		}
+
+		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
+		{
+			item1.getHistory().getStandardizedOffers().addAll(item2.getHistory().getStandardizedOffers());
+			return item1;
+		}
+		else
+		{
+			item2.getHistory().getStandardizedOffers().addAll(item1.getHistory().getStandardizedOffers());
+			return item2;
+		}
+
+
+	}
+
 	public long currentProfit(List<OfferInfo> tradeList)
 	{
 		return history.currentProfit(tradeList);
@@ -228,7 +273,7 @@ public class FlippingItem
 		history.validateGeProperties();
 	}
 
-	public ArrayList<Flip> getFlips(Instant earliestTime)
+	public List<Flip> getFlips(Instant earliestTime)
 	{
 		return history.getFlips(earliestTime);
 	}
@@ -256,4 +301,26 @@ public class FlippingItem
 		history.invalidateOffers(panelSelection, offerList);
 	}
 
+	//generated to string from intellij. I made it not create a representation of the history cause it would be too
+	//long and you typically don't want to see that.
+	@Override
+	public String toString()
+	{
+		final StringBuilder sb = new StringBuilder("FlippingItem{");
+		sb.append("itemId=").append(itemId);
+		sb.append(", itemName='").append(itemName).append('\'');
+		sb.append(", totalGELimit=").append(totalGELimit);
+		sb.append(", marginCheckBuyPrice=").append(marginCheckBuyPrice);
+		sb.append(", marginCheckSellPrice=").append(marginCheckSellPrice);
+		sb.append(", marginCheckBuyTime=").append(marginCheckBuyTime);
+		sb.append(", marginCheckSellTime=").append(marginCheckSellTime);
+		sb.append(", latestBuyTime=").append(latestBuyTime);
+		sb.append(", latestSellTime=").append(latestSellTime);
+		sb.append(", latestActivityTime=").append(latestActivityTime);
+		sb.append(", shouldExpandStatItem=").append(shouldExpandStatItem);
+		sb.append(", shouldExpandHistory=").append(shouldExpandHistory);
+		sb.append(", madeBy='").append(flippedBy).append('\'');
+		sb.append('}');
+		return sb.toString();
+	}
 }
