@@ -51,7 +51,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.Player;
 import net.runelite.api.VarClientInt;
@@ -315,11 +314,9 @@ public class FlippingPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
 			//this randomly fired at night hours after i had logged off...so i'm adding this guard here.
-			if (currentlyLoggedInAccount != null)
+			if (currentlyLoggedInAccount != null && client.getGameState() != GameState.LOGGED_IN)
 			{
-				log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
-				storeTrades(currentlyLoggedInAccount);
-				currentlyLoggedInAccount = null;
+				handleLogout();
 			}
 		}
 	}
@@ -352,6 +349,13 @@ public class FlippingPlugin extends Plugin
 			//flipping and stats panel
 			tabManager.getViewSelector().setSelectedItem(displayName);
 		}
+	}
+
+	public void handleLogout()
+	{
+		log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
+		storeTrades(currentlyLoggedInAccount);
+		currentlyLoggedInAccount = null;
 	}
 
 	@Override
