@@ -559,7 +559,8 @@ public class FlippingPlugin extends Plugin
 			{
 				FlippingItem item = flippingItem.get();
 				item.updateMargin(newOffer);
-				item.update(newOffer);
+				item.updateHistory(newOffer);
+				item.updateLatestTimes(newOffer);
 
 				trades.remove(item);
 				trades.add(0, item);
@@ -574,7 +575,8 @@ public class FlippingPlugin extends Plugin
 		//last traded times, not its margin.
 		else if (flippingItem.isPresent())
 		{
-			flippingItem.get().update(newOffer);
+			flippingItem.get().updateHistory(newOffer);
+			flippingItem.get().updateLatestTimes(newOffer);
 		}
 	}
 
@@ -596,7 +598,8 @@ public class FlippingPlugin extends Plugin
 		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
 
 		flippingItem.updateMargin(newOffer);
-		flippingItem.update(newOffer);
+		flippingItem.updateHistory(newOffer);
+		flippingItem.updateLatestTimes(newOffer);
 
 		tradesList.add(0, flippingItem);
 	}
@@ -769,8 +772,7 @@ public class FlippingPlugin extends Plugin
 
 		if (displayNameOfChangedAcc.equals(currentlyLoggedInAccount))
 		{
-			log.info("no update is being performed as the update is for the currently logged in account which has an" +
-				"up to date cache already");
+			log.info("not reloading on directory update as this client caused the directory update");
 			return;
 		}
 
