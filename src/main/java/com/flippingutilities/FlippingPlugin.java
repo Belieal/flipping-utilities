@@ -206,7 +206,7 @@ public class FlippingPlugin extends Plugin
 
 			//sets the account selector dropdown to visible or not depending on whether the config option has been
 			//selected and there are > 1 accounts.
-			if (accountCache.keySet().size() > 1 && config.multiAccTracking())
+			if (accountCache.keySet().size() > 1)
 			{
 				tabManager.getViewSelector().setVisible(true);
 			}
@@ -338,17 +338,15 @@ public class FlippingPlugin extends Plugin
 		eventsBeforeNameSet.forEach(this::onGrandExchangeOfferChanged);
 		eventsBeforeNameSet.clear();
 
-		if (config.multiAccTracking())
+		if (accountCache.keySet().size() > 1)
 		{
-			if (accountCache.keySet().size() > 1)
-			{
-				tabManager.getViewSelector().setVisible(true);
-			}
-			accountCurrentlyViewed = displayName;
-			//this will cause changeView to be invoked which will cause a rebuild of
-			//flipping and stats panel
-			tabManager.getViewSelector().setSelectedItem(displayName);
+			tabManager.getViewSelector().setVisible(true);
 		}
+		accountCurrentlyViewed = displayName;
+		//this will cause changeView to be invoked which will cause a rebuild of
+		//flipping and stats panel
+		tabManager.getViewSelector().setSelectedItem(displayName);
+
 	}
 
 	public void handleLogout()
@@ -782,7 +780,7 @@ public class FlippingPlugin extends Plugin
 			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
 		}
 
-		if (accountCache.keySet().size() > 1 && config.multiAccTracking())
+		if (accountCache.keySet().size() > 1)
 		{
 			tabManager.getViewSelector().setVisible(true);
 		}
@@ -847,24 +845,6 @@ public class FlippingPlugin extends Plugin
 		{
 			if (event.getKey().equals(ITEMS_CONFIG_KEY) || event.getKey().equals(TIME_INTERVAL_CONFIG_KEY))
 			{
-				return;
-			}
-
-			if (event.getKey().equals("multiAccTracking"))
-			{
-				if (config.multiAccTracking())
-				{
-					if (accountCache.keySet().size() > 1)
-					{
-						tabManager.getViewSelector().setVisible(true);
-					}
-
-				}
-				else
-				{
-					tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
-					tabManager.getViewSelector().setVisible(false);
-				}
 				return;
 			}
 

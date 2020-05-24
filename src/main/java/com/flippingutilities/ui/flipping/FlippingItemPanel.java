@@ -105,10 +105,7 @@ public class FlippingItemPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-		if (plugin.getConfig().multiAccTracking())
-		{
-			setToolTipText("Flipped by " + flippingItem.getFlippedBy());
-		}
+		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
 		Color background = getBackground();
 
