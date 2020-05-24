@@ -130,21 +130,6 @@ public class FlippingItem
 			shouldExpandStatItem, shouldExpandHistory, history.clone(), flippedBy);
 	}
 
-
-	/**
-	 * This method updates the history of an item and the latest buy and sell times.
-	 * It is invoked every time a new offer is received as every new offer will change the history
-	 * and either the latest buy or sell times.
-	 * See {@link FlippingPlugin#onGrandExchangeOfferChanged(GrandExchangeOfferChanged)}
-	 *
-	 * @param newOffer new offer just received
-	 */
-	public void update(OfferInfo newOffer)
-	{
-		updateHistory(newOffer);
-		updateLatestTimes(newOffer);
-	}
-
 	/**
 	 * This method updates the history of a FlippingItem. This history is used to calculate profits,
 	 * next ge limit refresh, and how many items were bought during this limit window.

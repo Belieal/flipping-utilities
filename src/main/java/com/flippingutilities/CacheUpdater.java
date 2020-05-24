@@ -147,7 +147,8 @@ public class CacheUpdater
 		if (lastEvents.containsKey(fileName))
 		{
 			long prevModificationTime = lastEvents.get(fileName);
-			if (prevModificationTime == lastModified)
+			long diffSinceLastModification = Math.abs(lastModified-prevModificationTime);
+			if (diffSinceLastModification < 5)
 			{
 				return true;
 			}

@@ -103,15 +103,4 @@ public interface FlippingConfig extends Config
 		return Fonts.SMALL_FONT;
 	}
 
-	@ConfigItem(
-		keyName = "multiAccTracking",
-		name = "Enable multi account tracking",
-		description = "<html>Enabling this feature gives you access to a dropdown"
-			+ "<br>which allows you to see each of your accounts flips and profits in isolation."
-			+ "<br>This is very useful if you flip on multiple accounts.</html>"
-	)
-	default boolean multiAccTracking()
-	{
-		return true;
-	}
 }

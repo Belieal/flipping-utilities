@@ -51,7 +51,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.Player;
 import net.runelite.api.VarClientInt;
@@ -207,7 +206,7 @@ public class FlippingPlugin extends Plugin
 
 			//sets the account selector dropdown to visible or not depending on whether the config option has been
 			//selected and there are > 1 accounts.
-			if (accountCache.keySet().size() > 1 && config.multiAccTracking())
+			if (accountCache.keySet().size() > 1)
 			{
 				tabManager.getViewSelector().setVisible(true);
 			}
@@ -315,11 +314,9 @@ public class FlippingPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
 		{
 			//this randomly fired at night hours after i had logged off...so i'm adding this guard here.
-			if (currentlyLoggedInAccount != null)
+			if (currentlyLoggedInAccount != null && client.getGameState() != GameState.LOGGED_IN)
 			{
-				log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
-				storeTrades(currentlyLoggedInAccount);
-				currentlyLoggedInAccount = null;
+				handleLogout();
 			}
 		}
 	}
@@ -341,17 +338,22 @@ public class FlippingPlugin extends Plugin
 		eventsBeforeNameSet.forEach(this::onGrandExchangeOfferChanged);
 		eventsBeforeNameSet.clear();
 
-		if (config.multiAccTracking())
+		if (accountCache.keySet().size() > 1)
 		{
-			if (accountCache.keySet().size() > 1)
-			{
-				tabManager.getViewSelector().setVisible(true);
-			}
-			accountCurrentlyViewed = displayName;
-			//this will cause changeView to be invoked which will cause a rebuild of
-			//flipping and stats panel
-			tabManager.getViewSelector().setSelectedItem(displayName);
+			tabManager.getViewSelector().setVisible(true);
 		}
+		accountCurrentlyViewed = displayName;
+		//this will cause changeView to be invoked which will cause a rebuild of
+		//flipping and stats panel
+		tabManager.getViewSelector().setSelectedItem(displayName);
+
+	}
+
+	public void handleLogout()
+	{
+		log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
+		storeTrades(currentlyLoggedInAccount);
+		currentlyLoggedInAccount = null;
 	}
 
 	@Override
@@ -393,7 +395,7 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		OfferInfo newOffer = extractRelevantInfo(newOfferEvent);
+		OfferInfo newOffer = createOffer(newOfferEvent);
 
 		if (isBadOffer(newOffer))
 		{
@@ -460,6 +462,8 @@ public class FlippingPlugin extends Plugin
 		//was a margin check or not.
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
+			//we need to delete the history for the slot in this case so when the user puts in another offer after
+			//cancelling, it doesn't ignore the newly generated "quantity of 0" event as a duplicate like we get on login.
 			if (clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL)
 			{
 				loggedInAccsLastOffers.remove(clonedNewOffer.getSlot());
@@ -512,35 +516,18 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * This method extracts the data from the GrandExchangeOfferChanged event, which is a nested
-	 * data structure, and puts it into a flat data structure- OfferInfo. It also adds time to the offer.
+	 * Creates an OfferInfo object out of a GrandExchangeOfferChanged event and adds additional attributes such as
+	 * tickArrivedAt to help identify margin check offers.
 	 *
-	 * @param newOfferEvent new offer event just received
-	 * @return an OfferInfo with the relevant information.
+	 * @param newOfferEvent event that we subscribe to.
+	 * @return an OfferInfo object with the relevant information from the event.
 	 */
-	private OfferInfo extractRelevantInfo(GrandExchangeOfferChanged newOfferEvent)
+	private OfferInfo createOffer(GrandExchangeOfferChanged newOfferEvent)
 	{
-		GrandExchangeOffer offer = newOfferEvent.getOffer();
-
-		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
-			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
-			|| offer.getState() == GrandExchangeOfferState.BUYING;
-
-		return new OfferInfo(
-			isBuy,
-			offer.getItemId(),
-			offer.getQuantitySold(),
-			offer.getQuantitySold() == 0 ? 0 : offer.getSpent() / offer.getQuantitySold(),
-			Instant.now().truncatedTo(ChronoUnit.SECONDS),
-			newOfferEvent.getSlot(),
-			offer.getState(),
-			client.getTickCount(),
-			0,
-			offer.getTotalQuantity(),
-			0,
-			true,
-			true,
-			currentlyLoggedInAccount);
+		OfferInfo offer = OfferInfo.fromGrandExchangeEvent(newOfferEvent);
+		offer.setTickArrivedAt(client.getTickCount());
+		offer.setMadeBy(currentlyLoggedInAccount);
+		return offer;
 	}
 
 	/**
@@ -570,7 +557,8 @@ public class FlippingPlugin extends Plugin
 			{
 				FlippingItem item = flippingItem.get();
 				item.updateMargin(newOffer);
-				item.update(newOffer);
+				item.updateHistory(newOffer);
+				item.updateLatestTimes(newOffer);
 
 				trades.remove(item);
 				trades.add(0, item);
@@ -585,7 +573,8 @@ public class FlippingPlugin extends Plugin
 		//last traded times, not its margin.
 		else if (flippingItem.isPresent())
 		{
-			flippingItem.get().update(newOffer);
+			flippingItem.get().updateHistory(newOffer);
+			flippingItem.get().updateLatestTimes(newOffer);
 		}
 	}
 
@@ -607,7 +596,8 @@ public class FlippingPlugin extends Plugin
 		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
 
 		flippingItem.updateMargin(newOffer);
-		flippingItem.update(newOffer);
+		flippingItem.updateHistory(newOffer);
+		flippingItem.updateLatestTimes(newOffer);
 
 		tradesList.add(0, flippingItem);
 	}
@@ -780,8 +770,7 @@ public class FlippingPlugin extends Plugin
 
 		if (displayNameOfChangedAcc.equals(currentlyLoggedInAccount))
 		{
-			log.info("no update is being performed as the update is for the currently logged in account which has an" +
-				"up to date cache already");
+			log.info("not reloading on directory update as this client caused the directory update");
 			return;
 		}
 
@@ -791,7 +780,7 @@ public class FlippingPlugin extends Plugin
 			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
 		}
 
-		if (accountCache.keySet().size() > 1 && config.multiAccTracking())
+		if (accountCache.keySet().size() > 1)
 		{
 			tabManager.getViewSelector().setVisible(true);
 		}
@@ -856,24 +845,6 @@ public class FlippingPlugin extends Plugin
 		{
 			if (event.getKey().equals(ITEMS_CONFIG_KEY) || event.getKey().equals(TIME_INTERVAL_CONFIG_KEY))
 			{
-				return;
-			}
-
-			if (event.getKey().equals("multiAccTracking"))
-			{
-				if (config.multiAccTracking())
-				{
-					if (accountCache.keySet().size() > 1)
-					{
-						tabManager.getViewSelector().setVisible(true);
-					}
-
-				}
-				else
-				{
-					tabManager.getViewSelector().setSelectedItem(ACCOUNT_WIDE);
-					tabManager.getViewSelector().setVisible(false);
-				}
 				return;
 			}
 
