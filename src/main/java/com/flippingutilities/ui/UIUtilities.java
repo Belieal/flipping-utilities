@@ -317,7 +317,7 @@ public class UIUtilities
 		openOsrsGe.addActionListener(e -> LinkBrowser.browse(UIUtilities.buildOsrsExchangeUrl(flippingItem.getItemId())));
 
 		//Opens the item's Platinum Tokens page
-		final JMenuItem openPlatinumTokens = new JMenuItem("Open in Platinum Tokens");
+		final JMenuItem openPlatinumTokens = new JMenuItem("Open in PlatinumTokens.com");
 		openPlatinumTokens.addActionListener(e -> LinkBrowser.browse(UIUtilities.buildPlatinumTokensUrl(flippingItem.getItemName())));
 
 		final JPopupMenu popupMenu = new JPopupMenu();
