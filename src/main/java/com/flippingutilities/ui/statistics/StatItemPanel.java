@@ -102,7 +102,7 @@ public class StatItemPanel extends JPanel
 	private JPanel nameAndProfitTitlePanel = new JPanel(new BorderLayout());
 
 	//Shows the name label for the item
-	private JLabel nameTitleLabel = new JLabel();
+	private JLabel nameTitleLabel;
 	//Shows the item's profit
 	private JLabel itemProfitTitleLabel = new JLabel();
 
@@ -170,10 +170,7 @@ public class StatItemPanel extends JPanel
 		//Get parent
 		statsPanel = plugin.getStatPanel();
 
-		//Make sure the item name fits. This has to be called BEFORE the label is made.
-		nameTitleLabel.setPreferredSize(new Dimension(0, 0));
 		nameTitleLabel = new JLabel(flippingItem.getItemName());
-		nameTitleLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
 
 		updateDisplays();
 
@@ -197,7 +194,7 @@ public class StatItemPanel extends JPanel
 		itemIconTitlePanel.add(itemLabel, BorderLayout.WEST);
 		itemIconTitlePanel.add(deleteLabel, BorderLayout.EAST);
 		itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		itemIconTitlePanel.setBorder(new EmptyBorder(0, 2, 0, 5));
+		itemIconTitlePanel.setBorder(new EmptyBorder(5, 2, 0, 5));
 		itemIconTitlePanel.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -226,6 +223,7 @@ public class StatItemPanel extends JPanel
 		nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		nameAndProfitTitlePanel.add(nameTitleLabel, BorderLayout.NORTH);
 		nameAndProfitTitlePanel.add(itemProfitTitleLabel, BorderLayout.SOUTH);
+		nameAndProfitTitlePanel.setPreferredSize(new Dimension(0, 0));
 
 		/* Collapse icon */
 		collapseIconTitleLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);

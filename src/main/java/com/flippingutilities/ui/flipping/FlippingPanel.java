@@ -237,69 +237,68 @@ public class FlippingPanel extends JPanel
 
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
-		flippingItemsPanel.removeAll();
-		SwingUtilities.invokeLater(() -> initializeFlippingPanel(flippingItems));
-		revalidate();
-		repaint();
-	}
-
-	private void initializeFlippingPanel(List<FlippingItem> flippingItems)
-	{
-		if (flippingItems == null || flippingItems.size() == 0)
-		{
-			cardLayout.show(centerPanel, WELCOME_PANEL);
-			return;
-		}
-
 		//Reset active panel list.
 		activePanels.clear();
 
-		cardLayout.show(centerPanel, ITEMS_PANEL);
-
-		int index = 0;
-		for (FlippingItem item : flippingItems)
+		SwingUtilities.invokeLater(() ->
 		{
-			if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+			flippingItemsPanel.removeAll();
+
+			if (flippingItems == null || flippingItems.size() == 0)
 			{
-				continue;
+				cardLayout.show(centerPanel, WELCOME_PANEL);
+				return;
 			}
 
-			FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
+			cardLayout.show(centerPanel, ITEMS_PANEL);
 
-			newPanel.clearButton.addMouseListener(new MouseAdapter()
+			int index = 0;
+			for (FlippingItem item : flippingItems)
 			{
-				@Override
-				public void mouseClicked(MouseEvent e)
+				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
 				{
-					if (e.getButton() == MouseEvent.BUTTON1)
-					{
-						deleteItemPanel(newPanel);
-						rebuild(plugin.getTradesForCurrentView());
-					}
+					continue;
 				}
-			});
 
-			if (index++ > 0)
-			{
-				JPanel marginWrapper = new JPanel(new BorderLayout());
-				marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-				marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-				marginWrapper.add(newPanel, BorderLayout.NORTH);
-				flippingItemsPanel.add(marginWrapper, constraints);
+				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
+
+				newPanel.clearButton.addMouseListener(new MouseAdapter()
+				{
+					@Override
+					public void mouseClicked(MouseEvent e)
+					{
+						if (e.getButton() == MouseEvent.BUTTON1)
+						{
+							deleteItemPanel(newPanel);
+							rebuild(plugin.getTradesForCurrentView());
+						}
+					}
+				});
+
+				if (index++ > 0)
+				{
+					JPanel marginWrapper = new JPanel(new BorderLayout());
+					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
+					marginWrapper.add(newPanel, BorderLayout.NORTH);
+					flippingItemsPanel.add(marginWrapper, constraints);
+				}
+				else
+				{
+					flippingItemsPanel.add(newPanel, constraints);
+				}
+				constraints.gridy++;
+				activePanels.add(newPanel);
 			}
-			else
+
+			if (activePanels.isEmpty())
 			{
-				flippingItemsPanel.add(newPanel, constraints);
+				cardLayout.show(centerPanel, WELCOME_PANEL);
 			}
-			constraints.gridy++;
-			activePanels.add(newPanel);
-		}
 
-		if (activePanels.isEmpty())
-		{
-			cardLayout.show(centerPanel, WELCOME_PANEL);
-		}
-
+			revalidate();
+			repaint();
+		});
 	}
 
 	@Getter
