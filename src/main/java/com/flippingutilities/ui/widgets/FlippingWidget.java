@@ -24,9 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui.flipping;
+package com.flippingutilities.ui.widgets;
 
-import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
@@ -40,20 +39,19 @@ import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
 
 @Slf4j
-public class FlippingItemWidget
+public class FlippingWidget
 {
 	private final Widget parent;
 	private final Client client;
 	private Widget text;
 
-	@Inject
-	public FlippingItemWidget(Widget parent, Client client)
+	public FlippingWidget(Widget parent, Client client)
 	{
 		this.parent = parent;
 		this.client = client;
 	}
 
-	private void init()
+	private void initialize()
 	{
 		if (parent == null)
 		{
@@ -80,7 +78,7 @@ public class FlippingItemWidget
 
 	public void showWidget(String mode, int value)
 	{
-		init();
+		initialize();
 
 		switch (mode)
 		{

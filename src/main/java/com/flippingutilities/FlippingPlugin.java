@@ -27,14 +27,16 @@
 package com.flippingutilities;
 
 import com.flippingutilities.ui.TabManager;
-import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.widgets.FlippingWidget;
+import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -62,6 +64,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -122,7 +125,7 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
-	private FlippingItemWidget flippingWidget;
+	private FlippingWidget flippingWidget;
 
 	private TabManager tabManager;
 
@@ -323,7 +326,6 @@ public class FlippingPlugin extends Plugin
 
 	public void handleLogin(String displayName)
 	{
-		log.info("{} has just logged in!", displayName);
 		if (!accountCache.containsKey(displayName))
 		{
 			log.info("cache does not contain data for {}", displayName);
@@ -642,10 +644,30 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		// The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
+		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
 			flippingPanel.dehighlightItem();
+		}
+
+		//Check if we can build the GE timer widget
+		else if (client.getWidget(WidgetInfo.GRAND_EXCHANGE_WINDOW_CONTAINER) != null && event.getGroupId() == 465)
+		{
+			//Get the offer slots from the window container
+			ArrayList<Widget> offerSlots = new ArrayList<>(Arrays.asList(client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()));
+
+			if (offerSlots.size() > 0)
+			{
+				//The first child is the text above the offer slots
+				offerSlots.remove(0);
+
+				//Build timers for each slot
+				for (Widget slot : offerSlots)
+				{
+					TradeActivityTimer timer = new TradeActivityTimer(slot.getChild(16), clientThread);
+					timer.initialize();
+				}
+			}
 		}
 	}
 
@@ -867,9 +889,7 @@ public class FlippingPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-
-			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
-
+			flippingWidget = new FlippingWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
