@@ -59,11 +59,14 @@ public class CacheUpdater
 
 	List<Consumer<String>> callbacks = new ArrayList<>();
 
-	boolean isBeingShutdown = false;
+	boolean isBeingShutdownGracefully = false;
 
 	Future realTimeUpdateTask;
 
 	Map<String, Long> lastEvents = new HashMap<>();
+
+	int failureCount;
+	int failureThreshold = 2;
 
 
 	public CacheUpdater()
@@ -83,7 +86,7 @@ public class CacheUpdater
 
 	public void stop()
 	{
-		isBeingShutdown = true;
+		isBeingShutdownGracefully = true;
 		realTimeUpdateTask.cancel(true);
 	}
 
@@ -118,35 +121,39 @@ public class CacheUpdater
 				}
 				//put the key back in the queue so we can take out more events when they occur
 				key.reset();
+				failureCount = 0;
 			}
 		}
 
-		catch (IOException e)
+		catch (IOException | InterruptedException e)
 		{
-			log.info("io exception in updateCacheRealTime. Error = {}", e);
-			if (!isBeingShutdown)
+			log.info("exception in updateCacheRealTime, Error = {}", e);
+			if (!isBeingShutdownGracefully)
 			{
-				log.info("Scheduling task again.");
-				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
-			}
-		}
+				log.info("Failure number: {} Error not caused by graceful shutdown", failureCount);
+				failureCount++;
+				if (failureCount > failureThreshold)
+				{
+					log.info("number of failures exceeds failure threshold, not scheduling task again");
+					return;
+				}
 
-		catch (InterruptedException e)
-		{
-			if (!isBeingShutdown)
+				else
+				{
+					log.info("failure count below threshold, scheduling task again");
+					realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+				}
+			}
+
+			else
 			{
-				log.info("InterruptedException in updateCacheRealTime. Scheduling task again. Error = {}", e);
-				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+				log.info("shutting down cache updater due to graceful shutdown");
 			}
 		}
 
 		catch (Exception e)
 		{
-			if (!isBeingShutdown)
-			{
-				log.info("unknown exception in updateCacheRealTime. Scheduling task again. Error = {}", e);
-				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
-			}
+			log.info("unknown exception in updateCacheRealTime, task is going to stop. Error = {}", e);
 		}
 	}
 
