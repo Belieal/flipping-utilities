@@ -290,7 +290,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			accountCache.put(displayName, new AccountData());
-			tabManager.getViewSelector().addItem(displayName);
+			tabManager.getAccountSelector().addItem(displayName);
 		}
 
 		currentlyLoggedInAccount = displayName;
@@ -302,12 +302,12 @@ public class FlippingPlugin extends Plugin
 
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getViewSelector().setVisible(true);
+			tabManager.getAccountSelector().setVisible(true);
 		}
 		accountCurrentlyViewed = displayName;
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
-		tabManager.getViewSelector().setSelectedItem(displayName);
+		tabManager.getAccountSelector().setSelectedItem(displayName);
 
 	}
 
@@ -342,19 +342,19 @@ public class FlippingPlugin extends Plugin
 	{
 		//adding an item causes the event listener (changeView) to fire which causes stat panel
 		//and flipping panel to rebuild. I think this only happens on the first item you add.
-		tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+		tabManager.getAccountSelector().addItem(ACCOUNT_WIDE);
 
-		accountCache.keySet().forEach(displayName -> tabManager.getViewSelector().addItem(displayName));
+		accountCache.keySet().forEach(displayName -> tabManager.getAccountSelector().addItem(displayName));
 
 		//sets the account selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getViewSelector().setVisible(true);
+			tabManager.getAccountSelector().setVisible(true);
 		}
 		else
 		{
-			tabManager.getViewSelector().setVisible(false);
+			tabManager.getAccountSelector().setVisible(false);
 		}
 	}
 
@@ -789,12 +789,12 @@ public class FlippingPlugin extends Plugin
 		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
 		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
 		{
-			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
+			tabManager.getAccountSelector().addItem(displayNameOfChangedAcc);
 		}
 
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getViewSelector().setVisible(true);
+			tabManager.getAccountSelector().setVisible(true);
 		}
 
 		updateSinceLastAccountWideBuild = true;

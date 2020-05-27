@@ -47,6 +47,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -228,11 +229,11 @@ public class FlippingPanel extends JPanel
 
 		//To switch between greeting and items panels
 		cardLayout.show(centerPanel, WELCOME_PANEL);
-
 		container.add(topPanel, BorderLayout.NORTH);
 		container.add(centerPanel, BorderLayout.CENTER);
 
 		add(container, BorderLayout.CENTER);
+
 	}
 
 	public void rebuild(List<FlippingItem> flippingItems)

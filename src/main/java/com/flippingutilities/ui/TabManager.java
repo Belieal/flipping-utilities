@@ -34,7 +34,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.inject.Inject;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
@@ -47,30 +49,74 @@ import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 public class TabManager extends PluginPanel
 {
 	@Getter
-	private JComboBox<String> viewSelector = new JComboBox();
+	private JComboBox<String> accountSelector = new JComboBox();
 
 	/**
 	 * This manages the tab navigation bar at the top of the panel.
 	 * Once a tab is selected, the corresponding panel will be displayed below
 	 * along with indication of what tab is selected.
 	 *
+	 * @param onItemSelectionCallback this is a method passed in from the FlippingPlugin and is the callback for when
+	 *                                a user selects an account to view from the dropdown menu.
 	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
 	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
 	@Inject
-	public TabManager(Consumer<String> viewChangerMethod, FlippingPanel flippingPanel, StatsPanel statPanel)
+	public TabManager(Consumer<String> onItemSelectionCallback, FlippingPanel flippingPanel, StatsPanel statPanel)
 	{
 		super(false);
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		viewSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		viewSelector.setFocusable(false);
-		viewSelector.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		viewSelector.setRenderer(new ComboBoxListRenderer());
-		viewSelector.setToolTipText("Select which of your account's trades list you want to view");
-		viewSelector.addItemListener(event ->
+		JPanel mainDisplay = new JPanel();
+
+		accountSelector = createAccountSelector(onItemSelectionCallback);
+		JButton settingsButton = createSettingsButton();
+		MaterialTabGroup tabSelector = createTabSelector(mainDisplay, flippingPanel, statPanel);
+
+		JPanel header = createHeader(accountSelector, settingsButton, tabSelector);
+
+		add(header, BorderLayout.NORTH);
+		add(mainDisplay, BorderLayout.CENTER);
+	}
+
+	/**
+	 * The header is at the top of the panel. It is the component that contains the account selector dropdown, the
+	 * settings button to the right of the dropdown, and the tab selector which allows a user to select either the
+	 * flipping or stats tab.
+	 *
+	 * @param viewSelector   the account selector dropdown
+	 * @param settingsButton a button which opens up a modal for altering settings
+	 * @param tabSelector    a tab group with allows a user to select either the flipping or stats tab to view.
+	 * @return a jpanel representing the header.
+	 */
+	private JPanel createHeader(JComboBox viewSelector, JButton settingsButton, MaterialTabGroup tabSelector)
+	{
+		JPanel header = new JPanel(new BorderLayout());
+		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		header.setBorder(new EmptyBorder(5, 0, 0, 0));
+		header.add(viewSelector, BorderLayout.NORTH);
+		header.add(tabSelector, BorderLayout.CENTER);
+		return header;
+	}
+
+	/**
+	 * This is the dropdown at the top of the header which allows the user to select which account they want to view.
+	 * Its only set to visible if the user has more than once account with a trading history.
+	 *
+	 * @param onItemSelectionCallback the callback that fires when a user selects a display name from the dropdown.
+	 * @return the account selector.
+	 */
+	private JComboBox createAccountSelector(Consumer<String> onItemSelectionCallback)
+	{
+		JComboBox viewSelectorDropdown = new JComboBox();
+		viewSelectorDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		viewSelectorDropdown.setFocusable(false);
+		viewSelectorDropdown.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		viewSelectorDropdown.setRenderer(new ComboBoxListRenderer());
+		viewSelectorDropdown.setToolTipText("Select which of your account's trades list you want to view");
+		viewSelectorDropdown.addItemListener(event ->
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
 			{
@@ -83,22 +129,25 @@ public class TabManager extends PluginPanel
 				}
 				else
 				{
-					viewChangerMethod.accept(selectedDisplayName);
+					onItemSelectionCallback.accept(selectedDisplayName);
 				}
 			}
 		});
+		return viewSelectorDropdown;
+	}
 
-		JPanel display = new JPanel();
-		//contains the tab group and the view selector combo box.
-		JPanel header = new JPanel(new BorderLayout());
+	private JButton createSettingsButton()
+	{
+		JButton button = new JButton(UIUtilities.SETTINGS_ICON);
+		return button;
+	}
 
-		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		header.setBorder(new EmptyBorder(5, 0, 0, 0));
-		header.add(viewSelector, BorderLayout.NORTH);
 
-		MaterialTabGroup tabGroup = new MaterialTabGroup(display);
+	private MaterialTabGroup createTabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
+	{
+		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
-		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statPanel);
+		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statsPanel);
 
 		tabGroup.setBorder(new EmptyBorder(5, 0, 2, 0));
 		tabGroup.addTab(flippingTab);
@@ -106,22 +155,23 @@ public class TabManager extends PluginPanel
 
 		// Initialize with flipping tab open.
 		tabGroup.select(flippingTab);
+		return tabGroup;
+	}
 
-		header.add(tabGroup, BorderLayout.CENTER);
 
-		add(header, BorderLayout.NORTH);
-		add(display, BorderLayout.CENTER);
+	private JDialog createModal()
+	{
+		return new JDialog();
 	}
 
 
 	public Set<String> getViewSelectorItems()
 	{
 		Set<String> items = new HashSet<>();
-		for (int i = 0; i < viewSelector.getItemCount(); i++)
+		for (int i = 0; i < accountSelector.getItemCount(); i++)
 		{
-			items.add(viewSelector.getItemAt(i));
+			items.add(accountSelector.getItemAt(i));
 		}
 		return items;
 	}
-
 }

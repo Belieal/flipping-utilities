@@ -87,6 +87,8 @@ public class UIUtilities
 
 	public static final ImageIcon DELETE_ICON;
 
+	public static final ImageIcon SETTINGS_ICON;
+
 	static
 	{
 		final BufferedImage openIcon = ImageUtil
@@ -102,15 +104,20 @@ public class UIUtilities
 		final BufferedImage deleteIcon = ImageUtil
 			.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
 		DELETE_ICON = new ImageIcon(deleteIcon);
+
+		final BufferedImage settingsIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/settings_icon.png");
+		SETTINGS_ICON = new ImageIcon(settingsIcon);
 	}
 
 	/**
 	 * Formats a duration into HH:MM:SS
+	 *
 	 * @param duration
 	 * @return a string in the format HH:MM:SS
 	 */
-	public static String formatDuration(Duration duration) {
-		long seconds = duration.toMillis()/1000;
+	public static String formatDuration(Duration duration)
+	{
+		long seconds = duration.toMillis() / 1000;
 		return String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, (seconds % 60));
 	}
 
@@ -237,7 +244,7 @@ public class UIUtilities
 			: DECIMAL_FORMATTER;
 
 		return format.format(quantity / Math.pow(10, (Long.divideUnsigned(power, 3)) * 3))
-			+ new String[] {"", "K", "M", "B", "T"}[(int) (power / 3)];
+			+ new String[]{"", "K", "M", "B", "T"}[(int) (power / 3)];
 	}
 
 	/**
