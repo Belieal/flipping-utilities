@@ -35,7 +35,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
