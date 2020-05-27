@@ -368,10 +368,18 @@ public class FlippingPlugin extends Plugin
 	{
 		return executor.scheduleAtFixedRate(() ->
 		{
-			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
-			flippingPanel.updateActivePanelsGePropertiesDisplay();
-			statPanel.updateTimeDisplay();
-			updateSessionTime();
+			try
+			{
+				flippingPanel.updateActivePanelsPriceOutdatedDisplay();
+				flippingPanel.updateActivePanelsGePropertiesDisplay();
+				statPanel.updateTimeDisplay();
+				updateSessionTime();
+			}
+			catch (Exception e)
+			{
+				log.info("unknown exception in repeating tasks, error = {}", e);
+			}
+
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
@@ -595,7 +603,7 @@ public class FlippingPlugin extends Plugin
 	 * isn't currently present in the given trades list.
 	 *
 	 * @param tradesList the trades list to be updated
-	 * @param newOffer the offer to update the trade list with
+	 * @param newOffer   the offer to update the trade list with
 	 */
 	private void addToTradesList(List<FlippingItem> tradesList, OfferInfo newOffer)
 	{
