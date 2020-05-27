@@ -128,26 +128,15 @@ public class CacheUpdater
 		catch (IOException | InterruptedException e)
 		{
 			log.info("exception in updateCacheRealTime, Error = {}", e);
+
 			if (!isBeingShutdownGracefully)
 			{
-				log.info("Failure number: {} Error not caused by graceful shutdown", failureCount);
-				failureCount++;
-				if (failureCount > failureThreshold)
-				{
-					log.info("number of failures exceeds failure threshold, not scheduling task again");
-					return;
-				}
-
-				else
-				{
-					log.info("failure count below threshold, scheduling task again");
-					realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
-				}
+				onUngracefulShutdown();
 			}
 
 			else
 			{
-				log.info("shutting down cache updater due to graceful shutdown");
+				onGracefulShutdown();
 			}
 		}
 
@@ -155,6 +144,28 @@ public class CacheUpdater
 		{
 			log.info("unknown exception in updateCacheRealTime, task is going to stop. Error = {}", e);
 		}
+	}
+
+	private void onUngracefulShutdown()
+	{
+		log.info("Failure number: {} Error not caused by graceful shutdown", failureCount);
+		failureCount++;
+		if (failureCount > failureThreshold)
+		{
+			log.info("number of failures exceeds failure threshold, not scheduling task again");
+			return;
+		}
+
+		else
+		{
+			log.info("failure count below threshold, scheduling task again");
+			realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	private void onGracefulShutdown()
+	{
+		log.info("shutting down cache updater due to graceful shutdown");
 	}
 
 	private boolean isDuplicateEvent(String fileName)
