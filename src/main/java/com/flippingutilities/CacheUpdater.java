@@ -139,6 +139,15 @@ public class CacheUpdater
 				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
 			}
 		}
+
+		catch (Exception e)
+		{
+			if (!isBeingShutdown)
+			{
+				log.info("unknown exception in updateCacheRealTime. Scheduling task again. Error = {}", e);
+				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+			}
+		}
 	}
 
 	private boolean isDuplicateEvent(String fileName)
@@ -147,7 +156,7 @@ public class CacheUpdater
 		if (lastEvents.containsKey(fileName))
 		{
 			long prevModificationTime = lastEvents.get(fileName);
-			long diffSinceLastModification = Math.abs(lastModified-prevModificationTime);
+			long diffSinceLastModification = Math.abs(lastModified - prevModificationTime);
 			if (diffSinceLastModification < 5)
 			{
 				return true;
