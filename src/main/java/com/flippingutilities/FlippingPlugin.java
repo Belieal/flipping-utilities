@@ -32,9 +32,11 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.google.inject.Provides;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -99,7 +101,7 @@ public class FlippingPlugin extends Plugin
 	private ClientThread clientThread;
 	@Inject
 	private ScheduledExecutorService executor;
-	private ScheduledFuture timeUpdateFuture;
+	private ScheduledFuture repeatingTasks;
 	@Inject
 	private ClientToolbar clientToolbar;
 	private NavigationButton navButton;
@@ -153,7 +155,17 @@ public class FlippingPlugin extends Plugin
 	List<FlippingItem> prevBuiltAccountWideList;
 
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
-	public CacheUpdater cacheUpdater;
+	private CacheUpdater cacheUpdater;
+
+	//the amount of time a user has been flipping for since the client started up or since they last reset the session
+	//time.
+	@Setter
+	@Getter
+	private Duration accumulatedSessionTime = Duration.ZERO;
+
+	//used to figure out how to accumulate time as the executor may not run the updateSessionTime method every second on
+	//the dot (there might be some very small delay).
+	private Instant lastSessionTimeUpdate;
 
 
 	@Override
@@ -185,80 +197,30 @@ public class FlippingPlugin extends Plugin
 					return false;
 			}
 
-			try
-			{
-				log.info("initiating load on startup");
-				TradePersister.setup();
-				accountCache = loadAllTrades();
-			}
-
-			catch (IOException e)
-			{
-				log.info("error while loading history, setting accountCache to a blank hashmap for now, e = {}", e);
-				accountCache = new HashMap<>();
-			}
-
-			//adding an item causes the event listener (changeView) to fire which causes stat panel
-			//and flipping panel to rebuild. I think this only happens on the first item you add.
-			tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
-
-			accountCache.keySet().forEach(displayName -> tabManager.getViewSelector().addItem(displayName));
-
-			//sets the account selector dropdown to visible or not depending on whether the config option has been
-			//selected and there are > 1 accounts.
-			if (accountCache.keySet().size() > 1)
-			{
-				tabManager.getViewSelector().setVisible(true);
-			}
-			else
-			{
-				tabManager.getViewSelector().setVisible(false);
-			}
+			accountCache = setupCache();
+			setupAccSelectorDropdown();
 
 			//sets which time interval for the stats tab will be displayed on startup
 			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-			if (lastSelectedInterval == null)
-			{
-				statPanel.setTimeInterval("All");
-				statPanel.setSelectedInterval("All");
-			}
-			else
-			{
-				statPanel.setTimeInterval(lastSelectedInterval);
-				statPanel.setSelectedInterval(lastSelectedInterval);
-			}
+			statPanel.setSelectedTimeInterval(lastSelectedInterval);
 
 			cacheUpdater = new CacheUpdater();
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
 			cacheUpdater.start();
+
+			repeatingTasks = setupRepeatingTasks();
+
 			//stops scheduling this task
 			return true;
 		});
-
-
-		//Ensures the panel displays for the margin check being outdated and the next ge reset time
-		//are updated every second.
-		timeUpdateFuture = executor.scheduleAtFixedRate(() ->
-		{
-			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
-			flippingPanel.updateActivePanelsGePropertiesDisplay();
-			statPanel.updateSessionTime();
-		}, 100, 1000, TimeUnit.MILLISECONDS);
-
 	}
 
-	/**
-	 * Gets invoked when the client is shutting down. This method calls storeTrades and blocks the main
-	 * thread until it finishes, thus allowing trades to be stored safely.
-	 *
-	 * @param clientShutdownEvent even that we receive when the client is shutting down
-	 */
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedInterval());
+		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedTimeInterval());
 
-		timeUpdateFuture.cancel(true);
+		repeatingTasks.cancel(true);
 
 		cacheUpdater.stop();
 
@@ -356,14 +318,71 @@ public class FlippingPlugin extends Plugin
 		currentlyLoggedInAccount = null;
 	}
 
+	private Map<String, AccountData> setupCache()
+	{
+		try
+		{
+			log.info("initiating load on startup");
+			TradePersister.setup();
+			return loadAllTrades();
+		}
+
+		catch (IOException e)
+		{
+			log.info("error while loading history, setting accountCache to a blank hashmap for now, e = {}", e);
+			return new HashMap<>();
+		}
+	}
+
+	/**
+	 * sets up the account selector dropdown that lets you change which account's trade list you
+	 * are looking at.
+	 */
+	private void setupAccSelectorDropdown()
+	{
+		//adding an item causes the event listener (changeView) to fire which causes stat panel
+		//and flipping panel to rebuild. I think this only happens on the first item you add.
+		tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+
+		accountCache.keySet().forEach(displayName -> tabManager.getViewSelector().addItem(displayName));
+
+		//sets the account selector dropdown to visible or not depending on whether the config option has been
+		//selected and there are > 1 accounts.
+		if (accountCache.keySet().size() > 1)
+		{
+			tabManager.getViewSelector().setVisible(true);
+		}
+		else
+		{
+			tabManager.getViewSelector().setVisible(false);
+		}
+	}
+
+	/**
+	 * Currently used for updating time sensitive displays such as the accumulate session time,
+	 * how long ago an item was flipped, etc.
+	 *
+	 * @return a future object that can be used to cancel the tasks
+	 */
+	public ScheduledFuture setupRepeatingTasks()
+	{
+		return executor.scheduleAtFixedRate(() ->
+		{
+			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
+			flippingPanel.updateActivePanelsGePropertiesDisplay();
+			statPanel.updateTimeDisplay();
+			updateSessionTime();
+		}, 100, 1000, TimeUnit.MILLISECONDS);
+	}
+
 	@Override
 	protected void shutDown()
 	{
-		if (timeUpdateFuture != null)
+		if (repeatingTasks != null)
 		{
 			//Stop all timers
-			timeUpdateFuture.cancel(true);
-			timeUpdateFuture = null;
+			repeatingTasks.cancel(true);
+			repeatingTasks = null;
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -412,25 +431,17 @@ public class FlippingPlugin extends Plugin
 
 		updateSinceLastAccountWideBuild = true;
 
-		//only way items can float to the top of the list (hence requiring a rebuild) is when
-		//the offer is a margin check. Additionally, there is no point rebuilding the panel when
-		//the user is looking at the trades list of another one of their accounts that isn't logged in as that
-		//trades list won't be being updated.
+		//only way items can float to the top of the list (hence requiring a rebuild) is when the offer is a margin
+		//check. Additionally, there is no point rebuilding the panel when the user is looking at the trades list of
+		//another one of their accounts that isn't logged in as that trades list won't be being updated.
 		if (newOffer.isMarginCheck() && (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
-			List<FlippingItem> trades = getTradesForCurrentView();
-			flippingPanel.rebuild(trades);
-			statPanel.rebuild(trades);
+			flippingPanel.rebuild(getTradesForCurrentView());
 		}
 
 		if (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE))
 		{
 			statPanel.rebuild(getTradesForCurrentView());
-			if (!newOffer.isMarginCheck())
-			{
-				flippingPanel.updateActivePanelsGePropertiesDisplay();
-			}
-
 		}
 	}
 
@@ -579,11 +590,12 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * Given a new offer, this method creates a FlippingItem, the data structure that represents an item
-	 * you are currently flipping, and adds it to the loggedInUserTrades. The loggedInUserTrades is a crucial part of the state
-	 * of the flippingPlugin, as only items from the loggedInUserTrades are rendered and updated.
+	 * Constructs a FlippingItem, the data structure that represents an item the user is currently flipping, and
+	 * adds it to the given tradelist. This method is invoked when we receive a margin check offer for an item that
+	 * isn't currently present in the given trades list.
 	 *
-	 * @param newOffer new offer just received
+	 * @param tradesList the trades list to be updated
+	 * @param newOffer the offer to update the trade list with
 	 */
 	private void addToTradesList(List<FlippingItem> tradesList, OfferInfo newOffer)
 	{
@@ -835,6 +847,47 @@ public class FlippingPlugin extends Plugin
 		prevBuiltAccountWideList = mergedItems;
 		return mergedItems;
 
+	}
+
+	/**
+	 * Decides whether the user is currently flipping or not. To be flipping a user has to be logged in
+	 * and have at least one incomplete offer in the GE
+	 *
+	 * @return whether the user if currently flipping or not
+	 */
+	private boolean currentlyFlipping()
+	{
+		if (currentlyLoggedInAccount == null)
+		{
+			return false;
+		}
+
+		Collection<OfferInfo> lastOffers = accountCache.get(currentlyLoggedInAccount).getLastOffers().values();
+		return lastOffers.stream().anyMatch(offerInfo -> !offerInfo.isComplete());
+	}
+
+	/**
+	 * Calculates and updates the session time display in the statistics tab when a user is viewing
+	 * the "Session" time interval.
+	 */
+	private void updateSessionTime()
+	{
+		if (currentlyFlipping())
+		{
+			if (lastSessionTimeUpdate == null)
+			{
+				lastSessionTimeUpdate = Instant.now();
+			}
+			long millisSinceLastSessionTimeUpdate = Instant.now().toEpochMilli() - lastSessionTimeUpdate.toEpochMilli();
+			accumulatedSessionTime = accumulatedSessionTime.plus(millisSinceLastSessionTimeUpdate, ChronoUnit.MILLIS);
+			lastSessionTimeUpdate = Instant.now();
+			statPanel.updateSessionTimeDisplay(accumulatedSessionTime);
+		}
+
+		else
+		{
+			lastSessionTimeUpdate = null;
+		}
 	}
 
 	@Subscribe

@@ -370,8 +370,8 @@ public class FlippingItemPanel extends JPanel
 		Instant latestSellTime = flippingItem.getMarginCheckSellTime();
 
 		//Update price texts with the string formatter
-		final String latestBuyString = UIUtilities.formatDuration(latestBuyTime) + " old";
-		final String latestSellString = UIUtilities.formatDuration(latestSellTime) + " old";
+		final String latestBuyString = UIUtilities.formatDurationTruncated(latestBuyTime) + " old";
+		final String latestSellString = UIUtilities.formatDurationTruncated(latestSellTime) + " old";
 
 		//As the config unit is in minutes.
 		final int latestBuyTimeAgo =
