@@ -59,12 +59,13 @@ public class CacheUpdater
 
 	List<Consumer<String>> callbacks = new ArrayList<>();
 
-	boolean isBeingShutdownGracefully = false;
+	boolean isBeingShutdownByClient = false;
 
 	Future realTimeUpdateTask;
 
 	Map<String, Long> lastEvents = new HashMap<>();
 
+	int requiredMinMsSinceLastUpdate = 5;
 	int failureCount;
 	int failureThreshold = 2;
 
@@ -86,7 +87,7 @@ public class CacheUpdater
 
 	public void stop()
 	{
-		isBeingShutdownGracefully = true;
+		isBeingShutdownByClient = true;
 		realTimeUpdateTask.cancel(true);
 	}
 
@@ -127,16 +128,15 @@ public class CacheUpdater
 
 		catch (IOException | InterruptedException e)
 		{
-			log.info("exception in updateCacheRealTime, Error = {}", e);
-
-			if (!isBeingShutdownGracefully)
+			if (!isBeingShutdownByClient)
 			{
-				onUngracefulShutdown();
+				log.info("exception in updateCacheRealTime, Error = {}", e);
+				onUnexpectedError();
 			}
 
 			else
 			{
-				onGracefulShutdown();
+				onClientShutdown();
 			}
 		}
 
@@ -146,9 +146,9 @@ public class CacheUpdater
 		}
 	}
 
-	private void onUngracefulShutdown()
+	private void onUnexpectedError()
 	{
-		log.info("Failure number: {} Error not caused by graceful shutdown", failureCount);
+		log.info("Failure number: {} Error not caused by client shutdown", failureCount);
 		failureCount++;
 		if (failureCount > failureThreshold)
 		{
@@ -163,9 +163,9 @@ public class CacheUpdater
 		}
 	}
 
-	private void onGracefulShutdown()
+	private void onClientShutdown()
 	{
-		log.info("shutting down cache updater due to graceful shutdown");
+		log.info("shutting down cache updater due to the client shutdown");
 	}
 
 	private boolean isDuplicateEvent(String fileName)
@@ -175,7 +175,7 @@ public class CacheUpdater
 		{
 			long prevModificationTime = lastEvents.get(fileName);
 			long diffSinceLastModification = Math.abs(lastModified - prevModificationTime);
-			if (diffSinceLastModification < 5)
+			if (diffSinceLastModification < requiredMinMsSinceLastUpdate)
 			{
 				return true;
 			}
@@ -184,13 +184,11 @@ public class CacheUpdater
 				lastEvents.put(fileName, lastModified);
 				return false;
 			}
-
 		}
 		else
 		{
 			lastEvents.put(fileName, lastModified);
 			return false;
 		}
-
 	}
 }
