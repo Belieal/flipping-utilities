@@ -54,7 +54,7 @@ public class MasterPanel extends PluginPanel
 	private JComboBox<String> accountSelector;
 
 	/**
-	 * THe master panel is always present. The components added to it are components that should always be there
+	 * THe master panel is always present. The components added to it are components that should always be visible
 	 * regardless of whether you are looking at the flipping panel or the statistics panel. The tab group to switch
 	 * between the flipping and stats panel, the account selector dropdown menu, and the settings button are all examples
 	 * of components that are always present, hence they are on the master panel.
@@ -90,16 +90,16 @@ public class MasterPanel extends PluginPanel
 	 * settings button to the right of the dropdown, and the tab selector which allows a user to select either the
 	 * flipping or stats tab.
 	 *
-	 * @param viewSelector   the account selector dropdown
+	 * @param accountSelector   the account selector dropdown
 	 * @param settingsButton a button which opens up a modal for altering settings
 	 * @param tabSelector    a tab group with allows a user to select either the flipping or stats tab to view.
 	 * @return a jpanel representing the header.
 	 */
-	private JPanel createHeader(JComboBox viewSelector, JButton settingsButton, MaterialTabGroup tabSelector)
+	private JPanel createHeader(JComboBox accountSelector, JButton settingsButton, MaterialTabGroup tabSelector)
 	{
 		JPanel topOfHeader = new JPanel(new BorderLayout());
 		topOfHeader.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topOfHeader.add(viewSelector, BorderLayout.CENTER);
+		topOfHeader.add(accountSelector, BorderLayout.CENTER);
 		topOfHeader.add(settingsButton, BorderLayout.EAST);
 
 		JPanel header = new JPanel(new BorderLayout());

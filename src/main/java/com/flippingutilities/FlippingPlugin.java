@@ -126,8 +126,9 @@ public class FlippingPlugin extends Plugin
 	@Getter
 	private StatsPanel statPanel;
 	private SettingsPanel settingsPanel;
-	private FlippingItemWidget flippingWidget;
 	private MasterPanel masterPanel;
+
+	private FlippingItemWidget flippingWidget;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -177,8 +178,7 @@ public class FlippingPlugin extends Plugin
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
 
-
-		//Represents the panel navigation that switches between panels using tabs at the top.
+		//holds components that are always present (account selector dropdown, settings option, etc)
 		masterPanel = new MasterPanel(this::changeView, flippingPanel, statPanel, settingsPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
