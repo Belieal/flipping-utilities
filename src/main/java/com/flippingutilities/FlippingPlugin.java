@@ -26,7 +26,8 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.TabManager;
+import com.flippingutilities.ui.SettingsPanel;
+import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
@@ -124,9 +125,9 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
+	private SettingsPanel settingsPanel;
 	private FlippingItemWidget flippingWidget;
-
-	private TabManager tabManager;
+	private MasterPanel masterPanel;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -174,16 +175,18 @@ public class FlippingPlugin extends Plugin
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
+		settingsPanel = new SettingsPanel(this);
+
 
 		//Represents the panel navigation that switches between panels using tabs at the top.
-		tabManager = new TabManager(this::changeView, flippingPanel, statPanel);
+		masterPanel = new MasterPanel(this::changeView, flippingPanel, statPanel, settingsPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
 			.priority(3)
-			.panel(tabManager)
+			.panel(masterPanel)
 			.build();
 
 		clientToolbar.addNavigation(navButton);
@@ -290,7 +293,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			accountCache.put(displayName, new AccountData());
-			tabManager.getAccountSelector().addItem(displayName);
+			masterPanel.getAccountSelector().addItem(displayName);
 		}
 
 		currentlyLoggedInAccount = displayName;
@@ -302,12 +305,12 @@ public class FlippingPlugin extends Plugin
 
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getAccountSelector().setVisible(true);
+			masterPanel.getAccountSelector().setVisible(true);
 		}
 		accountCurrentlyViewed = displayName;
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
-		tabManager.getAccountSelector().setSelectedItem(displayName);
+		masterPanel.getAccountSelector().setSelectedItem(displayName);
 
 	}
 
@@ -342,19 +345,19 @@ public class FlippingPlugin extends Plugin
 	{
 		//adding an item causes the event listener (changeView) to fire which causes stat panel
 		//and flipping panel to rebuild. I think this only happens on the first item you add.
-		tabManager.getAccountSelector().addItem(ACCOUNT_WIDE);
+		masterPanel.getAccountSelector().addItem(ACCOUNT_WIDE);
 
-		accountCache.keySet().forEach(displayName -> tabManager.getAccountSelector().addItem(displayName));
+		accountCache.keySet().forEach(displayName -> masterPanel.getAccountSelector().addItem(displayName));
 
 		//sets the account selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getAccountSelector().setVisible(true);
+			masterPanel.getAccountSelector().setVisible(true);
 		}
 		else
 		{
-			tabManager.getAccountSelector().setVisible(false);
+			masterPanel.getAccountSelector().setVisible(false);
 		}
 	}
 
@@ -795,14 +798,14 @@ public class FlippingPlugin extends Plugin
 		}
 
 		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
-		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
+		if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
 		{
-			tabManager.getAccountSelector().addItem(displayNameOfChangedAcc);
+			masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
 		}
 
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getAccountSelector().setVisible(true);
+			masterPanel.getAccountSelector().setVisible(true);
 		}
 
 		updateSinceLastAccountWideBuild = true;

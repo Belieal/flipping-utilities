@@ -29,6 +29,8 @@ package com.flippingutilities.ui;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,23 +48,27 @@ import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
-public class TabManager extends PluginPanel
+public class MasterPanel extends PluginPanel
 {
 	@Getter
-	private JComboBox<String> accountSelector = new JComboBox();
+	private JComboBox<String> accountSelector;
 
 	/**
-	 * This manages the tab navigation bar at the top of the panel.
-	 * Once a tab is selected, the corresponding panel will be displayed below
-	 * along with indication of what tab is selected.
+	 * THe master panel is always present. The components added to it are components that should always be there
+	 * regardless of whether you are looking at the flipping panel or the statistics panel. The tab group to switch
+	 * between the flipping and stats panel, the account selector dropdown menu, and the settings button are all examples
+	 * of components that are always present, hence they are on the master panel.
 	 *
 	 * @param onItemSelectionCallback this is a method passed in from the FlippingPlugin and is the callback for when
 	 *                                a user selects an account to view from the dropdown menu.
-	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
-	 * @param statPanel     StatPanel represents useful performance statistics to the user.
+	 * @param flippingPanel           FlippingPanel represents the main tool of the plugin.
+	 * @param statPanel               StatPanel represents useful performance statistics to the user.
+	 * @param settingsPanel           panel that is displayed by the modal as a result of clicking the settings button
+	 *                                next to the dropdown menu.
 	 */
 	@Inject
-	public TabManager(Consumer<String> onItemSelectionCallback, FlippingPanel flippingPanel, StatsPanel statPanel)
+	public MasterPanel(Consumer<String> onItemSelectionCallback, FlippingPanel flippingPanel, StatsPanel statPanel, SettingsPanel
+		settingsPanel)
 	{
 		super(false);
 
@@ -70,13 +76,11 @@ public class TabManager extends PluginPanel
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
 		JPanel mainDisplay = new JPanel();
-
 		accountSelector = createAccountSelector(onItemSelectionCallback);
-		JButton settingsButton = createSettingsButton();
+		JDialog modal = createModal(this, settingsPanel);
+		JButton settingsButton = createSettingsButton(() -> modal.setVisible(true));
 		MaterialTabGroup tabSelector = createTabSelector(mainDisplay, flippingPanel, statPanel);
-
 		JPanel header = createHeader(accountSelector, settingsButton, tabSelector);
-
 		add(header, BorderLayout.NORTH);
 		add(mainDisplay, BorderLayout.CENTER);
 	}
@@ -93,10 +97,14 @@ public class TabManager extends PluginPanel
 	 */
 	private JPanel createHeader(JComboBox viewSelector, JButton settingsButton, MaterialTabGroup tabSelector)
 	{
+		JPanel topOfHeader = new JPanel(new BorderLayout());
+		topOfHeader.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		topOfHeader.add(viewSelector, BorderLayout.CENTER);
+		topOfHeader.add(settingsButton, BorderLayout.EAST);
+
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		header.setBorder(new EmptyBorder(5, 0, 0, 0));
-		header.add(viewSelector, BorderLayout.NORTH);
+		header.add(topOfHeader, BorderLayout.NORTH);
 		header.add(tabSelector, BorderLayout.CENTER);
 		return header;
 	}
@@ -136,13 +144,26 @@ public class TabManager extends PluginPanel
 		return viewSelectorDropdown;
 	}
 
-	private JButton createSettingsButton()
+	private JButton createSettingsButton(Runnable callback)
 	{
 		JButton button = new JButton(UIUtilities.SETTINGS_ICON);
+		button.setPreferredSize(UIUtilities.ICON_SIZE);
+		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		button.setFocusPainted(false);
+		button.addActionListener(e -> callback.run());
 		return button;
 	}
 
-
+	/**
+	 * Adds the tabs for the flipping panel and stats panel onto the main display panel. These tabs can then
+	 * be clicked to view the flipping/stats panel
+	 *
+	 * @param mainDisplay   the panel on which the tabs will be put and on which either the flipping or stats panel will be
+	 *                      rendered
+	 * @param flippingPanel
+	 * @param statsPanel
+	 * @return
+	 */
 	private MaterialTabGroup createTabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
 	{
 		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
@@ -159,9 +180,13 @@ public class TabManager extends PluginPanel
 	}
 
 
-	private JDialog createModal()
+	private JDialog createModal(Component parent, JPanel contentToDisplay)
 	{
-		return new JDialog();
+		JDialog modal = new JDialog();
+		modal.setSize(new Dimension(contentToDisplay.getWidth(), contentToDisplay.getHeight()));
+		modal.add(contentToDisplay);
+		modal.setLocationRelativeTo(parent);
+		return modal;
 	}
 
 
