@@ -577,7 +577,10 @@ public class StatsPanel extends JPanel
 
 		updateTotalProfitDisplay();
 		updateSubInfoFont();
-		updateHourlyProfitDisplay();
+		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
+		{
+			updateHourlyProfitDisplay();
+		}
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
 		updateTotalQuantityDisplay();
@@ -630,10 +633,6 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateHourlyProfitDisplay()
 	{
-		if (!Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
-		{
-			return;
-		}
 		double divisor = plugin.getAccumulatedSessionTime().toMillis() / 1000 * 1.0 / (60 * 60);
 		String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		hourlyProfitVal.setText(profitString + " gp/hr");
