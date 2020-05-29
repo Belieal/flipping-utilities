@@ -1,16 +1,15 @@
-package com.flippingutilities.ui;
+package com.flippingutilities.ui.utilities;
 
-import com.flippingutilities.FlippingPlugin;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import jogamp.newt.driver.opengl.JoglUtilPNGIcon;
-import net.runelite.client.plugins.config.ConfigPlugin;
-import net.runelite.client.ui.PluginPanel;
+import javax.swing.SwingUtilities;
 
 /**
  * <p>
@@ -51,29 +50,43 @@ public class SettingsPanel extends JPanel
 	public SettingsPanel(int width)
 	{
 
-		JPanel sectionPanel;
+		JPanel sectionPanel = new JPanel(new GridBagLayout());
 
 		setSize(new Dimension(width, 300));
 	}
 
 
-
-	public void addDynamicOption(String section, JLabel label, JComponent component, Consumer<JComponent> updateComponent) {
-		if (!sections.containsKey(section)) {
+	public void addDynamicOption(String section, JLabel label, JComponent component, Consumer<JComponent> updateComponent)
+	{
+		if (!sections.containsKey(section))
+		{
 			return;
 		}
 
-		sections.get(section).add(component);
 		dynamicComponents.put(component, updateComponent);
+
+		JPanel optionPanel = new JPanel(new BorderLayout());
+		optionPanel.add(label, BorderLayout.WEST);
+		optionPanel.add(component, BorderLayout.CENTER);
+
+		sections.get(section).add(optionPanel, new GridBagConstraints());
+
 	}
 
-	public void refresh() {
-		dynamicComponents.forEach((component, updater) -> updater.accept(component));
+	public void refresh()
+	{
+		SwingUtilities.invokeLater(() -> {
+			dynamicComponents.forEach((component, updater) -> updater.accept(component));
+			revalidate();
+			repaint();
+		});
 	}
 
-	public void addSection(String name) {
-		sections.put(name, new JPanel());
-		new JPanel().setVisible();
+	public void addSection(String name)
+	{
+		JPanel sectionPanel = new JPanel(new GridBagLayout());
+		sections.put(name, sectionPanel);
+		sectionContainer.add(sectionPanel, new GridBagConstraints());
 	}
 
 

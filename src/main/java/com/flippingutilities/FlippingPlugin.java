@@ -26,7 +26,7 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.SettingsPanel;
+import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
@@ -176,10 +176,10 @@ public class FlippingPlugin extends Plugin
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
-		settingsPanel = new SettingsPanel(this);
 
-		//holds components that are always present (account selector dropdown, settings option, etc)
-		masterPanel = new MasterPanel(this::changeView, flippingPanel, statPanel, settingsPanel);
+
+		//holds components that are always present (account selector dropdown, flipping panel, stats panel, etc)
+		masterPanel = new MasterPanel(this, flippingPanel, statPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()

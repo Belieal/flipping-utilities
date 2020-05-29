@@ -26,8 +26,11 @@
 
 package com.flippingutilities.ui;
 
+import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.utilities.SettingsPanel;
+import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -35,7 +38,6 @@ import java.awt.event.ItemEvent;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.inject.Inject;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -59,16 +61,10 @@ public class MasterPanel extends PluginPanel
 	 * between the flipping and stats panel, the account selector dropdown menu, and the settings button are all examples
 	 * of components that are always present, hence they are on the master panel.
 	 *
-	 * @param onItemSelectionCallback this is a method passed in from the FlippingPlugin and is the callback for when
-	 *                                a user selects an account to view from the dropdown menu.
 	 * @param flippingPanel           FlippingPanel represents the main tool of the plugin.
 	 * @param statPanel               StatPanel represents useful performance statistics to the user.
-	 * @param settingsPanel           panel that is displayed by the modal as a result of clicking the settings button
-	 *                                next to the dropdown menu.
 	 */
-	@Inject
-	public MasterPanel(Consumer<String> onItemSelectionCallback, FlippingPanel flippingPanel, StatsPanel statPanel, SettingsPanel
-		settingsPanel)
+	public MasterPanel(FlippingPlugin plugin, FlippingPanel flippingPanel, StatsPanel statPanel)
 	{
 		super(false);
 
@@ -76,8 +72,9 @@ public class MasterPanel extends PluginPanel
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
 		JPanel mainDisplay = new JPanel();
-		accountSelector = createAccountSelector(onItemSelectionCallback);
-		JDialog modal = createModal(this, settingsPanel);
+		accountSelector = createAccountSelector(plugin::changeView);
+		SettingsPanel settingsPanel = createSettingsPanel();
+		JDialog modal = createSettingsModal(this, settingsPanel);
 		JButton settingsButton = createSettingsButton(() -> modal.setVisible(true));
 		MaterialTabGroup tabSelector = createTabSelector(mainDisplay, flippingPanel, statPanel);
 		JPanel header = createHeader(accountSelector, settingsButton, tabSelector);
@@ -179,12 +176,16 @@ public class MasterPanel extends PluginPanel
 		return tabGroup;
 	}
 
+	private SettingsPanel createSettingsPanel() {
+		return new SettingsPanel(250);
+	}
 
-	private JDialog createModal(Component parent, JPanel contentToDisplay)
+
+	private JDialog createSettingsModal(Component parent, SettingsPanel settingsPanel)
 	{
 		JDialog modal = new JDialog();
-		modal.setSize(new Dimension(contentToDisplay.getWidth(), contentToDisplay.getHeight()));
-		modal.add(contentToDisplay);
+		modal.setSize(new Dimension(settingsPanel.getWidth(), settingsPanel.getHeight()));
+		modal.add(settingsPanel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
 	}

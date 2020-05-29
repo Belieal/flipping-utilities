@@ -28,9 +28,9 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.ui.UIUtilities;
-import static com.flippingutilities.ui.UIUtilities.DELETE_ICON;
-import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
+import com.flippingutilities.ui.utilities.UIUtilities;
+import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
