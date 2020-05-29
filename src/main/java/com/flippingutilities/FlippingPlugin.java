@@ -431,10 +431,11 @@ public class FlippingPlugin extends Plugin
 
 		updateSinceLastAccountWideBuild = true;
 
-		//only way items can float to the top of the list (hence requiring a rebuild) is when the offer is a margin
-		//check. Additionally, there is no point rebuilding the panel when the user is looking at the trades list of
+		//Only rebuild flipping panel if flipping item is not present as in that case a new panel is added.
+		//There is no point rebuilding the panel when the user is looking at the trades list of
 		//another one of their accounts that isn't logged in as that trades list won't be being updated.
-		if (newOffer.isMarginCheck() && (accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
+		if (!flippingItem.isPresent() &&
+			(accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
 			flippingPanel.rebuild(getTradesForCurrentView());
 		}
@@ -564,6 +565,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (flippingItem.isPresent())
 		{
+			log.info("updating");
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
@@ -574,7 +576,9 @@ public class FlippingPlugin extends Plugin
 		}
 		else
 		{
+			log.info("adding");
 			addToTradesList(trades, newOffer);
+			log.info("{}", getTradesForCurrentView());
 		}
 	}
 
