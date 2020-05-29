@@ -368,10 +368,18 @@ public class FlippingPlugin extends Plugin
 	{
 		return executor.scheduleAtFixedRate(() ->
 		{
-			flippingPanel.updateActivePanelsPriceOutdatedDisplay();
-			flippingPanel.updateActivePanelsGePropertiesDisplay();
-			statPanel.updateTimeDisplay();
-			updateSessionTime();
+			try
+			{
+				flippingPanel.updateActivePanelsPriceOutdatedDisplay();
+				flippingPanel.updateActivePanelsGePropertiesDisplay();
+				statPanel.updateTimeDisplay();
+				updateSessionTime();
+			}
+			catch (Exception e)
+			{
+				log.info("unknown exception in repeating tasks, error = {}", e);
+			}
+
 		}, 100, 1000, TimeUnit.MILLISECONDS);
 	}
 
