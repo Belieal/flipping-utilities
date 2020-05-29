@@ -431,10 +431,11 @@ public class FlippingPlugin extends Plugin
 
 		updateSinceLastAccountWideBuild = true;
 
-		//Only rebuild flipping panel if flipping item is not present as in that case a new panel is added.
+		//Only rebuild flipping panel if flipping item is not present as in that case a new panel is added or its present
+		//and the offer is a margin check as that updates the buy/sell price on the item's panel.
 		//There is no point rebuilding the panel when the user is looking at the trades list of
 		//another one of their accounts that isn't logged in as that trades list won't be being updated.
-		if (!flippingItem.isPresent() &&
+		if ((!flippingItem.isPresent() || flippingItem.isPresent() && newOffer.isMarginCheck()) &&
 			(accountCurrentlyViewed.equals(currentlyLoggedInAccount) || accountCurrentlyViewed.equals(ACCOUNT_WIDE)))
 		{
 			flippingPanel.rebuild(getTradesForCurrentView());
@@ -565,7 +566,6 @@ public class FlippingPlugin extends Plugin
 	{
 		if (flippingItem.isPresent())
 		{
-			log.info("updating");
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
@@ -576,9 +576,7 @@ public class FlippingPlugin extends Plugin
 		}
 		else
 		{
-			log.info("adding");
 			addToTradesList(trades, newOffer);
-			log.info("{}", getTradesForCurrentView());
 		}
 	}
 
