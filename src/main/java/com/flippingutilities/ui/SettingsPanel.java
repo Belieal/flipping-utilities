@@ -2,7 +2,14 @@ package com.flippingutilities.ui;
 
 import com.flippingutilities.FlippingPlugin;
 import java.awt.Dimension;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import jogamp.newt.driver.opengl.JoglUtilPNGIcon;
+import net.runelite.client.plugins.config.ConfigPlugin;
 import net.runelite.client.ui.PluginPanel;
 
 /**
@@ -33,12 +40,41 @@ import net.runelite.client.ui.PluginPanel;
  */
 public class SettingsPanel extends JPanel
 {
-	FlippingPlugin plugin;
+	int width;
 
-	public SettingsPanel(FlippingPlugin plugin)
+	JPanel sectionContainer;
+
+	Map<String, JPanel> sections;
+
+	Map<JComponent, Consumer<JComponent>> dynamicComponents;
+
+	public SettingsPanel(int width)
 	{
-		this.plugin = plugin;
 
-		setSize(new Dimension(PluginPanel.PANEL_WIDTH, 300));
+		JPanel sectionPanel;
+
+		setSize(new Dimension(width, 300));
 	}
+
+
+
+	public void addDynamicOption(String section, JLabel label, JComponent component, Consumer<JComponent> updateComponent) {
+		if (!sections.containsKey(section)) {
+			return;
+		}
+
+		sections.get(section).add(component);
+		dynamicComponents.put(component, updateComponent);
+	}
+
+	public void refresh() {
+		dynamicComponents.forEach((component, updater) -> updater.accept(component));
+	}
+
+	public void addSection(String name) {
+		sections.put(name, new JPanel());
+		new JPanel().setVisible();
+	}
+
+
 }
