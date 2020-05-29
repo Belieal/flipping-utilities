@@ -577,7 +577,10 @@ public class StatsPanel extends JPanel
 
 		updateTotalProfitDisplay();
 		updateSubInfoFont();
-		updateHourlyProfitDisplay();
+		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
+		{
+			updateHourlyProfitDisplay();
+		}
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
 		updateTotalQuantityDisplay();
