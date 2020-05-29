@@ -562,30 +562,19 @@ public class FlippingPlugin extends Plugin
 	 */
 	private void updateTradesList(List<FlippingItem> trades, Optional<FlippingItem> flippingItem, OfferInfo newOffer)
 	{
-		if (newOffer.isMarginCheck())
+		if (flippingItem.isPresent())
 		{
-			if (flippingItem.isPresent())
+			FlippingItem item = flippingItem.get();
+			if (newOffer.isMarginCheck())
 			{
-				FlippingItem item = flippingItem.get();
 				item.updateMargin(newOffer);
-				item.updateHistory(newOffer);
-				item.updateLatestTimes(newOffer);
-
-				trades.remove(item);
-				trades.add(0, item);
 			}
-			else
-			{
-				addToTradesList(trades, newOffer);
-			}
+			item.updateHistory(newOffer);
+			item.updateLatestTimes(newOffer);
 		}
-
-		//if the item exists in the trades list but its not a margin check, you only need to update its history and
-		//last traded times, not its margin.
-		else if (flippingItem.isPresent())
+		else
 		{
-			flippingItem.get().updateHistory(newOffer);
-			flippingItem.get().updateLatestTimes(newOffer);
+			addToTradesList(trades, newOffer);
 		}
 	}
 
@@ -595,7 +584,7 @@ public class FlippingPlugin extends Plugin
 	 * isn't currently present in the given trades list.
 	 *
 	 * @param tradesList the trades list to be updated
-	 * @param newOffer the offer to update the trade list with
+	 * @param newOffer   the offer to update the trade list with
 	 */
 	private void addToTradesList(List<FlippingItem> tradesList, OfferInfo newOffer)
 	{
@@ -607,7 +596,10 @@ public class FlippingPlugin extends Plugin
 
 		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
 
-		flippingItem.updateMargin(newOffer);
+		if (newOffer.isMarginCheck())
+		{
+			flippingItem.updateMargin(newOffer);
+		}
 		flippingItem.updateHistory(newOffer);
 		flippingItem.updateLatestTimes(newOffer);
 
