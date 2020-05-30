@@ -33,14 +33,15 @@ import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.event.ItemEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
@@ -61,21 +62,23 @@ public class MasterPanel extends PluginPanel
 	 * between the flipping and stats panel, the account selector dropdown menu, and the settings button are all examples
 	 * of components that are always present, hence they are on the master panel.
 	 *
-	 * @param flippingPanel           FlippingPanel represents the main tool of the plugin.
-	 * @param statPanel               StatPanel represents useful performance statistics to the user.
+	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
+	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
 	public MasterPanel(FlippingPlugin plugin, FlippingPanel flippingPanel, StatsPanel statPanel)
 	{
 		super(false);
 
 		setLayout(new BorderLayout());
-		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
 		JPanel mainDisplay = new JPanel();
 		accountSelector = createAccountSelector(plugin::changeView);
 		SettingsPanel settingsPanel = createSettingsPanel();
 		JDialog modal = createSettingsModal(this, settingsPanel);
-		JButton settingsButton = createSettingsButton(() -> modal.setVisible(true));
+		JLabel settingsButton = createSettingsButton(() -> {
+			modal.setVisible(true);
+			settingsPanel.rebuild();
+		});
 		MaterialTabGroup tabSelector = createTabSelector(mainDisplay, flippingPanel, statPanel);
 		JPanel header = createHeader(accountSelector, settingsButton, tabSelector);
 		add(header, BorderLayout.NORTH);
@@ -87,12 +90,12 @@ public class MasterPanel extends PluginPanel
 	 * settings button to the right of the dropdown, and the tab selector which allows a user to select either the
 	 * flipping or stats tab.
 	 *
-	 * @param accountSelector   the account selector dropdown
-	 * @param settingsButton a button which opens up a modal for altering settings
-	 * @param tabSelector    a tab group with allows a user to select either the flipping or stats tab to view.
+	 * @param accountSelector the account selector dropdown
+	 * @param settingsButton  a button which opens up a modal for altering settings
+	 * @param tabSelector     a tab group with allows a user to select either the flipping or stats tab to view.
 	 * @return a jpanel representing the header.
 	 */
-	private JPanel createHeader(JComboBox accountSelector, JButton settingsButton, MaterialTabGroup tabSelector)
+	private JPanel createHeader(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
 	{
 		JPanel topOfHeader = new JPanel(new BorderLayout());
 		topOfHeader.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -141,13 +144,19 @@ public class MasterPanel extends PluginPanel
 		return viewSelectorDropdown;
 	}
 
-	private JButton createSettingsButton(Runnable callback)
+	private JLabel createSettingsButton(Runnable callback)
 	{
-		JButton button = new JButton(UIUtilities.SETTINGS_ICON);
+		JLabel button = new JLabel(UIUtilities.SETTINGS_ICON);
+		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		button.setPreferredSize(UIUtilities.ICON_SIZE);
 		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		button.setFocusPainted(false);
-		button.addActionListener(e -> callback.run());
+		button.addMouseListener(new MouseAdapter()
+		{
+			public void mouseClicked(MouseEvent e)
+			{
+				callback.run();
+			}
+		});
 		return button;
 	}
 
@@ -176,15 +185,29 @@ public class MasterPanel extends PluginPanel
 		return tabGroup;
 	}
 
-	private SettingsPanel createSettingsPanel() {
-		return new SettingsPanel(250);
+	private SettingsPanel createSettingsPanel()
+	{
+		SettingsPanel settingsPanel = new SettingsPanel(250, 400);
+		settingsPanel.addSection("Account Selector");
+
+		JComboBox accountDropdown = new JComboBox();
+		settingsPanel.addDynamicOption("Account Selector",
+			new JLabel("Choose an account to delete"),
+			accountDropdown,
+			() -> getViewSelectorItems().forEach(accountDropdown::addItem)
+		);
+		settingsPanel.addSection("Other Settings");
+		settingsPanel.addSection("Other Settings7");
+		settingsPanel.addSection("Other Settings5");
+		settingsPanel.addSection("Other Settings1");
+		settingsPanel.addSection("Other Settings2");
+		return settingsPanel;
 	}
 
 
 	private JDialog createSettingsModal(Component parent, SettingsPanel settingsPanel)
 	{
 		JDialog modal = new JDialog();
-		modal.setSize(new Dimension(settingsPanel.getWidth(), settingsPanel.getHeight()));
 		modal.add(settingsPanel);
 		modal.setLocationRelativeTo(parent);
 		return modal;

@@ -4,12 +4,18 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.nio.ByteOrder;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
+import net.runelite.client.ui.ColorScheme;
 
 /**
  * <p>
@@ -39,24 +45,24 @@ import javax.swing.SwingUtilities;
  */
 public class SettingsPanel extends JPanel
 {
-	int width;
 
-	JPanel sectionContainer;
+	JPanel sectionContainer = new JPanel();
 
-	Map<String, JPanel> sections;
+	Map<String, JPanel> sections = new HashMap<>();
 
-	Map<JComponent, Consumer<JComponent>> dynamicComponents;
+	Map<JComponent, Runnable> dynamicComponents = new HashMap<>();
 
-	public SettingsPanel(int width)
+	public SettingsPanel(int width, int height)
 	{
-
-		JPanel sectionPanel = new JPanel(new GridBagLayout());
-
-		setSize(new Dimension(width, 300));
+		setLayout(new BorderLayout());
+		sectionContainer.setLayout(new BoxLayout(sectionContainer, BoxLayout.Y_AXIS));
+		sectionContainer.setBorder(new EmptyBorder(5,5,5,5));
+		JScrollPane scrollPane = new JScrollPane(sectionContainer);
+		add(scrollPane);
 	}
 
 
-	public void addDynamicOption(String section, JLabel label, JComponent component, Consumer<JComponent> updateComponent)
+	public void addDynamicOption(String section, JLabel label, JComponent component, Runnable updateComponent)
 	{
 		if (!sections.containsKey(section))
 		{
@@ -66,6 +72,7 @@ public class SettingsPanel extends JPanel
 		dynamicComponents.put(component, updateComponent);
 
 		JPanel optionPanel = new JPanel(new BorderLayout());
+		optionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		optionPanel.add(label, BorderLayout.WEST);
 		optionPanel.add(component, BorderLayout.CENTER);
 
@@ -73,10 +80,10 @@ public class SettingsPanel extends JPanel
 
 	}
 
-	public void refresh()
+	public void rebuild()
 	{
 		SwingUtilities.invokeLater(() -> {
-			dynamicComponents.forEach((component, updater) -> updater.accept(component));
+			dynamicComponents.forEach((component, updater) -> updater.run());
 			revalidate();
 			repaint();
 		});
@@ -84,8 +91,15 @@ public class SettingsPanel extends JPanel
 
 	public void addSection(String name)
 	{
-		JPanel sectionPanel = new JPanel(new GridBagLayout());
-		sections.put(name, sectionPanel);
+		JPanel sectionPanel = new JPanel(new BorderLayout());
+		sectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		sectionPanel.setBorder(new EmptyBorder(3,3,3,3));
+		JPanel optionsContainer = new JPanel(new GridBagLayout());
+		optionsContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		sectionPanel.add(new JLabel(name), BorderLayout.NORTH);
+		sectionPanel.add(optionsContainer, BorderLayout.CENTER);
+
+		sections.put(name, optionsContainer);
 		sectionContainer.add(sectionPanel, new GridBagConstraints());
 	}
 
