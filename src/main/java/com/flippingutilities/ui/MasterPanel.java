@@ -142,10 +142,11 @@ public class MasterPanel extends PluginPanel
 	}
 
 	/**
-	 * This is the button that you click on to view the setting modal.
+	 * This is the button that you click on to view the setting modal. It is only visible if the account selector is
+	 * visible.
 	 *
 	 * @param callback the callback executed when the button is clicked.
-	 * @return
+	 * @return the settings button
 	 */
 	private JLabel settingsButton(Runnable callback)
 	{
@@ -189,7 +190,8 @@ public class MasterPanel extends PluginPanel
 	}
 
 	/**
-	 * This creates the settings panel. It currently has an option for a user to delete an account from the account
+	 * This creates the settings panel which shows up in a modal when a user clicks the settings button to the right
+	 * of the account selector. It currently has an option for a user to delete an account from the account
 	 * selector dropdown
 	 *
 	 * @return settings panel.
@@ -220,10 +222,12 @@ public class MasterPanel extends PluginPanel
 	}
 
 	/**
-	 * This is the dropdown in the settings panel that lets a user select which account they want to delete.
-	 * @return
+	 * Creates the dropdown in the settings panel that lets a user select which account they want to delete.
+	 *
+	 * @return a dropdown.
 	 */
-	private JComboBox accountDeleteSelector() {
+	private JComboBox accountDeleteSelector()
+	{
 		JComboBox deleteAccountSelector = new JComboBox();
 		deleteAccountSelector.setFocusable(false);
 		deleteAccountSelector.setToolTipText("You can only delete an account that isn't currently logged in");
