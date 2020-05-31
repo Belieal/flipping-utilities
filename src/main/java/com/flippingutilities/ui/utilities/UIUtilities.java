@@ -31,6 +31,7 @@ import com.flippingutilities.FlippingPlugin;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
@@ -361,33 +362,5 @@ public class UIUtilities
 		modal.add(settingsPanel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
-	}
-
-	/**
-	 * @param onItemSelect callback to run when an item is selected
-	 * @return an item listener that can be attached to a jcombobox. Example:
-	 * accountDropdown.addItemListener(UIUtilities.dropdownListener(plugin::deleteAccount)); This will
-	 * add an item listener that runs FlippingPlugin.deleteAccount(selecteditem) when an item is selected.
-	 */
-	public static ItemListener dropdownListener(Consumer<String> onItemSelect)
-	{
-		return event ->
-		{
-			if (event.getStateChange() == ItemEvent.SELECTED)
-			{
-
-				String selectedItem = (String) event.getItem();
-
-				if (selectedItem == null)
-				{
-					return;
-				}
-				else
-				{
-					onItemSelect.accept(selectedItem);
-				}
-			}
-		};
-
 	}
 }

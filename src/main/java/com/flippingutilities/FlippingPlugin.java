@@ -904,6 +904,7 @@ public class FlippingPlugin extends Plugin
 
 	public void deleteAccount(String displayName)
 	{
+		log.info("deleting {}", displayName);
 		if (accountCurrentlyViewed.equals(displayName))
 		{
 			accountCurrentlyViewed = ACCOUNT_WIDE;

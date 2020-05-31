@@ -32,11 +32,12 @@ import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -127,12 +128,21 @@ public class MasterPanel extends PluginPanel
 		viewSelectorDropdown.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelectorDropdown.setRenderer(new ComboBoxListRenderer());
 		viewSelectorDropdown.setToolTipText("Select which of your account's trades list you want to view");
-		viewSelectorDropdown.addItemListener(UIUtilities.dropdownListener(plugin::changeView));
+		viewSelectorDropdown.addItemListener(event ->
+		{
+			if (event.getStateChange() == ItemEvent.SELECTED)
+			{
+				String selectedName = (String) event.getItem();
+				plugin.changeView(selectedName);
+			}
+		});
+
 		return viewSelectorDropdown;
 	}
 
 	/**
 	 * This is the button that you click on to view the setting modal.
+	 *
 	 * @param callback the callback executed when the button is clicked.
 	 * @return
 	 */
@@ -180,25 +190,41 @@ public class MasterPanel extends PluginPanel
 	/**
 	 * This creates the settings panel. It currently has an option for a user to delete an account from the account
 	 * selector dropdown
+	 *
 	 * @return settings panel.
 	 */
 	private SettingsPanel settingsPanel()
 	{
 		SettingsPanel settingsPanel = new SettingsPanel(280, 300);
+
 		settingsPanel.addSection("Account Selector Settings");
 
-		JComboBox accountDropdown = new JComboBox();
-		accountDropdown.addItemListener(UIUtilities.dropdownListener(plugin::deleteAccount));
+		JComboBox deleteAccountSelector = new JComboBox();
+		deleteAccountSelector.setFocusable(false);
+		deleteAccountSelector.setToolTipText("You can only delete an account that isn't currently logged in");
+
+		ActionListener listener = e -> {
+			JComboBox dropdown = (JComboBox) e.getSource();
+			String name = (String) dropdown.getSelectedItem();
+			dropdown.removeItem(name);
+			plugin.deleteAccount(name);
+			accountSelector.removeItem(name);
+		};
+
+		deleteAccountSelector.addActionListener(listener);
 
 		//whenever the panel is opened, make sure the dropdown has every account available to delete except the currently logged in account.
 		Runnable dropdownUpdater = () -> {
-			accountDropdown.removeAllItems();
-			Set<String> accountsWithHistory = plugin.getAccountCache().keySet();
+			//i have to remove the listener cause when things like add item is called, it fires the action listener....so stupid
+			deleteAccountSelector.removeActionListener(listener);
+			deleteAccountSelector.removeAllItems();
+			Set<String> accountsWithHistory = new HashSet<>(plugin.getAccountCache().keySet());
 			accountsWithHistory.remove(plugin.getCurrentlyLoggedInAccount());
-			accountsWithHistory.forEach(accountDropdown::addItem);
+			accountsWithHistory.forEach(deleteAccountSelector::addItem);
+			deleteAccountSelector.addActionListener(listener);
 		};
 
-		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", accountDropdown, dropdownUpdater);
+		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", deleteAccountSelector, dropdownUpdater);
 		return settingsPanel;
 	}
 
