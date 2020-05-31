@@ -26,27 +26,117 @@
 
 package com.flippingutilities.ui.widgets;
 
+import com.flippingutilities.FlippingItem;
+import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.OfferInfo;
+import com.flippingutilities.ui.UIUtilities;
 import java.awt.Color;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import lombok.Setter;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.ColorUtil;
 
-@AllArgsConstructor
 public class TradeActivityTimer
 {
-	@NonNull
-	private Widget textWidget;
-	private ClientThread clientThread;
+	private static final String SPACER = "          ";
+	private static final int FONT_ID = 495;
 
-	public void initialize()
+	@Setter
+	private Widget slotWidget;
+	private ClientThread clientThread;
+	private FlippingPlugin plugin;
+	private ScheduledExecutorService executor;
+
+	private Widget slotStateWidget;
+	private Widget itemIconWidget;
+
+	private String slotStateString;
+
+	private FlippingItem flippingItem;
+
+	public TradeActivityTimer(Widget slotWidget, ClientThread clientThread, FlippingPlugin plugin, ScheduledExecutorService executor)
 	{
-		if (textWidget != null && !textWidget.getText().equals("Empty"))
+		this.slotWidget = slotWidget;
+		this.clientThread = clientThread;
+		this.plugin = plugin;
+		this.executor = executor;
+
+		slotStateString = slotWidget.getChild(16).getText();
+
+		executor.scheduleAtFixedRate(() -> clientThread.invokeLater(() -> updateTimer(false)), 10, 1000, TimeUnit.MILLISECONDS);
+	}
+
+	public void updateTimer(boolean isReloading)
+	{
+		if (slotWidget == null || slotWidget.isHidden())
 		{
-			String previousText = textWidget.getText();
-			clientThread.invokeLater(() -> textWidget.setText("<html>" + previousText + "<br>" + ColorUtil.wrapWithColorTag("(00:00:00)", Color.WHITE) + "</html>"));
-			textWidget.setFontId(494);
+			return;
 		}
+
+		slotStateWidget = slotWidget.getChild(16);
+		itemIconWidget = slotWidget.getChild(18);
+
+		if (isReloading)
+		{
+			System.out.println(slotStateWidget.getText());
+			slotStateString = slotStateWidget.getText();
+		}
+
+		if (slotStateString.equals("Empty"))
+		{
+			resetToEmpty();
+			return;
+		}
+
+		List<FlippingItem> tradeList = new ArrayList<>(plugin.getTradesForCurrentView());
+
+		if (flippingItem == null)
+		{
+			findItemFromWidget(tradeList);
+		}
+
+		ArrayList<OfferInfo> itemHistory = flippingItem.getSaleList(flippingItem.getIntervalHistory(Instant.EPOCH), slotStateString.equals("Buy"));
+
+		if (!itemHistory.isEmpty())
+		{
+			Collections.reverse(itemHistory); //As newest offers are last in the list
+			Instant lastRecordedTime = itemHistory.get(0).getTime();
+
+			clientThread.invoke(() -> setText(UIUtilities.formatDuration(lastRecordedTime)));
+			slotStateWidget.setFontId(FONT_ID);
+			slotStateWidget.setXTextAlignment(0);
+		}
+	}
+
+	private void setText(String timeString)
+	{
+		slotStateWidget.setText("  <html>" + slotStateString + SPACER + ColorUtil.wrapWithColorTag(timeString, Color.WHITE) + "</html>");
+	}
+
+	public void findItemFromWidget(List<FlippingItem> tradeList)
+	{
+		int widgetItemId = itemIconWidget.getItemId();
+
+		for (FlippingItem item : tradeList)
+		{
+			if (item.getItemId() == widgetItemId)
+			{
+				flippingItem = item;
+				break;
+			}
+		}
+	}
+
+	private void resetToEmpty()
+	{
+		slotStateWidget.setText("Empty");
+		slotStateWidget.setFontId(496);
+		slotStateWidget.setXTextAlignment(1);
 	}
 }

@@ -288,6 +288,11 @@ public class FlippingItem
 		history.invalidateOffers(panelSelection, offerList);
 	}
 
+	public ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
+	{
+		return history.getSaleList(tradeList, buyState);
+	}
+
 	//generated to string from intellij. I made it not create a representation of the history cause it would be too
 	//long and you typically don't want to see that.
 	@Override

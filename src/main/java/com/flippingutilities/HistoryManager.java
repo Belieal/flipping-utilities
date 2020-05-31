@@ -306,7 +306,7 @@ public class HistoryManager
 	 * @param buyState  true will return offers that have been bought and false will return offers that have been sold.
 	 * @return A list of items either sold or bought over a period of time.
 	 */
-	private ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
+	public ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
 	{
 		ArrayList<OfferInfo> results = new ArrayList<>();
 

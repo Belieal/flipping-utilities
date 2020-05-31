@@ -117,6 +117,16 @@ public class UIUtilities
 	}
 
 	/**
+	 * Method overload to allow for instants to be formatted as durations.
+	 *
+	 * @return formatted string (HH:MM:SS)
+	 */
+	public static String formatDuration(Instant instant)
+	{
+		return formatDuration(Duration.between(instant, Instant.now()));
+	}
+
+	/**
 	 * This method formats a string time from an instant from the time, as specified by the parameter, until now.
 	 * It truncates the time representation to the greatest unit. For example, 65 seconds will become a minute
 	 * (not a minute and 5 seconds), 70 minutes will become an hour (not an hour and 10 minutes), etc. This is to
