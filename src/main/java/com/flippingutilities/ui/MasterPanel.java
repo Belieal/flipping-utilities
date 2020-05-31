@@ -36,6 +36,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import javax.swing.JComboBox;
@@ -199,33 +200,42 @@ public class MasterPanel extends PluginPanel
 
 		settingsPanel.addSection("Account Selector Settings");
 
+		JComboBox accountDeleteSelector = accountDeleteSelector();
+
+		//whenever the panel is opened, make sure the dropdown has every account available to delete except the currently logged in account.
+		Runnable dropdownUpdater = () -> {
+			//i have to remove the listener cause when things like add item is called, it fires the action listener....so stupid
+			ActionListener[] listeners = accountDeleteSelector.getActionListeners();
+			Arrays.stream(listeners).forEach(accountDeleteSelector::removeActionListener);
+			accountDeleteSelector.removeAllItems();
+			Set<String> accountsWithHistory = new HashSet<>(plugin.getAccountCache().keySet());
+			accountsWithHistory.remove(plugin.getCurrentlyLoggedInAccount());
+			accountsWithHistory.forEach(accountDeleteSelector::addItem);
+			Arrays.stream(listeners).forEach(accountDeleteSelector::addActionListener);
+		};
+
+		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", accountDeleteSelector, dropdownUpdater);
+
+		return settingsPanel;
+	}
+
+	/**
+	 * This is the dropdown in the settings panel that lets a user select which account they want to delete.
+	 * @return
+	 */
+	private JComboBox accountDeleteSelector() {
 		JComboBox deleteAccountSelector = new JComboBox();
 		deleteAccountSelector.setFocusable(false);
 		deleteAccountSelector.setToolTipText("You can only delete an account that isn't currently logged in");
-
-		ActionListener listener = e -> {
+		deleteAccountSelector.addActionListener(e -> {
 			JComboBox dropdown = (JComboBox) e.getSource();
 			String name = (String) dropdown.getSelectedItem();
 			dropdown.removeItem(name);
 			plugin.deleteAccount(name);
 			accountSelector.removeItem(name);
-		};
+		});
 
-		deleteAccountSelector.addActionListener(listener);
-
-		//whenever the panel is opened, make sure the dropdown has every account available to delete except the currently logged in account.
-		Runnable dropdownUpdater = () -> {
-			//i have to remove the listener cause when things like add item is called, it fires the action listener....so stupid
-			deleteAccountSelector.removeActionListener(listener);
-			deleteAccountSelector.removeAllItems();
-			Set<String> accountsWithHistory = new HashSet<>(plugin.getAccountCache().keySet());
-			accountsWithHistory.remove(plugin.getCurrentlyLoggedInAccount());
-			accountsWithHistory.forEach(deleteAccountSelector::addItem);
-			deleteAccountSelector.addActionListener(listener);
-		};
-
-		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", deleteAccountSelector, dropdownUpdater);
-		return settingsPanel;
+		return deleteAccountSelector;
 	}
 
 	public Set<String> getViewSelectorItems()
