@@ -631,8 +631,18 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateHourlyProfitDisplay()
 	{
+		String profitString;
 		double divisor = plugin.getAccumulatedSessionTime().toMillis() / 1000 * 1.0 / (60 * 60);
-		String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+
+		if (divisor != 0)
+		{
+			profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+		}
+		else
+		{
+			profitString = "0";
+		}
+
 		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");

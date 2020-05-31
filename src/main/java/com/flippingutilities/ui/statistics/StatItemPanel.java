@@ -490,16 +490,18 @@ public class StatItemPanel extends JPanel
 
 	public void updateTimeDisplay()
 	{
-		if (!tradeHistory.isEmpty())
+		if (tradeHistory.isEmpty())
 		{
-			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
-			timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
-			timeOfLastFlipPanel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
+			return;
+		}
 
-			for (StatItemHistoryPanel panel : activePanels)
-			{
-				panel.updateTimeDisplay();
-			}
+		OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
+		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
+		timeOfLastFlipPanel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
+
+		for (StatItemHistoryPanel panel : activePanels)
+		{
+			panel.updateTimeDisplay();
 		}
 	}
 
