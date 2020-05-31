@@ -32,7 +32,6 @@ import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
@@ -76,7 +75,7 @@ public class MasterPanel extends PluginPanel
 
 		JPanel mainDisplay = new JPanel();
 
-		accountSelector = accountSelector(plugin::changeView);
+		accountSelector = accountSelector();
 		SettingsPanel settingsPanel = settingsPanel();
 		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
 		JLabel settingsButton = settingsButton(() -> {
@@ -118,10 +117,9 @@ public class MasterPanel extends PluginPanel
 	 * This is the dropdown at the top of the header which allows the user to select which account they want to view.
 	 * Its only set to visible if the user has more than once account with a trading history.
 	 *
-	 * @param onItemSelectionCallback the callback that fires when a user selects a display name from the dropdown.
 	 * @return the account selector.
 	 */
-	private JComboBox accountSelector(Consumer<String> onItemSelectionCallback)
+	private JComboBox accountSelector()
 	{
 		JComboBox viewSelectorDropdown = new JComboBox();
 		viewSelectorDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -129,7 +127,7 @@ public class MasterPanel extends PluginPanel
 		viewSelectorDropdown.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelectorDropdown.setRenderer(new ComboBoxListRenderer());
 		viewSelectorDropdown.setToolTipText("Select which of your account's trades list you want to view");
-		viewSelectorDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::changeView));
+		viewSelectorDropdown.addItemListener(UIUtilities.dropdownListener(plugin::changeView));
 		return viewSelectorDropdown;
 	}
 
@@ -190,11 +188,14 @@ public class MasterPanel extends PluginPanel
 		settingsPanel.addSection("Account Selector Settings");
 
 		JComboBox accountDropdown = new JComboBox();
-		accountDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::deleteAccount));
+		accountDropdown.addItemListener(UIUtilities.dropdownListener(plugin::deleteAccount));
 
+		//whenever the panel is opened, make sure the dropdown has every account available to delete except the currently logged in account.
 		Runnable dropdownUpdater = () -> {
 			accountDropdown.removeAllItems();
-			getViewSelectorItems().forEach(accountDropdown::addItem);
+			Set<String> accountsWithHistory = plugin.getAccountCache().keySet();
+			accountsWithHistory.remove(plugin.getCurrentlyLoggedInAccount());
+			accountsWithHistory.forEach(accountDropdown::addItem);
 		};
 
 		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", accountDropdown, dropdownUpdater);

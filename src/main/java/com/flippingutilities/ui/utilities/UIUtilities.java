@@ -366,10 +366,10 @@ public class UIUtilities
 	/**
 	 * @param onItemSelect callback to run when an item is selected
 	 * @return an item listener that can be attached to a jcombobox. Example:
-	 * accountDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::deleteAccount)); This will
+	 * accountDropdown.addItemListener(UIUtilities.dropdownListener(plugin::deleteAccount)); This will
 	 * add an item listener that runs FlippingPlugin.deleteAccount(selecteditem) when an item is selected.
 	 */
-	public static ItemListener dropdownHandler(Consumer<String> onItemSelect)
+	public static ItemListener dropdownListener(Consumer<String> onItemSelect)
 	{
 		return event ->
 		{
