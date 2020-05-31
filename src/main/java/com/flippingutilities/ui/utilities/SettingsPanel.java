@@ -2,31 +2,27 @@ package com.flippingutilities.ui.utilities;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.nio.ByteOrder;
+import java.awt.Font;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
 
 /**
- * <p>
- * The settings panel is a panel displayed in a modal when a user clicks on the settings button next to the account
- * selector dropdown. Its purpose is to allow modifying various features of the plugin. Perhaps in the future this
- * panel can subsume Runelite's config option for FlippingUtilities as the config option is not as easy to access as this
- * panel.
- * </p>
- * <p>
- * There are primarily two reasons that motivated the need for a settings panel:
- * </p>
+ * The setting panel's purpose is to make creating a UI with dynamic options easier, by abstracting all the common
+ * logic that most setting UI's would have. I didn't want to couple this with the MasterPanel as it could feasibly be
+ * something other components needed, as they might have a need to create a UI for settings they can't fit on their
+ * own displays. Perhaps in the future this panel can subsume Runelite's config option for FlippingUtilities as the
+ * config option is not easy to access. There are primarily two reasons that motivated the need for a settings panel:
  * <ol>
  * <li>
  * The config workflow provided by runelite is good (FlippingConfig), but its static. If we want to change something
@@ -36,12 +32,8 @@ import net.runelite.client.ui.ColorScheme;
  * </li>
  * <li>
  * The config options are not very accessible as they are in a entirely different plugin (the ConfigPlugin)
- * This functionality connot be put into the config structure run
  * </li>
  * </ol>
- * This is broken out into its own class instead of residing in the MasterPanel because it will contain
- * enough distinct functionality from the MasterPanel that adding it in their will muddle the responsibility of the
- * master panel and hurt readability.
  */
 public class SettingsPanel extends JPanel
 {
@@ -50,40 +42,46 @@ public class SettingsPanel extends JPanel
 
 	Map<String, JPanel> sections = new HashMap<>();
 
-	Map<JComponent, Runnable> dynamicComponents = new HashMap<>();
+	List<Runnable> componentUpdaters = new ArrayList<>();
 
 	public SettingsPanel(int width, int height)
 	{
+		setSize(new Dimension(width, height));
 		setLayout(new BorderLayout());
+		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		sectionContainer.setLayout(new BoxLayout(sectionContainer, BoxLayout.Y_AXIS));
-		sectionContainer.setBorder(new EmptyBorder(5,5,5,5));
+		sectionContainer.setBorder(new EmptyBorder(30, 20, 20, 30));
+		sectionContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		JScrollPane scrollPane = new JScrollPane(sectionContainer);
 		add(scrollPane);
 	}
 
-
-	public void addDynamicOption(String section, JLabel label, JComponent component, Runnable updateComponent)
+	public void addDynamicOption(String sectionToAddTo, String desc, JComponent component, Runnable updateComponent)
 	{
-		if (!sections.containsKey(section))
+		if (!sections.containsKey(sectionToAddTo))
 		{
 			return;
 		}
 
-		dynamicComponents.put(component, updateComponent);
+		componentUpdaters.add(updateComponent);
 
-		JPanel optionPanel = new JPanel(new BorderLayout());
-		optionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		optionPanel.add(label, BorderLayout.WEST);
-		optionPanel.add(component, BorderLayout.CENTER);
+		JPanel optionPanel = new JPanel();
+		optionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		sections.get(section).add(optionPanel, new GridBagConstraints());
+		JLabel description = new JLabel(desc);
+		description.setFont(new Font("Roboto", Font.PLAIN, 12));
+
+		optionPanel.add(description);
+		optionPanel.add(component);
+
+		sections.get(sectionToAddTo).add(optionPanel);
 
 	}
 
 	public void rebuild()
 	{
 		SwingUtilities.invokeLater(() -> {
-			dynamicComponents.forEach((component, updater) -> updater.run());
+			componentUpdaters.forEach(Runnable::run);
 			revalidate();
 			repaint();
 		});
@@ -92,16 +90,21 @@ public class SettingsPanel extends JPanel
 	public void addSection(String name)
 	{
 		JPanel sectionPanel = new JPanel(new BorderLayout());
-		sectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		sectionPanel.setBorder(new EmptyBorder(3,3,3,3));
-		JPanel optionsContainer = new JPanel(new GridBagLayout());
-		optionsContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		sectionPanel.add(new JLabel(name), BorderLayout.NORTH);
+		sectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		sectionPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
+
+		JPanel optionsContainer = new JPanel();
+		optionsContainer.setLayout(new BoxLayout(optionsContainer, BoxLayout.Y_AXIS));
+		optionsContainer.setBorder(new EmptyBorder(10, 0, 0, 10));
+		optionsContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel sectionTitle = new JLabel(name, SwingConstants.CENTER);
+		sectionTitle.setFont(new Font("Roboto", Font.BOLD + Font.ITALIC, 18));
+
+		sectionPanel.add(sectionTitle, BorderLayout.NORTH);
 		sectionPanel.add(optionsContainer, BorderLayout.CENTER);
 
 		sections.put(name, optionsContainer);
-		sectionContainer.add(sectionPanel, new GridBagConstraints());
+		sectionContainer.add(sectionPanel);
 	}
-
-
 }

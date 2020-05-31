@@ -26,11 +26,11 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -899,6 +899,16 @@ public class FlippingPlugin extends Plugin
 		{
 			lastSessionTimeUpdate = null;
 		}
+	}
+
+	public void deleteAccount(String displayName)
+	{
+		if (accountCurrentlyViewed.equals(displayName))
+		{
+			accountCurrentlyViewed = ACCOUNT_WIDE;
+		}
+		accountCache.remove(displayName);
+		TradePersister.deleteAccount(displayName);
 	}
 
 	@Subscribe

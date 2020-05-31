@@ -29,7 +29,10 @@ package com.flippingutilities.ui.utilities;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -41,8 +44,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
@@ -347,5 +352,42 @@ public class UIUtilities
 		popupMenu.add(openPlatinumTokens);
 
 		return popupMenu;
+	}
+
+	public static JDialog createModalFromPanel(Component parent, SettingsPanel settingsPanel)
+	{
+		JDialog modal = new JDialog();
+		modal.setSize(new Dimension(settingsPanel.getSize()));
+		modal.add(settingsPanel);
+		modal.setLocationRelativeTo(parent);
+		return modal;
+	}
+
+	/**
+	 * @param onItemSelect callback to run when an item is selected
+	 * @return an item listener that can be attached to a jcombobox. Example:
+	 * accountDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::deleteAccount)); This will
+	 * add an item listener that runs FlippingPlugin.deleteAccount(selecteditem) when an item is selected.
+	 */
+	public static ItemListener dropdownHandler(Consumer<String> onItemSelect)
+	{
+		return event ->
+		{
+			if (event.getStateChange() == ItemEvent.SELECTED)
+			{
+
+				String selectedItem = (String) event.getItem();
+
+				if (selectedItem == null)
+				{
+					return;
+				}
+				else
+				{
+					onItemSelect.accept(selectedItem);
+				}
+			}
+		};
+
 	}
 }

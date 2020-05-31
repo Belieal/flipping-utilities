@@ -32,7 +32,6 @@ import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -56,6 +55,8 @@ public class MasterPanel extends PluginPanel
 	@Getter
 	private JComboBox<String> accountSelector;
 
+	private FlippingPlugin plugin;
+
 	/**
 	 * THe master panel is always present. The components added to it are components that should always be visible
 	 * regardless of whether you are looking at the flipping panel or the statistics panel. The tab group to switch
@@ -69,18 +70,22 @@ public class MasterPanel extends PluginPanel
 	{
 		super(false);
 
+		this.plugin = plugin;
+
 		setLayout(new BorderLayout());
 
 		JPanel mainDisplay = new JPanel();
-		accountSelector = createAccountSelector(plugin::changeView);
-		SettingsPanel settingsPanel = createSettingsPanel();
-		JDialog modal = createSettingsModal(this, settingsPanel);
-		JLabel settingsButton = createSettingsButton(() -> {
+
+		accountSelector = accountSelector(plugin::changeView);
+		SettingsPanel settingsPanel = settingsPanel();
+		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
+		JLabel settingsButton = settingsButton(() -> {
 			modal.setVisible(true);
 			settingsPanel.rebuild();
 		});
-		MaterialTabGroup tabSelector = createTabSelector(mainDisplay, flippingPanel, statPanel);
-		JPanel header = createHeader(accountSelector, settingsButton, tabSelector);
+		MaterialTabGroup tabSelector = tabSelector(mainDisplay, flippingPanel, statPanel);
+		JPanel header = Header(accountSelector, settingsButton, tabSelector);
+
 		add(header, BorderLayout.NORTH);
 		add(mainDisplay, BorderLayout.CENTER);
 	}
@@ -95,7 +100,7 @@ public class MasterPanel extends PluginPanel
 	 * @param tabSelector     a tab group with allows a user to select either the flipping or stats tab to view.
 	 * @return a jpanel representing the header.
 	 */
-	private JPanel createHeader(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
+	private JPanel Header(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
 	{
 		JPanel topOfHeader = new JPanel(new BorderLayout());
 		topOfHeader.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -116,7 +121,7 @@ public class MasterPanel extends PluginPanel
 	 * @param onItemSelectionCallback the callback that fires when a user selects a display name from the dropdown.
 	 * @return the account selector.
 	 */
-	private JComboBox createAccountSelector(Consumer<String> onItemSelectionCallback)
+	private JComboBox accountSelector(Consumer<String> onItemSelectionCallback)
 	{
 		JComboBox viewSelectorDropdown = new JComboBox();
 		viewSelectorDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -124,27 +129,16 @@ public class MasterPanel extends PluginPanel
 		viewSelectorDropdown.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelectorDropdown.setRenderer(new ComboBoxListRenderer());
 		viewSelectorDropdown.setToolTipText("Select which of your account's trades list you want to view");
-		viewSelectorDropdown.addItemListener(event ->
-		{
-			if (event.getStateChange() == ItemEvent.SELECTED)
-			{
-
-				String selectedDisplayName = (String) event.getItem();
-
-				if (selectedDisplayName == null)
-				{
-					return;
-				}
-				else
-				{
-					onItemSelectionCallback.accept(selectedDisplayName);
-				}
-			}
-		});
+		viewSelectorDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::changeView));
 		return viewSelectorDropdown;
 	}
 
-	private JLabel createSettingsButton(Runnable callback)
+	/**
+	 * This is the button that you click on to view the setting modal.
+	 * @param callback the callback executed when the button is clicked.
+	 * @return
+	 */
+	private JLabel settingsButton(Runnable callback)
 	{
 		JLabel button = new JLabel(UIUtilities.SETTINGS_ICON);
 		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -170,7 +164,7 @@ public class MasterPanel extends PluginPanel
 	 * @param statsPanel
 	 * @return
 	 */
-	private MaterialTabGroup createTabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
+	private MaterialTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
 	{
 		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
@@ -185,34 +179,27 @@ public class MasterPanel extends PluginPanel
 		return tabGroup;
 	}
 
-	private SettingsPanel createSettingsPanel()
+	/**
+	 * This creates the settings panel. It currently has an option for a user to delete an account from the account
+	 * selector dropdown
+	 * @return settings panel.
+	 */
+	private SettingsPanel settingsPanel()
 	{
-		SettingsPanel settingsPanel = new SettingsPanel(250, 400);
-		settingsPanel.addSection("Account Selector");
+		SettingsPanel settingsPanel = new SettingsPanel(280, 300);
+		settingsPanel.addSection("Account Selector Settings");
 
 		JComboBox accountDropdown = new JComboBox();
-		settingsPanel.addDynamicOption("Account Selector",
-			new JLabel("Choose an account to delete"),
-			accountDropdown,
-			() -> getViewSelectorItems().forEach(accountDropdown::addItem)
-		);
-		settingsPanel.addSection("Other Settings");
-		settingsPanel.addSection("Other Settings7");
-		settingsPanel.addSection("Other Settings5");
-		settingsPanel.addSection("Other Settings1");
-		settingsPanel.addSection("Other Settings2");
+		accountDropdown.addItemListener(UIUtilities.dropdownHandler(plugin::deleteAccount));
+
+		Runnable dropdownUpdater = () -> {
+			accountDropdown.removeAllItems();
+			getViewSelectorItems().forEach(accountDropdown::addItem);
+		};
+
+		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", accountDropdown, dropdownUpdater);
 		return settingsPanel;
 	}
-
-
-	private JDialog createSettingsModal(Component parent, SettingsPanel settingsPanel)
-	{
-		JDialog modal = new JDialog();
-		modal.add(settingsPanel);
-		modal.setLocationRelativeTo(parent);
-		return modal;
-	}
-
 
 	public Set<String> getViewSelectorItems()
 	{

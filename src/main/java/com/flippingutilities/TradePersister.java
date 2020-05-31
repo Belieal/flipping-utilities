@@ -211,4 +211,20 @@ public class TradePersister
 	{
 		return new File(PARENT_DIRECTORY, fileName).lastModified();
 	}
+
+	public static void deleteAccount(String displayName)
+	{
+		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
+		if (accountFile.exists())
+		{
+			if (accountFile.delete())
+			{
+				log.info("{} deleted", displayName);
+			}
+			else
+			{
+				log.info("unable to delete {}", displayName);
+			}
+		}
+	}
 }
