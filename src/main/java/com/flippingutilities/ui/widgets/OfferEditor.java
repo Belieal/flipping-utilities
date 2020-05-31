@@ -26,7 +26,6 @@
 
 package com.flippingutilities.ui.widgets;
 
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientStr;
@@ -38,17 +37,18 @@ import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
 
-@Slf4j
-public class FlippingWidget
+public class OfferEditor
 {
 	private final Widget parent;
 	private final Client client;
 	private Widget text;
 
-	public FlippingWidget(Widget parent, Client client)
+	public OfferEditor(Widget parent, Client client)
 	{
 		this.parent = parent;
 		this.client = client;
+
+		initialize();
 	}
 
 	private void initialize()
@@ -76,10 +76,8 @@ public class FlippingWidget
 		text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
 	}
 
-	public void showWidget(String mode, int value)
+	public void update(String mode, int value)
 	{
-		initialize();
-
 		switch (mode)
 		{
 			case ("setCurrentQuantityInTrade"):
