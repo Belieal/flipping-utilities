@@ -56,6 +56,9 @@ public class MasterPanel extends PluginPanel
 	@Getter
 	private JComboBox<String> accountSelector;
 
+	@Getter
+	private JLabel settingsButton;
+
 	private FlippingPlugin plugin;
 
 	/**
@@ -80,7 +83,7 @@ public class MasterPanel extends PluginPanel
 		accountSelector = accountSelector();
 		SettingsPanel settingsPanel = settingsPanel();
 		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
-		JLabel settingsButton = settingsButton(() -> {
+		settingsButton = settingsButton(() -> {
 			modal.setVisible(true);
 			settingsPanel.rebuild();
 		});
@@ -190,7 +193,7 @@ public class MasterPanel extends PluginPanel
 	}
 
 	/**
-	 * This creates the settings panel which shows up in a modal when a user clicks the settings button to the right
+	 * This creates the settings panel which shows up in a modal when a user clicks the settings button located the right
 	 * of the account selector. It currently has an option for a user to delete an account from the account
 	 * selector dropdown
 	 *

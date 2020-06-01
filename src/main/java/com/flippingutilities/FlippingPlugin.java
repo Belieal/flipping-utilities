@@ -307,6 +307,7 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
+			masterPanel.getSettingsButton().setVisible(true);
 		}
 		accountCurrentlyViewed = displayName;
 		//this will cause changeView to be invoked which will cause a rebuild of
@@ -355,10 +356,12 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
+			masterPanel.getSettingsButton().setVisible(true);
 		}
 		else
 		{
 			masterPanel.getAccountSelector().setVisible(false);
+			masterPanel.getSettingsButton().setVisible(false);
 		}
 	}
 
@@ -807,6 +810,7 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
+			masterPanel.getSettingsButton().setVisible(true);
 		}
 
 		updateSinceLastAccountWideBuild = true;
@@ -904,13 +908,18 @@ public class FlippingPlugin extends Plugin
 
 	public void deleteAccount(String displayName)
 	{
-		log.info("deleting {}", displayName);
+		log.info("deleting all data for {}", displayName);
+		accountCache.remove(displayName);
 		if (accountCurrentlyViewed.equals(displayName))
 		{
-			accountCurrentlyViewed = ACCOUNT_WIDE;
+			masterPanel.getAccountSelector().setSelectedItem(accountCache.keySet().toArray()[0]);
 		}
-		accountCache.remove(displayName);
-		TradePersister.deleteAccount(displayName);
+		TradePersister.deleteFile(displayName + ".json");
+		if (accountCache.keySet().size() < 2)
+		{
+			masterPanel.getAccountSelector().setVisible(false);
+			masterPanel.getSettingsButton().setVisible(false);
+		}
 	}
 
 	@Subscribe
