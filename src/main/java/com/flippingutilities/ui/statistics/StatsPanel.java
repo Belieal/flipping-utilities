@@ -572,6 +572,7 @@ public class StatsPanel extends JPanel
 		updateSubInfoFont();
 		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
 		{
+			updateSessionTimeDisplay(plugin.getAccumulatedTimeForCurrentView());
 			updateHourlyProfitDisplay();
 		}
 		updateRoiDisplay();

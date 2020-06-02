@@ -919,10 +919,7 @@ public class FlippingPlugin extends Plugin
 			accountCache.get(currentlyLoggedInAccount).setAccumulatedSessionTime(accumulatedSessionTime);
 			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(lastSessionTimeUpdate);
 
-			if (accountCurrentlyViewed.equals(currentlyLoggedInAccount))
-			{
-				statPanel.updateSessionTimeDisplay(accumulatedSessionTime);
-			}
+			statPanel.updateSessionTimeDisplay(getAccumulatedTimeForCurrentView());
 		}
 
 		else if (currentlyLoggedInAccount != null)
