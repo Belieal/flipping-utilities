@@ -258,7 +258,10 @@ public class FlippingPlugin extends Plugin
 					return false;
 				}
 				previouslyLoggedIn = true;
-				handleLogin(name);
+
+				if (currentlyLoggedInAccount == null) {
+					handleLogin(name);
+				}
 				//stops scheduling this task
 				return true;
 			});
