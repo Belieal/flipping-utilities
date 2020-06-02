@@ -279,6 +279,12 @@ public class FlippingPlugin extends Plugin
 
 	public void handleLogin(String displayName)
 	{
+		if (client.getAccountType().isIronman())
+		{
+			log.info("account is an ironman, not adding it to the cache");
+			return;
+		}
+
 		log.info("{} has just logged in!", displayName);
 		if (!accountCache.containsKey(displayName))
 		{
@@ -307,7 +313,7 @@ public class FlippingPlugin extends Plugin
 
 	public void handleLogout()
 	{
-		log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
+		log.info("{} is logging out", currentlyLoggedInAccount);
 		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
 		currentlyLoggedInAccount = null;
@@ -716,7 +722,7 @@ public class FlippingPlugin extends Plugin
 		try
 		{
 			TradePersister.storeTrades(displayName, accountCache.get(displayName));
-			log.info("successfully stored trades");
+			log.info("successfully stored trades for {}", displayName);
 		}
 		catch (IOException e)
 		{
