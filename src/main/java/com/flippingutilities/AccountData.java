@@ -39,7 +39,18 @@ public class AccountData
 {
 	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
 	private List<FlippingItem> trades = new ArrayList<>();
-	private transient Instant sessionStartTime = Instant.now();
-	private transient Duration accumulatedSessionTime = Duration.ZERO;
-	private transient Instant lastSessionTimeUpdate;
+	private Instant sessionStartTime = Instant.now();
+	private Duration accumulatedSessionTime = Duration.ZERO;
+	private Instant lastSessionTimeUpdate;
+
+	/**
+	 * resets all session related data associated with an account. This is only ever called when the plugin first starts
+	 * as thats when a new session is "started".
+	 */
+	public void startNewSession()
+	{
+		sessionStartTime = Instant.now();
+		accumulatedSessionTime = Duration.ZERO;
+		lastSessionTimeUpdate = null;
+	}
 }

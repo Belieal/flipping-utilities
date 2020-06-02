@@ -572,8 +572,9 @@ public class StatsPanel extends JPanel
 		updateSubInfoFont();
 		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
 		{
-			updateSessionTimeDisplay(plugin.getAccumulatedTimeForCurrentView());
-			updateHourlyProfitDisplay();
+			Duration accumulatedTime = plugin.getAccumulatedTimeForCurrentView();
+			updateSessionTimeDisplay(accumulatedTime);
+			updateHourlyProfitDisplay(accumulatedTime);
 		}
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
@@ -625,9 +626,9 @@ public class StatsPanel extends JPanel
 	/**
 	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
 	 */
-	private void updateHourlyProfitDisplay()
+	private void updateHourlyProfitDisplay(Duration accumulatedTime)
 	{
-		double divisor = plugin.getAccumulatedTimeForCurrentView().toMillis() / 1000 * 1.0 / (60 * 60);
+		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
 		String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);

@@ -316,7 +316,9 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			return loadAllTrades();
+			Map<String, AccountData> accountsData = loadAllTrades();
+			accountsData.values().forEach(AccountData::startNewSession);
+			return accountsData;
 		}
 
 		catch (IOException e)
@@ -813,12 +815,6 @@ public class FlippingPlugin extends Plugin
 
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		if (displayNameOfChangedAcc.equals(currentlyLoggedInAccount))
-		{
-			log.info("not reloading on directory update as this client caused the directory update");
-			return;
-		}
-
 		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
 		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
 		{
@@ -919,7 +915,10 @@ public class FlippingPlugin extends Plugin
 			accountCache.get(currentlyLoggedInAccount).setAccumulatedSessionTime(accumulatedSessionTime);
 			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(lastSessionTimeUpdate);
 
-			statPanel.updateSessionTimeDisplay(getAccumulatedTimeForCurrentView());
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(currentlyLoggedInAccount))
+			{
+				statPanel.updateSessionTimeDisplay(getAccumulatedTimeForCurrentView());
+			}
 		}
 
 		else if (currentlyLoggedInAccount != null)
