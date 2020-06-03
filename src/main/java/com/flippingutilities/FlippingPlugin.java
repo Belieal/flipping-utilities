@@ -37,7 +37,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,6 +60,7 @@ import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
@@ -228,6 +228,11 @@ public class FlippingPlugin extends Plugin
 			//Stop all timers
 			repeatingTasks.cancel(true);
 			repeatingTasks = null;
+
+			for (TradeActivityTimer timer : timers)
+			{
+				timer.stopTimerUpdates();
+			}
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -325,7 +330,6 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		tabManager.getViewSelector().setSelectedItem(displayName);
-
 	}
 
 	public void handleLogout()
@@ -420,11 +424,6 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged newOfferEvent)
 	{
-		if (timersBuilt)
-		{
-			timers.get(newOfferEvent.getSlot()).updateTimer(true);
-		}
-
 		if (currentlyLoggedInAccount == null)
 		{
 			eventsBeforeNameSet.add(newOfferEvent);
@@ -882,6 +881,57 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Rebuilds the trade activity timers using updateTimer().
+	 * If no timers have been built yet, it initializes and sets up slot-timer relations.
+	 */
+	private void rebuildTradeTimer()
+	{
+		if (timers.isEmpty())
+		{
+			//Initialize the timers with their respective offer slots
+			for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+			{
+				//Get the offer slots from the window container
+				//We add one to the index, as the first widget is the text above the offer slots
+				Widget offerSlot = client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()[slotIndex + 1];
+
+				if (offerSlot == null)
+				{
+					return;
+				}
+
+				TradeActivityTimer timer = new TradeActivityTimer(offerSlot, clientThread, slotIndex, this, executor, client);
+
+				timer.updateTimer();
+				timers.add(timer);
+			}
+		}
+		else
+		{
+			clientThread.invokeLater(() ->
+			{
+				//In case the last slot widgets got unloaded, set the new ones
+				for (TradeActivityTimer timer : timers)
+				{
+					timer.updateTimer();
+				}
+			});
+		}
+	}
+
+	@Subscribe
+	public void onScriptPostFired(ScriptPostFired event)
+	{
+		if (event.getScriptId() == 804)
+		{
+			//Fired after every GE offer slot redraw
+			//This seems to happen after any offer updates or if buttons are pressed inside the interface
+			//https://github.com/RuneStar/cs2-scripts/blob/a144f1dceb84c3efa2f9e90648419a11ee48e7a2/scripts/%5Bclientscript%2Cge_offers_switchpanel%5D.cs2
+			rebuildTradeTimer();
+		}
+	}
+
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
@@ -889,50 +939,6 @@ public class FlippingPlugin extends Plugin
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
 			flippingPanel.dehighlightItem();
-		}
-
-		//Check if we can build the GE timer widget
-		else if (client.getWidget(WidgetInfo.GRAND_EXCHANGE_WINDOW_CONTAINER) != null && event.getGroupId() == 465)
-		{
-			//Get the offer slots from the window container
-			ArrayList<Widget> offerSlots = new ArrayList<>(Arrays.asList(client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()));
-
-			if (offerSlots.isEmpty())
-			{
-				return;
-			}
-
-			//The first child is the text above the offer slots
-			offerSlots.remove(0);
-
-			//Refresh timer widgets
-			if (timersBuilt)
-			{
-				long timeBefore = System.currentTimeMillis();
-
-				clientThread.invokeLater(() ->
-				{
-					for (int i = 0; i < timers.size(); i++)
-					{
-						//In case the last slot widgets got unloaded, set the new ones
-						timers.get(i).setSlotWidget(offerSlots.get(i));
-						timers.get(i).updateTimer(true);
-					}
-				});
-
-				System.out.println(System.currentTimeMillis() - timeBefore);
-
-				return;
-			}
-
-			//No previous timers, create them
-			for (int i = 0; i < offerSlots.size(); i++)
-			{
-				TradeActivityTimer timer = new TradeActivityTimer(offerSlots.get(i), clientThread, this, executor);
-				timer.updateTimer(true);
-				timers.add(timer);
-				timersBuilt = true;
-			}
 		}
 	}
 

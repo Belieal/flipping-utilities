@@ -28,115 +28,213 @@ package com.flippingutilities.ui.widgets;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.ColorUtil;
 
+@Slf4j
 public class TradeActivityTimer
 {
+	//Spacing between the slot state text and the timer
 	private static final String SPACER = "          ";
+	//AKA "RunescapeFont"
 	private static final int FONT_ID = 495;
 
+	//The slot that this timer object embeds to
 	@Setter
 	private Widget slotWidget;
 	private ClientThread clientThread;
 	private FlippingPlugin plugin;
 	private ScheduledExecutorService executor;
+	private Client client;
+	//Index of the slot widget from left to right, top to bottom. (0-7)
+	private int slotIndex;
 
+	//Future for the repeating timer updates.
+	//Call interrupt(true) on it to cancel all independent timer updates.
+	private ScheduledFuture<?> repeatingTimerUpdates;
+
+	//The widget of the text at the top of the offer slot
 	private Widget slotStateWidget;
+	//The item icon is only shown if there's an offer filling the offer slot
 	private Widget itemIconWidget;
-
+	//The state can be one of "Sell", "Buy" and "Empty", depending on the slot's offer state
 	private String slotStateString;
 
-	private FlippingItem flippingItem;
+	//When the offer was first detected and timer drawn.
+	private Instant offerDrawTime = Instant.EPOCH;
 
-	public TradeActivityTimer(Widget slotWidget, ClientThread clientThread, FlippingPlugin plugin, ScheduledExecutorService executor)
+	public TradeActivityTimer(Widget slotWidget, ClientThread clientThread, int slotIndex, FlippingPlugin plugin, ScheduledExecutorService executor, Client client)
 	{
 		this.slotWidget = slotWidget;
 		this.clientThread = clientThread;
+		this.slotIndex = slotIndex;
 		this.plugin = plugin;
 		this.executor = executor;
+		this.client = client;
 
 		slotStateString = slotWidget.getChild(16).getText();
 
-		executor.scheduleAtFixedRate(() -> clientThread.invokeLater(() -> updateTimer(false)), 10, 1000, TimeUnit.MILLISECONDS);
+		//Begin independent timer updates
+		repeatingTimerUpdates = startTimerUpdates();
 	}
 
-	public void updateTimer(boolean isReloading)
+	/**
+	 * Calls updates for the timer display every second.
+	 *
+	 * @return A future that can be cancelled to halt independent updates.
+	 */
+	public ScheduledFuture<?> startTimerUpdates()
 	{
+		return executor.scheduleAtFixedRate(() ->
+			clientThread.invokeLater(this::updateTimer), 500, 1000, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Cancels all timer updates. Should be used on shutdown of the plugin to make sure we don't mess with other plugins.
+	 */
+	public void stopTimerUpdates()
+	{
+		repeatingTimerUpdates.cancel(true);
+	}
+
+	/**
+	 * Updates the slot trade activity timer. It reassigns all widget field variables,
+	 * as they sometimes get unloaded and therefore won't point to the right widget objects.
+	 */
+	public void updateTimer()
+	{
+		//Don't need to update if the timer won't be visible to the user.
 		if (slotWidget == null || slotWidget.isHidden())
 		{
 			return;
 		}
 
-		slotStateWidget = slotWidget.getChild(16);
-		itemIconWidget = slotWidget.getChild(18);
+		//Reload offerSlot widget in case it got unloaded previously
+		Widget offerSlot = client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()[slotIndex + 1];
 
-		if (isReloading)
+		//Ideally this shouldn't be triggered, but just in case.
+		if (offerSlot == null)
 		{
-			System.out.println(slotStateWidget.getText());
-			slotStateString = slotStateWidget.getText();
+			return;
 		}
 
-		if (slotStateString.equals("Empty"))
+		slotStateWidget = slotWidget.getChild(16);
+
+		if (slotStateString.equals("Empty") && !slotStateWidget.getText().equals("Empty"))
 		{
+			//The timer has been assigned to a new offer, update the draw time.
+			offerDrawTime = Instant.now();
+		}
+
+		//Reassign widgets
+		slotWidget = offerSlot;
+		itemIconWidget = slotWidget.getChild(18);
+		slotStateString = slotStateWidget.getText();
+
+		if (!isSlotFilled())
+		{
+			//The slot hasn't been filled with an offer, so default to Jagex format.
 			resetToEmpty();
 			return;
 		}
 
-		List<FlippingItem> tradeList = new ArrayList<>(plugin.getTradesForCurrentView());
+		//Look for the stored trade in the history.
+		FlippingItem flippingItem = getItemFromWidget(new ArrayList<>(plugin.getTradesForCurrentView()));
 
 		if (flippingItem == null)
 		{
-			findItemFromWidget(tradeList);
+			//Again, this shouldn't happen since the trade will always be created before the timer.
+			//However, it may happen if the user's trades weren't saved properly or they just installed the plugin
+			//with ongoing offers.
+			return;
 		}
 
-		ArrayList<OfferInfo> itemHistory = flippingItem.getSaleList(flippingItem.getIntervalHistory(Instant.EPOCH), slotStateString.equals("Buy"));
-
-		if (!itemHistory.isEmpty())
+		//Draw the timer according to the state of the offer.
+		//If the offerDrawTime is before the latest trade time, assume we're drawing for the first time.
+		if (slotStateString.contains("Buy"))
 		{
-			Collections.reverse(itemHistory); //As newest offers are last in the list
-			Instant lastRecordedTime = itemHistory.get(0).getTime();
-
-			clientThread.invoke(() -> setText(UIUtilities.formatDuration(lastRecordedTime)));
-			slotStateWidget.setFontId(FONT_ID);
-			slotStateWidget.setXTextAlignment(0);
+			setText(flippingItem.getLatestBuyTime().isAfter(offerDrawTime)
+				? UIUtilities.formatDuration(flippingItem.getLatestBuyTime())
+				: UIUtilities.formatDuration(offerDrawTime));
 		}
+		else
+		{
+			setText(flippingItem.getLatestSellTime().isAfter(offerDrawTime)
+				? UIUtilities.formatDuration(flippingItem.getLatestSellTime())
+				: UIUtilities.formatDuration(offerDrawTime));
+		}
+		slotStateWidget.setFontId(FONT_ID);
+		slotStateWidget.setXTextAlignment(0);
 	}
 
+	/**
+	 * Appends the offer state text widget with the up-to-date timer.
+	 *
+	 * @param timeString A formatted duration string
+	 */
 	private void setText(String timeString)
 	{
+		if (slotStateString.contains("Buy"))
+		{
+			slotStateString = "Buy";
+		}
+		else
+		{
+			slotStateString = "Sell";
+		}
+
 		slotStateWidget.setText("  <html>" + slotStateString + SPACER + ColorUtil.wrapWithColorTag(timeString, Color.WHITE) + "</html>");
 	}
 
-	public void findItemFromWidget(List<FlippingItem> tradeList)
+	/**
+	 * Finds and sets the flippingItem based on the widgetIcon itemId.
+	 * Can set flippingItem to null if no items are found.
+	 *
+	 * @return The found flippingItem from the tradeList or null
+	 */
+	public FlippingItem getItemFromWidget(List<FlippingItem> tradeList)
 	{
 		int widgetItemId = itemIconWidget.getItemId();
 
-		for (FlippingItem item : tradeList)
-		{
-			if (item.getItemId() == widgetItemId)
-			{
-				flippingItem = item;
-				break;
-			}
-		}
+		Optional<FlippingItem> foundItem = tradeList.stream()
+			.filter(item -> item.getItemId() == widgetItemId)
+			.findFirst();
+
+		return foundItem.get();
 	}
 
+	/**
+	 * Resets the offer state text to default Jagex format.
+	 */
 	private void resetToEmpty()
 	{
 		slotStateWidget.setText("Empty");
 		slotStateWidget.setFontId(496);
 		slotStateWidget.setXTextAlignment(1);
+	}
+
+	/**
+	 * Finds whether the slot is filled with an offer or if it's empty.
+	 *
+	 * @return Returns true if the slot is filled and false if it's empty.
+	 */
+	private boolean isSlotFilled()
+	{
+		//Child index 0 is exclusively visible on empty slots
+		return slotWidget.getChild(0).isHidden();
 	}
 }
