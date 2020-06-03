@@ -31,6 +31,7 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -165,18 +166,27 @@ public class TradeActivityTimer
 
 		//Draw the timer according to the state of the offer.
 		//If the offerDrawTime is before the latest trade time, assume we're drawing for the first time.
+		Instant timerBase;
 		if (slotStateString.contains("Buy"))
 		{
-			setText(flippingItem.getLatestBuyTime().isAfter(offerDrawTime)
-				? UIUtilities.formatDuration(flippingItem.getLatestBuyTime())
-				: UIUtilities.formatDuration(offerDrawTime));
+			timerBase = flippingItem.getLatestBuyTime().isAfter(offerDrawTime)
+				? flippingItem.getLatestBuyTime()
+				: offerDrawTime;
 		}
 		else
 		{
-			setText(flippingItem.getLatestSellTime().isAfter(offerDrawTime)
-				? UIUtilities.formatDuration(flippingItem.getLatestSellTime())
-				: UIUtilities.formatDuration(offerDrawTime));
+			timerBase = flippingItem.getLatestSellTime().isAfter(offerDrawTime)
+				? flippingItem.getLatestSellTime()
+				: offerDrawTime;
 		}
+
+		boolean tradeIsStagnant = false;
+		if (timerBase.isBefore(Instant.now().minus(plugin.getConfig().tradeStagnationTime(), ChronoUnit.MINUTES)))
+		{
+			tradeIsStagnant = true;
+		}
+
+		setText(UIUtilities.formatDuration(timerBase), tradeIsStagnant);
 		slotStateWidget.setFontId(FONT_ID);
 		slotStateWidget.setXTextAlignment(0);
 	}
@@ -186,7 +196,7 @@ public class TradeActivityTimer
 	 *
 	 * @param timeString A formatted duration string
 	 */
-	private void setText(String timeString)
+	private void setText(String timeString, boolean tradeIsStagnant)
 	{
 		if (slotStateString.contains("Buy"))
 		{
@@ -197,7 +207,8 @@ public class TradeActivityTimer
 			slotStateString = "Sell";
 		}
 
-		slotStateWidget.setText("  <html>" + slotStateString + SPACER + ColorUtil.wrapWithColorTag(timeString, Color.WHITE) + "</html>");
+		Color color = tradeIsStagnant ? UIUtilities.OUTDATED_COLOR : Color.WHITE;
+		slotStateWidget.setText("  <html>" + slotStateString + SPACER + ColorUtil.wrapWithColorTag(timeString, color) + "</html>");
 	}
 
 	/**

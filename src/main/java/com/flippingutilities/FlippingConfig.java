@@ -103,4 +103,15 @@ public interface FlippingConfig extends Config
 		return Fonts.SMALL_FONT;
 	}
 
+	@ConfigItem(
+		keyName = "tradeStagnationTime",
+		name = "Set trade stagnation time",
+		description = "Set how long before the offer slot activity timer indicates that a trade has become stagnant"
+	)
+	@Units(Units.MINUTES)
+	default int tradeStagnationTime()
+	{
+		return 15;
+	}
+
 }
