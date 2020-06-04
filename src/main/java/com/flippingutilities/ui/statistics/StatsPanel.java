@@ -166,9 +166,6 @@ public class StatsPanel extends JPanel
 	@Getter
 	private String selectedSort;
 
-	//Time when the panel was created. Assume this is the start of session.
-	private Instant startOfSession;
-
 	private ArrayList<StatItemPanel> activePanels = new ArrayList<>();
 
 	@Getter
@@ -188,9 +185,6 @@ public class StatsPanel extends JPanel
 
 		this.plugin = plugin;
 		this.itemManager = itemManager;
-
-		//Record start of session time.
-		startOfSession = Instant.now();
 
 		setLayout(new BorderLayout());
 
@@ -388,15 +382,14 @@ public class StatsPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						startOfSession = Instant.now();
-						plugin.setAccumulatedSessionTime(Duration.ZERO);
+						plugin.handleSessionTimeReset();
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
 			}
 		});
 
-		sessionTimeVal.setText(UIUtilities.formatDuration(plugin.getAccumulatedSessionTime()));
+		sessionTimeVal.setText(UIUtilities.formatDuration(plugin.getAccumulatedTimeForCurrentView()));
 		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
 		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		sessionTimePanel.setToolTipText("Right-click to reset session timer");
@@ -579,7 +572,9 @@ public class StatsPanel extends JPanel
 		updateSubInfoFont();
 		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
 		{
-			updateHourlyProfitDisplay();
+			Duration accumulatedTime = plugin.getAccumulatedTimeForCurrentView();
+			updateSessionTimeDisplay(accumulatedTime);
+			updateHourlyProfitDisplay(accumulatedTime);
 		}
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
@@ -631,9 +626,9 @@ public class StatsPanel extends JPanel
 	/**
 	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
 	 */
-	private void updateHourlyProfitDisplay()
+	private void updateHourlyProfitDisplay(Duration accumulatedTime)
 	{
-		double divisor = plugin.getAccumulatedSessionTime().toMillis() / 1000 * 1.0 / (60 * 60);
+		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
 		String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
@@ -794,7 +789,7 @@ public class StatsPanel extends JPanel
 				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
 				break;
 			case "Session":
-				startOfInterval = startOfSession;
+				startOfInterval = plugin.getStartOfSessionForCurrentView();
 				break;
 			case "All":
 				startOfInterval = Instant.EPOCH;

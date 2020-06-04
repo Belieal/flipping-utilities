@@ -157,16 +157,7 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
-	//the amount of time a user has been flipping for since the client started up or since they last reset the session
-	//time.
-	@Setter
-	@Getter
-	private Duration accumulatedSessionTime = Duration.ZERO;
-
-	//used to figure out how to accumulate time as the executor may not run the updateSessionTime method every second on
-	//the dot (there might be some very small delay).
-	private Instant lastSessionTimeUpdate;
-
+	private Instant startUpTime = Instant.now();
 
 	@Override
 	protected void startUp()
@@ -267,7 +258,10 @@ public class FlippingPlugin extends Plugin
 					return false;
 				}
 				previouslyLoggedIn = true;
-				handleLogin(name);
+
+				if (currentlyLoggedInAccount == null) {
+					handleLogin(name);
+				}
 				//stops scheduling this task
 				return true;
 			});
@@ -320,6 +314,7 @@ public class FlippingPlugin extends Plugin
 	public void handleLogout()
 	{
 		log.info("{} is logging out", currentlyLoggedInAccount);
+		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
 		currentlyLoggedInAccount = null;
 	}
@@ -330,7 +325,9 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			return loadAllTrades();
+			Map<String, AccountData> accountsData = loadAllTrades();
+			accountsData.values().forEach(AccountData::startNewSession);
+			return accountsData;
 		}
 
 		catch (IOException e)
@@ -632,6 +629,45 @@ public class FlippingPlugin extends Plugin
 		return accountCurrentlyViewed.equals(ACCOUNT_WIDE) ? createAccountWideList() : accountCache.get(accountCurrentlyViewed).getTrades();
 	}
 
+	/**
+	 * Gets the accumulated time the account currently being viewed has been flipping this session.
+	 *
+	 * @return accumulated time
+	 */
+	public Duration getAccumulatedTimeForCurrentView()
+	{
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			return accountCache.values().stream().map(AccountData::getAccumulatedSessionTime).reduce(Duration.ZERO, (d1, d2) -> d1.plus(d2));
+		}
+		else
+		{
+			return accountCache.get(accountCurrentlyViewed).getAccumulatedSessionTime();
+		}
+	}
+
+	public Instant getStartOfSessionForCurrentView()
+	{
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			return startUpTime;
+		}
+		else
+		{
+			return accountCache.get(accountCurrentlyViewed).getSessionStartTime();
+		}
+	}
+
+	public void handleSessionTimeReset()
+	{
+		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			accountCache.get(accountCurrentlyViewed).setAccumulatedSessionTime(Duration.ZERO);
+			accountCache.get(accountCurrentlyViewed).setSessionStartTime(Instant.now());
+		}
+	}
+
+
 	@Provides
 	FlippingConfig provideConfig(ConfigManager configManager)
 	{
@@ -788,12 +824,6 @@ public class FlippingPlugin extends Plugin
 
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		if (displayNameOfChangedAcc.equals(currentlyLoggedInAccount))
-		{
-			log.info("not reloading on directory update as this client caused the directory update");
-			return;
-		}
-
 		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
 		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
 		{
@@ -882,6 +912,8 @@ public class FlippingPlugin extends Plugin
 	{
 		if (currentlyFlipping())
 		{
+			Instant lastSessionTimeUpdate = accountCache.get(currentlyLoggedInAccount).getLastSessionTimeUpdate();
+			Duration accumulatedSessionTime = accountCache.get(currentlyLoggedInAccount).getAccumulatedSessionTime();
 			if (lastSessionTimeUpdate == null)
 			{
 				lastSessionTimeUpdate = Instant.now();
@@ -889,12 +921,18 @@ public class FlippingPlugin extends Plugin
 			long millisSinceLastSessionTimeUpdate = Instant.now().toEpochMilli() - lastSessionTimeUpdate.toEpochMilli();
 			accumulatedSessionTime = accumulatedSessionTime.plus(millisSinceLastSessionTimeUpdate, ChronoUnit.MILLIS);
 			lastSessionTimeUpdate = Instant.now();
-			statPanel.updateSessionTimeDisplay(accumulatedSessionTime);
+			accountCache.get(currentlyLoggedInAccount).setAccumulatedSessionTime(accumulatedSessionTime);
+			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(lastSessionTimeUpdate);
+
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(currentlyLoggedInAccount))
+			{
+				statPanel.updateSessionTimeDisplay(getAccumulatedTimeForCurrentView());
+			}
 		}
 
-		else
+		else if (currentlyLoggedInAccount != null)
 		{
-			lastSessionTimeUpdate = null;
+			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		}
 	}
 
