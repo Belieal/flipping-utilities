@@ -14,6 +14,7 @@ import java.util.Set;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
@@ -92,7 +93,6 @@ public class SettingsPanel extends JPanel
 			{
 				accountLabel.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 				accountLabel.setSize(accountLabel.getWidth(), ACCOUNT_LABEL_HEIGHT + 10);
-
 			}
 
 			@Override
@@ -103,7 +103,6 @@ public class SettingsPanel extends JPanel
 					accountLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 					accountLabel.setSize(accountLabel.getWidth(), ACCOUNT_LABEL_HEIGHT);
 				}
-
 			}
 		});
 		return accountLabel;
@@ -152,12 +151,31 @@ public class SettingsPanel extends JPanel
 	private JLabel accountDeleteButton()
 	{
 		JLabel deleteButton = new JLabel(UIUtilities.DELETE_BUTTON);
+		deleteButton.setToolTipText("Deleting an account deletes the file that stores all of its trades. This cannot" +
+			"be undone!");
 		deleteButton.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
+				String selectedAccountName = selectedAccountLabel.getText();
+				if (selectedAccountName.equals(plugin.getCurrentlyLoggedInAccount()))
+				{
+					JOptionPane.showMessageDialog(null, "You cannot delete a currently logged in account", "alert", JOptionPane.ERROR_MESSAGE);
+				}
 
+				else
+				{
+					int result = JOptionPane.showOptionDialog(deleteButton, "Are you sure you want to delete this account?",
+						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+						null, new String[]{"Yes", "No"}, "No");
+
+					if (result == JOptionPane.YES_OPTION)
+					{
+						plugin.deleteAccount(selectedAccountName);
+						rebuild();
+					}
+				}
 			}
 
 			@Override

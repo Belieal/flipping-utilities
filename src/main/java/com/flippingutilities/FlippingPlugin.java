@@ -914,6 +914,7 @@ public class FlippingPlugin extends Plugin
 			masterPanel.getAccountSelector().setVisible(false);
 			masterPanel.getSettingsButton().setVisible(false);
 		}
+		masterPanel.getAccountSelector().removeItem(displayName);
 	}
 
 	@Subscribe
