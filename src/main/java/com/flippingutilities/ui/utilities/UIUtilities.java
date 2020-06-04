@@ -28,6 +28,7 @@ package com.flippingutilities.ui.utilities;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.ui.SettingsPanel;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -50,6 +51,7 @@ import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +97,12 @@ public class UIUtilities
 
 	public static final ImageIcon SETTINGS_ICON;
 
+	public static final ImageIcon ACCOUNT_ICON;
+
+	public static final ImageIcon DELETE_BUTTON;
+
+	public static final ImageIcon HIGHLIGHT_DELETE_BUTTON;
+
 	static
 	{
 		final BufferedImage openIcon = ImageUtil
@@ -113,6 +121,15 @@ public class UIUtilities
 
 		final BufferedImage settingsIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/settings_icon.png");
 		SETTINGS_ICON = new ImageIcon(settingsIcon);
+
+		final BufferedImage accountIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/gnome.png");
+		ACCOUNT_ICON = new ImageIcon(accountIcon);
+
+		final BufferedImage deleteButton = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/deleteButton.png");
+		DELETE_BUTTON = new ImageIcon(deleteButton);
+
+		final BufferedImage highlightDeleteButton = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/highlightDeleteButton.png");
+		HIGHLIGHT_DELETE_BUTTON = new ImageIcon(highlightDeleteButton);
 	}
 
 	/**
@@ -355,11 +372,11 @@ public class UIUtilities
 		return popupMenu;
 	}
 
-	public static JDialog createModalFromPanel(Component parent, SettingsPanel settingsPanel)
+	public static JDialog createModalFromPanel(Component parent, JPanel panel)
 	{
 		JDialog modal = new JDialog();
-		modal.setSize(new Dimension(settingsPanel.getSize()));
-		modal.add(settingsPanel);
+		modal.setSize(new Dimension(panel.getSize()));
+		modal.add(panel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
 	}

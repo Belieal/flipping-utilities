@@ -29,23 +29,27 @@ package com.flippingutilities.ui;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
-import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.event.ActionListener;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -70,7 +74,7 @@ public class MasterPanel extends PluginPanel
 	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
 	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
-	public MasterPanel(FlippingPlugin plugin, FlippingPanel flippingPanel, StatsPanel statPanel)
+	public MasterPanel(FlippingPlugin plugin, FlippingPanel flippingPanel, StatsPanel statPanel, SettingsPanel settingsPanel)
 	{
 		super(false);
 
@@ -81,7 +85,6 @@ public class MasterPanel extends PluginPanel
 		JPanel mainDisplay = new JPanel();
 
 		accountSelector = accountSelector();
-		SettingsPanel settingsPanel = settingsPanel();
 		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
 		settingsButton = settingsButton(() -> {
 			modal.setVisible(true);
@@ -190,38 +193,6 @@ public class MasterPanel extends PluginPanel
 		// Initialize with flipping tab open.
 		tabGroup.select(flippingTab);
 		return tabGroup;
-	}
-
-	/**
-	 * This creates the settings panel which shows up in a modal when a user clicks the settings button located the right
-	 * of the account selector. It currently has an option for a user to delete an account from the account
-	 * selector dropdown
-	 *
-	 * @return settings panel.
-	 */
-	private SettingsPanel settingsPanel()
-	{
-		SettingsPanel settingsPanel = new SettingsPanel(280, 300);
-
-		settingsPanel.addSection("Account Selector Settings");
-
-		JComboBox accountDeleteSelector = accountDeleteSelector();
-
-		//whenever the panel is opened, make sure the dropdown has every account available to delete except the currently logged in account.
-		Runnable dropdownUpdater = () -> {
-			//i have to remove the listener cause when things like add item is called, it fires the action listener....so stupid
-			ActionListener[] listeners = accountDeleteSelector.getActionListeners();
-			Arrays.stream(listeners).forEach(accountDeleteSelector::removeActionListener);
-			accountDeleteSelector.removeAllItems();
-			Set<String> accountsWithHistory = new HashSet<>(plugin.getAccountCache().keySet());
-			accountsWithHistory.remove(plugin.getCurrentlyLoggedInAccount());
-			accountsWithHistory.forEach(accountDeleteSelector::addItem);
-			Arrays.stream(listeners).forEach(accountDeleteSelector::addActionListener);
-		};
-
-		settingsPanel.addDynamicOption("Account Selector Settings", "Delete account:", accountDeleteSelector, dropdownUpdater);
-
-		return settingsPanel;
 	}
 
 	/**

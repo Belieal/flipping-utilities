@@ -27,10 +27,10 @@
 package com.flippingutilities;
 
 import com.flippingutilities.ui.MasterPanel;
+import com.flippingutilities.ui.SettingsPanel;
 import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
-import com.flippingutilities.ui.utilities.SettingsPanel;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -177,10 +177,10 @@ public class FlippingPlugin extends Plugin
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
-
+		settingsPanel = new SettingsPanel(this);
 
 		//holds components that are always present (account selector dropdown, flipping panel, stats panel, etc)
-		masterPanel = new MasterPanel(this, flippingPanel, statPanel);
+		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
