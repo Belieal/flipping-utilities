@@ -82,19 +82,7 @@ public class SettingsPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				selectedAccountLabel = accountLabel;
-				accountLabel.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
-
-				for (JLabel label : accountLabels)
-				{
-					if (label != accountLabel)
-					{
-						label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-					}
-				}
-
-				settingsBasePanel.removeAll();
-				settingsBasePanel.add(optionsPanel(name));
+				setSelectedAccountLabel(accountLabel);
 				revalidate();
 				repaint();
 			}
@@ -135,9 +123,30 @@ public class SettingsPanel extends JPanel
 				accountSelectionPanel.add(accountLabel);
 				accountSelectionPanel.add(Box.createRigidArea(new Dimension(0, 2)));
 			}
+			if (!accountLabels.isEmpty())
+			{
+				setSelectedAccountLabel(accountLabels.get(0));
+			}
 			repaint();
 			revalidate();
 		});
+	}
+
+	private void setSelectedAccountLabel(JLabel accountLabel)
+	{
+		selectedAccountLabel = accountLabel;
+		accountLabel.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
+
+		for (JLabel label : accountLabels)
+		{
+			if (label != accountLabel)
+			{
+				label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+			}
+		}
+
+		settingsBasePanel.removeAll();
+		settingsBasePanel.add(optionsPanel(accountLabel.getText()));
 	}
 
 	private JLabel accountDeleteButton()
