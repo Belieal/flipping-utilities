@@ -26,7 +26,7 @@ public class SettingsPanel extends JPanel
 {
 	int WIDTH = 700;
 
-	int HEIGHT = 550;
+	int HEIGHT = 520;
 
 	int ACCOUNT_LABEL_HEIGHT = 45;
 
@@ -44,11 +44,9 @@ public class SettingsPanel extends JPanel
 	public SettingsPanel(FlippingPlugin plugin)
 	{
 		this.plugin = plugin;
-
 		setLayout(new BorderLayout());
 		setSize(WIDTH, HEIGHT);
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		add(title(), BorderLayout.NORTH);
 
 		accountSelectionPanel = accountSelectionPanel();
 
@@ -142,18 +140,8 @@ public class SettingsPanel extends JPanel
 		});
 	}
 
-	private JLabel title()
+	private JLabel accountDeleteButton()
 	{
-		JLabel title = new JLabel("Settings", SwingConstants.CENTER);
-		title.setOpaque(true);
-		title.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		title.setBorder(new EmptyBorder(10, 0, 10, 0));
-		title.setFont(new Font("Roboto", Font.BOLD + Font.ITALIC, 18));
-		return title;
-	}
-
-
-	private JLabel accountDeleteButton() {
 		JLabel deleteButton = new JLabel(UIUtilities.DELETE_BUTTON);
 		deleteButton.addMouseListener(new MouseAdapter()
 		{

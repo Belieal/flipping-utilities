@@ -31,25 +31,18 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Set;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -86,6 +79,7 @@ public class MasterPanel extends PluginPanel
 
 		accountSelector = accountSelector();
 		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
+		modal.setTitle("Settings");
 		settingsButton = settingsButton(() -> {
 			modal.setVisible(true);
 			settingsPanel.rebuild();
@@ -130,7 +124,7 @@ public class MasterPanel extends PluginPanel
 	private JComboBox accountSelector()
 	{
 		JComboBox viewSelectorDropdown = new JComboBox();
-		viewSelectorDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		viewSelectorDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		viewSelectorDropdown.setFocusable(false);
 		viewSelectorDropdown.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		viewSelectorDropdown.setRenderer(new ComboBoxListRenderer());
@@ -157,9 +151,8 @@ public class MasterPanel extends PluginPanel
 	private JLabel settingsButton(Runnable callback)
 	{
 		JLabel button = new JLabel(UIUtilities.SETTINGS_ICON);
-		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		button.setToolTipText("Open Settings Panel");
 		button.setPreferredSize(UIUtilities.ICON_SIZE);
-		button.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		button.addMouseListener(new MouseAdapter()
 		{
 			public void mouseClicked(MouseEvent e)
