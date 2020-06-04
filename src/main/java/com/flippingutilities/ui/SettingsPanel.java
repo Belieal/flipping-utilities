@@ -23,6 +23,10 @@ import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
+/**
+ * This class is a panel which allows a user to select which account to modify. Currently, a user can only delete their
+ * account. This panel is displayed in a modal that pops up when a user clicks on the settings button in the master panel.
+ */
 public class SettingsPanel extends JPanel
 {
 	int WIDTH = 700;
@@ -61,6 +65,11 @@ public class SettingsPanel extends JPanel
 
 	}
 
+	/**
+	 * This is the panel that holds the vertically stacked account labels.
+	 *
+	 * @return
+	 */
 	private JPanel accountSelectionPanel()
 	{
 		JPanel accountSelectionPanel = new JPanel();
@@ -70,6 +79,13 @@ public class SettingsPanel extends JPanel
 		return accountSelectionPanel;
 	}
 
+	/**
+	 * Creates the account labels that a user can click on to select which account's settings they want to change. These
+	 * labels are in the account selection panel.
+	 *
+	 * @param name name of the account
+	 * @return
+	 */
 	private JLabel accountLabel(String name)
 	{
 		JLabel accountLabel = new JLabel(UIUtilities.ACCOUNT_ICON, JLabel.LEFT);
@@ -148,6 +164,11 @@ public class SettingsPanel extends JPanel
 		settingsBasePanel.add(optionsPanel(accountLabel.getText()));
 	}
 
+	/**
+	 * Creates the button which deletes the associated account if pressed. This button is located on the options panel.
+	 *
+	 * @return
+	 */
 	private JLabel accountDeleteButton()
 	{
 		JLabel deleteButton = new JLabel(UIUtilities.DELETE_BUTTON);
@@ -195,6 +216,13 @@ public class SettingsPanel extends JPanel
 	}
 
 
+	/**
+	 * Creates a panel that represents all the settings options for the account with the given name. Currently, the
+	 * only option is the ability to delete the account.
+	 *
+	 * @param name the name of the account the options are for.
+	 * @return
+	 */
 	private JPanel optionsPanel(String name)
 	{
 		JPanel basePanel = new JPanel(new BorderLayout());

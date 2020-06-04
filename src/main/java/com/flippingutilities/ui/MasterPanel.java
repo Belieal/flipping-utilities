@@ -31,6 +31,7 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -41,6 +42,7 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -84,9 +86,9 @@ public class MasterPanel extends PluginPanel
 			modal.setVisible(true);
 			settingsPanel.rebuild();
 		});
+
 		MaterialTabGroup tabSelector = tabSelector(mainDisplay, flippingPanel, statPanel);
 		JPanel header = Header(accountSelector, settingsButton, tabSelector);
-
 		add(header, BorderLayout.NORTH);
 		add(mainDisplay, BorderLayout.CENTER);
 	}
@@ -188,26 +190,6 @@ public class MasterPanel extends PluginPanel
 		return tabGroup;
 	}
 
-	/**
-	 * Creates the dropdown in the settings panel that lets a user select which account they want to delete.
-	 *
-	 * @return a dropdown.
-	 */
-	private JComboBox accountDeleteSelector()
-	{
-		JComboBox deleteAccountSelector = new JComboBox();
-		deleteAccountSelector.setFocusable(false);
-		deleteAccountSelector.setToolTipText("You can only delete an account that isn't currently logged in");
-		deleteAccountSelector.addActionListener(e -> {
-			JComboBox dropdown = (JComboBox) e.getSource();
-			String name = (String) dropdown.getSelectedItem();
-			dropdown.removeItem(name);
-			plugin.deleteAccount(name);
-			accountSelector.removeItem(name);
-		});
-
-		return deleteAccountSelector;
-	}
 
 	public Set<String> getViewSelectorItems()
 	{
