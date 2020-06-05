@@ -159,6 +159,9 @@ public class FlippingPlugin extends Plugin
 
 	private Instant startUpTime = Instant.now();
 
+	//name of the account this client last stored trades for.
+	private String thisClientLastStored;
+
 	@Override
 	protected void startUp()
 	{
@@ -738,6 +741,7 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
+			thisClientLastStored = displayName;
 			TradePersister.storeTrades(displayName, accountCache.get(displayName));
 			log.info("successfully stored trades for {}", displayName);
 		}
@@ -840,6 +844,12 @@ public class FlippingPlugin extends Plugin
 	{
 
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
+
+		if (displayNameOfChangedAcc.equals(thisClientLastStored)) {
+			log.info("not reloading data for {} into the cache as this client was the last one to store it");
+			thisClientLastStored = null;
+			return;
+		}
 
 		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
 		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
