@@ -593,10 +593,14 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				trades.remove(item);
+				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
+
+
 		}
 		else
 		{
