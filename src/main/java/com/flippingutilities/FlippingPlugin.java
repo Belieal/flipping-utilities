@@ -201,6 +201,13 @@ public class FlippingPlugin extends Plugin
 
 			repeatingTasks = setupRepeatingTasks();
 
+			//this is only relevant if the user downloads/enables the plugin after they login.
+			if (client.getGameState() == GameState.LOGGED_IN)
+			{
+				log.info("user is already logged in when they downloaded/enabled the plugin");
+				onLoggedInGameState();
+			}
+
 			//stops scheduling this task
 			return true;
 		});
@@ -227,44 +234,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			//keep scheduling this task until it returns true (when we have access to a display name)
-			clientThread.invokeLater(() ->
-			{
-				//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
-				//want to keep scheduling this task.
-				if (client.getGameState() != GameState.LOGGED_IN)
-				{
-					return true;
-				}
-
-				final Player player = client.getLocalPlayer();
-
-				//player is null, so we can't get the display name so, return false, which will schedule
-				//the task on the client thread again.
-				if (player == null)
-				{
-					return false;
-				}
-
-				final String name = player.getName();
-
-				if (name == null)
-				{
-					return false;
-				}
-
-				if (name.equals(""))
-				{
-					return false;
-				}
-				previouslyLoggedIn = true;
-
-				if (currentlyLoggedInAccount == null) {
-					handleLogin(name);
-				}
-				//stops scheduling this task
-				return true;
-			});
+			onLoggedInGameState();
 		}
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
@@ -275,6 +245,49 @@ public class FlippingPlugin extends Plugin
 				handleLogout();
 			}
 		}
+	}
+
+	private void onLoggedInGameState()
+	{
+		//keep scheduling this task until it returns true (when we have access to a display name)
+		clientThread.invokeLater(() ->
+		{
+			//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
+			//want to keep scheduling this task.
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				return true;
+			}
+
+			final Player player = client.getLocalPlayer();
+
+			//player is null, so we can't get the display name so, return false, which will schedule
+			//the task on the client thread again.
+			if (player == null)
+			{
+				return false;
+			}
+
+			final String name = player.getName();
+
+			if (name == null)
+			{
+				return false;
+			}
+
+			if (name.equals(""))
+			{
+				return false;
+			}
+			previouslyLoggedIn = true;
+
+			if (currentlyLoggedInAccount == null)
+			{
+				handleLogin(name);
+			}
+			//stops scheduling this task
+			return true;
+		});
 	}
 
 	public void handleLogin(String displayName)
