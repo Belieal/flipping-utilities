@@ -105,15 +105,15 @@ public class MasterPanel extends PluginPanel
 	 */
 	private JPanel Header(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
 	{
-		JPanel topOfHeader = new JPanel(new BorderLayout());
-		topOfHeader.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topOfHeader.add(accountSelector, BorderLayout.CENTER);
-		topOfHeader.add(settingsButton, BorderLayout.EAST);
+		JPanel tabGroupArea = new JPanel(new BorderLayout());
+		tabGroupArea.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		tabGroupArea.add(tabSelector, BorderLayout.CENTER);
+		tabGroupArea.add(settingsButton, BorderLayout.EAST);
 
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		header.add(topOfHeader, BorderLayout.NORTH);
-		header.add(tabSelector, BorderLayout.CENTER);
+		header.add(accountSelector, BorderLayout.NORTH);
+		header.add(tabGroupArea, BorderLayout.CENTER);
 		return header;
 	}
 
@@ -181,7 +181,7 @@ public class MasterPanel extends PluginPanel
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
 		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statsPanel);
 
-		tabGroup.setBorder(new EmptyBorder(5, 0, 2, 0));
+		tabGroup.setBorder(new EmptyBorder(5, 35, 2, 0));
 		tabGroup.addTab(flippingTab);
 		tabGroup.addTab(statTab);
 
