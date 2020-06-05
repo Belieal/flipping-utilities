@@ -846,7 +846,7 @@ public class FlippingPlugin extends Plugin
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
 		if (displayNameOfChangedAcc.equals(thisClientLastStored)) {
-			log.info("not reloading data for {} into the cache as this client was the last one to store it");
+			log.info("not reloading data for {} into the cache as this client was the last one to store it", displayNameOfChangedAcc);
 			thisClientLastStored = null;
 			return;
 		}
