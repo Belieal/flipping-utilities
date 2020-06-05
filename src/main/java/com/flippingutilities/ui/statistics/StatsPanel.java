@@ -629,7 +629,15 @@ public class StatsPanel extends JPanel
 	private void updateHourlyProfitDisplay(Duration accumulatedTime)
 	{
 		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
-		String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+		String profitString;
+		//i think this happens when the profit is absurdly high because the session time is very low (offers come in
+		//just as you start a new session)
+		try {
+			profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
+		}
+		catch (ArrayIndexOutOfBoundsException e) {
+			profitString = "NA";
+		}
 		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");
