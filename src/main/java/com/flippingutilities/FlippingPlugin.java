@@ -307,7 +307,6 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
-			masterPanel.getSettingsButton().setVisible(true);
 		}
 		accountCurrentlyViewed = displayName;
 		//this will cause changeView to be invoked which will cause a rebuild of
@@ -356,12 +355,10 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
-			masterPanel.getSettingsButton().setVisible(true);
 		}
 		else
 		{
 			masterPanel.getAccountSelector().setVisible(false);
-			masterPanel.getSettingsButton().setVisible(false);
 		}
 	}
 
@@ -804,7 +801,6 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() > 1)
 		{
 			masterPanel.getAccountSelector().setVisible(true);
-			masterPanel.getSettingsButton().setVisible(true);
 		}
 
 		updateSinceLastAccountWideBuild = true;
@@ -912,7 +908,6 @@ public class FlippingPlugin extends Plugin
 		if (accountCache.keySet().size() < 2)
 		{
 			masterPanel.getAccountSelector().setVisible(false);
-			masterPanel.getSettingsButton().setVisible(false);
 		}
 		masterPanel.getAccountSelector().removeItem(displayName);
 	}
