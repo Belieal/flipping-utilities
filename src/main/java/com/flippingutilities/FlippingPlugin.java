@@ -842,7 +842,6 @@ public class FlippingPlugin extends Plugin
 	 */
 	public void onDirectoryUpdate(String fileName)
 	{
-
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
 		if (displayNameOfChangedAcc.equals(thisClientLastStored)) {
@@ -850,27 +849,29 @@ public class FlippingPlugin extends Plugin
 			thisClientLastStored = null;
 			return;
 		}
+		executor.schedule(() -> {
+			log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
+			accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+			if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
+			{
+				tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
+			}
 
-		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
-		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
-		{
-			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
-		}
+			if (accountCache.keySet().size() > 1)
+			{
+				tabManager.getViewSelector().setVisible(true);
+			}
 
-		if (accountCache.keySet().size() > 1)
-		{
-			tabManager.getViewSelector().setVisible(true);
-		}
+			updateSinceLastAccountWideBuild = true;
 
-		updateSinceLastAccountWideBuild = true;
-
-		//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
-		{
-			List<FlippingItem> updatedList = getTradesForCurrentView();
-			flippingPanel.rebuild(updatedList);
-			statPanel.rebuild(updatedList);
-		}
+			//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
+			{
+				List<FlippingItem> updatedList = getTradesForCurrentView();
+				flippingPanel.rebuild(updatedList);
+				statPanel.rebuild(updatedList);
+			}
+		}, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
