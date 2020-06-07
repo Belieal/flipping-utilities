@@ -31,7 +31,6 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -42,7 +41,6 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -82,7 +80,8 @@ public class MasterPanel extends PluginPanel
 		accountSelector = accountSelector();
 		JDialog modal = UIUtilities.createModalFromPanel(this, settingsPanel);
 		modal.setTitle("Settings");
-		settingsButton = settingsButton(() -> {
+		settingsButton = settingsButton(() ->
+		{
 			modal.setVisible(true);
 			settingsPanel.rebuild();
 		});

@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2020, Belieal <https://github.com/Belieal>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.flippingutilities.ui;
 
 import com.flippingutilities.FlippingPlugin;
@@ -62,7 +88,6 @@ public class SettingsPanel extends JPanel
 
 		add(accountScroller, BorderLayout.WEST);
 		add(new JScrollPane(settingsBasePanel), BorderLayout.CENTER);
-
 	}
 
 	/**
@@ -126,7 +151,8 @@ public class SettingsPanel extends JPanel
 
 	public void rebuild()
 	{
-		SwingUtilities.invokeLater(() -> {
+		SwingUtilities.invokeLater(() ->
+		{
 			accountSelectionPanel.removeAll();
 			settingsBasePanel.removeAll();
 			accountLabels.clear();
@@ -166,13 +192,11 @@ public class SettingsPanel extends JPanel
 
 	/**
 	 * Creates the button which deletes the associated account if pressed. This button is located on the options panel.
-	 *
-	 * @return
 	 */
 	private JLabel accountDeleteButton()
 	{
 		JLabel deleteButton = new JLabel(UIUtilities.DELETE_BUTTON);
-		deleteButton.setToolTipText("Deleting an account deletes the file that stores all of its trades. This cannot" +
+		deleteButton.setToolTipText("Deletes the file that stores all of this account's trades. This cannot" +
 			"be undone!");
 		deleteButton.addMouseListener(new MouseAdapter()
 		{
@@ -182,14 +206,14 @@ public class SettingsPanel extends JPanel
 				String selectedAccountName = selectedAccountLabel.getText();
 				if (selectedAccountName.equals(plugin.getCurrentlyLoggedInAccount()))
 				{
-					JOptionPane.showMessageDialog(null, "You cannot delete a currently logged in account", "alert", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, "You cannot delete a currently logged in account", "Alert", JOptionPane.ERROR_MESSAGE);
 				}
 
 				else
 				{
 					int result = JOptionPane.showOptionDialog(deleteButton, "Are you sure you want to delete this account?",
 						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
-						null, new String[]{"Yes", "No"}, "No");
+						null, new String[] {"Yes", "No"}, "No");
 
 					if (result == JOptionPane.YES_OPTION)
 					{

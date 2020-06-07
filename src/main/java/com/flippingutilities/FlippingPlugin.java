@@ -862,7 +862,8 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		executor.schedule(() -> {
+		executor.schedule(() ->
+		{
 			log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
 
 			accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));

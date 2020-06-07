@@ -28,13 +28,9 @@ package com.flippingutilities.ui.utilities;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.ui.SettingsPanel;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -46,7 +42,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
@@ -267,7 +262,7 @@ public class UIUtilities
 			: DECIMAL_FORMATTER;
 
 		return format.format(quantity / Math.pow(10, (Long.divideUnsigned(power, 3)) * 3))
-			+ new String[]{"", "K", "M", "B", "T"}[(int) (power / 3)];
+			+ new String[] {"", "K", "M", "B", "T"}[(int) (power / 3)];
 	}
 
 	/**
