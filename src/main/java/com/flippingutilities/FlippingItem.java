@@ -86,7 +86,7 @@ public class FlippingItem
 	//An activity is described as a completed offer event.
 	@SerializedName("lAT")
 	@Getter
-	private Instant latestActivityTime = Instant.now();
+	private Instant latestActivityTime;
 
 	@SerializedName("sESI")
 	@Getter
@@ -218,6 +218,11 @@ public class FlippingItem
 		}
 
 
+	}
+
+	public Instant getLatestTradeUpdateBySlot(int slotIndex, boolean buyState, boolean completedOffer)
+	{
+		return history.getLatestTradeUpdateBySlot(getIntervalHistory(Instant.EPOCH), slotIndex, buyState, completedOffer);
 	}
 
 	public long currentProfit(List<OfferInfo> tradeList)

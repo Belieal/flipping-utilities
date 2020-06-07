@@ -146,6 +146,7 @@ public class FlippingPlugin extends Plugin
 
 	//the display name of the currently logged in user. This is the only account that can actually receive offers
 	//as this is the only account currently logged in.
+	@Getter
 	private String currentlyLoggedInAccount;
 
 	//some events come before a display name has been retrieved and since a display name is crucial for figuring out
@@ -694,7 +695,6 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-
 	//TODO: Refactor this with a search on the search bar
 	private void highlightOffer()
 	{
@@ -874,7 +874,6 @@ public class FlippingPlugin extends Plugin
 		updateSinceLastAccountWideBuild = false;
 		prevBuiltAccountWideList = mergedItems;
 		return mergedItems;
-
 	}
 
 	/**

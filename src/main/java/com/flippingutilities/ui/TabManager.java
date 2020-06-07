@@ -74,14 +74,9 @@ public class TabManager extends PluginPanel
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
 			{
-
 				String selectedDisplayName = (String) event.getItem();
 
-				if (selectedDisplayName == null)
-				{
-					return;
-				}
-				else
+				if (selectedDisplayName != null)
 				{
 					viewChangerMethod.accept(selectedDisplayName);
 				}

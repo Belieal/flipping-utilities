@@ -28,6 +28,7 @@ package com.flippingutilities.ui.widgets;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.OfferInfo;
 import com.flippingutilities.ui.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
@@ -50,8 +51,12 @@ import net.runelite.client.util.ColorUtil;
 public class TradeActivityTimer
 {
 	//Spacing between the slot state text and the timer
-	private static final String SPACER = "          ";
-	//AKA "RunescapeFont"
+	private static final String BUY_SPACER = "          ";
+	private static final String SELL_SPACER = "          ";
+	private static final int PROGRESS_BAR_COMPLETED_COLOR = 24320;
+	private static final int PROGRESS_BAR_CANCELLED_COLOR = 9371648;
+
+	//AKA RunescapeFont (non-bold)
 	private static final int FONT_ID = 495;
 
 	//The slot that this timer object embeds to
@@ -76,7 +81,8 @@ public class TradeActivityTimer
 	private String slotStateString;
 
 	//When the offer was first detected and timer drawn.
-	private Instant offerDrawTime = Instant.EPOCH;
+	private Instant offerStartTime = Instant.EPOCH;
+	private Instant timerBase = Instant.now();
 
 	public TradeActivityTimer(Widget slotWidget, ClientThread clientThread, int slotIndex, FlippingPlugin plugin, ScheduledExecutorService executor, Client client)
 	{
@@ -101,7 +107,7 @@ public class TradeActivityTimer
 	public ScheduledFuture<?> startTimerUpdates()
 	{
 		return executor.scheduleAtFixedRate(() ->
-			clientThread.invokeLater(this::updateTimer), 500, 1000, TimeUnit.MILLISECONDS);
+			clientThread.invokeLater(this::updateTimer), 0, 500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -138,7 +144,7 @@ public class TradeActivityTimer
 		if (slotStateString.equals("Empty") && !slotStateWidget.getText().equals("Empty"))
 		{
 			//The timer has been assigned to a new offer, update the draw time.
-			offerDrawTime = Instant.now();
+			offerStartTime = Instant.now();
 		}
 
 		//Reassign widgets
@@ -156,7 +162,12 @@ public class TradeActivityTimer
 		//Look for the stored trade in the history.
 		FlippingItem flippingItem = getItemFromWidget(new ArrayList<>(plugin.getTradesForCurrentView()));
 
-		if (flippingItem == null)
+		if (plugin.getCurrentlyLoggedInAccount() == null)
+		{
+			return;
+		}
+
+		if (flippingItem == null && plugin.getAccountCache().get(plugin.getCurrentlyLoggedInAccount()).getLastOffers().get(slotIndex) == null)
 		{
 			//Again, this shouldn't happen since the trade will always be created before the timer.
 			//However, it may happen if the user's trades weren't saved properly or they just installed the plugin
@@ -164,29 +175,7 @@ public class TradeActivityTimer
 			return;
 		}
 
-		//Draw the timer according to the state of the offer.
-		//If the offerDrawTime is before the latest trade time, assume we're drawing for the first time.
-		Instant timerBase;
-		if (slotStateString.contains("Buy"))
-		{
-			timerBase = flippingItem.getLatestBuyTime().isAfter(offerDrawTime)
-				? flippingItem.getLatestBuyTime()
-				: offerDrawTime;
-		}
-		else
-		{
-			timerBase = flippingItem.getLatestSellTime().isAfter(offerDrawTime)
-				? flippingItem.getLatestSellTime()
-				: offerDrawTime;
-		}
-
-		boolean tradeIsStagnant = false;
-		if (timerBase.isBefore(Instant.now().minus(plugin.getConfig().tradeStagnationTime(), ChronoUnit.MINUTES)))
-		{
-			tradeIsStagnant = true;
-		}
-
-		setText(UIUtilities.formatDuration(timerBase), tradeIsStagnant);
+		setText(createFormattedTimeString(flippingItem), isSlotStagnant(), isSlotComplete());
 		slotStateWidget.setFontId(FONT_ID);
 		slotStateWidget.setXTextAlignment(0);
 	}
@@ -194,26 +183,46 @@ public class TradeActivityTimer
 	/**
 	 * Appends the offer state text widget with the up-to-date timer.
 	 *
-	 * @param timeString A formatted duration string
+	 * @param timeString      Formatted timer string.
+	 * @param tradeIsStagnant Designates whether to treat the offer as being stagnant.
+	 * @param tradeIsComplete Designates whether to treat the offer to be complete.
 	 */
-	private void setText(String timeString, boolean tradeIsStagnant)
+	private void setText(String timeString, boolean tradeIsStagnant, boolean tradeIsComplete)
 	{
+		String spacer;
 		if (slotStateString.contains("Buy"))
 		{
 			slotStateString = "Buy";
+			spacer = BUY_SPACER;
 		}
 		else
 		{
 			slotStateString = "Sell";
+			spacer = SELL_SPACER;
 		}
 
 		Color color = tradeIsStagnant ? UIUtilities.OUTDATED_COLOR : Color.WHITE;
-		slotStateWidget.setText("  <html>" + slotStateString + SPACER + ColorUtil.wrapWithColorTag(timeString, color) + "</html>");
+
+		if (tradeIsComplete)
+		{
+			//Override to completion color
+			color = new Color(0, 180, 0);
+		}
+
+		System.out.println(timeString);
+
+		if (timeString.length() > 9)
+		{
+			//Make sure we don't overflow the text
+			timeString = "   --:--:--";
+		}
+
+		slotStateWidget.setText("  <html>" + slotStateString + spacer + ColorUtil.wrapWithColorTag(timeString, color) + "</html>");
 	}
 
 	/**
-	 * Finds and sets the flippingItem based on the widgetIcon itemId.
-	 * Can set flippingItem to null if no items are found.
+	 * Finds and returns the flippingItem based on the widgetIcon itemId.
+	 * Will return null if no items are found.
 	 *
 	 * @return The found flippingItem from the tradeList or null
 	 */
@@ -225,7 +234,7 @@ public class TradeActivityTimer
 			.filter(item -> item.getItemId() == widgetItemId)
 			.findFirst();
 
-		return foundItem.get();
+		return foundItem.orElse(null);
 	}
 
 	/**
@@ -247,5 +256,75 @@ public class TradeActivityTimer
 	{
 		//Child index 0 is exclusively visible on empty slots
 		return slotWidget.getChild(0).isHidden();
+	}
+
+	/**
+	 * Returns whether the slot has a completed offer in it.
+	 * Based on the color of the progress bar of the slot.
+	 */
+	private boolean isSlotComplete()
+	{
+		int progressBarColor = slotWidget.getChild(22).getTextColor();
+		return progressBarColor == PROGRESS_BAR_COMPLETED_COLOR || progressBarColor == PROGRESS_BAR_CANCELLED_COLOR;
+	}
+
+	/**
+	 * Returns whether the slot contains a stagnant offer as defined by the user config.
+	 * Has to be run after createFormattedTimeString() else the timerBase won't be sufficiently up to date.
+	 */
+	private boolean isSlotStagnant()
+	{
+		return timerBase.isBefore(Instant.now().minus(plugin.getConfig().tradeStagnationTime(), ChronoUnit.MINUTES));
+	}
+
+	/**
+	 * Creates and returns a formatted time string based on (HH:MM:SS).
+	 *
+	 * @param flippingItem The item in the slot that the timer is based upon.
+	 * @return Returns a formatted timer string.
+	 */
+	private String createFormattedTimeString(FlippingItem flippingItem)
+	{
+		if (!plugin.getAccountCache().get(plugin.getCurrentlyLoggedInAccount()).getLastOffers().containsKey(slotIndex))
+		{
+			timerBase = Instant.now();
+			return UIUtilities.formatDuration(timerBase);
+		}
+
+		OfferInfo latestOffer = plugin.getAccountCache().get(plugin.getCurrentlyLoggedInAccount()).getLastOffers().get(slotIndex);
+
+		//Get the first offer recorded of this item in this slot.
+		if (flippingItem == null)
+		{
+			timerBase = offerStartTime;
+			return UIUtilities.formatDuration(offerStartTime);
+		}
+
+		if (latestOffer.getSlot() == slotIndex && latestOffer.getItemId() == flippingItem.getItemId()
+			&& !latestOffer.isComplete() && latestOffer.getCurrentQuantityInTrade() == 0)
+		{
+
+			offerStartTime = latestOffer.getTime();
+		}
+
+		Instant latestTradeTime = flippingItem.getLatestTradeUpdateBySlot(slotIndex, slotStateString.contains("Buy"), isSlotComplete());
+
+		//Fallback in case we didn't find a time stored.
+		//Happens when no offers have been recorded previously
+		if (latestTradeTime == null)
+		{
+			timerBase = offerStartTime;
+			return UIUtilities.formatDuration(offerStartTime);
+		}
+
+		else if (isSlotComplete())
+		{
+			return UIUtilities.formatDuration(offerStartTime, latestTradeTime);
+		}
+		else
+		{
+			timerBase = latestTradeTime.isAfter(offerStartTime) ? latestTradeTime : offerStartTime;
+			return UIUtilities.formatDuration(timerBase);
+		}
 	}
 }
