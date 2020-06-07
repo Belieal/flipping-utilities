@@ -30,10 +30,10 @@ import com.flippingutilities.Flip;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
-import com.flippingutilities.ui.UIUtilities;
-import static com.flippingutilities.ui.UIUtilities.CLOSE_ICON;
-import static com.flippingutilities.ui.UIUtilities.DELETE_ICON;
-import static com.flippingutilities.ui.UIUtilities.OPEN_ICON;
+import com.flippingutilities.ui.utilities.UIUtilities;
+import static com.flippingutilities.ui.utilities.UIUtilities.CLOSE_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.OPEN_ICON;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -493,12 +493,12 @@ public class StatItemPanel extends JPanel
 		if (!tradeHistory.isEmpty())
 		{
 			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
-			timeOfLastFlipValLabel.setText(UIUtilities.formatDuration(lastRecordedTrade.getTime()) + " ago");
+			timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 			timeOfLastFlipPanel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
 
 			for (StatItemHistoryPanel panel : activePanels)
 			{
-				panel.updateTime();
+				panel.updateTimeDisplay();
 			}
 		}
 	}

@@ -177,6 +177,11 @@ public class TradePersister
 		log.info("loading data for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
 		AccountData accountData = loadFromFile(accountFile);
+		if (accountData == null)
+		{
+			log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
+			accountData = new AccountData();
+		}
 		return accountData;
 	}
 
@@ -210,5 +215,21 @@ public class TradePersister
 	public static long lastModified(String fileName)
 	{
 		return new File(PARENT_DIRECTORY, fileName).lastModified();
+	}
+
+	public static void deleteFile(String fileName)
+	{
+		File accountFile = new File(PARENT_DIRECTORY, fileName);
+		if (accountFile.exists())
+		{
+			if (accountFile.delete())
+			{
+				log.info("{} deleted", fileName);
+			}
+			else
+			{
+				log.info("unable to delete {}", fileName);
+			}
+		}
 	}
 }
