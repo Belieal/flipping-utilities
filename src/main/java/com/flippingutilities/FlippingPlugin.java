@@ -747,7 +747,8 @@ public class FlippingPlugin extends Plugin
 		{
 			thisClientLastStored = displayName;
 			AccountData data = accountCache.get(displayName);
-			if (data == null) {
+			if (data == null)
+			{
 				log.info("for an unknown reason the data associated with {} has been set to null. Storing" +
 					"an empty AccountData object instead.", displayName);
 				data = new AccountData();
