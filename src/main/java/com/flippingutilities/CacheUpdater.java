@@ -46,10 +46,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Updates the cache in real time as files are changed in the directory being monitored. It monitors the directory
- * where the accounts' data is stored and fires a callback when it detects a change for an account. The reason it
- * accepts a callback is so that this class is not tied to any specific component's way of handling a file change. This
- * decoupling allows the cache updater to be used easily by any component that wishes to fire an action when a file
- * for an account is changed.
+ * where the accounts' data is stored and fires any registered callbacks when it detects a change for an account.
+ * The reason it accepts callbacks is so that this class is not tied to any specific component's way of handling a file
+ * change. This decoupling allows the cache updater to be used easily by any component that wishes to fire an action
+ * when a file for an account is changed.
  */
 @Slf4j
 public class CacheUpdater
@@ -59,11 +59,15 @@ public class CacheUpdater
 
 	List<Consumer<String>> callbacks = new ArrayList<>();
 
-	boolean isBeingShutdown = false;
+	boolean isBeingShutdownByClient = false;
 
 	Future realTimeUpdateTask;
 
 	Map<String, Long> lastEvents = new HashMap<>();
+
+	int requiredMinMsSinceLastUpdate = 5;
+	int failureCount;
+	int failureThreshold = 2;
 
 
 	public CacheUpdater()
@@ -83,7 +87,7 @@ public class CacheUpdater
 
 	public void stop()
 	{
-		isBeingShutdown = true;
+		isBeingShutdownByClient = true;
 		realTimeUpdateTask.cancel(true);
 	}
 
@@ -118,27 +122,50 @@ public class CacheUpdater
 				}
 				//put the key back in the queue so we can take out more events when they occur
 				key.reset();
+				failureCount = 0;
 			}
 		}
 
-		catch (IOException e)
+		catch (IOException | InterruptedException e)
 		{
-			log.info("io exception in updateCacheRealTime. Error = {}", e);
-			if (!isBeingShutdown)
+			if (!isBeingShutdownByClient)
 			{
-				log.info("Scheduling task again.");
-				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+				log.info("exception in updateCacheRealTime, Error = {}", e);
+				onUnexpectedError();
+			}
+
+			else
+			{
+				onClientShutdown();
 			}
 		}
 
-		catch (InterruptedException e)
+		catch (Exception e)
 		{
-			if (!isBeingShutdown)
-			{
-				log.info("InterruptedException in updateCacheRealTime. Scheduling task again. Error = {}", e);
-				realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
-			}
+			log.info("unknown exception in updateCacheRealTime, task is going to stop. Error = {}", e);
 		}
+	}
+
+	private void onUnexpectedError()
+	{
+		log.info("Failure number: {} Error not caused by client shutdown", failureCount);
+		failureCount++;
+		if (failureCount > failureThreshold)
+		{
+			log.info("number of failures exceeds failure threshold, not scheduling task again");
+			return;
+		}
+
+		else
+		{
+			log.info("failure count below threshold, scheduling task again");
+			realTimeUpdateTask = executor.schedule(this::updateCacheRealTime, 1000, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	private void onClientShutdown()
+	{
+		log.info("shutting down cache updater due to the client shutdown");
 	}
 
 	private boolean isDuplicateEvent(String fileName)
@@ -147,8 +174,8 @@ public class CacheUpdater
 		if (lastEvents.containsKey(fileName))
 		{
 			long prevModificationTime = lastEvents.get(fileName);
-			long diffSinceLastModification = Math.abs(lastModified-prevModificationTime);
-			if (diffSinceLastModification < 5)
+			long diffSinceLastModification = Math.abs(lastModified - prevModificationTime);
+			if (diffSinceLastModification < requiredMinMsSinceLastUpdate)
 			{
 				return true;
 			}
@@ -157,13 +184,11 @@ public class CacheUpdater
 				lastEvents.put(fileName, lastModified);
 				return false;
 			}
-
 		}
 		else
 		{
 			lastEvents.put(fileName, lastModified);
 			return false;
 		}
-
 	}
 }

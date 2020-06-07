@@ -30,18 +30,19 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
 import com.flippingutilities.OfferInfo;
-import com.flippingutilities.ui.UIUtilities;
-import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
-import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
+import com.flippingutilities.ui.utilities.UIUtilities;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -64,7 +65,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 import lombok.Getter;
-import lombok.Setter;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -104,9 +104,7 @@ public class StatsPanel extends JPanel
 	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	//Combo box that selects the time interval that startOfInterval contains.
-	private JComboBox<String> timeIntervalList = new JComboBox<>(TIME_INTERVAL_STRINGS);
-
-	private ActionListener comboboxListener;
+	private JComboBox<String> timeIntervalDropdown = new JComboBox<>(TIME_INTERVAL_STRINGS);
 
 	//Sorting selector
 	private JComboBox<String> sortBox = new JComboBox<>(SORT_BY_STRINGS);
@@ -166,14 +164,7 @@ public class StatsPanel extends JPanel
 	private Instant startOfInterval = Instant.now();
 
 	@Getter
-	@Setter
-	private String selectedInterval;
-
-	@Getter
 	private String selectedSort;
-
-	//Time when the panel was created. Assume this is the start of session.
-	private Instant sessionTime;
 
 	private ArrayList<StatItemPanel> activePanels = new ArrayList<>();
 
@@ -195,9 +186,6 @@ public class StatsPanel extends JPanel
 		this.plugin = plugin;
 		this.itemManager = itemManager;
 
-		//Record start of session time.
-		sessionTime = Instant.now();
-
 		setLayout(new BorderLayout());
 
 		//Constraints for statItems later on.
@@ -206,20 +194,18 @@ public class StatsPanel extends JPanel
 		constraints.gridx = 0;
 		constraints.gridy = 0;
 
-		comboboxListener = e ->
+		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
+		timeIntervalDropdown.setFocusable(false);
+		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		timeIntervalDropdown.addItemListener(event ->
 		{
-			selectedInterval = (String) timeIntervalList.getSelectedItem();
-
-			//Handle new time interval selected
-			setTimeInterval(selectedInterval);
-		};
-
-		//Start off with "Session" selected in the combobox.
-		timeIntervalList.setRenderer(new ComboBoxListRenderer());
-		timeIntervalList.setFocusable(false);
-		timeIntervalList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		timeIntervalList.addActionListener(comboboxListener);
-		timeIntervalList.setToolTipText("Specify the time span you would like to see the statistics of");
+			if (event.getStateChange() == ItemEvent.SELECTED)
+			{
+				String interval = (String) event.getItem();
+				setTimeInterval(interval);
+			}
+		});
+		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
 		resetIcon = new JLabel(RESET_ICON);
@@ -280,7 +266,7 @@ public class StatsPanel extends JPanel
 		JPanel wrapper = new JPanel(new BorderLayout());
 		wrapper.setBorder(new EmptyBorder(0, 2, 0, 11));
 		wrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		wrapper.add(timeIntervalList, BorderLayout.CENTER);
+		wrapper.add(timeIntervalDropdown, BorderLayout.CENTER);
 
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -396,12 +382,17 @@ public class StatsPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						sessionTime = Instant.now();
+						plugin.handleSessionTimeReset();
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
 			}
 		});
+
+		sessionTimeVal.setText(UIUtilities.formatDuration(plugin.getAccumulatedTimeForCurrentView()));
+		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
+		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		sessionTimePanel.setToolTipText("Right-click to reset session timer");
 
 		//Wraps the total profit labels.
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
@@ -512,16 +503,17 @@ public class StatsPanel extends JPanel
 				activePanels.add(newPanel);
 				constraints.gridy++;
 			}
-			updateDisplays(tradesList);
 
+			updateDisplays(tradesList);
 			revalidate();
 			repaint();
 		});
 	}
 
 	/**
-	 * Updates all profit labels on the stat panel using their respective update methods.
-	 * Gets called on startup, after the tradesList has been initialized, and after every new registered trade.
+	 * Updates the display of the total profit value along with the display of sub panels
+	 *
+	 * @param tradesList
 	 */
 	public void updateDisplays(List<FlippingItem> tradesList)
 	{
@@ -535,6 +527,12 @@ public class StatsPanel extends JPanel
 			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 
 			useAltColor = !useAltColor;
+		}
+
+		if (!Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
+		{
+			subInfoContainer.remove(sessionTimePanel);
+			subInfoContainer.remove(hourlyProfitPanel);
 		}
 
 		totalProfit = 0;
@@ -573,13 +571,17 @@ public class StatsPanel extends JPanel
 
 		updateTotalProfitDisplay();
 		updateSubInfoFont();
-		updateHourlyProfitDisplay();
+		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
+		{
+			Duration accumulatedTime = plugin.getAccumulatedTimeForCurrentView();
+			updateSessionTimeDisplay(accumulatedTime);
+			updateHourlyProfitDisplay(accumulatedTime);
+		}
 		updateRoiDisplay();
 		updateRevenueAndExpenseDisplay();
 		updateTotalQuantityDisplay();
 		updateTotalFlipsDisplay();
 		updateMostCommonFlip();
-		updateSessionTime();
 	}
 
 	/**
@@ -625,22 +627,21 @@ public class StatsPanel extends JPanel
 	/**
 	 * Updates the hourly profit value display. Also checks and sets the font color according to profit/loss.
 	 */
-	private void updateHourlyProfitDisplay()
+	private void updateHourlyProfitDisplay(Duration accumulatedTime)
 	{
-		//Doesn't really make sense to show profit/hr for anything else
-		//unless we store session time over longer periods of time.
-		if (Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
+		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
+		String profitString;
+		//i think this happens when the profit is absurdly high because the session time is very low (offers come in
+		//just as you start a new session)
+		try
 		{
-			double divisor = (Instant.now().getEpochSecond() - startOfInterval.getEpochSecond()) * 1.0 / (60 * 60);
-
-			String profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
-			hourlyProfitVal.setText(profitString + " gp/hr");
+			profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		}
-		else
+		catch (ArrayIndexOutOfBoundsException e)
 		{
-			subInfoContainer.remove(hourlyProfitPanel);
+			profitString = "NA";
 		}
-
+		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");
 	}
@@ -711,21 +712,23 @@ public class StatsPanel extends JPanel
 			"<br>Does not count margin checks</html>");
 	}
 
-	public void updateSessionTime()
+	/**
+	 * This is called every second by the executor service in FlippingPlugin
+	 */
+	public void updateTimeDisplay()
 	{
-		sessionTimeVal.setText(UIUtilities.formatDuration(sessionTime));
-		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
-		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		if (!Objects.equals(timeIntervalList.getSelectedItem(), "Session"))
-		{
-			subInfoContainer.remove(sessionTimePanel);
-		}
+		activePanels.forEach(StatItemPanel::updateTimeDisplay);
+	}
 
-		for (StatItemPanel panel : activePanels)
-		{
-			panel.updateTimeDisplay();
-		}
-		sessionTimePanel.setToolTipText("Right-click to reset session timer");
+	/**
+	 * This is called by updateSessionTime in FlippingPlugin, which itself is called every second by
+	 * the executor service.
+	 *
+	 * @param accumulatedTime The total time the user has spent flipping since the client started up.
+	 */
+	public void updateSessionTimeDisplay(Duration accumulatedTime)
+	{
+		sessionTimeVal.setText(UIUtilities.formatDuration(accumulatedTime));
 	}
 
 	/**
@@ -797,7 +800,7 @@ public class StatsPanel extends JPanel
 				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
 				break;
 			case "Session":
-				startOfInterval = sessionTime;
+				startOfInterval = plugin.getStartOfSessionForCurrentView();
 				break;
 			case "All":
 				startOfInterval = Instant.EPOCH;
@@ -805,11 +808,6 @@ public class StatsPanel extends JPanel
 			default:
 				break;
 		}
-
-		//We need to remove the actionlistener first, otherwise the event is fired again.
-		timeIntervalList.removeActionListener(comboboxListener);
-		timeIntervalList.setSelectedItem(selectedInterval);
-		timeIntervalList.addActionListener(comboboxListener);
 
 		rebuild(plugin.getTradesForCurrentView());
 	}
@@ -918,6 +916,23 @@ public class StatsPanel extends JPanel
 		Collections.reverse(result);
 
 		return result;
+	}
+
+	public void setSelectedTimeInterval(String interval)
+	{
+		if (interval == null)
+		{
+			timeIntervalDropdown.setSelectedItem("Session");
+		}
+		else
+		{
+			timeIntervalDropdown.setSelectedItem(interval);
+		}
+	}
+
+	public String getSelectedTimeInterval()
+	{
+		return (String) timeIntervalDropdown.getSelectedItem();
 	}
 
 }

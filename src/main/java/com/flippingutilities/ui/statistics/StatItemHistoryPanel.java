@@ -27,7 +27,7 @@
 package com.flippingutilities.ui.statistics;
 
 import com.flippingutilities.Flip;
-import com.flippingutilities.ui.UIUtilities;
+import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -59,11 +59,11 @@ public class StatItemHistoryPanel extends JPanel
 
 		if (flip.isMarginCheck())
 		{
-			timeSince.setText("Margin Checked " + "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			timeSince.setText("Margin Checked " + "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
 		}
 		else
 		{
-			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
 		}
 
 		JLabel buyPriceText = new JLabel("Buy Price:");
@@ -114,16 +114,16 @@ public class StatItemHistoryPanel extends JPanel
 		add(infoContainer, BorderLayout.CENTER);
 	}
 
-	public void updateTime()
+	public void updateTimeDisplay()
 	{
 		if (flip.isMarginCheck())
 		{
-			timeSince.setText("Margin Checked (" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+			timeSince.setText("Margin Checked (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
 		}
 		else
 		{
 			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
-				+ "(" + UIUtilities.formatDuration(flip.getTime()) + " ago)");
+				+ "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
 		}
 	}
 
