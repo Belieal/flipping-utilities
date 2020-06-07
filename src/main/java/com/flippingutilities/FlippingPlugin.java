@@ -160,16 +160,10 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
-	//the amount of time a user has been flipping for since the client started up or since they last reset the session
-	//time.
-	@Setter
-	@Getter
-	private Duration accumulatedSessionTime = Duration.ZERO;
+	private Instant startUpTime = Instant.now();
 
-	//used to figure out how to accumulate time as the executor may not run the updateSessionTime method every second on
-	//the dot (there might be some very small delay).
-	private Instant lastSessionTimeUpdate;
-
+	//name of the account this client last stored trades for.
+	private String thisClientLastStored;
 
 	@Override
 	protected void startUp()
@@ -214,6 +208,13 @@ public class FlippingPlugin extends Plugin
 
 			repeatingTasks = setupRepeatingTasks();
 
+			//this is only relevant if the user downloads/enables the plugin after they login.
+			if (client.getGameState() == GameState.LOGGED_IN)
+			{
+				log.info("user is already logged in when they downloaded/enabled the plugin");
+				onLoggedInGameState();
+			}
+
 			//stops scheduling this task
 			return true;
 		});
@@ -240,41 +241,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			//keep scheduling this task until it returns true (when we have access to a display name)
-			clientThread.invokeLater(() ->
-			{
-				//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
-				//want to keep scheduling this task.
-				if (client.getGameState() != GameState.LOGGED_IN)
-				{
-					return true;
-				}
-
-				final Player player = client.getLocalPlayer();
-
-				//player is null, so we can't get the display name so, return false, which will schedule
-				//the task on the client thread again.
-				if (player == null)
-				{
-					return false;
-				}
-
-				final String name = player.getName();
-
-				if (name == null)
-				{
-					return false;
-				}
-
-				if (name.equals(""))
-				{
-					return false;
-				}
-				previouslyLoggedIn = true;
-				handleLogin(name);
-				//stops scheduling this task
-				return true;
-			});
+			onLoggedInGameState();
 		}
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
@@ -287,8 +254,57 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	private void onLoggedInGameState()
+	{
+		//keep scheduling this task until it returns true (when we have access to a display name)
+		clientThread.invokeLater(() ->
+		{
+			//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
+			//want to keep scheduling this task.
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				return true;
+			}
+
+			final Player player = client.getLocalPlayer();
+
+			//player is null, so we can't get the display name so, return false, which will schedule
+			//the task on the client thread again.
+			if (player == null)
+			{
+				return false;
+			}
+
+			final String name = player.getName();
+
+			if (name == null)
+			{
+				return false;
+			}
+
+			if (name.equals(""))
+			{
+				return false;
+			}
+			previouslyLoggedIn = true;
+
+			if (currentlyLoggedInAccount == null)
+			{
+				handleLogin(name);
+			}
+			//stops scheduling this task
+			return true;
+		});
+	}
+
 	public void handleLogin(String displayName)
 	{
+		if (client.getAccountType().isIronman())
+		{
+			log.info("account is an ironman, not adding it to the cache");
+			return;
+		}
+
 		log.info("{} has just logged in!", displayName);
 		if (!accountCache.containsKey(displayName))
 		{
@@ -317,7 +333,8 @@ public class FlippingPlugin extends Plugin
 
 	public void handleLogout()
 	{
-		log.info("{} is logging out, storing trades for {}", currentlyLoggedInAccount, currentlyLoggedInAccount);
+		log.info("{} is logging out", currentlyLoggedInAccount);
+		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
 		currentlyLoggedInAccount = null;
 	}
@@ -328,7 +345,9 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			return loadAllTrades();
+			Map<String, AccountData> accountsData = loadAllTrades();
+			accountsData.values().forEach(AccountData::startNewSession);
+			return accountsData;
 		}
 
 		catch (IOException e)
@@ -581,10 +600,14 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				trades.remove(item);
+				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
+
+
 		}
 		else
 		{
@@ -629,6 +652,45 @@ public class FlippingPlugin extends Plugin
 	{
 		return accountCurrentlyViewed.equals(ACCOUNT_WIDE) ? createAccountWideList() : accountCache.get(accountCurrentlyViewed).getTrades();
 	}
+
+	/**
+	 * Gets the accumulated time the account currently being viewed has been flipping this session.
+	 *
+	 * @return accumulated time
+	 */
+	public Duration getAccumulatedTimeForCurrentView()
+	{
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			return accountCache.values().stream().map(AccountData::getAccumulatedSessionTime).reduce(Duration.ZERO, (d1, d2) -> d1.plus(d2));
+		}
+		else
+		{
+			return accountCache.get(accountCurrentlyViewed).getAccumulatedSessionTime();
+		}
+	}
+
+	public Instant getStartOfSessionForCurrentView()
+	{
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			return startUpTime;
+		}
+		else
+		{
+			return accountCache.get(accountCurrentlyViewed).getSessionStartTime();
+		}
+	}
+
+	public void handleSessionTimeReset()
+	{
+		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
+		{
+			accountCache.get(accountCurrentlyViewed).setAccumulatedSessionTime(Duration.ZERO);
+			accountCache.get(accountCurrentlyViewed).setSessionStartTime(Instant.now());
+		}
+	}
+
 
 	@Provides
 	FlippingConfig provideConfig(ConfigManager configManager)
@@ -683,8 +745,9 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
+			thisClientLastStored = displayName;
 			TradePersister.storeTrades(displayName, accountCache.get(displayName));
-			log.info("successfully stored trades");
+			log.info("successfully stored trades for {}", displayName);
 		}
 		catch (IOException e)
 		{
@@ -783,35 +846,39 @@ public class FlippingPlugin extends Plugin
 	 */
 	public void onDirectoryUpdate(String fileName)
 	{
-
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		if (displayNameOfChangedAcc.equals(currentlyLoggedInAccount))
+		if (displayNameOfChangedAcc.equals(thisClientLastStored))
 		{
-			log.info("not reloading on directory update as this client caused the directory update");
+			log.info("not reloading data for {} into the cache as this client was the last one to store it", displayNameOfChangedAcc);
+			thisClientLastStored = null;
 			return;
 		}
 
-		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
-		if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
-		{
-			masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
-		}
+		executor.schedule(() -> {
+			log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
 
-		if (accountCache.keySet().size() > 1)
-		{
-			masterPanel.getAccountSelector().setVisible(true);
-		}
+			accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+			if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
+			{
+				masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
+			}
 
-		updateSinceLastAccountWideBuild = true;
+			if (accountCache.keySet().size() > 1)
+			{
+				masterPanel.getAccountSelector().setVisible(true);
+			}
 
-		//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
-		{
-			List<FlippingItem> updatedList = getTradesForCurrentView();
-			flippingPanel.rebuild(updatedList);
-			statPanel.rebuild(updatedList);
-		}
+			updateSinceLastAccountWideBuild = true;
+
+			//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
+			{
+				List<FlippingItem> updatedList = getTradesForCurrentView();
+				flippingPanel.rebuild(updatedList);
+				statPanel.rebuild(updatedList);
+			}
+		}, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -880,6 +947,8 @@ public class FlippingPlugin extends Plugin
 	{
 		if (currentlyFlipping())
 		{
+			Instant lastSessionTimeUpdate = accountCache.get(currentlyLoggedInAccount).getLastSessionTimeUpdate();
+			Duration accumulatedSessionTime = accountCache.get(currentlyLoggedInAccount).getAccumulatedSessionTime();
 			if (lastSessionTimeUpdate == null)
 			{
 				lastSessionTimeUpdate = Instant.now();
@@ -887,12 +956,18 @@ public class FlippingPlugin extends Plugin
 			long millisSinceLastSessionTimeUpdate = Instant.now().toEpochMilli() - lastSessionTimeUpdate.toEpochMilli();
 			accumulatedSessionTime = accumulatedSessionTime.plus(millisSinceLastSessionTimeUpdate, ChronoUnit.MILLIS);
 			lastSessionTimeUpdate = Instant.now();
-			statPanel.updateSessionTimeDisplay(accumulatedSessionTime);
+			accountCache.get(currentlyLoggedInAccount).setAccumulatedSessionTime(accumulatedSessionTime);
+			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(lastSessionTimeUpdate);
+
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(currentlyLoggedInAccount))
+			{
+				statPanel.updateSessionTimeDisplay(getAccumulatedTimeForCurrentView());
+			}
 		}
 
-		else
+		else if (currentlyLoggedInAccount != null)
 		{
-			lastSessionTimeUpdate = null;
+			accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		}
 	}
 
