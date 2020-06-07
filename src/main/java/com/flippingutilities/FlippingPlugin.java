@@ -159,6 +159,9 @@ public class FlippingPlugin extends Plugin
 
 	private Instant startUpTime = Instant.now();
 
+	//name of the account this client last stored trades for.
+	private String thisClientLastStored;
+
 	@Override
 	protected void startUp()
 	{
@@ -593,10 +596,14 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				trades.remove(item);
+				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
+
+
 		}
 		else
 		{
@@ -734,6 +741,7 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
+			thisClientLastStored = displayName;
 			TradePersister.storeTrades(displayName, accountCache.get(displayName));
 			log.info("successfully stored trades for {}", displayName);
 		}
@@ -834,29 +842,36 @@ public class FlippingPlugin extends Plugin
 	 */
 	public void onDirectoryUpdate(String fileName)
 	{
-
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
-		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
-		{
-			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
+		if (displayNameOfChangedAcc.equals(thisClientLastStored)) {
+			log.info("not reloading data for {} into the cache as this client was the last one to store it", displayNameOfChangedAcc);
+			thisClientLastStored = null;
+			return;
 		}
+		executor.schedule(() -> {
+			log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
+			accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+			if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
+			{
+				tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
+			}
 
-		if (accountCache.keySet().size() > 1)
-		{
-			tabManager.getViewSelector().setVisible(true);
-		}
+			if (accountCache.keySet().size() > 1)
+			{
+				tabManager.getViewSelector().setVisible(true);
+			}
 
-		updateSinceLastAccountWideBuild = true;
+			updateSinceLastAccountWideBuild = true;
 
-		//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
-		{
-			List<FlippingItem> updatedList = getTradesForCurrentView();
-			flippingPanel.rebuild(updatedList);
-			statPanel.rebuild(updatedList);
-		}
+			//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
+			{
+				List<FlippingItem> updatedList = getTradesForCurrentView();
+				flippingPanel.rebuild(updatedList);
+				statPanel.rebuild(updatedList);
+			}
+		}, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
