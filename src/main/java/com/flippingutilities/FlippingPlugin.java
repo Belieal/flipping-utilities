@@ -746,7 +746,13 @@ public class FlippingPlugin extends Plugin
 		try
 		{
 			thisClientLastStored = displayName;
-			TradePersister.storeTrades(displayName, accountCache.get(displayName));
+			AccountData data = accountCache.get(displayName);
+			if (data == null) {
+				log.info("for an unknown reason the data associated with {} has been set to null. Storing" +
+					"an empty AccountData object instead.", displayName);
+				data = new AccountData();
+			}
+			TradePersister.storeTrades(displayName, data);
 			log.info("successfully stored trades for {}", displayName);
 		}
 		catch (IOException e)
