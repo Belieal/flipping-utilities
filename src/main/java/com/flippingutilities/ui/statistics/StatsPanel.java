@@ -222,7 +222,7 @@ public class StatsPanel extends JPanel
 					final int result = JOptionPane.showOptionDialog(resetIcon, "<html>Are you sure you want to reset the statistics?" +
 							"<br>This only resets the statistics within the time span</html>",
 						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
-						null, new String[]{"Yes", "No"}, "No");
+						null, new String[] {"Yes", "No"}, "No");
 
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
@@ -377,7 +377,7 @@ public class StatsPanel extends JPanel
 					//Display warning message
 					final int result = JOptionPane.showOptionDialog(resetIcon, "Are you sure you want to reset the session time?",
 						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
-						null, new String[]{"Yes", "No"}, "No");
+						null, new String[] {"Yes", "No"}, "No");
 
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
@@ -512,6 +512,7 @@ public class StatsPanel extends JPanel
 
 	/**
 	 * Updates the display of the total profit value along with the display of sub panels
+	 *
 	 * @param tradesList
 	 */
 	public void updateDisplays(List<FlippingItem> tradesList)
@@ -632,10 +633,12 @@ public class StatsPanel extends JPanel
 		String profitString;
 		//i think this happens when the profit is absurdly high because the session time is very low (offers come in
 		//just as you start a new session)
-		try {
+		try
+		{
 			profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		}
-		catch (ArrayIndexOutOfBoundsException e) {
+		catch (ArrayIndexOutOfBoundsException e)
+		{
 			profitString = "NA";
 		}
 		hourlyProfitVal.setText(profitString + " gp/hr");
@@ -927,7 +930,8 @@ public class StatsPanel extends JPanel
 		}
 	}
 
-	public String getSelectedTimeInterval() {
+	public String getSelectedTimeInterval()
+	{
 		return (String) timeIntervalDropdown.getSelectedItem();
 	}
 

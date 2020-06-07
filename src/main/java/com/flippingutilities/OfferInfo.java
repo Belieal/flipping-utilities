@@ -168,7 +168,8 @@ public class OfferInfo
 			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
 	}
 
-	public static OfferInfo fromGrandExchangeEvent(GrandExchangeOfferChanged event) {
+	public static OfferInfo fromGrandExchangeEvent(GrandExchangeOfferChanged event)
+	{
 		GrandExchangeOffer offer = event.getOffer();
 
 		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT

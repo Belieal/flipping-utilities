@@ -177,6 +177,11 @@ public class TradePersister
 		log.info("loading data for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
 		AccountData accountData = loadFromFile(accountFile);
+		if (accountData == null)
+		{
+			log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
+			accountData = new AccountData();
+		}
 		return accountData;
 	}
 
