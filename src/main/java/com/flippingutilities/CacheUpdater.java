@@ -46,10 +46,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Updates the cache in real time as files are changed in the directory being monitored. It monitors the directory
- * where the accounts' data is stored and fires a callback when it detects a change for an account. The reason it
- * accepts a callback is so that this class is not tied to any specific component's way of handling a file change. This
- * decoupling allows the cache updater to be used easily by any component that wishes to fire an action when a file
- * for an account is changed.
+ * where the accounts' data is stored and fires any registered callbacks when it detects a change for an account.
+ * The reason it accepts callbacks is so that this class is not tied to any specific component's way of handling a file
+ * change. This decoupling allows the cache updater to be used easily by any component that wishes to fire an action
+ * when a file for an account is changed.
  */
 @Slf4j
 public class CacheUpdater

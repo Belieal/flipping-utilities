@@ -29,9 +29,9 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
-import static com.flippingutilities.ui.UIUtilities.ICON_SIZE;
-import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
-import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -228,11 +228,11 @@ public class FlippingPanel extends JPanel
 
 		//To switch between greeting and items panels
 		cardLayout.show(centerPanel, WELCOME_PANEL);
-
 		container.add(topPanel, BorderLayout.NORTH);
 		container.add(centerPanel, BorderLayout.CENTER);
 
 		add(container, BorderLayout.CENTER);
+
 	}
 
 	public void rebuild(List<FlippingItem> flippingItems)
