@@ -30,9 +30,9 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
 import com.flippingutilities.OfferInfo;
-import com.flippingutilities.ui.UIUtilities;
-import static com.flippingutilities.ui.UIUtilities.RESET_HOVER_ICON;
-import static com.flippingutilities.ui.UIUtilities.RESET_ICON;
+import com.flippingutilities.ui.utilities.UIUtilities;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -918,11 +918,6 @@ public class StatsPanel extends JPanel
 		return result;
 	}
 
-	public String getSelectedTimeInterval()
-	{
-		return (String) timeIntervalDropdown.getSelectedItem();
-	}
-
 	public void setSelectedTimeInterval(String interval)
 	{
 		if (interval == null)
@@ -933,6 +928,11 @@ public class StatsPanel extends JPanel
 		{
 			timeIntervalDropdown.setSelectedItem(interval);
 		}
+	}
+
+	public String getSelectedTimeInterval()
+	{
+		return (String) timeIntervalDropdown.getSelectedItem();
 	}
 
 }

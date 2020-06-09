@@ -24,11 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui;
+package com.flippingutilities.ui.utilities;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
@@ -43,7 +44,9 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +90,14 @@ public class UIUtilities
 
 	public static final ImageIcon DELETE_ICON;
 
+	public static final ImageIcon SETTINGS_ICON;
+
+	public static final ImageIcon ACCOUNT_ICON;
+
+	public static final ImageIcon DELETE_BUTTON;
+
+	public static final ImageIcon HIGHLIGHT_DELETE_BUTTON;
+
 	static
 	{
 		final BufferedImage openIcon = ImageUtil
@@ -102,6 +113,18 @@ public class UIUtilities
 		final BufferedImage deleteIcon = ImageUtil
 			.getResourceStreamFromClass(FlippingPlugin.class, "/delete_icon.png");
 		DELETE_ICON = new ImageIcon(deleteIcon);
+
+		final BufferedImage settingsIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/settings_icon.png");
+		SETTINGS_ICON = new ImageIcon(settingsIcon);
+
+		final BufferedImage accountIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/gnome.png");
+		ACCOUNT_ICON = new ImageIcon(accountIcon);
+
+		final BufferedImage deleteButton = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/deleteButton.png");
+		DELETE_BUTTON = new ImageIcon(deleteButton);
+
+		final BufferedImage highlightDeleteButton = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/highlightDeleteButton.png");
+		HIGHLIGHT_DELETE_BUTTON = new ImageIcon(highlightDeleteButton);
 	}
 
 	/**
@@ -364,5 +387,14 @@ public class UIUtilities
 		popupMenu.add(openPlatinumTokens);
 
 		return popupMenu;
+	}
+
+	public static JDialog createModalFromPanel(Component parent, JPanel panel)
+	{
+		JDialog modal = new JDialog();
+		modal.setSize(new Dimension(panel.getSize()));
+		modal.add(panel);
+		modal.setLocationRelativeTo(parent);
+		return modal;
 	}
 }

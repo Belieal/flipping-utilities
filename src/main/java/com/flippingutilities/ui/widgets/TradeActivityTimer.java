@@ -29,7 +29,7 @@ package com.flippingutilities.ui.widgets;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferInfo;
-import com.flippingutilities.ui.UIUtilities;
+import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

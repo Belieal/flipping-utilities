@@ -26,7 +26,8 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.ui.TabManager;
+import com.flippingutilities.ui.MasterPanel;
+import com.flippingutilities.ui.SettingsPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
@@ -127,9 +128,10 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
-	private OfferEditor flippingWidget;
 
-	private TabManager tabManager;
+	private OfferEditor flippingWidget;
+	private SettingsPanel settingsPanel;
+	private MasterPanel masterPanel;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -164,22 +166,26 @@ public class FlippingPlugin extends Plugin
 	private ArrayList<TradeActivityTimer> timers = new ArrayList<>();
 	private Instant startUpTime = Instant.now();
 
+	//name of the account this client last stored trades for.
+	private String thisClientLastStored;
+
 	@Override
 	protected void startUp()
 	{
 		//Main visuals.
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
+		settingsPanel = new SettingsPanel(this);
 
-		//Represents the panel navigation that switches between panels using tabs at the top.
-		tabManager = new TabManager(this::changeView, flippingPanel, statPanel);
+		//holds components that are always present (account selector dropdown, flipping panel, stats panel, etc)
+		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
 
 		// I wanted to put it below the GE plugin, but can't as the GE and world switcher button have the same priority...
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
 			.priority(3)
-			.panel(tabManager)
+			.panel(masterPanel)
 			.build();
 
 		clientToolbar.addNavigation(navButton);
@@ -205,6 +211,13 @@ public class FlippingPlugin extends Plugin
 			cacheUpdater.start();
 
 			repeatingTasks = setupRepeatingTasks();
+
+			//this is only relevant if the user downloads/enables the plugin after they login.
+			if (client.getGameState() == GameState.LOGGED_IN)
+			{
+				log.info("user is already logged in when they downloaded/enabled the plugin");
+				onLoggedInGameState();
+			}
 
 			//stops scheduling this task
 			return true;
@@ -250,45 +263,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			//keep scheduling this task until it returns true (when we have access to a display name)
-			clientThread.invokeLater(() ->
-			{
-				//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
-				//want to keep scheduling this task.
-				if (client.getGameState() != GameState.LOGGED_IN)
-				{
-					return true;
-				}
-
-				final Player player = client.getLocalPlayer();
-
-				//player is null, so we can't get the display name so, return false, which will schedule
-				//the task on the client thread again.
-				if (player == null)
-				{
-					return false;
-				}
-
-				final String name = player.getName();
-
-				if (name == null)
-				{
-					return false;
-				}
-
-				if (name.equals(""))
-				{
-					return false;
-				}
-				previouslyLoggedIn = true;
-
-				if (currentlyLoggedInAccount == null)
-				{
-					handleLogin(name);
-				}
-				//stops scheduling this task
-				return true;
-			});
+			onLoggedInGameState();
 		}
 
 		else if (event.getGameState() == GameState.LOGIN_SCREEN && previouslyLoggedIn)
@@ -299,6 +274,49 @@ public class FlippingPlugin extends Plugin
 				handleLogout();
 			}
 		}
+	}
+
+	private void onLoggedInGameState()
+	{
+		//keep scheduling this task until it returns true (when we have access to a display name)
+		clientThread.invokeLater(() ->
+		{
+			//we return true in this case as something went wrong and somehow the state isn't logged in, so we don't
+			//want to keep scheduling this task.
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				return true;
+			}
+
+			final Player player = client.getLocalPlayer();
+
+			//player is null, so we can't get the display name so, return false, which will schedule
+			//the task on the client thread again.
+			if (player == null)
+			{
+				return false;
+			}
+
+			final String name = player.getName();
+
+			if (name == null)
+			{
+				return false;
+			}
+
+			if (name.equals(""))
+			{
+				return false;
+			}
+			previouslyLoggedIn = true;
+
+			if (currentlyLoggedInAccount == null)
+			{
+				handleLogin(name);
+			}
+			//stops scheduling this task
+			return true;
+		});
 	}
 
 	public void handleLogin(String displayName)
@@ -314,7 +332,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			accountCache.put(displayName, new AccountData());
-			tabManager.getViewSelector().addItem(displayName);
+			masterPanel.getAccountSelector().addItem(displayName);
 		}
 
 		currentlyLoggedInAccount = displayName;
@@ -326,12 +344,12 @@ public class FlippingPlugin extends Plugin
 
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getViewSelector().setVisible(true);
+			masterPanel.getAccountSelector().setVisible(true);
 		}
 		accountCurrentlyViewed = displayName;
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
-		tabManager.getViewSelector().setSelectedItem(displayName);
+		masterPanel.getAccountSelector().setSelectedItem(displayName);
 	}
 
 	public void handleLogout()
@@ -368,19 +386,19 @@ public class FlippingPlugin extends Plugin
 	{
 		//adding an item causes the event listener (changeView) to fire which causes stat panel
 		//and flipping panel to rebuild. I think this only happens on the first item you add.
-		tabManager.getViewSelector().addItem(ACCOUNT_WIDE);
+		masterPanel.getAccountSelector().addItem(ACCOUNT_WIDE);
 
-		accountCache.keySet().forEach(displayName -> tabManager.getViewSelector().addItem(displayName));
+		accountCache.keySet().forEach(displayName -> masterPanel.getAccountSelector().addItem(displayName));
 
 		//sets the account selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
-			tabManager.getViewSelector().setVisible(true);
+			masterPanel.getAccountSelector().setVisible(true);
 		}
 		else
 		{
-			tabManager.getViewSelector().setVisible(false);
+			masterPanel.getAccountSelector().setVisible(false);
 		}
 	}
 
@@ -590,10 +608,14 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				trades.remove(item);
+				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
+
+
 		}
 		else
 		{
@@ -711,7 +733,15 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			TradePersister.storeTrades(displayName, accountCache.get(displayName));
+			thisClientLastStored = displayName;
+			AccountData data = accountCache.get(displayName);
+			if (data == null)
+			{
+				log.info("for an unknown reason the data associated with {} has been set to null. Storing" +
+					"an empty AccountData object instead.", displayName);
+				data = new AccountData();
+			}
+			TradePersister.storeTrades(displayName, data);
 			log.info("successfully stored trades for {}", displayName);
 		}
 		catch (IOException e)
@@ -811,29 +841,40 @@ public class FlippingPlugin extends Plugin
 	 */
 	public void onDirectoryUpdate(String fileName)
 	{
-
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
-		if (!tabManager.getViewSelectorItems().contains(displayNameOfChangedAcc))
+		if (displayNameOfChangedAcc.equals(thisClientLastStored))
 		{
-			tabManager.getViewSelector().addItem(displayNameOfChangedAcc);
+			log.info("not reloading data for {} into the cache as this client was the last one to store it", displayNameOfChangedAcc);
+			thisClientLastStored = null;
+			return;
 		}
 
-		if (accountCache.keySet().size() > 1)
+		executor.schedule(() ->
 		{
-			tabManager.getViewSelector().setVisible(true);
-		}
+			log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
 
-		updateSinceLastAccountWideBuild = true;
+			accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+			if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
+			{
+				masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
+			}
 
-		//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
-		{
-			List<FlippingItem> updatedList = getTradesForCurrentView();
-			flippingPanel.rebuild(updatedList);
-			statPanel.rebuild(updatedList);
-		}
+			if (accountCache.keySet().size() > 1)
+			{
+				masterPanel.getAccountSelector().setVisible(true);
+			}
+
+			updateSinceLastAccountWideBuild = true;
+
+			//rebuild if you are currently looking at the account who's cache just got updated or the account wide view.
+			if (accountCurrentlyViewed.equals(ACCOUNT_WIDE) || accountCurrentlyViewed.equals(displayNameOfChangedAcc))
+			{
+				List<FlippingItem> updatedList = getTradesForCurrentView();
+				flippingPanel.rebuild(updatedList);
+				statPanel.rebuild(updatedList);
+			}
+		}, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -994,6 +1035,22 @@ public class FlippingPlugin extends Plugin
 		{
 			highlightOffer();
 		}
+	}
+
+	public void deleteAccount(String displayName)
+	{
+		log.info("deleting all data for {}", displayName);
+		accountCache.remove(displayName);
+		if (accountCurrentlyViewed.equals(displayName))
+		{
+			masterPanel.getAccountSelector().setSelectedItem(accountCache.keySet().toArray()[0]);
+		}
+		TradePersister.deleteFile(displayName + ".json");
+		if (accountCache.keySet().size() < 2)
+		{
+			masterPanel.getAccountSelector().setVisible(false);
+		}
+		masterPanel.getAccountSelector().removeItem(displayName);
 	}
 
 	@Subscribe
