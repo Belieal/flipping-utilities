@@ -28,9 +28,10 @@ package com.flippingutilities;
 
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.SettingsPanel;
-import com.flippingutilities.ui.flipping.FlippingItemWidget;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.widgets.OfferEditor;
+import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -60,11 +61,13 @@ import net.runelite.api.VarClientInt;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -125,10 +128,10 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
+
+	private OfferEditor flippingWidget;
 	private SettingsPanel settingsPanel;
 	private MasterPanel masterPanel;
-
-	private FlippingItemWidget flippingWidget;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -160,6 +163,7 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
+	private ArrayList<TradeActivityTimer> timers = new ArrayList<>();
 	private Instant startUpTime = Instant.now();
 
 	//name of the account this client last stored trades for.
@@ -218,6 +222,24 @@ public class FlippingPlugin extends Plugin
 			//stops scheduling this task
 			return true;
 		});
+	}
+
+	@Override
+	protected void shutDown()
+	{
+		if (repeatingTasks != null)
+		{
+			//Stop all timers
+			repeatingTasks.cancel(true);
+			repeatingTasks = null;
+
+			for (TradeActivityTimer timer : timers)
+			{
+				timer.stopTimerUpdates();
+			}
+		}
+
+		clientToolbar.removeNavigation(navButton);
 	}
 
 	@Subscribe(priority = 101)
@@ -328,7 +350,6 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		masterPanel.getAccountSelector().setSelectedItem(displayName);
-
 	}
 
 	public void handleLogout()
@@ -404,19 +425,6 @@ public class FlippingPlugin extends Plugin
 			}
 
 		}, 100, 1000, TimeUnit.MILLISECONDS);
-	}
-
-	@Override
-	protected void shutDown()
-	{
-		if (repeatingTasks != null)
-		{
-			//Stop all timers
-			repeatingTasks.cancel(true);
-			repeatingTasks = null;
-		}
-
-		clientToolbar.removeNavigation(navButton);
 	}
 
 	/**
@@ -699,31 +707,11 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
-	{
-		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
-			client.getVar(CURRENT_GE_ITEM) != -1 && client.getVar(CURRENT_GE_ITEM) != 0)
-		{
-			highlightOffer();
-		}
-	}
-
-	@Subscribe
 	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
 	{
 		Widget widget = event.getWidget();
 		// If the back button is no longer visible, we know we aren't in the offer setup.
 		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
-		{
-			flippingPanel.dehighlightItem();
-		}
-	}
-
-	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
-	{
-		// The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
-		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
 			flippingPanel.dehighlightItem();
 		}
@@ -927,7 +915,6 @@ public class FlippingPlugin extends Plugin
 		updateSinceLastAccountWideBuild = false;
 		prevBuiltAccountWideList = mergedItems;
 		return mergedItems;
-
 	}
 
 	/**
@@ -979,6 +966,77 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Rebuilds the trade activity timers using updateTimer().
+	 * If no timers have been built yet, it initializes and sets up slot-timer relations.
+	 */
+	private void rebuildTradeTimer()
+	{
+		if (timers.isEmpty())
+		{
+			//Initialize the timers with their respective offer slots
+			for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+			{
+				//Get the offer slots from the window container
+				//We add one to the index, as the first widget is the text above the offer slots
+				Widget offerSlot = client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()[slotIndex + 1];
+
+				if (offerSlot == null)
+				{
+					return;
+				}
+
+				TradeActivityTimer timer = new TradeActivityTimer(offerSlot, clientThread, slotIndex, this, executor, client);
+
+				timer.updateTimer();
+				timers.add(timer);
+			}
+		}
+		else
+		{
+			clientThread.invokeLater(() ->
+			{
+				//In case the last slot widgets got unloaded, set the new ones
+				for (TradeActivityTimer timer : timers)
+				{
+					timer.updateTimer();
+				}
+			});
+		}
+	}
+
+	@Subscribe
+	public void onScriptPostFired(ScriptPostFired event)
+	{
+		if (event.getScriptId() == 804)
+		{
+			//Fired after every GE offer slot redraw
+			//This seems to happen after any offer updates or if buttons are pressed inside the interface
+			//https://github.com/RuneStar/cs2-scripts/blob/a144f1dceb84c3efa2f9e90648419a11ee48e7a2/scripts/%5Bclientscript%2Cge_offers_switchpanel%5D.cs2
+			rebuildTradeTimer();
+		}
+	}
+
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
+		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
+		{
+			flippingPanel.dehighlightItem();
+		}
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
+			client.getVar(CURRENT_GE_ITEM) != -1 && client.getVar(CURRENT_GE_ITEM) != 0)
+		{
+			highlightOffer();
+		}
+	}
+
 	public void deleteAccount(String displayName)
 	{
 		log.info("deleting all data for {}", displayName);
@@ -1025,9 +1083,7 @@ public class FlippingPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-
-			flippingWidget = new FlippingItemWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
-
+			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
 
 			FlippingItem selectedItem = null;
 			//Check that if we've recorded any data for the item.
@@ -1049,11 +1105,11 @@ public class FlippingPlugin extends Plugin
 				{
 					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
 					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-					flippingWidget.showWidget("setCurrentQuantityInTrade", itemGELimit);
+					flippingWidget.update("setCurrentQuantityInTrade", itemGELimit);
 				}
 				else
 				{
-					flippingWidget.showWidget("setCurrentQuantityInTrade", selectedItem.remainingGeLimit());
+					flippingWidget.update("setCurrentQuantityInTrade", selectedItem.remainingGeLimit());
 				}
 			}
 			else if (chatInputText.equals("Set a price for each item:"))
@@ -1063,11 +1119,11 @@ public class FlippingPlugin extends Plugin
 					//No recorded data; hide the widget
 					if (selectedItem == null || selectedItem.getMarginCheckBuyPrice() == 0)
 					{
-						flippingWidget.showWidget("reset", 0);
+						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setBuyPrice", selectedItem.getMarginCheckBuyPrice());
+						flippingWidget.update("setBuyPrice", selectedItem.getMarginCheckBuyPrice());
 					}
 				}
 				else if (offerText.equals("Sell offer"))
@@ -1075,11 +1131,11 @@ public class FlippingPlugin extends Plugin
 					//No recorded data; hide the widget
 					if (selectedItem == null || selectedItem.getMarginCheckSellPrice() == 0)
 					{
-						flippingWidget.showWidget("reset", 0);
+						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.showWidget("setSellPrice", selectedItem.getMarginCheckSellPrice());
+						flippingWidget.update("setSellPrice", selectedItem.getMarginCheckSellPrice());
 					}
 				}
 			}

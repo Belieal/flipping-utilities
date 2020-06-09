@@ -32,8 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -47,7 +45,6 @@ import lombok.Setter;
  * of a panel which is then displayed.
  */
 @AllArgsConstructor
-@RequiredArgsConstructor
 public class FlippingItem
 {
 	@SerializedName("id")
@@ -56,7 +53,6 @@ public class FlippingItem
 
 	@SerializedName("name")
 	@Getter
-	@NonNull
 	private final String itemName;
 
 	@SerializedName("tGL")
@@ -90,7 +86,7 @@ public class FlippingItem
 	//An activity is described as a completed offer event.
 	@SerializedName("lAT")
 	@Getter
-	private Instant latestActivityTime = Instant.now();
+	private Instant latestActivityTime;
 
 	@SerializedName("sESI")
 	@Getter
@@ -109,8 +105,15 @@ public class FlippingItem
 
 	@SerializedName("fB")
 	@Getter
-	@NonNull
 	private String flippedBy;
+
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
+	{
+		this.itemId = itemId;
+		this.itemName = itemName;
+		this.totalGELimit = totalGeLimit;
+		this.flippedBy = flippedBy;
+	}
 
 	//utility for cloning an instant...
 	private Instant ci(Instant i)
@@ -215,6 +218,11 @@ public class FlippingItem
 		}
 
 
+	}
+
+	public Instant getLatestTradeUpdateBySlot(int slotIndex, boolean buyState, boolean completedOffer)
+	{
+		return history.getLatestTradeUpdateBySlot(getIntervalHistory(Instant.EPOCH), slotIndex, buyState, completedOffer);
 	}
 
 	public long currentProfit(List<OfferInfo> tradeList)

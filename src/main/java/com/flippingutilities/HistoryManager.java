@@ -236,6 +236,35 @@ public class HistoryManager
 		}
 	}
 
+	/**
+	 * Gets the latest trade update by the slot index parameter and buy state.
+	 * Can return null if tradeList doesn't contain any offers that contain the slotIndex or buyState.
+	 *
+	 * @param tradeList List of offers to get the latest trade time from
+	 * @param slotIndex Slot the trade needs to have been traded from
+	 * @param buyState  The state of the offers to get
+	 * @return Returns an instant of the latest trade update by slot, or null if no trades were found.
+	 */
+
+	public Instant getLatestTradeUpdateBySlot(List<OfferInfo> tradeList, int slotIndex, boolean buyState, boolean completedOffer)
+	{
+		Collections.reverse(tradeList);
+
+		OfferInfo result = tradeList.stream()
+			//Check that trade states, slotIndices and completed parameters match.
+			.filter(item -> (item.isBuy() == buyState) && (item.getSlot() == slotIndex) && (!completedOffer || item.isComplete()))
+			.findFirst()
+			.orElse(null);
+
+
+		if (result == null)
+		{
+			return null;
+		}
+
+		return result.getTime();
+	}
+
 	//TODO:
 	// return a summary, not just the profit. A summary will include the profit, and the currentQuantityInTrade of buys/sells
 	// and the individual prices (only if they are different)
@@ -306,7 +335,7 @@ public class HistoryManager
 	 * @param buyState  true will return offers that have been bought and false will return offers that have been sold.
 	 * @return A list of items either sold or bought over a period of time.
 	 */
-	private ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
+	public ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
 	{
 		ArrayList<OfferInfo> results = new ArrayList<>();
 

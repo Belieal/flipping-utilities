@@ -70,7 +70,7 @@ public class UIUtilities
 	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
 	private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
-	private static final String[] PARENTHESIS_EXCLUDED_WORDS = {"empty", "sk", "lg", "dark", "dusk", "light", "unf"};
+	private static final String[] PARENTHESIS_EXCLUDED_WORDS = {"empty", "sk", "lg", "dark", "dusk", "light", "unf", "uncharged", "wound", "full", "inactive"};
 	private static final NumberFormat PRECISE_DECIMAL_FORMATTER = new DecimalFormat(
 		"#,###.###",
 		DecimalFormatSymbols.getInstance(Locale.ENGLISH)
@@ -131,12 +131,34 @@ public class UIUtilities
 	 * Formats a duration into HH:MM:SS
 	 *
 	 * @param duration
-	 * @return a string in the format HH:MM:SS
+	 * @return Formatted (HH:MM:SS) string
 	 */
 	public static String formatDuration(Duration duration)
 	{
 		long seconds = duration.toMillis() / 1000;
 		return String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, (seconds % 60));
+	}
+
+	/**
+	 * Formats an instant into a duration between the parameter and now.
+	 *
+	 * @return Formatted (HH:MM:SS) string
+	 */
+	public static String formatDuration(Instant instant)
+	{
+		return formatDuration(Duration.between(instant, Instant.now()));
+	}
+
+	/**
+	 * Formats the duration between one instant to an end instant.
+	 *
+	 * @param startInstant Start of duration
+	 * @param endInstant   End of duration
+	 * @return Formatted (HH:MM:SS) string
+	 */
+	public static String formatDuration(Instant startInstant, Instant endInstant)
+	{
+		return formatDuration(Duration.between(startInstant, endInstant));
 	}
 
 	/**
