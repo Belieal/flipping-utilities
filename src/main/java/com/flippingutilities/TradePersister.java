@@ -166,6 +166,11 @@ public class TradePersister
 			String displayName = f.getName().split("\\.")[0];
 			log.info("loading data for {}", displayName);
 			AccountData accountData = loadFromFile(f);
+			if (accountData == null)
+			{
+				log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
+				accountData = new AccountData();
+			}
 			accountsData.put(displayName, accountData);
 		}
 
