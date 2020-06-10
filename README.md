@@ -22,6 +22,7 @@ If you notice any bugs or have any suggestions, let us know by making an [issue]
   * [v1.2](#v12)
   * [v1.3 - Statistics Tab update](#v13---statistics-tab-update)
     - [v1.3.1 - Multi-client support and GE tracking links](#v131---multi-client-support-and-ge-tracking-links)
+    - [v1.3.2 - Account deletion and bug fixes](#v132---account-deletion-and-bug-fixes)
 
 
 # Features
