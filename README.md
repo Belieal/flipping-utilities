@@ -190,4 +190,14 @@ There may be some failed URLs when it comes to Platinum Tokens, particularly wit
 
 - Fixed errors causing trades not to register properly.
 
+### v1.3.2 - Account deletion and bug fixes
+
+- This update adds a new settings menu to the account selector. For now, you'll only be able to delete your account's data from here, but we plan on creating more things to include on this panel.
+
+- We've significantly improved the accuracy of the session timer.
+
+- Btw's will no longer be picked up by the account cacher since they stand alone and cannot be expected to use the GE.
+
+- We're also fixing some critical bugs that caused issues with registering and storing trades. We've not fully found a fix for the bug yet, however we've significantly reduced its disruptive behavior.
+
 *If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or PM me on Discord (#Belieal6600)! I'm also happy to answer any questions that you may have. :)*
