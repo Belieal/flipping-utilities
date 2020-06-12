@@ -116,6 +116,17 @@ public class OfferInfo
 	}
 
 	/**
+	 * When we first place an offer for a slot we get an offer event that has a quantity traded of 0. This offer marks
+	 * the tick the offer was placed. The reason we need to also check if it wasn't a complete offer is because you can
+	 * cancel a buy or a sell, and provided you didn't buy or sell anything, the quantity in the offer can be 0, but its
+	 * not the start of the offer.
+	 *
+	 * @return boolean value representing whether the offer is a start of a trade.
+	 */
+	public boolean isStartOfTrade() {
+		return currentQuantityInTrade == 0 && !isComplete();
+	}
+	/**
 	 * Returns an offerInfo object with the currentQuantityInTrade sold/bought the amount of items sold/bought since
 	 * the last event, rather than current currentQuantityInTrade sold/bought overall in the trade. This makes it
 	 * easier to calculate the profit.
