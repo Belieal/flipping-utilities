@@ -163,7 +163,7 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
-	private ArrayList<TradeActivityTimer> timers = new ArrayList<>();
+	private List<TradeActivityTimer> slotTimers = new ArrayList<>();
 	private Instant startUpTime = Instant.now();
 
 	//name of the account this client last stored trades for.
@@ -210,6 +210,8 @@ public class FlippingPlugin extends Plugin
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
 			cacheUpdater.start();
 
+			slotTimers = setupSlotTimers();
+
 			repeatingTasks = setupRepeatingTasks();
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
@@ -229,14 +231,9 @@ public class FlippingPlugin extends Plugin
 	{
 		if (repeatingTasks != null)
 		{
-			//Stop all timers
+			//Stop all slotTimers
 			repeatingTasks.cancel(true);
 			repeatingTasks = null;
-
-			for (TradeActivityTimer timer : timers)
-			{
-				timer.stopTimerUpdates();
-			}
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -378,6 +375,16 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	private List<TradeActivityTimer> setupSlotTimers()
+	{
+		ArrayList<TradeActivityTimer> slotTimers = new ArrayList<>();
+		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+		{
+			slotTimers.add(new TradeActivityTimer(this, client, slotIndex));
+		}
+		return slotTimers;
+	}
+
 	/**
 	 * sets up the account selector dropdown that lets you change which account's trade list you
 	 * are looking at.
@@ -414,6 +421,7 @@ public class FlippingPlugin extends Plugin
 		{
 			try
 			{
+				slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer()));
 				flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 				flippingPanel.updateActivePanelsGePropertiesDisplay();
 				statPanel.updateTimeDisplay();
@@ -509,15 +517,16 @@ public class FlippingPlugin extends Plugin
 
 		Map<Integer, OfferInfo> loggedInAccsLastOffers = accountCache.get(currentlyLoggedInAccount).getLastOffers();
 
-		//this is always the start of any offer (when you first put in an offer), we use these offers to record when an
-		//offer was placed. Then, when an offer completes we can see how many ticks it took, thus determining whether it
-		//was a margin check or not.
+
+		//this always occurs when you first place an offer. We use these offers to record when an offer was placed. When
+		//an offer completes we can see how many ticks it took, thus determining whether it was a margin check or not.
 		if (clonedNewOffer.getCurrentQuantityInTrade() == 0)
 		{
 			//we need to delete the history for the slot in this case so when the user puts in another offer after
 			//cancelling, it doesn't ignore the newly generated "quantity of 0" event as a duplicate like we get on login.
 			if (clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL)
 			{
+				slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
 				loggedInAccsLastOffers.remove(clonedNewOffer.getSlot());
 				return true;
 			}
@@ -531,6 +540,8 @@ public class FlippingPlugin extends Plugin
 					return true;
 				}
 			}
+
+			slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
 			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer); //tickSinceFirstOffer is 0 here
 			return true;
 		}
@@ -564,6 +575,7 @@ public class FlippingPlugin extends Plugin
 		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
+		slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
 		return false; //not a bad event
 	}
 
@@ -966,42 +978,28 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	/**
-	 * Rebuilds the trade activity timers using updateTimer().
-	 * If no timers have been built yet, it initializes and sets up slot-timer relations.
-	 */
+
 	private void rebuildTradeTimer()
 	{
-		if (timers.isEmpty())
+		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
 		{
-			//Initialize the timers with their respective offer slots
-			for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+			TradeActivityTimer timer = slotTimers.get(slotIndex);
+
+			//Get the offer slots from the window container
+			//We add one to the index, as the first widget is the text above the offer slots
+			Widget offerSlot = client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()[slotIndex + 1];
+
+			if (offerSlot == null)
 			{
-				//Get the offer slots from the window container
-				//We add one to the index, as the first widget is the text above the offer slots
-				Widget offerSlot = client.getWidget(WidgetID.GRAND_EXCHANGE_GROUP_ID, 5).getStaticChildren()[slotIndex + 1];
-
-				if (offerSlot == null)
-				{
-					return;
-				}
-
-				TradeActivityTimer timer = new TradeActivityTimer(offerSlot, clientThread, slotIndex, this, executor, client);
-
-				timer.updateTimer();
-				timers.add(timer);
+				return;
 			}
-		}
-		else
-		{
-			clientThread.invokeLater(() ->
+
+			if (timer.getSlotWidget() == null)
 			{
-				//In case the last slot widgets got unloaded, set the new ones
-				for (TradeActivityTimer timer : timers)
-				{
-					timer.updateTimer();
-				}
-			});
+				timer.setWidget(offerSlot);
+			}
+
+			clientThread.invokeLater(timer::updateTimer);
 		}
 	}
 
