@@ -220,11 +220,6 @@ public class FlippingItem
 
 	}
 
-	public Instant getLatestTradeUpdateBySlot(int slotIndex, boolean buyState, boolean completedOffer)
-	{
-		return history.getLatestTradeUpdateBySlot(getIntervalHistory(Instant.EPOCH), slotIndex, buyState, completedOffer);
-	}
-
 	public long currentProfit(List<OfferInfo> tradeList)
 	{
 		return history.currentProfit(tradeList);

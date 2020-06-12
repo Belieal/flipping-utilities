@@ -237,35 +237,6 @@ public class HistoryManager
 	}
 
 	/**
-	 * Gets the latest trade update by the slot index parameter and buy state.
-	 * Can return null if tradeList doesn't contain any offers that contain the slotIndex or buyState.
-	 *
-	 * @param tradeList List of offers to get the latest trade time from
-	 * @param slotIndex Slot the trade needs to have been traded from
-	 * @param buyState  The state of the offers to get
-	 * @return Returns an instant of the latest trade update by slot, or null if no trades were found.
-	 */
-
-	public Instant getLatestTradeUpdateBySlot(List<OfferInfo> tradeList, int slotIndex, boolean buyState, boolean completedOffer)
-	{
-		Collections.reverse(tradeList);
-
-		OfferInfo result = tradeList.stream()
-			//Check that trade states, slotIndices and completed parameters match.
-			.filter(item -> (item.isBuy() == buyState) && (item.getSlot() == slotIndex) && (!completedOffer || item.isComplete()))
-			.findFirst()
-			.orElse(null);
-
-
-		if (result == null)
-		{
-			return null;
-		}
-
-		return result.getTime();
-	}
-
-	/**
 	 * Calculates profit for a list of trades made with this item by counting the expenses and revenues
 	 * accrued over these trades and figuring out the difference in value.
 	 *
