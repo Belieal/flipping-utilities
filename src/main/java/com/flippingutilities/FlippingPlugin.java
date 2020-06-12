@@ -212,7 +212,7 @@ public class FlippingPlugin extends Plugin
 
 			slotTimers = setupSlotTimers();
 
-			setupRepeatingTasks();
+			repeatingTasks = setupRepeatingTasks();
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
 			if (client.getGameState() == GameState.LOGGED_IN)
@@ -220,7 +220,6 @@ public class FlippingPlugin extends Plugin
 				log.info("user is already logged in when they downloaded/enabled the plugin");
 				onLoggedInGameState();
 			}
-
 
 			//stops scheduling this task
 			return true;
@@ -416,9 +415,9 @@ public class FlippingPlugin extends Plugin
 	 *
 	 * @return a future object that can be used to cancel the tasks
 	 */
-	public void setupRepeatingTasks()
+	public ScheduledFuture setupRepeatingTasks()
 	{
-		repeatingTasks = executor.scheduleAtFixedRate(() ->
+		return executor.scheduleAtFixedRate(() ->
 		{
 			try
 			{
