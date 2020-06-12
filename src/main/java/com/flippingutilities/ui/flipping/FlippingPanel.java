@@ -29,6 +29,7 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
+import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -38,6 +39,7 @@ import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -92,13 +95,17 @@ public class FlippingPanel extends JPanel
 	public final CardLayout cardLayout = new CardLayout();
 
 	@Getter
-	public final JPanel centerPanel = new JPanel(cardLayout);
+	public final JPanel flippingItemContainer = new JPanel(cardLayout);
 
 	//Keeps track of all items currently displayed on the panel.
 	private ArrayList<FlippingItemPanel> activePanels = new ArrayList<>();
 
 	@Getter
 	JLabel resetIcon;
+
+	@Getter
+	@Setter
+	private boolean itemHighlighted = false;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
@@ -110,6 +117,7 @@ public class FlippingPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
+		//Constraints for item list
 		constraints.fill = GridBagConstraints.HORIZONTAL;
 		constraints.weightx = 1;
 		constraints.gridx = 0;
@@ -117,7 +125,7 @@ public class FlippingPanel extends JPanel
 
 		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
-		container.setLayout(new BorderLayout(0, 5));
+		container.setLayout(new BorderLayout(0, 2));
 		container.setBorder(new EmptyBorder(0, 0, 5, 0));
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -126,6 +134,7 @@ public class FlippingPanel extends JPanel
 		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
 		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
+		//Wrap the flipping item panel with the scroll wrapper to ensure scrolling capabilities
 		JPanel wrapper = new JPanel(new BorderLayout());
 		wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		wrapper.add(flippingItemsPanel, BorderLayout.NORTH);
@@ -137,9 +146,9 @@ public class FlippingPanel extends JPanel
 
 		//Search bar beneath the tab manager.
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
+		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 32));
 		searchBar.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
+		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 7, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
 		searchBar.setHoverBackgroundColor(ColorScheme.DARKER_GRAY_HOVER_COLOR);
 		searchBar.setMinimumSize(new Dimension(0, 35));
 		searchBar.addActionListener(e -> executor.execute(this::updateSearch));
@@ -159,6 +168,8 @@ public class FlippingPanel extends JPanel
 		PluginErrorPanel welcomePanel = new PluginErrorPanel();
 		welcomeWrapper.add(welcomePanel, BorderLayout.NORTH);
 
+		//The welcome panel instructs the user on how to use the plugin
+		//Shown whenever there are no items on the panel
 		welcomePanel.setContent("Flipping Utilities",
 			"For items to show up, margin check an item.");
 
@@ -182,7 +193,7 @@ public class FlippingPanel extends JPanel
 					if (result == JOptionPane.YES_OPTION)
 					{
 						resetPanel();
-						cardLayout.show(centerPanel, FlippingPanel.getWELCOME_PANEL());
+						cardLayout.show(flippingItemContainer, FlippingPanel.getWELCOME_PANEL());
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
@@ -201,6 +212,7 @@ public class FlippingPanel extends JPanel
 			}
 		});
 
+		//To easily remove all panels in one click.
 		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
 		clearMenuOption.addActionListener(e ->
 		{
@@ -216,6 +228,10 @@ public class FlippingPanel extends JPanel
 
 		resetIcon.setComponentPopupMenu(popupMenu);
 
+		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
+		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
+		flippingItemContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
+
 		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -223,35 +239,83 @@ public class FlippingPanel extends JPanel
 		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
-		centerPanel.add(scrollWrapper, ITEMS_PANEL);
-		centerPanel.add(welcomeWrapper, WELCOME_PANEL);
+		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
+		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
+		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
+		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
+
+		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
+
+		final JPanel toolbar = new JPanel(new BorderLayout());
+		toolbar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		toolbar.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+		final JPanel buttonBar = new JPanel();
+		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
+		buttonBar.setBackground(ColorScheme.BRAND_ORANGE);
+		buttonBar.setBorder(new EmptyBorder(new Insets(0, 1, 0, 1)));
+
+		boolean testB = true;
+
+		for (JLabel button : toolbarButtons)
+		{
+			JPanel buttonPanel = new JPanel();
+			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			button.setBackground(ColorScheme.GRAND_EXCHANGE_LIMIT);
+			buttonPanel.add(button);
+
+			if (testB)
+			{
+				buttonPanel.add(new JLabel(UIUtilities.UPWARD_ARROW));
+				testB = false;
+			}
+
+			buttonBar.add(buttonPanel);
+		}
+
+		toolbar.add(buttonBar, BorderLayout.CENTER);
+
+		final JPanel contentPanel = new JPanel(new BorderLayout());
+		contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		contentPanel.add(toolbar, BorderLayout.NORTH);
+		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		//To switch between greeting and items panels
-		cardLayout.show(centerPanel, WELCOME_PANEL);
+		cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 		container.add(topPanel, BorderLayout.NORTH);
-		container.add(centerPanel, BorderLayout.CENTER);
+		container.add(contentPanel, BorderLayout.CENTER);
 
 		add(container, BorderLayout.CENTER);
-
 	}
 
+	/**
+	 * Creates and renders the panel using the flipping items in the listed parameter.
+	 * An item is only displayed if it contains a valid OfferInfo object in its history.
+	 *
+	 * @param flippingItems List of flipping items that the rebuild will render.
+	 */
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
-		//Reset active panel list.
+		//Reset active panel list
 		activePanels.clear();
 
 		SwingUtilities.invokeLater(() ->
 		{
+			//Remove previous items from the panel
 			flippingItemsPanel.removeAll();
 
 			if (flippingItems == null || flippingItems.size() == 0)
 			{
-				cardLayout.show(centerPanel, WELCOME_PANEL);
+				//Show the welcome panel if there are no valid flipping items in the list
+				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
+				repaint();
+				revalidate();
 				return;
 			}
 
-			cardLayout.show(centerPanel, ITEMS_PANEL);
+			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 
+			//Keep track of the item index to determine the constraints its built upon
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
@@ -293,17 +357,13 @@ public class FlippingPanel extends JPanel
 
 			if (activePanels.isEmpty())
 			{
-				cardLayout.show(centerPanel, WELCOME_PANEL);
+				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 			}
 
 			revalidate();
 			repaint();
 		});
 	}
-
-	@Getter
-	@Setter
-	private boolean itemHighlighted = false;
 
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
 	public void highlightItem(int itemId)
@@ -348,7 +408,7 @@ public class FlippingPanel extends JPanel
 
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
-	 * This method is called in FlippingPLugin every second by the scheduler.
+	 * This method is called in FlippingPlugin every second by the scheduler.
 	 */
 	public void updateActivePanelsPriceOutdatedDisplay()
 	{
@@ -397,7 +457,9 @@ public class FlippingPanel extends JPanel
 		setItemHighlighted(false);
 	}
 
-	//Searches the active item panels for matching item names.
+	/**
+	 * Searches the active item panels for matching item names.
+	 */
 	private void updateSearch()
 	{
 		String lookup = searchBar.getText().toLowerCase();
