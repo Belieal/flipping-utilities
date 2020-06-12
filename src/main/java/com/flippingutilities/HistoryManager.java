@@ -265,10 +265,6 @@ public class HistoryManager
 		return result.getTime();
 	}
 
-	//TODO:
-	// return a summary, not just the profit. A summary will include the profit, and the currentQuantityInTrade of buys/sells
-	// and the individual prices (only if they are different)
-
 	/**
 	 * Calculates profit for a list of trades made with this item by counting the expenses and revenues
 	 * accrued over these trades and figuring out the difference in value.
