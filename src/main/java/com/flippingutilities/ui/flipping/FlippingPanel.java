@@ -143,7 +143,7 @@ public class FlippingPanel extends JPanel
 		searchBar.setHoverBackgroundColor(ColorScheme.DARKER_GRAY_HOVER_COLOR);
 		searchBar.setMinimumSize(new Dimension(0, 35));
 		searchBar.addActionListener(e -> executor.execute(this::updateSearch));
-		searchBar.addClearListener(e -> updateSearch());
+		searchBar.addClearListener(this::updateSearch);
 		searchBar.addKeyListener(key ->
 		{
 			if (runningRequest != null)
