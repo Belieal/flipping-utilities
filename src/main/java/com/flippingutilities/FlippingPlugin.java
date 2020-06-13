@@ -163,7 +163,7 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
-	private ArrayList<TradeActivityTimer> timers = new ArrayList<>();
+	private List<TradeActivityTimer> slotTimers = new ArrayList<>();
 	private Instant startUpTime = Instant.now();
 
 	//name of the account this client last stored trades for.
@@ -210,12 +210,9 @@ public class FlippingPlugin extends Plugin
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
 			cacheUpdater.start();
 
-			for (int slotIndex = 0; slotIndex < 8; slotIndex++)
-			{
-				timers.add(new TradeActivityTimer(this,client, slotIndex));
-			}
+			slotTimers = setupSlotTimers();
 
-			setupRepeatingTasks();
+			repeatingTasks = setupRepeatingTasks();
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
 			if (client.getGameState() == GameState.LOGGED_IN)
@@ -235,7 +232,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (repeatingTasks != null)
 		{
-			//Stop all timers
+			//Stop all slotTimers
 			repeatingTasks.cancel(true);
 			repeatingTasks = null;
 		}
@@ -379,6 +376,16 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	private List<TradeActivityTimer> setupSlotTimers()
+	{
+		ArrayList<TradeActivityTimer> slotTimers = new ArrayList<>();
+		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+		{
+			slotTimers.add(new TradeActivityTimer(this, client, slotIndex));
+		}
+		return slotTimers;
+	}
+
 	/**
 	 * sets up the account selector dropdown that lets you change which account's trade list you
 	 * are looking at.
@@ -409,13 +416,13 @@ public class FlippingPlugin extends Plugin
 	 *
 	 * @return a future object that can be used to cancel the tasks
 	 */
-	public void setupRepeatingTasks()
+	public ScheduledFuture setupRepeatingTasks()
 	{
-		repeatingTasks = executor.scheduleAtFixedRate(() ->
+		return executor.scheduleAtFixedRate(() ->
 		{
 			try
 			{
-				timers.forEach(timer -> clientThread.invokeLater(()-> timer.updateTimer()));
+				slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer()));
 				flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 				flippingPanel.updateActivePanelsGePropertiesDisplay();
 				statPanel.updateTimeDisplay();
@@ -520,7 +527,7 @@ public class FlippingPlugin extends Plugin
 			//cancelling, it doesn't ignore the newly generated "quantity of 0" event as a duplicate like we get on login.
 			if (clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clonedNewOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL)
 			{
-				timers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+				slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
 				loggedInAccsLastOffers.remove(clonedNewOffer.getSlot());
 				return true;
 			}
@@ -535,7 +542,8 @@ public class FlippingPlugin extends Plugin
 				}
 			}
 
-			timers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+			slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+
 			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer); //tickSinceFirstOffer is 0 here
 			return true;
 		}
@@ -569,7 +577,8 @@ public class FlippingPlugin extends Plugin
 		clonedNewOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
-		timers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+		slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+
 		return false; //not a bad event
 	}
 
@@ -977,7 +986,7 @@ public class FlippingPlugin extends Plugin
 	{
 		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
 		{
-			TradeActivityTimer timer = timers.get(slotIndex);
+			TradeActivityTimer timer = slotTimers.get(slotIndex);
 
 			//Get the offer slots from the window container
 			//We add one to the index, as the first widget is the text above the offer slots
