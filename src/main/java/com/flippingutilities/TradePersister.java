@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,6 +172,14 @@ public class TradePersister
 				log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
 				accountData = new AccountData();
 			}
+
+			//a bug led to items not having their last active times be updated. This bug is fixed
+			//but the null value remains in the user's items, so this sets it.
+			accountData.getTrades().forEach((item) -> {
+				if (item.getLatestActivityTime() == null) {
+					item.setLatestActivityTime(Instant.now());
+				}
+			});
 			accountsData.put(displayName, accountData);
 		}
 

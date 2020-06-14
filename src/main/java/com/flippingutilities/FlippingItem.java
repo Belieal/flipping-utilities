@@ -86,6 +86,7 @@ public class FlippingItem
 	//An activity is described as a completed offer event.
 	@SerializedName("lAT")
 	@Getter
+	@Setter
 	private Instant latestActivityTime;
 
 	@SerializedName("sESI")
@@ -160,10 +161,7 @@ public class FlippingItem
 			latestSellTime = newOffer.getTime();
 		}
 
-		if (newOffer.isComplete())
-		{
-			latestActivityTime = newOffer.getTime();
-		}
+		latestActivityTime = newOffer.getTime();
 	}
 
 	/**
