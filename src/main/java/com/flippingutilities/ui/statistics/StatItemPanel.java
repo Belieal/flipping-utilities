@@ -142,11 +142,17 @@ public class StatItemPanel extends JPanel
 		JPanel allSellsPanel = UIUtilities.stackPanelsVertically((List) sellPanels);
 		JPanel allFlipsPanel = UIUtilities.stackPanelsVertically((List) flipPanels);
 
+		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
+			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
+
+		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel,
+			new JLabel(" "), roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
+
 		setLayout(new BorderLayout());
 
-		JPanel titlePanel = titlePanel();
+		JPanel titlePanel = titlePanel(iconPanel(), nameAndProfitPanel(), collapseIcon());
 
-		JPanel subInfoPanel = subInfoPanel();
+		JPanel subInfoPanel = subInfoPanel(descriptionLabels, valueLabels);
 
 		JPanel tradeHistoryPanel = tradeHistoryPanel(allBuysPanel, allSellsPanel, allFlipsPanel);
 
@@ -175,31 +181,16 @@ public class StatItemPanel extends JPanel
 		repaint();
 	}
 
-	private JPanel titlePanel()
+	private JPanel titlePanel(JPanel itemIconPanel, JPanel nameAndProfitPanel, JLabel collapseIcon)
 	{
-
-		JPanel iconPanel = iconPanel();
-
-		JPanel nameAndProfitPanel = new JPanel(new BorderLayout());
-		nameAndProfitPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		JLabel itemNameLabel = new JLabel(flippingItem.getItemName());
-		nameAndProfitPanel.add(itemNameLabel, BorderLayout.NORTH);
-		nameAndProfitPanel.add(itemProfitLabel, BorderLayout.SOUTH);
-		nameAndProfitPanel.setPreferredSize(new Dimension(0, 0));
-
-		/* Collapse icon */
-		JLabel collapseIconLabel = new JLabel();
-		collapseIconLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
-		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
-
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
 
-		titlePanel.add(iconPanel, BorderLayout.WEST);
+		titlePanel.add(itemIconPanel, BorderLayout.WEST);
 		titlePanel.add(nameAndProfitPanel, BorderLayout.CENTER);
-		titlePanel.add(collapseIconLabel, BorderLayout.EAST);
+		titlePanel.add(collapseIcon, BorderLayout.EAST);
 
 		titlePanel.addMouseListener(new MouseAdapter()
 		{
@@ -243,14 +234,8 @@ public class StatItemPanel extends JPanel
 		return titlePanel;
 	}
 
-	private JPanel subInfoPanel()
+	private JPanel subInfoPanel(JLabel[] descriptionLabels, JLabel[] valueLabels)
 	{
-		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
-			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
-
-		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel,
-			new JLabel(" "), roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
-
 		JPanel subInfoContainer = new JPanel();
 		subInfoContainer.setLayout(new DynamicGridLayout(valueLabels.length, descriptionLabels.length));
 
@@ -414,6 +399,13 @@ public class StatItemPanel extends JPanel
 		nameAndProfitPanel.add(itemProfitLabel, BorderLayout.SOUTH);
 		nameAndProfitPanel.setPreferredSize(new Dimension(0, 0));
 		return nameAndProfitPanel;
+	}
+
+	private JLabel collapseIcon() {
+		JLabel collapseIconLabel = new JLabel();
+		collapseIconLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
+		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
+		return collapseIconLabel;
 	}
 
 	public void updateLabels()
