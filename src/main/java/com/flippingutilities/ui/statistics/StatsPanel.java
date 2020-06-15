@@ -717,7 +717,7 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateTimeDisplay()
 	{
-		activePanels.forEach(StatItemPanel::updateTimeDisplay);
+		activePanels.forEach(StatItemPanel::updateTimeLabels);
 	}
 
 	/**

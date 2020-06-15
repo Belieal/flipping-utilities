@@ -38,13 +38,13 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.QuantityFormatter;
 
-public class StatItemHistoryPanel extends JPanel
+public class FlipPanel extends JPanel
 {
 	JLabel timeSince = new JLabel("", SwingConstants.CENTER);
 
 	private Flip flip;
 
-	StatItemHistoryPanel(Flip flip)
+	FlipPanel(Flip flip)
 	{
 		this.flip = flip;
 
