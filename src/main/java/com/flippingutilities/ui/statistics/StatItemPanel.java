@@ -110,8 +110,7 @@ public class StatItemPanel extends JPanel
 	private JLabel avgSellPriceValLabel = new JLabel("", SwingConstants.RIGHT);
 
 	private List<FlipPanel> flipPanels;
-	private List<OfferPanel> buyPanels;
-	private List<OfferPanel> sellPanels;
+	private List<OfferPanel> offerPanels;
 
 	private ItemManager itemManager;
 
@@ -134,12 +133,10 @@ public class StatItemPanel extends JPanel
 		startOfInterval = statsPanel.getStartOfInterval();
 		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
 
-		buyPanels = tradeHistory.stream().filter(OfferInfo::isBuy).map(OfferPanel::new).collect(Collectors.toList());
-		sellPanels = tradeHistory.stream().filter(o -> !o.isBuy()).map(OfferPanel::new).collect(Collectors.toList());
+		offerPanels = tradeHistory.stream().map(OfferPanel::new).collect(Collectors.toList());
 		flipPanels = flippingItem.getFlips(startOfInterval).stream().map(FlipPanel::new).collect(Collectors.toList());
 
-		JPanel allBuysPanel = UIUtilities.stackPanelsVertically((List) buyPanels);
-		JPanel allSellsPanel = UIUtilities.stackPanelsVertically((List) sellPanels);
+		JPanel allOffersPanel = UIUtilities.stackPanelsVertically((List) offerPanels);
 		JPanel allFlipsPanel = UIUtilities.stackPanelsVertically((List) flipPanels);
 
 		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
@@ -154,7 +151,7 @@ public class StatItemPanel extends JPanel
 
 		JPanel subInfoPanel = subInfoPanel(descriptionLabels, valueLabels);
 
-		JPanel tradeHistoryPanel = tradeHistoryPanel(allBuysPanel, allSellsPanel, allFlipsPanel);
+		JPanel tradeHistoryPanel = tradeHistoryPanel(allOffersPanel, allFlipsPanel);
 
 		updateLabels();
 
@@ -265,25 +262,23 @@ public class StatItemPanel extends JPanel
 		return subInfoContainer;
 	}
 
-	private JPanel tradeHistoryPanel(JPanel buysPanel, JPanel sellsPanel, JPanel flipsPanel)
+	private JPanel tradeHistoryPanel(JPanel offersPanel, JPanel flipsPanel)
 	{
 		JPanel tradeHistoryTitlePanel = new JPanel(new BorderLayout());
 		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
 
 		JPanel mainDisplay = new JPanel();
 		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
-		MaterialTab buysTab = new MaterialTab("Buys", tabGroup, buysPanel);
-		MaterialTab sellsTab = new MaterialTab("Sells", tabGroup, sellsPanel);
+		MaterialTab offersTab = new MaterialTab("Buys/Sells", tabGroup, offersPanel);
 		MaterialTab flipsTab = new MaterialTab("Flips", tabGroup, flipsPanel);
 
-		Arrays.asList(buysPanel, sellsPanel, flipsPanel).forEach(panel -> {
+		Arrays.asList(offersPanel, flipsPanel).forEach(panel -> {
 			panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 			panel.setBorder(ITEM_HISTORY_BORDER);
 		});
 
 		tabGroup.setBorder(new EmptyBorder(5, 0, 2, 0));
-		tabGroup.addTab(buysTab);
-		tabGroup.addTab(sellsTab);
+		tabGroup.addTab(offersTab);
 		tabGroup.addTab(flipsTab);
 
 		tabGroup.select(flipsTab);
@@ -475,8 +470,7 @@ public class StatItemPanel extends JPanel
 		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 
 		flipPanels.forEach(FlipPanel::updateTimeDisplay);
-		buyPanels.forEach(OfferPanel::updateTimeDisplay);
-		sellPanels.forEach(OfferPanel::updateTimeDisplay);
+		offerPanels.forEach(OfferPanel::updateTimeDisplay);
 	}
 
 	private void deletePanel()

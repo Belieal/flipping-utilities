@@ -29,10 +29,8 @@ public class OfferPanel extends JPanel
 
 		title.setOpaque(true);
 		title.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		title.setBorder(new EmptyBorder(3, 0, 2, 0));
-		title.setForeground(offer.isBuy() ? UIUtilities.OUTDATED_COLOR : ColorScheme.GRAND_EXCHANGE_PRICE);
 		title.setFont(FontManager.getRunescapeSmallFont());
-		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		title.setForeground(offer.isBuy() ? UIUtilities.OUTDATED_COLOR : ColorScheme.GRAND_EXCHANGE_PRICE);
 
 		JPanel body = new JPanel(new DynamicGridLayout(2, 2, 0, 2));
 		body.setBorder(new EmptyBorder(0, 2, 1, 2));
@@ -72,5 +70,4 @@ public class OfferPanel extends JPanel
 		title.setText(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + action
 			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)");
 	}
-
 }
