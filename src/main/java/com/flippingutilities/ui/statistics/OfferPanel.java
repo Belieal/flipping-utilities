@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -22,27 +23,44 @@ public class OfferPanel extends JPanel
 	{
 		setLayout(new BorderLayout());
 		this.offer = offer;
-		this.action = offer.isBuy()? "Bought": "Sold";
+		this.action = offer.isBuy() ? "Bought" : "Sold";
 		this.title = new JLabel(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + action
 			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)", SwingConstants.CENTER);
 
 		title.setOpaque(true);
 		title.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		title.setBorder(new EmptyBorder(3,0,2,0));
+		title.setBorder(new EmptyBorder(3, 0, 2, 0));
+		title.setForeground(offer.isBuy() ? UIUtilities.OUTDATED_COLOR : ColorScheme.GRAND_EXCHANGE_PRICE);
+		title.setFont(FontManager.getRunescapeSmallFont());
+		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 
-		JPanel body = new JPanel(new BorderLayout());
+		JPanel body = new JPanel(new DynamicGridLayout(2, 2, 0, 2));
 		body.setBorder(new EmptyBorder(0, 2, 1, 2));
 
-		JLabel priceLabel = new JLabel("Price Each:");
+		JLabel priceLabel = new JLabel("Price:");
 		JLabel priceVal = new JLabel(QuantityFormatter.formatNumber(offer.getPrice()) + " gp", SwingConstants.RIGHT);
 
-		Arrays.asList(title, priceLabel, priceVal).forEach(label -> {
-			label.setFont(FontManager.getRunescapeSmallFont());
-			label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		});
+		JLabel totalPriceLabel = new JLabel("Total:");
+		JLabel totalPriceVal = new JLabel(QuantityFormatter.formatNumber(offer.getPrice() * offer.getCurrentQuantityInTrade()) + " gp", SwingConstants.RIGHT);
 
-		body.add(priceLabel, BorderLayout.WEST);
-		body.add(priceVal, BorderLayout.EAST);
+		JLabel[] descriptions = {priceLabel, totalPriceLabel};
+		JLabel[] vals = {priceVal, totalPriceVal};
+
+		for (int i = 0; i < descriptions.length; i++)
+		{
+			JLabel descriptionLabel = descriptions[i];
+			JLabel valLabel = vals[i];
+
+			descriptionLabel.setFont(FontManager.getRunescapeSmallFont());
+			descriptionLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+			valLabel.setFont(FontManager.getRunescapeSmallFont());
+			valLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+
+			JPanel infoPanel = new JPanel(new BorderLayout());
+			infoPanel.add(descriptionLabel, BorderLayout.WEST);
+			infoPanel.add(valLabel, BorderLayout.EAST);
+			body.add(infoPanel);
+		}
 
 		add(title, BorderLayout.NORTH);
 		add(body, BorderLayout.CENTER);
