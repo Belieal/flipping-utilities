@@ -370,14 +370,13 @@ public class HistoryManagerTest
 
 		ArrayList<OfferInfo> truncatedOffers = new ArrayList<>();
 
-		//no complete offers, should not be truncated
+		//test truncation on incomplete offers
 		someStandardizedOffers.add(offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 10));
 		someStandardizedOffers.add(offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1, 5));
 		someStandardizedOffers.add(offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 20));
 
-		truncatedOffers.add(offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 10));
 		truncatedOffers.add(offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1, 5));
-		truncatedOffers.add(offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 20));
+		truncatedOffers.add(offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 30));
 
 		historyManager.truncateOffers(someStandardizedOffers);
 		assertEquals(someStandardizedOffers, truncatedOffers);

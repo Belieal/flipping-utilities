@@ -204,8 +204,8 @@ public class HistoryManager
 		OfferInfo mostRecentOffer = offers.get(offers.size() - 1);
 
 		//do not go through the process of truncation if the offer is the only offer in that trade as it will
-		//have no past offers to truncate. Also don't start truncation if the offer is not complete
-		if (mostRecentOffer.getQuantitySinceLastOffer() == mostRecentOffer.getCurrentQuantityInTrade() || !mostRecentOffer.isComplete())
+		//have no past offers to truncate.
+		if (mostRecentOffer.getQuantitySinceLastOffer() == mostRecentOffer.getCurrentQuantityInTrade())
 		{
 			return;
 		}
