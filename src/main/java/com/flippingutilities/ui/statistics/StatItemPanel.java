@@ -42,6 +42,7 @@ import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
@@ -135,7 +136,9 @@ public class StatItemPanel extends JPanel
 		startOfInterval = statsPanel.getStartOfInterval();
 		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
 
-		offerPanels = tradeHistory.stream().map(OfferPanel::new).collect(Collectors.toList());
+		List<OfferInfo> historyShallowCopy = new ArrayList<>(tradeHistory);
+		Collections.reverse(historyShallowCopy);
+		offerPanels = historyShallowCopy.stream().map(OfferPanel::new).collect(Collectors.toList());
 		flipPanels = flippingItem.getFlips(startOfInterval).stream().map(FlipPanel::new).collect(Collectors.toList());
 
 		JPanel allOffersPanel = UIUtilities.stackPanelsVertically((List) offerPanels);
@@ -208,7 +211,7 @@ public class StatItemPanel extends JPanel
 						collapseIconTitleLabel.setIcon(CLOSE_ICON);
 						subInfoAndHistoryContainer.setVisible(false);
 						statsPanel.getExpandedItems().remove(flippingItem.getItemName());
- 					}
+					}
 					else
 					{
 						collapseIconTitleLabel.setIcon(OPEN_ICON);
@@ -294,7 +297,7 @@ public class StatItemPanel extends JPanel
 		mainDisplay.setVisible(shouldExpandTradeHistory);
 		tabGroup.setVisible(shouldExpandTradeHistory);
 
-		JLabel collapseTradeHistoryIconLabel = new JLabel(CLOSE_ICON);
+		JLabel collapseTradeHistoryIconLabel = new JLabel(shouldExpandTradeHistory ? OPEN_ICON : CLOSE_ICON);
 		JLabel tradeHistoryTitleLabel = new JLabel("Trade History", SwingConstants.CENTER);
 		tradeHistoryTitlePanel.add(tradeHistoryTitleLabel, BorderLayout.CENTER);
 		tradeHistoryTitlePanel.add(collapseTradeHistoryIconLabel, BorderLayout.EAST);
@@ -411,7 +414,7 @@ public class StatItemPanel extends JPanel
 	private JLabel collapseIcon()
 	{
 		JLabel collapseIconLabel = new JLabel();
-		collapseIconLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
+		collapseIconLabel.setIcon(statsPanel.getExpandedItems().contains(flippingItem.getItemName()) ? OPEN_ICON : CLOSE_ICON);
 		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
 		return collapseIconLabel;
 	}
@@ -424,11 +427,11 @@ public class StatItemPanel extends JPanel
 		{
 			if (offer.isBuy())
 			{
-				numItemsBought+= offer.getCurrentQuantityInTrade();
+				numItemsBought += offer.getCurrentQuantityInTrade();
 			}
 			else
 			{
-				numItemsSold+= offer.getCurrentQuantityInTrade();
+				numItemsSold += offer.getCurrentQuantityInTrade();
 			}
 		}
 		long revenue = flippingItem.getCashflow(tradeHistory, false);
