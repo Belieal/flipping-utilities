@@ -104,10 +104,12 @@ public class StatItemPanel extends JPanel
 	private JLabel totalProfitValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel profitEachValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel timeOfLastFlipValLabel = new JLabel("", SwingConstants.RIGHT);
-	private JLabel quantityValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantityFlipped = new JLabel("", SwingConstants.RIGHT);
 	private JLabel roiValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel avgBuyPriceValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel avgSellPriceValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantityBoughtLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantitySoldLabel = new JLabel("", SwingConstants.RIGHT);
 
 	private List<FlipPanel> flipPanels;
 	private List<OfferPanel> offerPanels;
@@ -140,10 +142,11 @@ public class StatItemPanel extends JPanel
 		JPanel allFlipsPanel = UIUtilities.stackPanelsVertically((List) flipPanels);
 
 		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
-			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
+			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Quantity Bought: "), new JLabel("Quantity Sold: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
 
-		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel,
-			new JLabel(" "), roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
+		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityFlipped,
+			new JLabel(" "), roiValLabel, quantityBoughtLabel, quantitySoldLabel, avgBuyPriceValLabel,
+			avgSellPriceValLabel};
 
 		setLayout(new BorderLayout());
 
@@ -168,9 +171,11 @@ public class StatItemPanel extends JPanel
 		//Set font colors of right value labels
 		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		profitEachValLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		quantityValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantityFlipped.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
 		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
+		quantityBoughtLabel.setForeground(UIUtilities.PROFIT_COLOR);
+		quantitySoldLabel.setForeground(UIUtilities.PROFIT_COLOR);
 
 		totalFlips = flipPanels.size();
 
@@ -386,7 +391,8 @@ public class StatItemPanel extends JPanel
 		return itemIconTitlePanel;
 	}
 
-	private JPanel nameAndProfitPanel() {
+	private JPanel nameAndProfitPanel()
+	{
 		JPanel nameAndProfitPanel = new JPanel(new BorderLayout());
 		nameAndProfitPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		JLabel itemNameLabel = new JLabel(flippingItem.getItemName());
@@ -396,7 +402,8 @@ public class StatItemPanel extends JPanel
 		return nameAndProfitPanel;
 	}
 
-	private JLabel collapseIcon() {
+	private JLabel collapseIcon()
+	{
 		JLabel collapseIconLabel = new JLabel();
 		collapseIconLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
 		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
@@ -405,6 +412,19 @@ public class StatItemPanel extends JPanel
 
 	public void updateLabels()
 	{
+		long numItemsBought = 0;
+		long numItemsSold = 0;
+		for (OfferInfo offer : tradeHistory)
+		{
+			if (offer.isBuy())
+			{
+				numItemsBought+= offer.getCurrentQuantityInTrade();
+			}
+			else
+			{
+				numItemsSold+= offer.getCurrentQuantityInTrade();
+			}
+		}
 		long revenue = flippingItem.getCashflow(tradeHistory, false);
 		long expense = flippingItem.getCashflow(tradeHistory, true);
 		int itemCountFlipped = flippingItem.countItemsFlipped(tradeHistory);
@@ -414,20 +434,20 @@ public class StatItemPanel extends JPanel
 			return;
 		}
 
-		updateTitleLabels(revenue-expense, itemCountFlipped);
-		updateSubInfoLabels(revenue, expense, itemCountFlipped);
+		updateTitleLabels(revenue - expense, itemCountFlipped);
+		updateSubInfoLabels(revenue, expense, itemCountFlipped, numItemsBought, numItemsSold);
 		updateTimeLabels();
 	}
 
 	/* Total profit and name label */
-	private void updateTitleLabels(long profit, long numItems)
+	private void updateTitleLabels(long profit, long numItemsFlipped)
 	{
 
 		String totalProfitString = ((profit > 0) ? "+" : "") + UIUtilities.quantityToRSDecimalStack(profit, true) + " gp";
 
-		if (numItems != 0)
+		if (numItemsFlipped != 0)
 		{
-			totalProfitString += " (x " + QuantityFormatter.formatNumber(numItems) + ")";
+			totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
 		}
 
 		itemProfitLabel.setText(totalProfitString);
@@ -436,27 +456,30 @@ public class StatItemPanel extends JPanel
 		itemProfitLabel.setFont(FontManager.getRunescapeSmallFont());
 	}
 
-	private void updateSubInfoLabels(long revenue, long expense, int numItems)
+	private void updateSubInfoLabels(long revenue, long expense, int numItemsFlipped, long numBuys, long numSells)
 	{
 		long profit = revenue - expense;
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profit, true) + " gp");
 		totalProfitValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profit) + " gp");
 
-		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((profit / numItems), true) + " gp/ea");
+		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((profit / numItemsFlipped), true) + " gp/ea");
 		profitEachValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(profit / numItems) + " gp/ea");
+		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(profit / numItemsFlipped) + " gp/ea");
 
-		quantityValLabel.setText(QuantityFormatter.formatNumber(numItems) + " Items");
+		quantityFlipped.setText(QuantityFormatter.formatNumber(numItemsFlipped) + " Items");
 
-		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (expense / numItems)) + " gp");
-		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (revenue / numItems)) + " gp");
+		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (expense / numItemsFlipped)) + " gp");
+		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (revenue / numItemsFlipped)) + " gp");
 
 		float roi = (float) profit / expense * 100;
 
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
 		roiValLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+
+		quantityBoughtLabel.setText("" + numBuys);
+		quantitySoldLabel.setText("" + numSells);
 	}
 
 	public void updateTimeLabels()
