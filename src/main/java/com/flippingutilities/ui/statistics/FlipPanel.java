@@ -29,6 +29,7 @@ package com.flippingutilities.ui.statistics;
 import com.flippingutilities.Flip;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;

@@ -471,6 +471,9 @@ public class StatItemPanel extends JPanel
 			return;
 		}
 
+		OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
+		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
+
 		flipPanels.forEach(FlipPanel::updateTimeDisplay);
 		buyPanels.forEach(OfferPanel::updateTimeDisplay);
 		sellPanels.forEach(OfferPanel::updateTimeDisplay);
