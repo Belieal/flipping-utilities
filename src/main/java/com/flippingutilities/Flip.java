@@ -42,4 +42,5 @@ public class Flip
 	int quantity;
 	Instant time;
 	boolean marginCheck;
+	boolean ongoing;
 }

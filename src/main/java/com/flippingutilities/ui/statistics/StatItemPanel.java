@@ -165,6 +165,8 @@ public class StatItemPanel extends JPanel
 		subInfoAndHistoryContainer.add(subInfoPanel, BorderLayout.CENTER);
 		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
 
+		subInfoAndHistoryContainer.setVisible(statsPanel.getExpandedItems().contains(flippingItem.getItemName()));
+
 		add(titlePanel, BorderLayout.NORTH);
 		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
 
@@ -205,13 +207,13 @@ public class StatItemPanel extends JPanel
 					{
 						collapseIconTitleLabel.setIcon(CLOSE_ICON);
 						subInfoAndHistoryContainer.setVisible(false);
-						flippingItem.setShouldExpandStatItem(false);
-					}
+						statsPanel.getExpandedItems().remove(flippingItem.getItemName());
+ 					}
 					else
 					{
 						collapseIconTitleLabel.setIcon(OPEN_ICON);
 						subInfoAndHistoryContainer.setVisible(true);
-						flippingItem.setShouldExpandStatItem(true);
+						statsPanel.getExpandedItems().add(flippingItem.getItemName());
 					}
 				}
 			}
@@ -269,6 +271,8 @@ public class StatItemPanel extends JPanel
 
 	private JPanel tradeHistoryPanel(JPanel offersPanel, JPanel flipsPanel)
 	{
+		boolean shouldExpandTradeHistory = statsPanel.getExpandedTradeHistories().contains(flippingItem.getItemName());
+
 		JPanel tradeHistoryTitlePanel = new JPanel(new BorderLayout());
 		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
 
@@ -287,8 +291,8 @@ public class StatItemPanel extends JPanel
 		tabGroup.addTab(flipsTab);
 
 		tabGroup.select(flipsTab);
-		mainDisplay.setVisible(false);
-		tabGroup.setVisible(false);
+		mainDisplay.setVisible(shouldExpandTradeHistory);
+		tabGroup.setVisible(shouldExpandTradeHistory);
 
 		JLabel collapseTradeHistoryIconLabel = new JLabel(CLOSE_ICON);
 		JLabel tradeHistoryTitleLabel = new JLabel("Trade History", SwingConstants.CENTER);
@@ -306,12 +310,14 @@ public class StatItemPanel extends JPanel
 						tabGroup.setVisible(false);
 						mainDisplay.setVisible(false);
 						collapseTradeHistoryIconLabel.setIcon(CLOSE_ICON);
+						statsPanel.getExpandedTradeHistories().remove(flippingItem.getItemName());
 					}
 					else
 					{
 						tabGroup.setVisible(true);
 						mainDisplay.setVisible(true);
 						collapseTradeHistoryIconLabel.setIcon(OPEN_ICON);
+						statsPanel.getExpandedTradeHistories().add(flippingItem.getItemName());
 					}
 				}
 			}
@@ -492,7 +498,7 @@ public class StatItemPanel extends JPanel
 		OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
 		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 
-		flipPanels.forEach(FlipPanel::updateTimeDisplay);
+		flipPanels.forEach(FlipPanel::updateTitle);
 		offerPanels.forEach(OfferPanel::updateTimeDisplay);
 	}
 

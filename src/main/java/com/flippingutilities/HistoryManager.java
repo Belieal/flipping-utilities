@@ -501,8 +501,8 @@ public class HistoryManager
 			offers.stream().map(OfferInfo::clone).collect(Collectors.toList()),
 			o -> o.isMarginCheck() && o.isBuy(),
 			o -> o.isMarginCheck() && !o.isBuy(),
-			o -> !o.isMarginCheck() && o.isComplete() && o.isBuy(),
-			o -> !o.isMarginCheck() && o.isComplete() && !o.isBuy());
+			o -> !o.isMarginCheck() && o.isBuy(),
+			o -> !o.isMarginCheck() && !o.isBuy());
 
 		List<OfferInfo> buyMarginChecks = subLists[0];
 		List<OfferInfo> sellMarginChecks = subLists[1];
@@ -579,7 +579,7 @@ public class HistoryManager
 			long millisBetweenBuyAndSell = Duration.between(buy.getTime(), sell.getTime()).toMillis();
 			if (millisBetweenBuyAndSell >= 0 && millisBetweenBuyAndSell < 60000) //60k milliseconds is a minute
 			{
-				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck()));
+				flips.add(new Flip(buy.getPrice(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck(), false));
 				sellIdx++;
 			}
 
@@ -636,7 +636,7 @@ public class HistoryManager
 					int amountTaken = buy.getCurrentQuantityInTrade() - leftOver;
 					totalRevenue += amountTaken * buy.getPrice();
 					buy.setCurrentQuantityInTrade(leftOver);
-					flips.add(new Flip(totalRevenue / sell.getCurrentQuantityInTrade(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck() && buy.isMarginCheck()));
+					flips.add(new Flip(totalRevenue / sell.getCurrentQuantityInTrade(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck() && buy.isMarginCheck(), !sell.isComplete()));
 					break;
 				}
 				else
