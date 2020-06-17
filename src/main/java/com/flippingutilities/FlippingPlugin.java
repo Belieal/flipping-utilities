@@ -221,6 +221,7 @@ public class FlippingPlugin extends Plugin
 				onLoggedInGameState();
 			}
 
+
 			//stops scheduling this task
 			return true;
 		});
@@ -542,6 +543,7 @@ public class FlippingPlugin extends Plugin
 			}
 
 			slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+
 			loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer); //tickSinceFirstOffer is 0 here
 			return true;
 		}
@@ -576,6 +578,7 @@ public class FlippingPlugin extends Plugin
 		loggedInAccsLastOffers.put(clonedNewOffer.getSlot(), clonedNewOffer);
 		newOffer.setTicksSinceFirstOffer(tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer());
 		slotTimers.get(clonedNewOffer.getSlot()).setCurrentOffer(clonedNewOffer);
+
 		return false; //not a bad event
 	}
 

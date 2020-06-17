@@ -48,8 +48,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -170,6 +172,11 @@ public class StatsPanel extends JPanel
 
 	@Getter
 	JLabel resetIcon;
+
+	@Getter
+	private Set<String> expandedItems = new HashSet<>();
+	@Getter
+	private Set<String> expandedTradeHistories = new HashSet<>();
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -717,7 +724,7 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateTimeDisplay()
 	{
-		activePanels.forEach(StatItemPanel::updateTimeDisplay);
+		activePanels.forEach(StatItemPanel::updateTimeLabels);
 	}
 
 	/**

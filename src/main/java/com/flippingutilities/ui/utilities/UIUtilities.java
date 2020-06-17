@@ -28,9 +28,12 @@ package com.flippingutilities.ui.utilities;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -41,6 +44,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
@@ -66,6 +70,7 @@ public class UIUtilities
 	public static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	public static final Color PROFIT_COLOR = new Color(255, 175, 55);
 	public static final Color DARK_GRAY_ALT_ROW_COLOR = new Color(35, 35, 35);
+	public static final Color VIBRANT_YELLOW = new Color(230, 220, 6);
 
 	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
 	private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
@@ -396,5 +401,35 @@ public class UIUtilities
 		modal.add(panel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
+	}
+
+
+	public static JPanel stackPanelsVertically(List<JPanel> panels)
+	{
+		GridBagConstraints constraints = new GridBagConstraints();
+		JPanel mainPanel = new JPanel(new GridBagLayout());
+
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		constraints.weightx = 1;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+
+		int index = 0;
+		for (JPanel panel : panels)
+		{
+			if (index++ > 0)
+			{
+				JPanel marginWrapper = new JPanel(new BorderLayout());
+				marginWrapper.add(panel, BorderLayout.NORTH);
+				mainPanel.add(marginWrapper, constraints);
+			}
+			else
+			{
+				mainPanel.add(panel, constraints);
+			}
+
+			constraints.gridy++;
+		}
+		return mainPanel;
 	}
 }
