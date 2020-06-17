@@ -467,7 +467,6 @@ public class StatItemPanel extends JPanel
 	private void updateSubInfoLabels(long revenue, long expense, int numItemsFlipped, long numBuys, long numSells)
 	{
 		long profit = revenue - expense;
-		log.info("profit of {} is {}", flippingItem.getItemName(), profit);
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profit, true) + " gp");
 		totalProfitValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profit) + " gp");

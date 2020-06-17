@@ -88,16 +88,6 @@ public class FlippingItem
 	@Getter
 	private Instant latestActivityTime;
 
-	@SerializedName("sESI")
-	@Getter
-	@Setter
-	private boolean shouldExpandStatItem = false;
-
-	@SerializedName("sEH")
-	@Getter
-	@Setter
-	private boolean shouldExpandHistory = false;
-
 	@SerializedName("h")
 	@Getter
 	@Setter
@@ -129,7 +119,7 @@ public class FlippingItem
 	{
 		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
 			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			shouldExpandStatItem, shouldExpandHistory, history.clone(), flippedBy);
+			history.clone(), flippedBy);
 	}
 
 	/**
@@ -304,8 +294,6 @@ public class FlippingItem
 		sb.append(", latestBuyTime=").append(latestBuyTime);
 		sb.append(", latestSellTime=").append(latestSellTime);
 		sb.append(", latestActivityTime=").append(latestActivityTime);
-		sb.append(", shouldExpandStatItem=").append(shouldExpandStatItem);
-		sb.append(", shouldExpandHistory=").append(shouldExpandHistory);
 		sb.append(", madeBy='").append(flippedBy).append('\'');
 		sb.append('}');
 		return sb.toString();
