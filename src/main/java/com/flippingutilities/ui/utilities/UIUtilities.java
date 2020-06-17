@@ -70,6 +70,7 @@ public class UIUtilities
 	public static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	public static final Color PROFIT_COLOR = new Color(255, 175, 55);
 	public static final Color DARK_GRAY_ALT_ROW_COLOR = new Color(35, 35, 35);
+	public static final Color VIBRANT_YELLOW = new Color(230, 220, 6);
 
 	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
 	private static final Pattern WHITESPACE = Pattern.compile("[\\s]");

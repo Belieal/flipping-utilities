@@ -29,6 +29,7 @@ package com.flippingutilities.ui.statistics;
 import com.flippingutilities.Flip;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -112,19 +113,19 @@ public class FlipPanel extends JPanel
 		if (flip.isMarginCheck())
 		{
 			title.setText("Margin Checked " + "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
-			title.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
 
 		else if (flip.isOngoing())
 		{
 			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (ongoing)");
-			title.setForeground(ColorScheme.PROGRESS_INPROGRESS_COLOR);
+			title.setForeground(UIUtilities.VIBRANT_YELLOW);
 		}
 
 		else
 		{
 			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
-			title.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
 	}
 

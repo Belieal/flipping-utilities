@@ -144,11 +144,11 @@ public class StatItemPanel extends JPanel
 		JPanel allOffersPanel = UIUtilities.stackPanelsVertically((List) offerPanels);
 		JPanel allFlipsPanel = UIUtilities.stackPanelsVertically((List) flipPanels);
 
-		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
-			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Quantity Bought: "), new JLabel("Quantity Sold: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
+		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Avg. ROI: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
+			new JLabel(" "), new JLabel("Quantity Bought: "), new JLabel("Quantity Sold: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
 
-		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityFlipped,
-			new JLabel(" "), roiValLabel, quantityBoughtLabel, quantitySoldLabel, avgBuyPriceValLabel,
+		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, roiValLabel, timeOfLastFlipValLabel, quantityFlipped,
+			new JLabel(" "), quantityBoughtLabel, quantitySoldLabel, avgBuyPriceValLabel,
 			avgSellPriceValLabel};
 
 		setLayout(new BorderLayout());
@@ -175,12 +175,11 @@ public class StatItemPanel extends JPanel
 
 		//Set font colors of right value labels
 		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		profitEachValLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		quantityFlipped.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
-		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
-		quantityBoughtLabel.setForeground(UIUtilities.PROFIT_COLOR);
-		quantitySoldLabel.setForeground(UIUtilities.PROFIT_COLOR);
+		avgBuyPriceValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		avgSellPriceValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantityBoughtLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantitySoldLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 
 		totalFlips = flipPanels.size();
 
@@ -468,6 +467,7 @@ public class StatItemPanel extends JPanel
 	private void updateSubInfoLabels(long revenue, long expense, int numItemsFlipped, long numBuys, long numSells)
 	{
 		long profit = revenue - expense;
+		log.info("profit of {} is {}", flippingItem.getItemName(), profit);
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profit, true) + " gp");
 		totalProfitValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profit) + " gp");
