@@ -106,7 +106,7 @@ public class OfferEvent
 	 * when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
 	 * this method identifies the redundant buying/selling event before the bought/sold event.
 	 */
-	public boolean isRedundantEventBeforeCompletion()
+	public boolean isRedundantEventBeforeOfferCompletion()
 	{
 		return (state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.SELLING) && currentQuantityInTrade == totalQuantityInTrade;
 	}
