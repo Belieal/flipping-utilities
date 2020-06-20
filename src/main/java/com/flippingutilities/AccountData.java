@@ -44,8 +44,8 @@ public class AccountData
 	private Instant lastSessionTimeUpdate;
 
 	/**
-	 * Resets all session related data associated with an account. This is only ever called when the plugin first starts
-	 * as that's when a new session is "started".
+	 * Resets all session related data associated with an account. This is called when the plugin first starts
+	 * as that's when a new session is "started" and when a user wants to start a new session for an account.
 	 */
 	public void startNewSession()
 	{

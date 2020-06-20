@@ -350,6 +350,12 @@ public class FlippingPlugin extends Plugin
 		currentlyLoggedInAccount = null;
 	}
 
+	/**
+	 * Sets up the account cache when the plugin is starting up. The account cache is a mapping of display name to
+	 * AccountData object and is the central source for account related information that needs to be queried, such
+	 * as an account's trade list, accumulated session time, etc.
+	 * @return
+	 */
 	private Map<String, AccountData> setupCache()
 	{
 		try
@@ -463,6 +469,14 @@ public class FlippingPlugin extends Plugin
 	}
 
 
+	/**
+	 * Sets the ticks since the first offer event of the trade that this offer belongs to. The ticks since first
+	 * offer is used to determine whether an offer event is a margin check or not. This method also adds the offer event
+	 * to the last offers map so that isBadOffer can screen out duplicates of it.
+	 *
+	 * @param offerEvent the offer event that has passed the isBadOffer screening
+	 * @return offer event with the correct ticks since the first offer event in that trade
+	 */
 	private OfferEvent processGoodOfferEvent(OfferEvent offerEvent)
 	{
 		OfferEvent clonedOfferEvent = offerEvent.clone();
@@ -499,8 +513,7 @@ public class FlippingPlugin extends Plugin
 	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
 	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
 	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
-	 * events and also sets the ticks since the first offer in that slot to help with figuring out whether
-	 * an offer is a margin check.
+	 * events.
 	 *
 	 * @param offerEvent
 	 * @return a boolean representing whether the offer should be passed on or discarded
@@ -518,6 +531,11 @@ public class FlippingPlugin extends Plugin
 		{
 			slotTimers.get(offerEvent.getSlot()).setCurrentOffer(offerEvent);
 			loggedInAccsLastOffers.put(offerEvent.getSlot(), offerEvent); //tickSinceFirstOffer is 0 here
+			return true;
+		}
+
+		if (offerEvent.isStartOfTrade() && isDuplicateStartOfTradeEvent(offerEvent))
+		{
 			return true;
 		}
 
@@ -554,10 +572,9 @@ public class FlippingPlugin extends Plugin
 		return tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
 	}
 
-
 	/**
 	 * We get offer events that mark the start of a trade on login, even though we already received them prior to logging
-	 * out. So, this method is used to identify them.
+	 * out. This method is used to identify them.
 	 *
 	 * @param offerEvent
 	 * @return
@@ -584,20 +601,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * This method updates the given trade list in response to an OfferEvent based on whether an item
-	 * that matches what the offer was for already exists and whether the offer was a margin check.
-	 * <p>
-	 * If the offer was a margin check, and the item is present, that item's history and margin need
-	 * to be updated. If the item isn't present, a FlippingItem for the item in that offer and added to the trades
-	 * list.
-	 * <p>
-	 * If the offer was not a margin check and the item was present, just update the history and last traded
-	 * times of the object. (no need to update margins as the offer was not a margin check)
-	 * <p>
-	 * if the offer was not a margin check and the item wasn't present, we don't do anything as there
-	 * is no way to know what to display for the margin checked prices (as it wasn't a margin check) when
-	 * updating the FlippingItem that would have had to be constructed.
-	 *
+	 * This method updates the given trade list in response to an OfferEvent
 	 * @param trades       the trades list to update
 	 * @param flippingItem the flipping item to be updated in the tradeslist, if it even exists
 	 * @param newOffer     new offer that just came in
@@ -626,8 +630,8 @@ public class FlippingPlugin extends Plugin
 
 	/**
 	 * Constructs a FlippingItem, the data structure that represents an item the user is currently flipping, and
-	 * adds it to the given tradelist. This method is invoked when we receive a margin check offer for an item that
-	 * isn't currently present in the given trades list.
+	 * adds it to the given trades list. This method is invoked when we receive an offer event for an item that isn't
+	 * currently present in the trades list.
 	 *
 	 * @param tradesList the trades list to be updated
 	 * @param newOffer   the offer to update the trade list with
@@ -691,15 +695,16 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Invoked when a user clicks the button to reset the session time in the statistics panel.
+	 */
 	public void handleSessionTimeReset()
 	{
 		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
 		{
-			accountCache.get(accountCurrentlyViewed).setAccumulatedSessionTime(Duration.ZERO);
-			accountCache.get(accountCurrentlyViewed).setSessionStartTime(Instant.now());
+			accountCache.get(accountCurrentlyViewed).startNewSession();
 		}
 	}
-
 
 	@Provides
 	FlippingConfig provideConfig(ConfigManager configManager)
