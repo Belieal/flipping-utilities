@@ -28,7 +28,7 @@ package com.flippingutilities.ui.statistics;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.CLOSE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
@@ -89,7 +89,7 @@ public class StatItemPanel extends JPanel
 	private int totalFlips;
 
 	private Instant startOfInterval;
-	private ArrayList<OfferInfo> tradeHistory = new ArrayList<>();
+	private ArrayList<OfferEvent> tradeHistory = new ArrayList<>();
 
 	//Shows the item's profit
 	private JLabel itemProfitLabel = new JLabel();
@@ -136,7 +136,7 @@ public class StatItemPanel extends JPanel
 		startOfInterval = statsPanel.getStartOfInterval();
 		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
 
-		List<OfferInfo> historyShallowCopy = new ArrayList<>(tradeHistory);
+		List<OfferEvent> historyShallowCopy = new ArrayList<>(tradeHistory);
 		Collections.reverse(historyShallowCopy);
 		offerPanels = historyShallowCopy.stream().map(OfferPanel::new).collect(Collectors.toList());
 		flipPanels = flippingItem.getFlips(startOfInterval).stream().map(FlipPanel::new).collect(Collectors.toList());
@@ -422,7 +422,7 @@ public class StatItemPanel extends JPanel
 	{
 		long numItemsBought = 0;
 		long numItemsSold = 0;
-		for (OfferInfo offer : tradeHistory)
+		for (OfferEvent offer : tradeHistory)
 		{
 			if (offer.isBuy())
 			{
@@ -497,7 +497,7 @@ public class StatItemPanel extends JPanel
 			return;
 		}
 
-		OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
+		OfferEvent lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
 		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 
 		flipPanels.forEach(FlipPanel::updateTitle);

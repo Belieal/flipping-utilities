@@ -43,7 +43,7 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  */
 @Data
 @AllArgsConstructor
-public class OfferInfo
+public class OfferEvent
 {
 	@SerializedName("b")
 	private boolean buy;
@@ -103,6 +103,15 @@ public class OfferInfo
 	}
 
 	/**
+	 * when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
+	 * this method identifies the redundant buying/selling event before the bought/sold event.
+	 */
+	public boolean isRedundantEventBeforeCompletion()
+	{
+		return (state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.SELLING) && currentQuantityInTrade == totalQuantityInTrade;
+	}
+
+	/**
 	 * A margin check is defined as an offer that is either a BOUGHT or SOLD offer and has a currentQuantityInTrade of 1. This
 	 * resembles the typical margin check process wherein you buy an item (currentQuantityInTrade of 1) for a high press, and then
 	 * sell that item (currentQuantityInTrade of 1), to figure out the optimal buying and selling prices.
@@ -116,6 +125,15 @@ public class OfferInfo
 	}
 
 	/**
+	 * We get an event for every empty slot on logic
+	 * @return whether this OfferEvent was caused by an empty slot
+	 */
+	public boolean isCausedByEmptySlot()
+	{
+		return(itemId == 0 || state == GrandExchangeOfferState.EMPTY);
+	}
+
+	/**
 	 * When we first place an offer for a slot we get an offer event that has a quantity traded of 0. This offer marks
 	 * the tick the offer was placed. The reason we need to also check if it wasn't a complete offer is because you can
 	 * cancel a buy or a sell, and provided you didn't buy or sell anything, the quantity in the offer can be 0, but its
@@ -123,9 +141,11 @@ public class OfferInfo
 	 *
 	 * @return boolean value representing whether the offer is a start of a trade.
 	 */
-	public boolean isStartOfTrade() {
+	public boolean isStartOfTrade()
+	{
 		return currentQuantityInTrade == 0 && !isComplete();
 	}
+
 	/**
 	 * Returns an offerInfo object with the currentQuantityInTrade sold/bought the amount of items sold/bought since
 	 * the last event, rather than current currentQuantityInTrade sold/bought overall in the trade. This makes it
@@ -136,16 +156,16 @@ public class OfferInfo
 	 * @param lastOffer the last offer from that slot.
 	 * @return a standardized offer
 	 */
-	public OfferInfo standardizeOffer(OfferInfo lastOffer)
+	public OfferEvent standardizeOffer(OfferEvent lastOffer)
 	{
-		OfferInfo standardizedOffer = clone();
+		OfferEvent standardizedOffer = clone();
 		standardizedOffer.setQuantitySinceLastOffer(getCurrentQuantityInTrade() - lastOffer.getCurrentQuantityInTrade());
 		return standardizedOffer;
 	}
 
-	public OfferInfo clone()
+	public OfferEvent clone()
 	{
-		return new OfferInfo(buy,
+		return new OfferEvent(buy,
 			itemId,
 			currentQuantityInTrade,
 			price,
@@ -168,18 +188,18 @@ public class OfferInfo
 			return true;
 		}
 
-		if (!(other instanceof OfferInfo))
+		if (!(other instanceof OfferEvent))
 		{
 			return false;
 		}
 
-		OfferInfo otherOffer = (OfferInfo) other;
+		OfferEvent otherOffer = (OfferEvent) other;
 
 		return state == otherOffer.getState() && currentQuantityInTrade == otherOffer.getCurrentQuantityInTrade()
 			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
 	}
 
-	public static OfferInfo fromGrandExchangeEvent(GrandExchangeOfferChanged event)
+	public static OfferEvent fromGrandExchangeEvent(GrandExchangeOfferChanged event)
 	{
 		GrandExchangeOffer offer = event.getOffer();
 
@@ -187,7 +207,7 @@ public class OfferInfo
 			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
 			|| offer.getState() == GrandExchangeOfferState.BUYING;
 
-		return new OfferInfo(
+		return new OfferEvent(
 			isBuy,
 			offer.getItemId(),
 			offer.getQuantitySold(),

@@ -27,7 +27,7 @@
 package com.flippingutilities.ui.widgets;
 
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
@@ -64,7 +64,7 @@ public class TradeActivityTimer
 
 	private Instant lastUpdate = Instant.now();
 	private Instant tradeStartTime = Instant.now();
-	private OfferInfo currentOffer;
+	private OfferEvent currentOffer;
 
 	public TradeActivityTimer(FlippingPlugin plugin, Client client, int slotIndex)
 	{
@@ -79,7 +79,7 @@ public class TradeActivityTimer
 		slotStateString = slotWidget.getChild(16).getText();
 	}
 
-	public void setCurrentOffer(OfferInfo offer)
+	public void setCurrentOffer(OfferEvent offer)
 	{
 		currentOffer = offer;
 		lastUpdate = Instant.now();

@@ -37,7 +37,7 @@ import lombok.Data;
 @Data
 public class AccountData
 {
-	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
+	private Map<Integer, OfferEvent> lastOffers = new HashMap<>();
 	private List<FlippingItem> trades = new ArrayList<>();
 	private Instant sessionStartTime = Instant.now();
 	private Duration accumulatedSessionTime = Duration.ZERO;

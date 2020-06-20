@@ -42,20 +42,20 @@ public class HistoryManagerTest
 	private static HistoryManager historyManager;
 	private static Instant baseTime = Instant.now();
 
-	public OfferInfo offer(boolean isBuy, int currentQuantityInTrade, int price, Instant time, int slot, GrandExchangeOfferState state, int totalQuantityInTrade, int quantitySinceLastOffer)
+	public OfferEvent offer(boolean isBuy, int currentQuantityInTrade, int price, Instant time, int slot, GrandExchangeOfferState state, int totalQuantityInTrade, int quantitySinceLastOffer)
 	{
-		return new OfferInfo(isBuy, 0, currentQuantityInTrade, price, time, slot, state, 0, 10, totalQuantityInTrade, quantitySinceLastOffer, true, true, "gooby");
+		return new OfferEvent(isBuy, 0, currentQuantityInTrade, price, time, slot, state, 0, 10, totalQuantityInTrade, quantitySinceLastOffer, true, true, "gooby");
 	}
 
-	public OfferInfo offer(boolean isBuy, int currentQuantityInTrade, int price, Instant time, int slot, GrandExchangeOfferState state, int totalQuantityInTrade, int quantitySinceLastOffer, int tickSinceFirstOffer)
+	public OfferEvent offer(boolean isBuy, int currentQuantityInTrade, int price, Instant time, int slot, GrandExchangeOfferState state, int totalQuantityInTrade, int quantitySinceLastOffer, int tickSinceFirstOffer)
 	{
-		return new OfferInfo(isBuy, 0, currentQuantityInTrade, price, time, slot, state, 0, tickSinceFirstOffer, totalQuantityInTrade, quantitySinceLastOffer, true, true, "gooby");
+		return new OfferEvent(isBuy, 0, currentQuantityInTrade, price, time, slot, state, 0, tickSinceFirstOffer, totalQuantityInTrade, quantitySinceLastOffer, true, true, "gooby");
 	}
 
 	@Before
 	public void setUp()
 	{
-		List<OfferInfo> offers = new ArrayList<>();
+		List<OfferEvent> offers = new ArrayList<>();
 
 		//overall bought 24+3+20=47
 		//overall sold 7 + 3 + 30 = 40
@@ -77,7 +77,7 @@ public class HistoryManagerTest
 		offers.add(offer(false, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 30, 0));
 
 		historyManager = new HistoryManager();
-		for (OfferInfo offer : offers)
+		for (OfferEvent offer : offers)
 		{
 			historyManager.updateHistory(offer);
 		}
@@ -90,7 +90,7 @@ public class HistoryManagerTest
 	@Test
 	public void historyManagerCorrectlyUpdatedTest()
 	{
-		List<OfferInfo> recordedOffers = new ArrayList<>();
+		List<OfferEvent> recordedOffers = new ArrayList<>();
 
 		recordedOffers.add(offer(true, 24, 100, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 24, 24));
 		recordedOffers.add(offer(false, 7, 105, baseTime.minus(15, ChronoUnit.MINUTES), 3, GrandExchangeOfferState.SOLD, 7, 7));
@@ -110,7 +110,7 @@ public class HistoryManagerTest
 	@Test
 	public void getProfitCorrectnessTest()
 	{
-		List<OfferInfo> tradesList;
+		List<OfferEvent> tradesList;
 		tradesList = historyManager.getIntervalsHistory(baseTime.minus(1, ChronoUnit.HOURS));
 		assertEquals(200, historyManager.currentProfit(tradesList));
 
@@ -130,7 +130,7 @@ public class HistoryManagerTest
 	{
 		HistoryManager historyManager = new HistoryManager();
 
-		OfferInfo offer1 = offer(true, 7, 100, baseTime.minus(4, ChronoUnit.HOURS), 1, GrandExchangeOfferState.BUYING, 10, 0);
+		OfferEvent offer1 = offer(true, 7, 100, baseTime.minus(4, ChronoUnit.HOURS), 1, GrandExchangeOfferState.BUYING, 10, 0);
 
 		//buy 7 of an item 4 hours ago
 		historyManager.updateHistory(offer1);
@@ -138,14 +138,14 @@ public class HistoryManagerTest
 		assertEquals(offer1.getTime().plus(4, ChronoUnit.HOURS), historyManager.getNextGeLimitRefresh());
 
 		//buy another 3 of that item 3 hours ago, so the amount you bought before the ge limit has refreshed is now 10
-		OfferInfo offer2 = offer(true, 10, 100, baseTime.minus(3, ChronoUnit.HOURS), 1, GrandExchangeOfferState.BOUGHT, 10, 0);
+		OfferEvent offer2 = offer(true, 10, 100, baseTime.minus(3, ChronoUnit.HOURS), 1, GrandExchangeOfferState.BOUGHT, 10, 0);
 		historyManager.updateHistory(offer2);
 		assertEquals(10, historyManager.getItemsBoughtThisLimitWindow());
 		assertEquals(offer1.getTime().plus(4, ChronoUnit.HOURS), historyManager.getNextGeLimitRefresh());
 
 		//buy another 1 of that item, but 1 minute in the future, so more than 4 hours from the first purchase of the item. By this time, the ge limit has reset
 		//so the amount you bought after the last ge refresh is 1.
-		OfferInfo offer3 = offer(true, 1, 100, baseTime.plus(1, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 2, 0);
+		OfferEvent offer3 = offer(true, 1, 100, baseTime.plus(1, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 2, 0);
 		historyManager.updateHistory(offer3);
 		assertEquals(1, historyManager.getItemsBoughtThisLimitWindow());
 		assertEquals(offer3.getTime().plus(4, ChronoUnit.HOURS), historyManager.getNextGeLimitRefresh());
@@ -168,8 +168,8 @@ public class HistoryManagerTest
 		assertEquals(flips, generatedFlips);
 
 		//now lets add some margin checks in there!!!!!!!
-		OfferInfo marginBuy = offer(true, 1, 105, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 0, 0);
-		OfferInfo marginSell = offer(false, 1, 100, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 0, 0);
+		OfferEvent marginBuy = offer(true, 1, 105, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 0, 0);
+		OfferEvent marginSell = offer(false, 1, 100, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 0, 0);
 
 
 		historyManager.updateHistory(marginBuy);
@@ -191,7 +191,7 @@ public class HistoryManagerTest
 	public void createFlipsUnEvenMarginChecks()
 	{
 		HistoryManager historyManager = new HistoryManager();
-		List<OfferInfo> standardizedOffers = new ArrayList<>();
+		List<OfferEvent> standardizedOffers = new ArrayList<>();
 		List<Flip> flips = new ArrayList<>();
 
 		//add a buy margin check and a sell margin check
@@ -230,11 +230,11 @@ public class HistoryManagerTest
 	public void pairUnevenMarginChecksTest()
 	{
 		List<Flip> flips = new ArrayList<>();
-		List<OfferInfo> expectedRemainder = new ArrayList<>();
+		List<OfferEvent> expectedRemainder = new ArrayList<>();
 
-		List<OfferInfo> buyMarginChecks = new ArrayList<>();
-		List<OfferInfo> sellMarginChecks = new ArrayList<>();
-		List<OfferInfo> remainder = new ArrayList<>();
+		List<OfferEvent> buyMarginChecks = new ArrayList<>();
+		List<OfferEvent> sellMarginChecks = new ArrayList<>();
+		List<OfferEvent> remainder = new ArrayList<>();
 		//initial buy margin check
 		buyMarginChecks.add(offer(true, 1, 2, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
 		//sell margin check
@@ -271,7 +271,7 @@ public class HistoryManagerTest
 	@Test
 	public void createFlipsUnevenAndIntermediateMarginChecks()
 	{
-		List<OfferInfo> offers = new ArrayList<>();
+		List<OfferEvent> offers = new ArrayList<>();
 
 		List<Flip> expectedFlips = new ArrayList<>();
 
@@ -329,7 +329,7 @@ public class HistoryManagerTest
 	{
 		List<Flip> expectedFlips = new ArrayList<>();
 
-		List<OfferInfo> offers = new ArrayList<>();
+		List<OfferEvent> offers = new ArrayList<>();
 
 		//a full margin check (a buy margin check followed by a sell margin check)
 		offers.add(offer(true, 1, 2, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
@@ -366,9 +366,9 @@ public class HistoryManagerTest
 	{
 		HistoryManager historyManager = new HistoryManager();
 
-		ArrayList<OfferInfo> someStandardizedOffers = new ArrayList<>();
+		ArrayList<OfferEvent> someStandardizedOffers = new ArrayList<>();
 
-		ArrayList<OfferInfo> truncatedOffers = new ArrayList<>();
+		ArrayList<OfferEvent> truncatedOffers = new ArrayList<>();
 
 		//test truncation on incomplete offers
 		someStandardizedOffers.add(offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 10));
@@ -409,8 +409,8 @@ public class HistoryManagerTest
 	{
 		HistoryManager historyManager = new HistoryManager();
 
-		ArrayList<OfferInfo> someUnStandardizedOffers = new ArrayList<>();
-		ArrayList<OfferInfo> standardizedOffers = new ArrayList<>();
+		ArrayList<OfferEvent> someUnStandardizedOffers = new ArrayList<>();
+		ArrayList<OfferEvent> standardizedOffers = new ArrayList<>();
 
 		//bunch of buy offers from diff slots
 		someUnStandardizedOffers.add(offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 0));
@@ -427,7 +427,7 @@ public class HistoryManagerTest
 		standardizedOffers.add(offer(true, 20, 100, baseTime, 4, GrandExchangeOfferState.BUYING, 500, 20));
 		standardizedOffers.add(offer(true, 500, 100, baseTime, 4, GrandExchangeOfferState.BOUGHT, 500, 480));
 		standardizedOffers.add(offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50, 25));
-		for (OfferInfo offer : someUnStandardizedOffers)
+		for (OfferEvent offer : someUnStandardizedOffers)
 		{
 			historyManager.storeStandardizedOffer(offer);
 		}

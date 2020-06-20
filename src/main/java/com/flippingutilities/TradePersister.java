@@ -87,7 +87,7 @@ public class TradePersister
 
 	/**
 	 * Reads the data from trades.json and creates separate files for each account to conform with the
-	 * new way of saving data. It also sets the "madeBy" field on every OfferInfo object in the trade lists
+	 * new way of saving data. It also sets the "madeBy" field on every OfferEvent object in the trade lists
 	 * as the old trades (in trades.json) would not have that field.
 	 *
 	 * @param f the old trades.json file.
