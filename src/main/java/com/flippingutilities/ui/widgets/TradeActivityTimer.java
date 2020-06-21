@@ -84,7 +84,7 @@ public class TradeActivityTimer
 		currentOffer = offer;
 		lastUpdate = Instant.now();
 
-		if (currentOffer.isStartOfTrade())
+		if (currentOffer.isStartOfOffer())
 		{
 			tradeStartTime = Instant.now();
 		}

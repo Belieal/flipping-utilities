@@ -451,6 +451,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
+		log.info("event: {}", newOfferEvent);
 
 		if (isBadOfferEvent(newOfferEvent))
 		{
@@ -525,23 +526,27 @@ public class FlippingPlugin extends Plugin
 
 		if (newOfferEvent.isCausedByEmptySlot())
 		{
+			log.info("caused by empty slot");
 			return true;
 		}
 
-		if (newOfferEvent.isStartOfTrade() && !isDuplicateStartOfTradeEvent(newOfferEvent))
+		if (newOfferEvent.isStartOfOffer() && !isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
+			log.info("not duplicate start of trade event");
 			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent); //tickSinceFirstOffer is 0 here
 			return true;
 		}
 
-		if (newOfferEvent.isStartOfTrade() && isDuplicateStartOfTradeEvent(newOfferEvent))
+		if (newOfferEvent.isStartOfOffer() && isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
+			log.info("duplicate start of trade event");
 			return true;
 		}
 
 		if (newOfferEvent.isRedundantEventBeforeOfferCompletion())
 		{
+			log.info("redundant offer event ");
 			return true;
 		}
 
@@ -551,15 +556,18 @@ public class FlippingPlugin extends Plugin
 		//history for the slot was recorded.
 		if (lastOfferEvent == null)
 		{
+			log.info("last offer event was null, event passing thru");
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent);
 			return false;
 		}
 
 		if (lastOfferEvent.equals(newOfferEvent))
 		{
+			log.info("Duplicate event");
 			return true;
 		}
 
+		log.info("good event, passing through");
 		slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 		return false;
 	}
@@ -573,16 +581,18 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * We get offer events that mark the start of a trade on login, even though we already received them prior to logging
+	 * We get offer events that mark the start of an offer on login, even though we already received them prior to logging
 	 * out. This method is used to identify them.
 	 *
 	 * @param offerEvent
 	 * @return whether or not this trade event is a duplicate "start of trade" event
 	 */
-	private boolean isDuplicateStartOfTradeEvent(OfferEvent offerEvent)
+	private boolean isDuplicateStartOfOfferEvent(OfferEvent offerEvent)
 	{
 		Map<Integer, OfferEvent> loggedInAccsLastOffers = accountCache.get(currentlyLoggedInAccount).getLastOffers();
-		return loggedInAccsLastOffers.containsKey(offerEvent.getSlot()) && loggedInAccsLastOffers.get(offerEvent.getSlot()).getCurrentQuantityInTrade() == 0;
+		return loggedInAccsLastOffers.containsKey(offerEvent.getSlot()) &&
+			loggedInAccsLastOffers.get(offerEvent.getSlot()).getCurrentQuantityInTrade() == 0 &&
+			loggedInAccsLastOffers.get(offerEvent.getSlot()).getState() == offerEvent.getState();
 	}
 
 	/**

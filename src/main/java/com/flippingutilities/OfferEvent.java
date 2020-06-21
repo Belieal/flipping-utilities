@@ -141,7 +141,7 @@ public class OfferEvent
 	 *
 	 * @return boolean value representing whether the offer is a start of a trade.
 	 */
-	public boolean isStartOfTrade()
+	public boolean isStartOfOffer()
 	{
 		return currentQuantityInTrade == 0 && !isComplete();
 	}
