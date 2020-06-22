@@ -126,11 +126,12 @@ public class OfferEvent
 
 	/**
 	 * We get an event for every empty slot on logic
+	 *
 	 * @return whether this OfferEvent was caused by an empty slot
 	 */
 	public boolean isCausedByEmptySlot()
 	{
-		return(itemId == 0 || state == GrandExchangeOfferState.EMPTY);
+		return (itemId == 0 || state == GrandExchangeOfferState.EMPTY);
 	}
 
 	/**
@@ -181,6 +182,12 @@ public class OfferEvent
 			madeBy);
 	}
 
+	/**
+	 * There are some fields missing in the equals comparison. That is because
+	 *
+	 * @param other
+	 * @return
+	 */
 	public boolean equals(Object other)
 	{
 		if (other == this)
@@ -195,8 +202,26 @@ public class OfferEvent
 
 		OfferEvent otherOffer = (OfferEvent) other;
 
-		return state == otherOffer.getState() && currentQuantityInTrade == otherOffer.getCurrentQuantityInTrade()
-			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
+		return isDuplicate(otherOffer) && tickArrivedAt == otherOffer.tickArrivedAt
+			&& ticksSinceFirstOffer == otherOffer.ticksSinceFirstOffer && time.equals(otherOffer.time) &&
+			validFlippingOffer == otherOffer.validFlippingOffer && validStatOffer == otherOffer.validStatOffer;
+	}
+
+	/**
+	 * This checks whether the given OfferEvent is a "duplicate" of this OfferEvent. Some fields such as
+	 * tickArrivedAt are omitted because even if they are different, the given offer is still redundant due to all
+	 * the other information being the same and should be screened out by screenOfferEvent in FlippingPlugin, where
+	 * this method is used.
+	 *
+	 * @param other the OfferEvent being compared.
+	 * @return whether or not the given offer event is redundant
+	 */
+	public boolean isDuplicate(OfferEvent other)
+	{
+		return state == other.getState() && currentQuantityInTrade == other.getCurrentQuantityInTrade()
+			&& quantitySinceLastOffer == other.getQuantitySinceLastOffer() && slot == other.getSlot()
+			&& totalQuantityInTrade == other.getTotalQuantityInTrade() && itemId == other.getItemId()
+			&& price == other.getPrice();
 	}
 
 	public static OfferEvent fromGrandExchangeEvent(GrandExchangeOfferChanged event)
@@ -222,6 +247,18 @@ public class OfferEvent
 			true,
 			true,
 			null);
+	}
+
+	/**
+	 * Sets the ticks since the first offer event of the trade that this offer event belongs to. The ticks since first
+	 * offer event is used to determine whether an offer event is a margin check or not.
+	 *
+	 * @param lastOfferForSlot the last offer event for the slot this offer event belongs to
+	 */
+	public void setTicksSinceFirstOffer(OfferEvent lastOfferForSlot)
+	{
+		int tickDiffFromLastOffer = Math.abs(tickArrivedAt - lastOfferForSlot.getTickArrivedAt());
+		ticksSinceFirstOffer = tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
 	}
 }
 

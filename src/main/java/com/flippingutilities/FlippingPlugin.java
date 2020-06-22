@@ -139,6 +139,7 @@ public class FlippingPlugin extends Plugin
 	//hold all account data associated with an account. This account data includes the account's trade history and
 	//last offers for every slot (this is to help deduplicate incoming offers)
 	@Getter
+	@Setter
 	private Map<String, AccountData> accountCache = new HashMap<>();
 
 	//the display name of the account whose trade list the user is currently looking at as selected
@@ -148,6 +149,7 @@ public class FlippingPlugin extends Plugin
 	//the display name of the currently logged in user. This is the only account that can actually receive offers
 	//as this is the only account currently logged in.
 	@Getter
+	@Setter
 	private String currentlyLoggedInAccount;
 
 	//some events come before a display name has been retrieved and since a display name is crucial for figuring out
@@ -162,6 +164,7 @@ public class FlippingPlugin extends Plugin
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
 	private CacheUpdater cacheUpdater;
 
+	@Setter
 	private List<TradeActivityTimer> slotTimers = new ArrayList<>();
 	private Instant startUpTime = Instant.now();
 
@@ -375,7 +378,7 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	private List<TradeActivityTimer> setupSlotTimers()
+	public List<TradeActivityTimer> setupSlotTimers()
 	{
 		ArrayList<TradeActivityTimer> slotTimers = new ArrayList<>();
 		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
@@ -451,14 +454,14 @@ public class FlippingPlugin extends Plugin
 		}
 
 		OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
-		log.info("event: {}", newOfferEvent);
 
-		if (isBadOfferEvent(newOfferEvent))
-		{
+		Optional<OfferEvent> screenedOfferEvent = screenOfferEvent(newOfferEvent);
+
+		if (!screenedOfferEvent.isPresent()) {
 			return;
 		}
 
-		OfferEvent finalizedOfferEvent = finalizeOfferEvent(newOfferEvent);
+		OfferEvent finalizedOfferEvent = screenedOfferEvent.get();
 
 		List<FlippingItem> currentlyLoggedInAccountsTrades = accountCache.get(currentlyLoggedInAccount).getTrades();
 
@@ -469,23 +472,6 @@ public class FlippingPlugin extends Plugin
 		updateSinceLastAccountWideBuild = true;
 
 		rebuildDisplayAfterOfferEvent(flippingItem, finalizedOfferEvent);
-	}
-
-	/**
-	 * Sets the ticks since the first offer event of the trade that this offer event belongs to. The ticks since first
-	 * offer event is used to determine whether an offer event is a margin check or not. This method also adds the
-	 * offer event to the last offers map so that isBadOfferEvent can screen out duplicates of it.
-	 *
-	 * @param offerEvent the offer event that has passed the isBadOffer screening
-	 * @return offer event with the correct ticks since the first offer event in that trade
-	 */
-	private OfferEvent finalizeOfferEvent(OfferEvent offerEvent)
-	{
-		OfferEvent clonedOfferEvent = offerEvent.clone();
-		int ticksSinceFirstOffer = getTicksSinceFirstOffer(clonedOfferEvent);
-		clonedOfferEvent.setTicksSinceFirstOffer(ticksSinceFirstOffer);
-		accountCache.get(currentlyLoggedInAccount).getLastOffers().put(clonedOfferEvent.getSlot(), clonedOfferEvent);
-		return clonedOfferEvent;
 	}
 
 	/**
@@ -512,42 +498,42 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * Runelite has some wonky events at times. For example, every empty/buy/sell/cancelled buy/cancelled sell
-	 * spawns two identical events. And when you fully buy/sell item, it also spawns two events (a
+	 * Runelite has some wonky events. For example, every empty/buy/sell/cancelled buy/cancelled sell
+	 * spawns two identical events. And when you fully buy/sell item, it spawns two events (a
 	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
-	 * events.
+	 * events and sets the ticksSinceFirstOffer field correctly on new OfferEvents.
 	 *
-	 * @param newOfferEvent
-	 * @return a boolean representing whether the offer should be passed on or discarded
+	 * @param newOfferEvent event that just occurred
+	 * @return an optional containing an OfferEvent.
 	 */
-	private boolean isBadOfferEvent(OfferEvent newOfferEvent)
+	public Optional<OfferEvent> screenOfferEvent(OfferEvent newOfferEvent)
 	{
 		Map<Integer, OfferEvent> lastOfferEventForEachSlot = accountCache.get(currentlyLoggedInAccount).getLastOffers();
 
 		if (newOfferEvent.isCausedByEmptySlot())
 		{
-			log.info("caused by empty slot");
-			return true;
+			log.info("caused by empty slot: {}", newOfferEvent);
+			return Optional.empty();
 		}
 
 		if (newOfferEvent.isStartOfOffer() && !isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
-			log.info("not duplicate start of trade event");
+			log.info("not duplicate start of trade event: {}", newOfferEvent);
 			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent); //tickSinceFirstOffer is 0 here
-			return true;
+			return Optional.empty();
 		}
 
 		if (newOfferEvent.isStartOfOffer() && isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
-			log.info("duplicate start of trade event");
-			return true;
+			log.info("duplicate start of trade event: {}", newOfferEvent);
+			return Optional.empty();
 		}
 
 		if (newOfferEvent.isRedundantEventBeforeOfferCompletion())
 		{
-			log.info("redundant offer event ");
-			return true;
+			log.info("redundant offer event: {}", newOfferEvent);
+			return Optional.empty();
 		}
 
 		OfferEvent lastOfferEvent = lastOfferEventForEachSlot.get(newOfferEvent.getSlot());
@@ -556,28 +542,22 @@ public class FlippingPlugin extends Plugin
 		//history for the slot was recorded.
 		if (lastOfferEvent == null)
 		{
-			log.info("last offer event was null, event passing thru");
+			log.info("last offer event was null, event passing thru: {}", newOfferEvent);
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent);
-			return false;
+			return Optional.of(newOfferEvent);
 		}
 
-		if (lastOfferEvent.equals(newOfferEvent))
+		if (lastOfferEvent.isDuplicate(newOfferEvent))
 		{
-			log.info("Duplicate event");
-			return true;
+			log.info("Duplicate event: {}", newOfferEvent);
+			return Optional.empty();
 		}
 
-		log.info("good event, passing through");
+		newOfferEvent.setTicksSinceFirstOffer(lastOfferEvent);
+		lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent);
 		slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
-		return false;
-	}
-
-	private int getTicksSinceFirstOffer(OfferEvent offerEvent)
-	{
-		Map<Integer, OfferEvent> loggedInAccsLastOffers = accountCache.get(currentlyLoggedInAccount).getLastOffers();
-		OfferEvent lastOfferForSlot = loggedInAccsLastOffers.get(offerEvent.getSlot());
-		int tickDiffFromLastOffer = Math.abs(offerEvent.getTickArrivedAt() - lastOfferForSlot.getTickArrivedAt());
-		return tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
+		log.info("good event, passing through: {}", newOfferEvent);
+		return Optional.of(newOfferEvent);
 	}
 
 	/**
@@ -811,7 +791,6 @@ public class FlippingPlugin extends Plugin
 		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
 		{
 			accountCache.get(accountCurrentlyViewed).setTrades(currItems);
-
 		}
 	}
 
