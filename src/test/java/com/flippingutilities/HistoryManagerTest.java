@@ -46,32 +46,32 @@ public class HistoryManagerTest
 	@Before
 	public void setUp()
 	{
-		List<OfferEvent> offers = new ArrayList<>();
+		List<OfferEvent> offerEvents = new ArrayList<>();
 
 		//overall bought 24+3+20=47
 		//overall sold 7 + 3 + 30 = 40
 		//5gp profit each
 
-		offers.add(Utils.offer(true, 7, 100, baseTime.minus(40, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 24, 0));
-		offers.add(Utils.offer(true, 13, 100, baseTime.minus(30, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 24, 0));
-		offers.add(Utils.offer(true, 24, 100, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 24, 0));
+		offerEvents.add(Utils.offer(true, 7, 100, baseTime.minus(40, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 24));
+		offerEvents.add(Utils.offer(true, 13, 100, baseTime.minus(30, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BUYING, 24));
+		offerEvents.add(Utils.offer(true, 24, 100, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 24));
 
-		offers.add(Utils.offer(false, 7, 105, baseTime.minus(15, ChronoUnit.MINUTES), 3, GrandExchangeOfferState.SOLD, 7, 0));
-		offers.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.SELLING, 5, 0));
-		offers.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.CANCELLED_SELL, 5, 0));
+		offerEvents.add(Utils.offer(false, 7, 105, baseTime.minus(15, ChronoUnit.MINUTES), 3, GrandExchangeOfferState.SOLD, 7));
+		offerEvents.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.SELLING, 5));
+		offerEvents.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.CANCELLED_SELL, 5));
 
-		offers.add(Utils.offer(true, 3, 100, baseTime.minus(10, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 3, 0));
-		offers.add(Utils.offer(true, 10, 100, baseTime.minus(9, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BUYING, 20, 0));
-		offers.add(Utils.offer(true, 20, 100, baseTime.minus(7, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 20, 0));
+		offerEvents.add(Utils.offer(true, 3, 100, baseTime.minus(10, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 3));
+		offerEvents.add(Utils.offer(true, 10, 100, baseTime.minus(9, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BUYING, 20));
+		offerEvents.add(Utils.offer(true, 20, 100, baseTime.minus(7, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 20));
 
-		offers.add(Utils.offer(false, 10, 105, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SELLING, 30, 0));
-		offers.add(Utils.offer(false, 20, 105, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SELLING, 30, 0));
-		offers.add(Utils.offer(false, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 30, 0));
+		offerEvents.add(Utils.offer(false, 10, 105, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SELLING, 30));
+		offerEvents.add(Utils.offer(false, 20, 105, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SELLING, 30));
+		offerEvents.add(Utils.offer(false, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 30));
 
 		historyManager = new HistoryManager();
-		for (OfferEvent offer : offers)
+		for (OfferEvent offerEvent : offerEvents)
 		{
-			historyManager.updateHistory(offer);
+			historyManager.updateHistory(offerEvent);
 		}
 	}
 
@@ -84,14 +84,14 @@ public class HistoryManagerTest
 	{
 		List<OfferEvent> recordedOffers = new ArrayList<>();
 
-		recordedOffers.add(Utils.offer(true, 24, 100, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 24, 24));
-		recordedOffers.add(Utils.offer(false, 7, 105, baseTime.minus(15, ChronoUnit.MINUTES), 3, GrandExchangeOfferState.SOLD, 7, 7));
-		recordedOffers.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.CANCELLED_SELL, 5, 3));
-		recordedOffers.add(Utils.offer(true, 3, 100, baseTime.minus(10, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 3, 3));
-		recordedOffers.add(Utils.offer(true, 20, 100, baseTime.minus(7, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 20, 20));
-		recordedOffers.add(Utils.offer(false, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 30, 30));
+		recordedOffers.add(Utils.offer(true, 24, 100, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 24));
+		recordedOffers.add(Utils.offer(false, 7, 105, baseTime.minus(15, ChronoUnit.MINUTES), 3, GrandExchangeOfferState.SOLD, 7));
+		recordedOffers.add(Utils.offer(false, 3, 105, baseTime.minus(12, ChronoUnit.MINUTES), 4, GrandExchangeOfferState.CANCELLED_SELL, 5));
+		recordedOffers.add(Utils.offer(true, 3, 100, baseTime.minus(10, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 3));
+		recordedOffers.add(Utils.offer(true, 20, 100, baseTime.minus(7, ChronoUnit.MINUTES), 2, GrandExchangeOfferState.BOUGHT, 20));
+		recordedOffers.add(Utils.offer(false, 30, 105, baseTime.minus(4, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 30));
 
-		assertEquals(recordedOffers, historyManager.getStandardizedOffers());
+		assertEquals(recordedOffers, historyManager.getCompressedOfferEvents());
 
 		assertEquals(47, historyManager.getItemsBoughtThisLimitWindow());
 
@@ -155,24 +155,22 @@ public class HistoryManagerTest
 		flips.add(new Flip(100, 105, 7, baseTime.minus(15, ChronoUnit.MINUTES), false, false));
 		flips.add(new Flip(100, 105, 3, baseTime.minus(12, ChronoUnit.MINUTES), false, false));
 		flips.add(new Flip(100, 105, 30, baseTime.minus(4, ChronoUnit.MINUTES), false,false));
-		generatedFlips = historyManager.createFlips(historyManager.getStandardizedOffers());
+		generatedFlips = historyManager.createFlips(historyManager.getCompressedOfferEvents());
 
 		assertEquals(flips, generatedFlips);
 
 		//now lets add some margin checks in there!!!!!!!
-		OfferEvent marginBuy = Utils.offer(true, 1, 105, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 0, 0);
-		OfferEvent marginSell = Utils.offer(false, 1, 100, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 0, 0);
-
+		OfferEvent marginBuy = Utils.offer(true, 1, 105, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 0, 1);
+		OfferEvent marginSell = Utils.offer(false, 1, 100, baseTime.minus(3, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 0, 1);
 
 		historyManager.updateHistory(marginBuy);
 		historyManager.updateHistory(marginSell);
-
-		generatedFlips = historyManager.createFlips(historyManager.getStandardizedOffers());
+		generatedFlips = historyManager.createFlips(historyManager.getCompressedOfferEvents());
 
 		generatedFlips.sort(Comparator.comparing(Flip::getTime));
 
 		//add the flip generated by the margin check
-		flips.add(new Flip(105, 100, 1, baseTime.minus(3, ChronoUnit.MINUTES), marginSell.isMarginCheck(), false));
+		flips.add(new Flip(105, 100, 1, baseTime.minus(3, ChronoUnit.MINUTES), true, false));
 		assertEquals(flips, generatedFlips);
 	}
 
@@ -187,8 +185,8 @@ public class HistoryManagerTest
 		List<Flip> flips = new ArrayList<>();
 
 		//add a buy margin check and a sell margin check
-		standardizedOffers.add(Utils.offer(true, 1, 2, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
-		standardizedOffers.add(Utils.offer(false, 1, 1, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		standardizedOffers.add(Utils.offer(true, 1, 2, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
+		standardizedOffers.add(Utils.offer(false, 1, 1, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		standardizedOffers.add(Utils.offer(false, 1, 2, baseTime.minus(9, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 100));
 		standardizedOffers.add(Utils.offer(true, 10, 1, baseTime.minus(8, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 10, 10, 100));
@@ -199,7 +197,7 @@ public class HistoryManagerTest
 
 		//some random buy margin check, for example this can be the case when a user just wants to instabuy something and see if its
 		//sell price has changed
-		standardizedOffers.add(Utils.offer(true, 1, 2, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		standardizedOffers.add(Utils.offer(true, 1, 2, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 
 		standardizedOffers.add(Utils.offer(false, 8, 2, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 8, 8));
 
@@ -228,20 +226,20 @@ public class HistoryManagerTest
 		List<OfferEvent> sellMarginChecks = new ArrayList<>();
 		List<OfferEvent> remainder = new ArrayList<>();
 		//initial buy margin check
-		buyMarginChecks.add(Utils.offer(true, 1, 2, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		buyMarginChecks.add(Utils.offer(true, 1, 2, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 		//sell margin check
-		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		//random half margin check if user is just checking out optimal sell price
-		buyMarginChecks.add(Utils.offer(true, 1, 3, baseTime.minus(8, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		buyMarginChecks.add(Utils.offer(true, 1, 3, baseTime.minus(8, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 
 		//another buy margin check
-		buyMarginChecks.add(Utils.offer(true, 1, 2, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		buyMarginChecks.add(Utils.offer(true, 1, 2, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 		//accompanied by sell margin check
-		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(6, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		//some random half margin check to check optimal buy price
-		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		sellMarginChecks.add(Utils.offer(false, 1, 1, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 
 		flips.add(new Flip(2, 1, 1, baseTime.minus(10, ChronoUnit.MINUTES), true, false));
@@ -251,8 +249,8 @@ public class HistoryManagerTest
 		assertEquals(flips, historyManager.pairMarginChecks(buyMarginChecks, sellMarginChecks, remainder));
 
 		//add both the half margin checks that should be unpaired
-		expectedRemainder.add(Utils.offer(true, 1, 3, baseTime.minus(8, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
-		expectedRemainder.add(Utils.offer(false, 1, 1, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		expectedRemainder.add(Utils.offer(true, 1, 3, baseTime.minus(8, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
+		expectedRemainder.add(Utils.offer(false, 1, 1, baseTime.minus(5, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		assertEquals(expectedRemainder, remainder);
 	}
@@ -268,32 +266,32 @@ public class HistoryManagerTest
 		List<Flip> expectedFlips = new ArrayList<>();
 
 		//a full margin check (a buy margin check followed by a sell margin check)
-		offers.add(Utils.offer(true, 1, 2, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
-		offers.add(Utils.offer(false, 1, 1, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 2, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
+		offers.add(Utils.offer(false, 1, 1, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		//some random offers
-		offers.add(Utils.offer(false, 1, 2, baseTime.minus(19, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1));
+		offers.add(Utils.offer(false, 1, 2, baseTime.minus(19, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 10));
 		offers.add(Utils.offer(true, 5, 1, baseTime.minus(17, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 5, 5));
 
 		//half margin check to see optimal sell price
-		offers.add(Utils.offer(true, 1, 3, baseTime.minus(17, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 3, baseTime.minus(17, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 
 		offers.add(Utils.offer(false, 5, 3, baseTime.minus(15, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 5, 5));
 
 		//you start flipping it again so u do a full margin check
 		//a full margin check (a buy margin check followed by a sell margin check)
-		offers.add(Utils.offer(true, 1, 7, baseTime.minus(14, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
-		offers.add(Utils.offer(false, 1, 4, baseTime.minus(14, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 7, baseTime.minus(14, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
+		offers.add(Utils.offer(false, 1, 4, baseTime.minus(14, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		offers.add(Utils.offer(true, 5, 4, baseTime.minus(12, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 5, 5));
 
 		//half margin check to see optimal sell price
-		offers.add(Utils.offer(true, 1, 8, baseTime.minus(12, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 8, baseTime.minus(12, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 
 		offers.add(Utils.offer(false, 3, 8, baseTime.minus(11, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 3, 3));
 
 		//half margin check to see optimal sell price
-		offers.add(Utils.offer(true, 1, 8, baseTime.minus(12, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 8, baseTime.minus(12, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
 
 		offers.add(Utils.offer(false, 3, 8, baseTime.minus(10, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 3, 3));
 
@@ -324,8 +322,8 @@ public class HistoryManagerTest
 		List<OfferEvent> offers = new ArrayList<>();
 
 		//a full margin check (a buy margin check followed by a sell margin check)
-		offers.add(Utils.offer(true, 1, 2, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 2));
-		offers.add(Utils.offer(false, 1, 1, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 2));
+		offers.add(Utils.offer(true, 1, 2, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.BOUGHT, 1, 1, 1));
+		offers.add(Utils.offer(false, 1, 1, baseTime.minus(20, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1, 1));
 
 		//some random offers
 		offers.add(Utils.offer(false, 1, 2, baseTime.minus(19, ChronoUnit.MINUTES), 1, GrandExchangeOfferState.SOLD, 1, 1));
@@ -351,79 +349,39 @@ public class HistoryManagerTest
 		assertEquals(expectedFlips, generatedFlips);
 	}
 
-
-
 	@Test
 	public void offersCorrectlyTruncatedTest()
 	{
 		HistoryManager historyManager = new HistoryManager();
 
-		ArrayList<OfferEvent> someStandardizedOffers = new ArrayList<>();
-
-		ArrayList<OfferEvent> truncatedOffers = new ArrayList<>();
+		ArrayList<OfferEvent> expectedCompressedEvents = new ArrayList<>();
 
 		//test truncation on incomplete offers
-		someStandardizedOffers.add(Utils.offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 10));
-		someStandardizedOffers.add(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1, 5));
-		someStandardizedOffers.add(Utils.offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 20));
+		historyManager.updateHistory(Utils.offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50));
+		historyManager.updateHistory(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1));
+		historyManager.updateHistory(Utils.offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50));
 
-		truncatedOffers.add(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1, 5));
-		truncatedOffers.add(Utils.offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 30));
+		expectedCompressedEvents.add(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1));
+		expectedCompressedEvents.add(Utils.offer(true, 30, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50));
 
-		historyManager.truncateOffers(someStandardizedOffers);
-		assertEquals(someStandardizedOffers, truncatedOffers);
+		assertEquals(historyManager.getCompressedOfferEvents(), expectedCompressedEvents);
 
 		//now lets add a completed offer for slot 1.
-		someStandardizedOffers.add(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50, 1));
+		historyManager.updateHistory(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50));
 
-		//rebuild the truncated offers list
-		truncatedOffers.clear();
-		truncatedOffers.add(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1, 5));
-		truncatedOffers.add(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50, 50));
+		//rebuild the compressed offers list
+		expectedCompressedEvents.clear();
+		expectedCompressedEvents.add(Utils.offer(true, 5, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 1));
+		expectedCompressedEvents.add(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50));
 
-		historyManager.truncateOffers(someStandardizedOffers);
-		assertEquals(someStandardizedOffers, truncatedOffers);
+		historyManager.deletePreviousOffersForTrade(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50));
+		assertEquals(historyManager.getCompressedOfferEvents(), expectedCompressedEvents);
 
-		//lets add a complete offer for slot 3, this offer has no previous offers in that same trade, so truncate shouldn't even run and the truncated offer should
-		//just mirror the current standardized offer list.
-		someStandardizedOffers.add(Utils.offer(false, 20, 100, baseTime, 3, GrandExchangeOfferState.SOLD, 20, 20));
+		//lets add a complete offer for slot 3, this offer has no previous offers in that same trade
+		historyManager.updateHistory(Utils.offer(false, 20, 100, baseTime, 3, GrandExchangeOfferState.SOLD, 20 ));
 
-		truncatedOffers.add(Utils.offer(false, 20, 100, baseTime, 3, GrandExchangeOfferState.SOLD, 20, 20));
-		//to show the lack of truncation, we will compare the lists before and after the call to truncateOffers
+		expectedCompressedEvents.add(Utils.offer(false, 20, 100, baseTime, 3, GrandExchangeOfferState.SOLD, 20));
 
-		assertEquals(someStandardizedOffers, truncatedOffers);
-		historyManager.truncateOffers(someStandardizedOffers);
-		assertEquals(someStandardizedOffers, truncatedOffers);
-	}
-
-	@Test
-	public void offersAreCorrectlyStandardizedTest()
-	{
-		HistoryManager historyManager = new HistoryManager();
-
-		ArrayList<OfferEvent> someUnStandardizedOffers = new ArrayList<>();
-		ArrayList<OfferEvent> standardizedOffers = new ArrayList<>();
-
-		//bunch of buy offers from diff slots
-		someUnStandardizedOffers.add(Utils.offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 0));
-		someUnStandardizedOffers.add(Utils.offer(true, 25, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 0));
-		someUnStandardizedOffers.add(Utils.offer(true, 15, 100, baseTime, 3, GrandExchangeOfferState.BUYING, 20, 0));
-		someUnStandardizedOffers.add(Utils.offer(true, 20, 100, baseTime, 4, GrandExchangeOfferState.BUYING, 500, 0));
-		someUnStandardizedOffers.add(Utils.offer(true, 500, 100, baseTime, 4, GrandExchangeOfferState.BOUGHT, 500, 0));
-		someUnStandardizedOffers.add(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50, 0));
-
-
-		standardizedOffers.add(Utils.offer(true, 10, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 10));
-		standardizedOffers.add(Utils.offer(true, 25, 100, baseTime, 1, GrandExchangeOfferState.BUYING, 50, 15));
-		standardizedOffers.add(Utils.offer(true, 15, 100, baseTime, 3, GrandExchangeOfferState.BUYING, 20, 15));
-		standardizedOffers.add(Utils.offer(true, 20, 100, baseTime, 4, GrandExchangeOfferState.BUYING, 500, 20));
-		standardizedOffers.add(Utils.offer(true, 500, 100, baseTime, 4, GrandExchangeOfferState.BOUGHT, 500, 480));
-		standardizedOffers.add(Utils.offer(true, 50, 100, baseTime, 1, GrandExchangeOfferState.BOUGHT, 50, 25));
-		for (OfferEvent offer : someUnStandardizedOffers)
-		{
-			historyManager.storeStandardizedOffer(offer);
-		}
-
-		assertEquals(historyManager.getStandardizedOffers(), standardizedOffers);
+		assertEquals(historyManager.getCompressedOfferEvents(), expectedCompressedEvents);
 	}
 }

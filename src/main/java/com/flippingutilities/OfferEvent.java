@@ -65,9 +65,6 @@ public class OfferEvent
 	private int ticksSinceFirstOffer;
 	@SerializedName("tQIT")
 	private int totalQuantityInTrade;
-	@SerializedName("qSLQ")
-	private int quantitySinceLastOffer;
-
 	//States that determine if the offer is appurtenant to the current scope of the panel.
 	//The states change dependent on user-selected removals.
 	@SerializedName("vSQ")
@@ -147,23 +144,6 @@ public class OfferEvent
 		return currentQuantityInTrade == 0 && !isComplete();
 	}
 
-	/**
-	 * Returns an offerInfo object with the currentQuantityInTrade sold/bought the amount of items sold/bought since
-	 * the last event, rather than current currentQuantityInTrade sold/bought overall in the trade. This makes it
-	 * easier to calculate the profit.
-	 * This value could be set from outside and a clone does not need to be returned, but since references
-	 * to the same offerInfo are used throughout the code, avoiding mutation is best.
-	 *
-	 * @param lastOffer the last offer from that slot.
-	 * @return a standardized offer
-	 */
-	public OfferEvent standardizeOffer(OfferEvent lastOffer)
-	{
-		OfferEvent standardizedOffer = clone();
-		standardizedOffer.setQuantitySinceLastOffer(getCurrentQuantityInTrade() - lastOffer.getCurrentQuantityInTrade());
-		return standardizedOffer;
-	}
-
 	public OfferEvent clone()
 	{
 		return new OfferEvent(buy,
@@ -176,7 +156,6 @@ public class OfferEvent
 			tickArrivedAt,
 			ticksSinceFirstOffer,
 			totalQuantityInTrade,
-			quantitySinceLastOffer,
 			validStatOffer,
 			validFlippingOffer,
 			madeBy);
@@ -212,8 +191,9 @@ public class OfferEvent
 	 */
 	public boolean isDuplicate(OfferEvent other)
 	{
-		return state == other.getState() && currentQuantityInTrade == other.getCurrentQuantityInTrade()
-			&& quantitySinceLastOffer == other.getQuantitySinceLastOffer() && slot == other.getSlot()
+		return state == other.getState()
+			&& currentQuantityInTrade == other.getCurrentQuantityInTrade()
+			&& slot == other.getSlot()
 			&& totalQuantityInTrade == other.getTotalQuantityInTrade() && itemId == other.getItemId()
 			&& price == other.getPrice();
 	}
@@ -237,7 +217,6 @@ public class OfferEvent
 			0,
 			0,
 			offer.getTotalQuantity(),
-			0,
 			true,
 			true,
 			null);

@@ -543,21 +543,18 @@ public class FlippingPlugin extends Plugin
 		//history for the slot was recorded.
 		if (lastOfferEvent == null)
 		{
-			log.info("last offer event was null, event passing thru: {}", newOfferEvent);
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent);
 			return Optional.of(newOfferEvent);
 		}
 
 		if (lastOfferEvent.isDuplicate(newOfferEvent))
 		{
-			log.info("Duplicate event: {}", newOfferEvent);
 			return Optional.empty();
 		}
 
 		newOfferEvent.setTicksSinceFirstOffer(lastOfferEvent);
 		lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent);
 		slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
-		log.info("good event, passing through: {}", newOfferEvent);
 		return Optional.of(newOfferEvent);
 	}
 

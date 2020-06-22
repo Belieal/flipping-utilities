@@ -196,12 +196,12 @@ public class FlippingItem
 
 		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
 		{
-			item1.getHistory().getStandardizedOffers().addAll(item2.getHistory().getStandardizedOffers());
+			item1.getHistory().getCompressedOfferEvents().addAll(item2.getHistory().getCompressedOfferEvents());
 			return item1;
 		}
 		else
 		{
-			item2.getHistory().getStandardizedOffers().addAll(item1.getHistory().getStandardizedOffers());
+			item2.getHistory().getCompressedOfferEvents().addAll(item1.getHistory().getCompressedOfferEvents());
 			return item2;
 		}
 
