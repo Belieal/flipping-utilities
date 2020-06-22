@@ -31,8 +31,8 @@ public class FlippingPluginTest
 	@Test
 	public void screenOfferTest()
 	{
-
 		Instant baseTime = Instant.now();
+
 		List<OfferEvent> offerEvents = new ArrayList<>();
 		//some empty slot events on login
 		offerEvents.add(Utils.offer(false,0,0,baseTime,5,GrandExchangeOfferState.EMPTY,0,0,0));
@@ -51,7 +51,7 @@ public class FlippingPluginTest
 		offerEvents.add(Utils.offer(true,0, 0, baseTime, 2, GrandExchangeOfferState.BUYING, 40, 0,1,0));
 		offerEvents.add(Utils.offer(true,0, 0, baseTime, 2, GrandExchangeOfferState.BUYING, 41, 0,1,0));
 
-		//as the item buys, user received multiple duplicate BUYING offer events
+		//as the item buys, user receives multiple duplicate BUYING offer events, the only difference being that one arrived a tick later
 		offerEvents.add(Utils.offer(true, 2, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 45, 0, 10, 0));
 		offerEvents.add(Utils.offer(true, 2, 100, baseTime, 2, GrandExchangeOfferState.BUYING, 46, 0, 10, 0));
 
@@ -73,21 +73,4 @@ public class FlippingPluginTest
 
 		assertEquals(expectedOfferEvents, actualScreenedOffers);
 	}
-
-
 }
-
-
-//
-//caused by empty slot: OfferEvent(buy=false, itemId=0, currentQuantityInTrade=0, price=0, time=2020-06-21T23:17:02Z, slot=5, state=EMPTY, tickArrivedAt=0, ticksSinceFirstOffer=0, totalQuantityInTrade=0, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//caused by empty slot: OfferEvent(buy=false, itemId=0, currentQuantityInTrade=0, price=0, time=2020-06-21T23:17:02Z, slot=6, state=EMPTY, tickArrivedAt=0, ticksSinceFirstOffer=0, totalQuantityInTrade=0, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//caused by empty slot: OfferEvent(buy=false, itemId=0, currentQuantityInTrade=0, price=0, time=2020-06-21T23:17:02Z, slot=7, state=EMPTY, tickArrivedAt=0, ticksSinceFirstOffer=0, totalQuantityInTrade=0, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//not duplicate start of trade event: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=0, price=0, time=2020-06-21T23:17:38Z, slot=2, state=BUYING, tickArrivedAt=59, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//redundant offer event: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=1, price=212, time=2020-06-21T23:17:38Z, slot=2, state=BUYING, tickArrivedAt=60, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//good event, passing through: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=1, price=212, time=2020-06-21T23:17:39Z, slot=2, state=BOUGHT, tickArrivedAt=61, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//caused by empty slot: OfferEvent(buy=false, itemId=0, currentQuantityInTrade=0, price=0, time=2020-06-21T23:17:43Z, slot=2, state=EMPTY, tickArrivedAt=68, ticksSinceFirstOffer=0, totalQuantityInTrade=0, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//not duplicate start of trade event: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=0, price=0, time=2020-06-21T23:18:18Z, slot=2, state=BUYING, tickArrivedAt=125, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//duplicate start of trade event: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=0, price=0, time=2020-06-21T23:18:18Z, slot=2, state=BUYING, tickArrivedAt=126, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//good event, passing through: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=0, price=0, time=2020-06-21T23:18:22Z, slot=2, state=CANCELLED_BUY, tickArrivedAt=133, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//Duplicate event: OfferEvent(buy=true, itemId=379, currentQuantityInTrade=0, price=0, time=2020-06-21T23:18:23Z, slot=2, state=CANCELLED_BUY, tickArrivedAt=134, ticksSinceFirstOffer=0, totalQuantityInTrade=1, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)
-//caused by empty slot: OfferEvent(buy=false, itemId=0, currentQuantityInTrade=0, price=0, time=2020-06-21T23:18:25Z, slot=2, state=EMPTY, tickArrivedAt=138, ticksSinceFirstOffer=0, totalQuantityInTrade=0, quantitySinceLastOffer=0, validStatOffer=true, validFlippingOffer=true, madeBy=firerune116)

@@ -512,13 +512,11 @@ public class FlippingPlugin extends Plugin
 
 		if (newOfferEvent.isCausedByEmptySlot())
 		{
-			log.info("caused by empty slot: {}", newOfferEvent);
 			return Optional.empty();
 		}
 
 		if (newOfferEvent.isStartOfOffer() && !isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
-			log.info("not duplicate start of trade event: {}", newOfferEvent);
 			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			lastOfferEventForEachSlot.put(newOfferEvent.getSlot(), newOfferEvent); //tickSinceFirstOffer is 0 here
 			return Optional.empty();
@@ -526,13 +524,16 @@ public class FlippingPlugin extends Plugin
 
 		if (newOfferEvent.isStartOfOffer() && isDuplicateStartOfOfferEvent(newOfferEvent))
 		{
-			log.info("duplicate start of trade event: {}", newOfferEvent);
+			return Optional.empty();
+		}
+
+		if (newOfferEvent.getCurrentQuantityInTrade() == 0 && newOfferEvent.isComplete()) {
+			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			return Optional.empty();
 		}
 
 		if (newOfferEvent.isRedundantEventBeforeOfferCompletion())
 		{
-			log.info("redundant offer event: {}", newOfferEvent);
 			return Optional.empty();
 		}
 

@@ -182,12 +182,6 @@ public class OfferEvent
 			madeBy);
 	}
 
-	/**
-	 * There are some fields missing in the equals comparison. That is because
-	 *
-	 * @param other
-	 * @return
-	 */
 	public boolean equals(Object other)
 	{
 		if (other == this)
