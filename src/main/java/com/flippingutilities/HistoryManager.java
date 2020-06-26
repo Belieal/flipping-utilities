@@ -167,24 +167,36 @@ public class HistoryManager
 	 * @param tradeList The list of trades whose total profits will be calculated.
 	 * @return profit
 	 */
-	public long currentProfit(List<OfferEvent> tradeList)
+	public static long currentProfit(List<OfferEvent> tradeList)
 	{
 		//return the value of the sell list - the value of the buy list. This is the profit.
-		return getCashflow(tradeList, false) - getCashflow(tradeList, true);
+		return getFlippedCashFlow(tradeList, false) - getFlippedCashFlow(tradeList, true);
 	}
 
 	/**
-	 * This method finds the value of a list of offers. The boolean parameter determines if we calculate
-	 * from buyList or sellList.
+	 * This method finds the value of a list of offers up to the number of items flipped. The boolean parameter
+	 * determines if we calculate from buyList or sellList.
 	 *
 	 * @param tradeList  The list of standardized offers whose cashflow we want the value of.
 	 * @param getExpense Options parameter that calculates, if true, the total expenses accrued
 	 *                   and, if false, the total revenues accrued from the trades.
 	 * @return Returns a long value based on the boolean parameter provided.
 	 */
-	public long getCashflow(List<OfferEvent> tradeList, boolean getExpense)
+	public static long getFlippedCashFlow(List<OfferEvent> tradeList, boolean getExpense)
 	{
 		return getValueOfTrades(getSaleList(tradeList, getExpense), countItemsFlipped(tradeList));
+	}
+
+	/**
+	 * Calculates the total value of the sell or buy offers in a trade list.
+	 *
+	 * @param tradeList
+	 * @param getExpense whether sell offers or buy offers should be looked at.
+	 * @return
+	 */
+	public static long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense)
+	{
+		return getValueOfTrades(getSaleList(tradeList, getExpense), -1);
 	}
 
 	/**
@@ -194,7 +206,7 @@ public class HistoryManager
 	 * @param tradeList The list of items that the item count is based on
 	 * @return An integer representing the total currentQuantityInTrade of items flipped in the list of offers
 	 */
-	public int countItemsFlipped(List<OfferEvent> tradeList)
+	public static int countItemsFlipped(List<OfferEvent> tradeList)
 	{
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
@@ -226,7 +238,7 @@ public class HistoryManager
 	 * @param buyState  true will return offers that have been bought and false will return offers that have been sold.
 	 * @return A list of items either sold or bought over a period of time.
 	 */
-	public ArrayList<OfferEvent> getSaleList(List<OfferEvent> tradeList, boolean buyState)
+	private static ArrayList<OfferEvent> getSaleList(List<OfferEvent> tradeList, boolean buyState)
 	{
 		ArrayList<OfferEvent> results = new ArrayList<>();
 
@@ -248,15 +260,17 @@ public class HistoryManager
 	 * @param tradeList a buy or a sell list
 	 * @param itemLimit the amount of items to calculate the value up until. This is for the case
 	 *                  when a user has an unequal amount of buys/sells in which case you want to return the
-	 *                  profit the items only up until the buys and sells are equal.
+	 *                  profit the items only up until the buys and sells are equal. If this values is -1, it
+	 *                  ignores the limit.
 	 * @return the amount of money spent on the offer list, up to the amount of items specified by the
 	 * limit
 	 */
-	private long getValueOfTrades(List<OfferEvent> tradeList, int itemLimit)
+	private static long getValueOfTrades(List<OfferEvent> tradeList, long itemLimit)
 	{
 		int itemsSeen = 0;
 		long moneySpent = 0;
 
+		itemLimit = itemLimit == -1 ? Long.MAX_VALUE : itemLimit;
 
 		for (OfferEvent offer : tradeList)
 		{
@@ -358,6 +372,7 @@ public class HistoryManager
 				break;
 
 			case STATS:
+				System.out.println("invalidating stats");
 				offerList.forEach(offer -> offer.setValidStatOffer(false));
 				break;
 
@@ -419,7 +434,7 @@ public class HistoryManager
 	 * @param offers the offer list
 	 * @return flips
 	 */
-	public List<Flip> createFlips(List<OfferEvent> offers)
+	public static List<Flip> createFlips(List<OfferEvent> offers)
 	{
 		List<OfferEvent>[] subLists = ModelUtilities.partition(
 			offers.stream().map(OfferEvent::clone).collect(Collectors.toList()),
@@ -481,7 +496,7 @@ public class HistoryManager
 	 * @param remainder an empty list to be populated with margin check offers that don't have companion buy/sell offers.
 	 * @return a list of flips created from "whole" margin checks.
 	 */
-	public List<Flip> pairMarginChecks(List<OfferEvent> buys, List<OfferEvent> sells, List<OfferEvent> remainder)
+	public static List<Flip> pairMarginChecks(List<OfferEvent> buys, List<OfferEvent> sells, List<OfferEvent> remainder)
 	{
 		List<Flip> flips = new ArrayList<>();
 		int buyIdx;
@@ -538,9 +553,8 @@ public class HistoryManager
 	 * @param sells the sell offers
 	 * @return a list of Flips based on the buy and sell list.
 	 */
-	private ArrayList<Flip> combineToFlips(List<OfferEvent> buys, List<OfferEvent> sells)
+	private static ArrayList<Flip> combineToFlips(List<OfferEvent> buys, List<OfferEvent> sells)
 	{
-
 		ArrayList<Flip> flips = new ArrayList<>();
 
 		int buyIdx = 0;
@@ -567,6 +581,13 @@ public class HistoryManager
 					totalRevenue += buy.getCurrentQuantityInTrade() * buy.getPrice();
 					buyIdx++;
 				}
+			}
+
+			//buys only partially exhausted a sell
+			if (buyIdx == buys.size() && numBuysSeen != 0)
+			{
+				flips.add(new Flip(totalRevenue / numBuysSeen, sell.getPrice(), numBuysSeen, sell.getTime(), false, true));
+				break;
 			}
 		}
 

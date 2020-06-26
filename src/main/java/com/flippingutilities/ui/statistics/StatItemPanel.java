@@ -433,58 +433,56 @@ public class StatItemPanel extends JPanel
 				numItemsSold += offer.getCurrentQuantityInTrade();
 			}
 		}
-		long revenue = flippingItem.getCashflow(tradeHistory, false);
-		long expense = flippingItem.getCashflow(tradeHistory, true);
+		long revenueFromFlippedItems = flippingItem.getFlippedCashFlow(tradeHistory, false);
+		long expenseFromFlippedItems = flippingItem.getFlippedCashFlow(tradeHistory, true);
+		long totalRevenue = flippingItem.getTotalCashFlow(tradeHistory, false);
+		long totalExpense = flippingItem.getTotalCashFlow(tradeHistory, true);
 		int itemCountFlipped = flippingItem.countItemsFlipped(tradeHistory);
 
-		if (itemCountFlipped == 0)
-		{
-			return;
-		}
-
-		updateTitleLabels(revenue - expense, itemCountFlipped);
-		updateSubInfoLabels(revenue, expense, itemCountFlipped, numItemsBought, numItemsSold);
+		updateTitleLabels(revenueFromFlippedItems - expenseFromFlippedItems, itemCountFlipped);
+		updateFlippingLabels(expenseFromFlippedItems, revenueFromFlippedItems, itemCountFlipped);
+		updateGeneralLabels(totalRevenue, totalExpense, numItemsBought, numItemsSold);
 		updateTimeLabels();
 	}
 
-	/* Total profit and name label */
-	private void updateTitleLabels(long profit, long numItemsFlipped)
+	/**
+	 * Updates the labels on the title panel. This includes the profit label which shows how much profit you made
+	 * from flipping that item and the number of times you flipped that item.
+	 */
+	private void updateTitleLabels(long profitFromFlips, long numItemsFlipped)
 	{
-
-		String totalProfitString = ((profit > 0) ? "+" : "") + UIUtilities.quantityToRSDecimalStack(profit, true) + " gp";
-
-		if (numItemsFlipped != 0)
-		{
-			totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
-		}
+		String totalProfitString = "+" + UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp";
+		totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
 
 		itemProfitLabel.setText(totalProfitString);
-		itemProfitLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		itemProfitLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		itemProfitLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
 		itemProfitLabel.setFont(FontManager.getRunescapeSmallFont());
 	}
 
-	private void updateSubInfoLabels(long revenue, long expense, int numItemsFlipped, long numBuys, long numSells)
-	{
-		long profit = revenue - expense;
-		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profit, true) + " gp");
-		totalProfitValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profit) + " gp");
+	private void updateFlippingLabels(long flippingExpense, long flippingRevenue, int itemsFlipped) {
+		long profitFromFlips = flippingRevenue - flippingExpense;
+		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp");
+		totalProfitValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profitFromFlips) + " gp");
 
-		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((profit / numItemsFlipped), true) + " gp/ea");
-		profitEachValLabel.setForeground((profit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(profit / numItemsFlipped) + " gp/ea");
+		String profitEach = UIUtilities.quantityToRSDecimalStack(itemsFlipped > 0 ? (profitFromFlips / itemsFlipped) : 0, true) + " gp/ea";
+		profitEachValLabel.setText(profitEach);
+		profitEachValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(itemsFlipped > 0 ? profitFromFlips / itemsFlipped : 0) + " gp/ea");
 
-		quantityFlipped.setText(QuantityFormatter.formatNumber(numItemsFlipped) + " Items");
+		quantityFlipped.setText(QuantityFormatter.formatNumber(itemsFlipped) + " Items");
 
-		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (expense / numItemsFlipped)) + " gp");
-		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (revenue / numItemsFlipped)) + " gp");
-
-		float roi = (float) profit / expense * 100;
+		float roi = (float) flippingExpense >0? profitFromFlips / flippingExpense * 100: 0;
 
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
 		roiValLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+	}
+
+	private void updateGeneralLabels(long totalRevenue, long totalExpense, long numBuys, long numSells) {
+		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) numBuys > 0? (totalExpense / numBuys) : 0) + " gp");
+		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) numSells > 0? (totalRevenue / numSells) : 0) + " gp");
 
 		quantityBoughtLabel.setText("" + numBuys);
 		quantitySoldLabel.setText("" + numSells);

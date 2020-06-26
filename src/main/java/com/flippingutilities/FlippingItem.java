@@ -204,8 +204,6 @@ public class FlippingItem
 			item2.getHistory().getCompressedOfferEvents().addAll(item1.getHistory().getCompressedOfferEvents());
 			return item2;
 		}
-
-
 	}
 
 	public long currentProfit(List<OfferEvent> tradeList)
@@ -213,14 +211,18 @@ public class FlippingItem
 		return history.currentProfit(tradeList);
 	}
 
-	public long getCashflow(List<OfferEvent> tradeList, boolean getExpense)
+	public long getFlippedCashFlow(List<OfferEvent> tradeList, boolean getExpense)
 	{
-		return history.getCashflow(tradeList, getExpense);
+		return history.getFlippedCashFlow(tradeList, getExpense);
 	}
 
-	public long getCashflow(Instant earliestTime, boolean getExpense)
+	public long getFlippedCashFlow(Instant earliestTime, boolean getExpense)
 	{
-		return history.getCashflow(getIntervalHistory(earliestTime), getExpense);
+		return history.getFlippedCashFlow(getIntervalHistory(earliestTime), getExpense);
+	}
+
+	public long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense) {
+		return history.getTotalCashFlow(tradeList, getExpense);
 	}
 
 	public int countItemsFlipped(List<OfferEvent> tradeList)

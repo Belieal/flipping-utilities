@@ -487,7 +487,7 @@ public class StatsPanel extends JPanel
 				ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
-				if (itemTradeHistory.isEmpty() || item.countItemsFlipped(itemTradeHistory) == 0)
+				if (itemTradeHistory.isEmpty())
 				{
 					continue;
 				}
@@ -557,8 +557,8 @@ public class StatsPanel extends JPanel
 
 			List<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 			totalProfit += item.currentProfit(intervalHistory);
-			totalExpenses += item.getCashflow(startOfInterval, true);
-			totalRevenues += item.getCashflow(startOfInterval, false);
+			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
+			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
 			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
@@ -901,8 +901,8 @@ public class StatsPanel extends JPanel
 					ArrayList<OfferEvent> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
 					ArrayList<OfferEvent> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
 
-					long totalExpense1 = item1.getCashflow(intervalHistory1, true);
-					long totalExpense2 = item2.getCashflow(intervalHistory2, true);
+					long totalExpense1 = item1.getFlippedCashFlow(intervalHistory1, true);
+					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
 
 					if (totalExpense1 == 0 || totalExpense2 == 0)
 					{
