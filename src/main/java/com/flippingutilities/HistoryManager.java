@@ -372,7 +372,6 @@ public class HistoryManager
 				break;
 
 			case STATS:
-				System.out.println("invalidating stats");
 				offerList.forEach(offer -> offer.setValidStatOffer(false));
 				break;
 

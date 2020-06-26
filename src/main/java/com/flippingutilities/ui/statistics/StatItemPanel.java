@@ -451,7 +451,7 @@ public class StatItemPanel extends JPanel
 	 */
 	private void updateTitleLabels(long profitFromFlips, long numItemsFlipped)
 	{
-		String totalProfitString = "+" + UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp";
+		String totalProfitString = (profitFromFlips >= 0? "+": "") + UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp";
 		totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
 
 		itemProfitLabel.setText(totalProfitString);

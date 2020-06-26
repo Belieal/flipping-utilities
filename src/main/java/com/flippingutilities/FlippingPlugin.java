@@ -528,6 +528,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		if (newOfferEvent.getCurrentQuantityInTrade() == 0 && newOfferEvent.isComplete()) {
+			lastOfferEventForEachSlot.remove(newOfferEvent.getSlot());
 			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			return Optional.empty();
 		}
