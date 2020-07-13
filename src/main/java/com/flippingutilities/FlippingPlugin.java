@@ -427,7 +427,6 @@ public class FlippingPlugin extends Plugin
 				flippingPanel.updateActivePanelsGePropertiesDisplay();
 				statPanel.updateTimeDisplay();
 				updateSessionTime();
-				int x = 1/0;
 			}
 			catch (Exception e)
 			{
