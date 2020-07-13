@@ -212,7 +212,7 @@ public class FlippingPlugin extends Plugin
 
 			slotTimers = setupSlotTimers();
 
-			repeatingTasks = setupRepeatingTasks();
+			repeatingTasks = setupRepeatingTasks(1000);
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
 			if (client.getGameState() == GameState.LOGGED_IN)
@@ -416,7 +416,7 @@ public class FlippingPlugin extends Plugin
 	 *
 	 * @return a future object that can be used to cancel the tasks
 	 */
-	public ScheduledFuture setupRepeatingTasks()
+	public ScheduledFuture setupRepeatingTasks(int msStartDelay)
 	{
 		return executor.scheduleAtFixedRate(() ->
 		{
@@ -427,13 +427,17 @@ public class FlippingPlugin extends Plugin
 				flippingPanel.updateActivePanelsGePropertiesDisplay();
 				statPanel.updateTimeDisplay();
 				updateSessionTime();
+				int x = 1/0;
 			}
 			catch (Exception e)
 			{
 				log.info("unknown exception in repeating tasks, error = {}", e);
+				log.info("cancelling task and starting it again after 5000 ms delay");
+				repeatingTasks.cancel(true);
+				repeatingTasks = setupRepeatingTasks(5000);
 			}
 
-		}, 100, 1000, TimeUnit.MILLISECONDS);
+		}, msStartDelay, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
