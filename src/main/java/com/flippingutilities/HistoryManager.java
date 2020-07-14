@@ -32,20 +32,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.runelite.api.events.GrandExchangeOfferChanged;
 
 /**
  * Manages the history for an item. This class is responsible for figuring out how much profit a user made for
@@ -56,29 +51,21 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
 @NoArgsConstructor
 public class HistoryManager
 {
-	//contains the history for each slot so that when a new offer comes in for a slot, we can use the
-	//slot history to figure out how many new items were bought/sold. When a offer with a state that is
-	//complete (bought/sold/cancelled buy/cancelled sell) comes in, the history for that slot is removed
-	//as the slot is now empty.
-	@SerializedName("sH")
-	private Map<Integer, List<OfferInfo>> slotHistory = new HashMap<>();
-
-	//a list of standardizedOffers. A standardizedOffer is an offer with a currentQuantityInTrade that represents the
-	//currentQuantityInTrade bought since the last offer. A regular offer just has info from an offerEvent, which gives
-	//you the current currentQuantityInTrade bought/sold overall in the trade.
 	@SerializedName("sO")
 	@Getter
 	@Setter
-	private List<OfferInfo> standardizedOffers = new ArrayList<>();
+	private List<OfferEvent> compressedOfferEvents = new ArrayList<>();
 
 	@SerializedName("nGLR")
 	@Getter
 	private Instant nextGeLimitRefresh;
 
-	//the number of items bought since the last ge limit reset.
 	@SerializedName("iBTLW")
 	@Getter
 	private int itemsBoughtThisLimitWindow;
+
+	@SerializedName("pIB")
+	private int itemsBoughtThroughCompleteOffers;
 
 	public enum PanelSelection
 	{
@@ -89,148 +76,85 @@ public class HistoryManager
 
 	public HistoryManager clone()
 	{
-		Map<Integer, List<OfferInfo>> newSlotHistory = new HashMap<>();
-		for (int i : slotHistory.keySet())
-		{
-			newSlotHistory.put(i, clone(slotHistory.get(i)));
-		}
-
-		List<OfferInfo> newStandardizedOffers = clone(standardizedOffers);
-		Instant newGeLimitRefresh = nextGeLimitRefresh == null ? null : Instant.ofEpochMilli(nextGeLimitRefresh.toEpochMilli());
-
-		return new HistoryManager(newSlotHistory, newStandardizedOffers, newGeLimitRefresh, itemsBoughtThisLimitWindow);
+		List<OfferEvent> clonedCompressedOfferEvents = compressedOfferEvents.stream().map(OfferEvent::clone).collect(Collectors.toList());
+		Instant clonedGeLimitRefresh = nextGeLimitRefresh == null ? null : Instant.ofEpochMilli(nextGeLimitRefresh.toEpochMilli());
+		return new HistoryManager(clonedCompressedOfferEvents, clonedGeLimitRefresh, itemsBoughtThisLimitWindow, itemsBoughtThroughCompleteOffers);
 	}
 
-	//a utility to clone an offer list
-	private List<OfferInfo> clone(List<OfferInfo> offers)
+	public void updateHistory(OfferEvent newOffer)
 	{
-		return offers.stream().map(OfferInfo::clone).collect(Collectors.toList());
-	}
-
-	/**
-	 * This method takes in every new offer that comes and updates the standardized offer list along with
-	 * other properties related to the history of an item such as how many items were bought since the last
-	 * ge limit refresh and how when the ge limit will reset again. The standardized offer list is used to
-	 * calculate profit for the item.
-	 *
-	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
-	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives
-	 */
-	public void updateHistory(OfferInfo newOffer)
-	{
-		storeStandardizedOffer(newOffer);
-		updateGeProperties(standardizedOffers.get(standardizedOffers.size() - 1));
-		truncateOffers(standardizedOffers);
-	}
-
-	/**
-	 * Receives an offer, turns it into a standardized offer, and adds it to the standardized offer list.
-	 * Standardizing an offer refers to making it reflect the currentQuantityInTrade bought/sold since last offer rather
-	 * than the current amount bought/sold overall in the trade as is the default information in the OfferInfo
-	 * constructed from a grandExchangeOfferChanged event.
-	 *
-	 * @param newOffer the OfferInfo object created from the {@link GrandExchangeOfferChanged} event that
-	 *                 onGrandExchangeOfferChanged (in FlippingPlugin) receives. It is crucial to note that
-	 *                 This OfferInfo object contains the current currentQuantityInTrade bought/sold for the trade currently.
-	 */
-	public void storeStandardizedOffer(OfferInfo newOffer)
-	{
-		int newOfferSlot = newOffer.getSlot();
-
-		//if there are currently trades in progress in that slot
-		if (slotHistory.containsKey(newOfferSlot))
-		{
-
-			List<OfferInfo> currentTradesForSlot = slotHistory.get(newOfferSlot);
-			OfferInfo lastOffer = currentTradesForSlot.get(currentTradesForSlot.size() - 1);
-			OfferInfo standardizedOffer = newOffer.standardizeOffer(lastOffer);
-			standardizedOffers.add(standardizedOffer);
-			currentTradesForSlot.add(newOffer);
-
-			//if the offer is complete, clear the history for that slot.
-			if (newOffer.isComplete())
-			{
-				slotHistory.remove(newOfferSlot);
-			}
-		}
-		//its the first trade for that slot!
-		else
-		{
-			//don't need to standardize as its currentQuantityInTrade represents the currentQuantityInTrade bought as its the first
-			//trade in that slot.
-			newOffer.setQuantitySinceLastOffer(newOffer.getCurrentQuantityInTrade());
-			standardizedOffers.add(newOffer);
-
-			//if the offer was a complete offer there's no need to add it to the slot history as a complete
-			//offer means the slot history is over.
-			if (!newOffer.isComplete())
-			{
-				slotHistory.put(newOfferSlot, new ArrayList<>(Arrays.asList(newOffer)));
-
-			}
-		}
-
+		updateGeProperties(newOffer);
+		deletePreviousOffersForTrade(newOffer);
+		compressedOfferEvents.add(newOffer);
 	}
 
 	/**
 	 * Updates when the ge limit will refresh and how many items have been bought since the last
 	 * ge limit refresh.
+	 *
+	 * @param newOfferEvent offer event just received
 	 */
-	private void updateGeProperties(OfferInfo mostRecentOffer)
+	private void updateGeProperties(OfferEvent newOfferEvent)
 	{
-		if (!mostRecentOffer.isBuy())
+		if (!newOfferEvent.isBuy())
 		{
 			return;
 		}
 		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
 		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
 		// have refreshed, the next refresh will be four hours after this offer's buy time.
-		if (nextGeLimitRefresh == null || mostRecentOffer.getTime().compareTo(nextGeLimitRefresh) > 0)
+		if (nextGeLimitRefresh == null || newOfferEvent.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
-			nextGeLimitRefresh = mostRecentOffer.getTime().plus(4, ChronoUnit.HOURS);
-			itemsBoughtThisLimitWindow = mostRecentOffer.getQuantitySinceLastOffer();
+			nextGeLimitRefresh = newOfferEvent.getTime().plus(4, ChronoUnit.HOURS);
+			if (newOfferEvent.isComplete())
+			{
+				itemsBoughtThroughCompleteOffers = newOfferEvent.getCurrentQuantityInTrade();
+				itemsBoughtThisLimitWindow = itemsBoughtThroughCompleteOffers;
+			}
+			else
+			{
+				itemsBoughtThroughCompleteOffers = 0;
+				itemsBoughtThisLimitWindow = newOfferEvent.getCurrentQuantityInTrade();
+			}
 		}
 		//if the last offer (most recent offer) is before the next ge limit refresh, add its currentQuantityInTrade to the
 		//amount bought this limit window.
 		else
 		{
-			itemsBoughtThisLimitWindow += mostRecentOffer.getQuantitySinceLastOffer();
+			if (newOfferEvent.isComplete())
+			{
+				itemsBoughtThroughCompleteOffers += newOfferEvent.getCurrentQuantityInTrade();
+				itemsBoughtThisLimitWindow = itemsBoughtThroughCompleteOffers;
+			}
+			else
+			{
+				itemsBoughtThisLimitWindow = itemsBoughtThroughCompleteOffers + newOfferEvent.getCurrentQuantityInTrade();
+			}
 		}
-
 	}
 
-	public void truncateOffers(List<OfferInfo> offers)
+	/**
+	 * Deletes previous offer events for the same trade as the given offer event so that each trade has only one
+	 * offer event representing it.
+	 *
+	 * @param newOfferEvent offer event just received
+	 */
+	public void deletePreviousOffersForTrade(OfferEvent newOfferEvent)
 	{
-		OfferInfo mostRecentOffer = offers.get(offers.size() - 1);
-
-		//do not go through the process of truncation if the offer is the only offer in that trade as it will
-		//have no past offers to truncate.
-		if (mostRecentOffer.getQuantitySinceLastOffer() == mostRecentOffer.getCurrentQuantityInTrade())
+		for (int i = compressedOfferEvents.size() - 1; i > -1; i--)
 		{
-			return;
-		}
-
-		//getting the profit still relies on "quantitySinceLastOffer" and since we are deleting all
-		//"last offers" for a trade, we have to set the "quantitySinceLastOffer" equal to the amount
-		//bought/sold in the entire trade to get accurate profit results.
-		mostRecentOffer.setQuantitySinceLastOffer(mostRecentOffer.getCurrentQuantityInTrade());
-
-		//size is minus 2 to get the second to last item in the list
-		for (int i = offers.size() - 2; i > -1; i--)
-		{
-			OfferInfo aPreviousOffer = offers.get(i);
-			if (aPreviousOffer.getSlot() == mostRecentOffer.getSlot() && aPreviousOffer.isBuy() == mostRecentOffer.isBuy())
+			OfferEvent aPreviousOffer = compressedOfferEvents.get(i);
+			if (aPreviousOffer.getSlot() == newOfferEvent.getSlot() && aPreviousOffer.isBuy() == newOfferEvent.isBuy())
 			{
 				//if it belongs to the same slot and its complete, it must belong to a previous trade given that
-				//the most recent offer was for the same slot and was also complete.
+				//the most recent offer was for the same slot
 				if (aPreviousOffer.isComplete())
 				{
 					return;
 				}
-
 				else
 				{
-					offers.remove(i);
+					compressedOfferEvents.remove(i);
 				}
 			}
 		}
@@ -243,24 +167,36 @@ public class HistoryManager
 	 * @param tradeList The list of trades whose total profits will be calculated.
 	 * @return profit
 	 */
-	public long currentProfit(List<OfferInfo> tradeList)
+	public static long currentProfit(List<OfferEvent> tradeList)
 	{
 		//return the value of the sell list - the value of the buy list. This is the profit.
-		return getCashflow(tradeList, false) - getCashflow(tradeList, true);
+		return getFlippedCashFlow(tradeList, false) - getFlippedCashFlow(tradeList, true);
 	}
 
 	/**
-	 * This method finds the value of a list of offers. The boolean parameter determines if we calculate
-	 * from buyList or sellList.
+	 * This method finds the value of a list of offers up to the number of items flipped. The boolean parameter
+	 * determines if we calculate from buyList or sellList.
 	 *
 	 * @param tradeList  The list of standardized offers whose cashflow we want the value of.
 	 * @param getExpense Options parameter that calculates, if true, the total expenses accrued
 	 *                   and, if false, the total revenues accrued from the trades.
 	 * @return Returns a long value based on the boolean parameter provided.
 	 */
-	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
+	public static long getFlippedCashFlow(List<OfferEvent> tradeList, boolean getExpense)
 	{
 		return getValueOfTrades(getSaleList(tradeList, getExpense), countItemsFlipped(tradeList));
+	}
+
+	/**
+	 * Calculates the total value of the sell or buy offers in a trade list.
+	 *
+	 * @param tradeList
+	 * @param getExpense whether sell offers or buy offers should be looked at.
+	 * @return
+	 */
+	public static long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense)
+	{
+		return getValueOfTrades(getSaleList(tradeList, getExpense), -1);
 	}
 
 	/**
@@ -270,12 +206,12 @@ public class HistoryManager
 	 * @param tradeList The list of items that the item count is based on
 	 * @return An integer representing the total currentQuantityInTrade of items flipped in the list of offers
 	 */
-	public int countItemsFlipped(List<OfferInfo> tradeList)
+	public static int countItemsFlipped(List<OfferEvent> tradeList)
 	{
 		int numBoughtItems = 0;
 		int numSoldItems = 0;
 
-		for (OfferInfo offer : tradeList)
+		for (OfferEvent offer : tradeList)
 		{
 			if (!offer.isValidStatOffer())
 			{
@@ -284,11 +220,11 @@ public class HistoryManager
 
 			if (offer.isBuy())
 			{
-				numBoughtItems += offer.getQuantitySinceLastOffer();
+				numBoughtItems += offer.getCurrentQuantityInTrade();
 			}
 			else
 			{
-				numSoldItems += offer.getQuantitySinceLastOffer();
+				numSoldItems += offer.getCurrentQuantityInTrade();
 			}
 		}
 
@@ -302,11 +238,11 @@ public class HistoryManager
 	 * @param buyState  true will return offers that have been bought and false will return offers that have been sold.
 	 * @return A list of items either sold or bought over a period of time.
 	 */
-	public ArrayList<OfferInfo> getSaleList(List<OfferInfo> tradeList, boolean buyState)
+	private static ArrayList<OfferEvent> getSaleList(List<OfferEvent> tradeList, boolean buyState)
 	{
-		ArrayList<OfferInfo> results = new ArrayList<>();
+		ArrayList<OfferEvent> results = new ArrayList<>();
 
-		for (OfferInfo offer : tradeList)
+		for (OfferEvent offer : tradeList)
 		{
 			if (offer.isBuy() == buyState && offer.isValidStatOffer())
 			{
@@ -324,32 +260,34 @@ public class HistoryManager
 	 * @param tradeList a buy or a sell list
 	 * @param itemLimit the amount of items to calculate the value up until. This is for the case
 	 *                  when a user has an unequal amount of buys/sells in which case you want to return the
-	 *                  profit the items only up until the buys and sells are equal.
+	 *                  profit the items only up until the buys and sells are equal. If this values is -1, it
+	 *                  ignores the limit.
 	 * @return the amount of money spent on the offer list, up to the amount of items specified by the
 	 * limit
 	 */
-	private long getValueOfTrades(List<OfferInfo> tradeList, int itemLimit)
+	private static long getValueOfTrades(List<OfferEvent> tradeList, long itemLimit)
 	{
 		int itemsSeen = 0;
 		long moneySpent = 0;
 
+		itemLimit = itemLimit == -1 ? Long.MAX_VALUE : itemLimit;
 
-		for (OfferInfo offer : tradeList)
+		for (OfferEvent offer : tradeList)
 		{
 			if (!offer.isValidStatOffer())
 			{
 				continue;
 			}
 
-			if (itemsSeen + offer.getQuantitySinceLastOffer() >= itemLimit)
+			if (itemsSeen + offer.getCurrentQuantityInTrade() >= itemLimit)
 			{
 				moneySpent += (itemLimit - itemsSeen) * offer.getPrice();
 				break;
 			}
 			else
 			{
-				moneySpent += offer.getQuantitySinceLastOffer() * offer.getPrice();
-				itemsSeen += offer.getQuantitySinceLastOffer();
+				moneySpent += offer.getCurrentQuantityInTrade() * offer.getPrice();
+				itemsSeen += offer.getCurrentQuantityInTrade();
 			}
 
 		}
@@ -363,11 +301,11 @@ public class HistoryManager
 	 * @param earliestTime the earliest time that trades from the trade history are added to the resulting list.
 	 * @return A list of offers that were within the interval of earliestTime and now.
 	 */
-	public ArrayList<OfferInfo> getIntervalsHistory(Instant earliestTime)
+	public ArrayList<OfferEvent> getIntervalsHistory(Instant earliestTime)
 	{
-		ArrayList<OfferInfo> result = new ArrayList<>();
+		ArrayList<OfferEvent> result = new ArrayList<>();
 
-		for (OfferInfo offer : standardizedOffers)
+		for (OfferEvent offer : compressedOfferEvents)
 		{
 			if (offer.getTime().isAfter(earliestTime) && offer.isValidStatOffer())
 			{
@@ -405,15 +343,15 @@ public class HistoryManager
 		switch (panelSelection)
 		{
 			case FLIPPING:
-				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidFlippingOffer);
+				result = compressedOfferEvents.stream().anyMatch(OfferEvent::isValidFlippingOffer);
 				break;
 
 			case STATS:
-				result = standardizedOffers.stream().anyMatch(OfferInfo::isValidStatOffer);
+				result = compressedOfferEvents.stream().anyMatch(OfferEvent::isValidStatOffer);
 				break;
 
 			case BOTH:
-				result = standardizedOffers.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
+				result = compressedOfferEvents.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
 				break;
 		}
 
@@ -422,10 +360,10 @@ public class HistoryManager
 
 	public void invalidateOffers(PanelSelection panelSelection)
 	{
-		invalidateOffers(panelSelection, standardizedOffers);
+		invalidateOffers(panelSelection, compressedOfferEvents);
 	}
 
-	public void invalidateOffers(PanelSelection panelSelection, List<OfferInfo> offerList)
+	public void invalidateOffers(PanelSelection panelSelection, List<OfferEvent> offerList)
 	{
 		switch (panelSelection)
 		{
@@ -453,13 +391,13 @@ public class HistoryManager
 	{
 		if (nextGeLimitRefresh == null)
 		{
-			standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
+			compressedOfferEvents.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
 			return;
 		}
 
 		Instant startOfRefresh = nextGeLimitRefresh.minus(4, ChronoUnit.HOURS);
 
-		standardizedOffers.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer() &&
+		compressedOfferEvents.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer() &&
 			(offer.getTime().isAfter(nextGeLimitRefresh) || offer.getTime().isBefore(startOfRefresh)));
 	}
 
@@ -472,11 +410,11 @@ public class HistoryManager
 	 */
 	public List<Flip> getFlips(Instant earliestTime)
 	{
-		ArrayList<OfferInfo> intervalHistory = getIntervalsHistory(earliestTime);
+		ArrayList<OfferEvent> intervalHistory = getIntervalsHistory(earliestTime);
 
 		//group offers based on which account those offers belong to (this is really only relevant when getting the flips
 		//of the account wide tradelist as you don't want to match offers from diff accounts.
-		Map<String, List<OfferInfo>> groupedOffers = intervalHistory.stream().collect(Collectors.groupingBy(OfferInfo::getMadeBy));
+		Map<String, List<OfferEvent>> groupedOffers = intervalHistory.stream().collect(Collectors.groupingBy(OfferEvent::getMadeBy));
 
 		//take each offer list and create flips out of them, then put those flips into one list.
 		List<Flip> flips = new ArrayList<>();
@@ -495,23 +433,23 @@ public class HistoryManager
 	 * @param offers the offer list
 	 * @return flips
 	 */
-	public List<Flip> createFlips(List<OfferInfo> offers)
+	public static List<Flip> createFlips(List<OfferEvent> offers)
 	{
-		List<OfferInfo>[] subLists = partition(
-			offers.stream().map(OfferInfo::clone).collect(Collectors.toList()),
+		List<OfferEvent>[] subLists = ModelUtilities.partition(
+			offers.stream().map(OfferEvent::clone).collect(Collectors.toList()),
 			o -> o.isMarginCheck() && o.isBuy(),
 			o -> o.isMarginCheck() && !o.isBuy(),
 			o -> !o.isMarginCheck() && o.isBuy(),
 			o -> !o.isMarginCheck() && !o.isBuy());
 
-		List<OfferInfo> buyMarginChecks = subLists[0];
-		List<OfferInfo> sellMarginChecks = subLists[1];
-		List<OfferInfo> nonMarginCheckBuys = subLists[2];
-		List<OfferInfo> nonMarginCheckSells = subLists[3];
+		List<OfferEvent> buyMarginChecks = subLists[0];
+		List<OfferEvent> sellMarginChecks = subLists[1];
+		List<OfferEvent> nonMarginCheckBuys = subLists[2];
+		List<OfferEvent> nonMarginCheckSells = subLists[3];
 
 		ArrayList<Flip> flips = new ArrayList<>();
 
-		List<OfferInfo> unPairedMarginChecks = new ArrayList<>();
+		List<OfferEvent> unPairedMarginChecks = new ArrayList<>();
 		List<Flip> flipsFromMarginChecks = pairMarginChecks(buyMarginChecks, sellMarginChecks, unPairedMarginChecks);
 
 		unPairedMarginChecks.forEach(offer ->
@@ -528,14 +466,13 @@ public class HistoryManager
 
 		//we sort the offers because we added the unpaired margin checks back to the offer list and it should be
 		//placed in the appropriate place in the list so it doesn't get matched with an offer from many days ago or something.
-		nonMarginCheckBuys.sort(Comparator.comparing(OfferInfo::getTime));
-		nonMarginCheckSells.sort(Comparator.comparing(OfferInfo::getTime));
+		nonMarginCheckBuys.sort(Comparator.comparing(OfferEvent::getTime));
+		nonMarginCheckSells.sort(Comparator.comparing(OfferEvent::getTime));
 
 		flips.addAll(flipsFromMarginChecks);
 		flips.addAll(combineToFlips(nonMarginCheckBuys, nonMarginCheckSells));
 
 		return flips;
-
 	}
 
 	/**
@@ -558,7 +495,7 @@ public class HistoryManager
 	 * @param remainder an empty list to be populated with margin check offers that don't have companion buy/sell offers.
 	 * @return a list of flips created from "whole" margin checks.
 	 */
-	public List<Flip> pairMarginChecks(List<OfferInfo> buys, List<OfferInfo> sells, List<OfferInfo> remainder)
+	public static List<Flip> pairMarginChecks(List<OfferEvent> buys, List<OfferEvent> sells, List<OfferEvent> remainder)
 	{
 		List<Flip> flips = new ArrayList<>();
 		int buyIdx;
@@ -571,8 +508,8 @@ public class HistoryManager
 				break;
 			}
 
-			OfferInfo buy = buys.get(buyIdx);
-			OfferInfo sell = sells.get(sellIdx);
+			OfferEvent buy = buys.get(buyIdx);
+			OfferEvent sell = sells.get(sellIdx);
 
 			//just a subjective heuristic i am using to determine whether a buy margin check has a companion sell margin
 			//check. Chances are, if there's a 1 minute difference
@@ -615,19 +552,18 @@ public class HistoryManager
 	 * @param sells the sell offers
 	 * @return a list of Flips based on the buy and sell list.
 	 */
-	private ArrayList<Flip> combineToFlips(List<OfferInfo> buys, List<OfferInfo> sells)
+	private static ArrayList<Flip> combineToFlips(List<OfferEvent> buys, List<OfferEvent> sells)
 	{
-
 		ArrayList<Flip> flips = new ArrayList<>();
 
 		int buyIdx = 0;
-		for (OfferInfo sell : sells)
+		for (OfferEvent sell : sells)
 		{
 			int numBuysSeen = 0;
 			int totalRevenue = 0;
 			while (buyIdx < buys.size())
 			{
-				OfferInfo buy = buys.get(buyIdx);
+				OfferEvent buy = buys.get(buyIdx);
 				numBuysSeen += buy.getCurrentQuantityInTrade();
 
 				if (numBuysSeen >= sell.getCurrentQuantityInTrade())
@@ -636,7 +572,7 @@ public class HistoryManager
 					int amountTaken = buy.getCurrentQuantityInTrade() - leftOver;
 					totalRevenue += amountTaken * buy.getPrice();
 					buy.setCurrentQuantityInTrade(leftOver);
-					flips.add(new Flip(totalRevenue / sell.getCurrentQuantityInTrade(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), sell.isMarginCheck() && buy.isMarginCheck(), !sell.isComplete()));
+					flips.add(new Flip(totalRevenue / sell.getCurrentQuantityInTrade(), sell.getPrice(), sell.getCurrentQuantityInTrade(), sell.getTime(), false, !sell.isComplete()));
 					break;
 				}
 				else
@@ -645,37 +581,15 @@ public class HistoryManager
 					buyIdx++;
 				}
 			}
+
+			//buys only partially exhausted a sell
+			if (buyIdx == buys.size() && numBuysSeen != 0)
+			{
+				flips.add(new Flip(totalRevenue / numBuysSeen, sell.getPrice(), numBuysSeen, sell.getTime(), false, true));
+				break;
+			}
 		}
 
 		return flips;
-	}
-
-
-	/**
-	 * Partition a list of items into n sublists based on n conditions passed in. Perhaps this should be a static method?
-	 * The first condition puts items that meet its criteria in the first arraylist in the sublists array, the nth
-	 * conditions puts the items in the nth arraylist in the sublists array.
-	 *
-	 * @param items      to partition into sub lists
-	 * @param conditions conditions to partition on
-	 * @return
-	 */
-	private <T> List<T>[] partition(List<T> items, Predicate<T>... conditions)
-	{
-		List<T>[] subLists = new ArrayList[conditions.length];
-
-		IntStream.range(0, subLists.length).forEach(i -> subLists[i] = new ArrayList<>());
-
-		for (T item : items)
-		{
-			for (int i = 0; i < conditions.length; i++)
-			{
-				if (conditions[i].test(item))
-				{
-					subLists[i].add(item);
-				}
-			}
-		}
-		return subLists;
 	}
 }

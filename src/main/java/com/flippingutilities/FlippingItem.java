@@ -129,7 +129,7 @@ public class FlippingItem
 	 *
 	 * @param newOffer the new offer that just came in
 	 */
-	public void updateHistory(OfferInfo newOffer)
+	public void updateHistory(OfferEvent newOffer)
 	{
 		history.updateHistory(newOffer);
 	}
@@ -140,7 +140,7 @@ public class FlippingItem
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateLatestTimes(OfferInfo newOffer)
+	public void updateLatestTimes(OfferEvent newOffer)
 	{
 		if (newOffer.isBuy())
 		{
@@ -161,7 +161,7 @@ public class FlippingItem
 	 *
 	 * @param newOffer the new offer just received.
 	 */
-	public void updateMargin(OfferInfo newOffer)
+	public void updateMargin(OfferEvent newOffer)
 	{
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
@@ -196,39 +196,41 @@ public class FlippingItem
 
 		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
 		{
-			item1.getHistory().getStandardizedOffers().addAll(item2.getHistory().getStandardizedOffers());
+			item1.getHistory().getCompressedOfferEvents().addAll(item2.getHistory().getCompressedOfferEvents());
 			return item1;
 		}
 		else
 		{
-			item2.getHistory().getStandardizedOffers().addAll(item1.getHistory().getStandardizedOffers());
+			item2.getHistory().getCompressedOfferEvents().addAll(item1.getHistory().getCompressedOfferEvents());
 			return item2;
 		}
-
-
 	}
 
-	public long currentProfit(List<OfferInfo> tradeList)
+	public long currentProfit(List<OfferEvent> tradeList)
 	{
 		return history.currentProfit(tradeList);
 	}
 
-	public long getCashflow(List<OfferInfo> tradeList, boolean getExpense)
+	public long getFlippedCashFlow(List<OfferEvent> tradeList, boolean getExpense)
 	{
-		return history.getCashflow(tradeList, getExpense);
+		return history.getFlippedCashFlow(tradeList, getExpense);
 	}
 
-	public long getCashflow(Instant earliestTime, boolean getExpense)
+	public long getFlippedCashFlow(Instant earliestTime, boolean getExpense)
 	{
-		return history.getCashflow(getIntervalHistory(earliestTime), getExpense);
+		return history.getFlippedCashFlow(getIntervalHistory(earliestTime), getExpense);
 	}
 
-	public int countItemsFlipped(List<OfferInfo> tradeList)
+	public long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense) {
+		return history.getTotalCashFlow(tradeList, getExpense);
+	}
+
+	public int countItemsFlipped(List<OfferEvent> tradeList)
 	{
 		return history.countItemsFlipped(tradeList);
 	}
 
-	public ArrayList<OfferInfo> getIntervalHistory(Instant earliestTime)
+	public ArrayList<OfferEvent> getIntervalHistory(Instant earliestTime)
 	{
 		return history.getIntervalsHistory(earliestTime);
 	}
@@ -271,7 +273,7 @@ public class FlippingItem
 		history.invalidateOffers(panelSelection);
 	}
 
-	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferInfo> offerList)
+	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferEvent> offerList)
 	{
 		history.invalidateOffers(panelSelection, offerList);
 	}

@@ -87,7 +87,7 @@ public class TradePersister
 
 	/**
 	 * Reads the data from trades.json and creates separate files for each account to conform with the
-	 * new way of saving data. It also sets the "madeBy" field on every OfferInfo object in the trade lists
+	 * new way of saving data. It also sets the "madeBy" field on every OfferEvent object in the trade lists
 	 * as the old trades (in trades.json) would not have that field.
 	 *
 	 * @param f the old trades.json file.
@@ -137,7 +137,7 @@ public class TradePersister
 			//sets the madeBy field on each offer as its required in the process for constructing the account wide tradelist.
 			//Every new offer that comes in (After this update) already gets it set, but the old offers won't have it and
 			//I don't want to have to delete all the user's data, so i am just making it conform to the new format.
-			accountSpecificData.getTrades().forEach(item -> item.getHistory().getStandardizedOffers().forEach(offer ->
+			accountSpecificData.getTrades().forEach(item -> item.getHistory().getCompressedOfferEvents().forEach(offer ->
 				offer.setMadeBy(item.getFlippedBy())));
 
 			try

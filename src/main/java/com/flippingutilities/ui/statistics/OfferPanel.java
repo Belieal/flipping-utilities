@@ -1,9 +1,8 @@
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.util.Arrays;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -17,9 +16,9 @@ public class OfferPanel extends JPanel
 {
 	private JLabel title;
 	private String action;
-	private OfferInfo offer;
+	private OfferEvent offer;
 
-	public OfferPanel(OfferInfo offer)
+	public OfferPanel(OfferEvent offer)
 	{
 		setLayout(new BorderLayout());
 		this.offer = offer;

@@ -29,7 +29,7 @@ package com.flippingutilities.ui.statistics;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -484,10 +484,10 @@ public class StatsPanel extends JPanel
 					continue;
 				}
 
-				ArrayList<OfferInfo> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
+				ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
-				if (itemTradeHistory.isEmpty() || item.countItemsFlipped(itemTradeHistory) == 0)
+				if (itemTradeHistory.isEmpty())
 				{
 					continue;
 				}
@@ -555,10 +555,10 @@ public class StatsPanel extends JPanel
 				continue;
 			}
 
-			List<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+			List<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 			totalProfit += item.currentProfit(intervalHistory);
-			totalExpenses += item.getCashflow(startOfInterval, true);
-			totalRevenues += item.getCashflow(startOfInterval, false);
+			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
+			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
 			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
@@ -883,7 +883,7 @@ public class StatsPanel extends JPanel
 			case "Most Profit Each":
 				result.sort(Comparator.comparing(item ->
 				{
-					ArrayList<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 					int quantity = item.countItemsFlipped(intervalHistory);
 
 					if (quantity == 0)
@@ -898,11 +898,11 @@ public class StatsPanel extends JPanel
 			case "Highest ROI":
 				result.sort((item1, item2) ->
 				{
-					ArrayList<OfferInfo> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
-					ArrayList<OfferInfo> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
 
-					long totalExpense1 = item1.getCashflow(intervalHistory1, true);
-					long totalExpense2 = item2.getCashflow(intervalHistory2, true);
+					long totalExpense1 = item1.getFlippedCashFlow(intervalHistory1, true);
+					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
 
 					if (totalExpense1 == 0 || totalExpense2 == 0)
 					{

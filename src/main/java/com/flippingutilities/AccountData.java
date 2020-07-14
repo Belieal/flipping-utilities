@@ -37,15 +37,15 @@ import lombok.Data;
 @Data
 public class AccountData
 {
-	private Map<Integer, OfferInfo> lastOffers = new HashMap<>();
+	private Map<Integer, OfferEvent> lastOffers = new HashMap<>();
 	private List<FlippingItem> trades = new ArrayList<>();
 	private Instant sessionStartTime = Instant.now();
 	private Duration accumulatedSessionTime = Duration.ZERO;
 	private Instant lastSessionTimeUpdate;
 
 	/**
-	 * Resets all session related data associated with an account. This is only ever called when the plugin first starts
-	 * as that's when a new session is "started".
+	 * Resets all session related data associated with an account. This is called when the plugin first starts
+	 * as that's when a new session is "started" and when a user wants to start a new session for an account.
 	 */
 	public void startNewSession()
 	{
