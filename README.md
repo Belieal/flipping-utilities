@@ -5,7 +5,7 @@ This external plugin seeks to help users with flipping in OSRS. It stores the la
 
 
 ## Support
-If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or contact me on Discord (#Belieal6600)! I'm also happy to answer any questions that you may have. :)
+If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or contact us on Discord at (flopping#9667) or (#Belieal6600)! I'm also happy to answer any questions that you may have. :)
  
 # Table of Contents
 - [Features](#features)
