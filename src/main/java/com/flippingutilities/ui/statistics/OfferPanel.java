@@ -15,15 +15,16 @@ import net.runelite.client.util.QuantityFormatter;
 public class OfferPanel extends JPanel
 {
 	private JLabel title;
-	private String action;
+	private String offerDescription;
 	private OfferEvent offer;
 
 	public OfferPanel(OfferEvent offer)
 	{
 		setLayout(new BorderLayout());
 		this.offer = offer;
-		this.action = offer.isBuy() ? "Bought" : "Sold";
-		this.title = new JLabel(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + action
+
+		this.offerDescription = getOfferDescription();
+		this.title = new JLabel(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + offerDescription
 			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)", SwingConstants.CENTER);
 
 		title.setOpaque(true);
@@ -66,7 +67,25 @@ public class OfferPanel extends JPanel
 
 	public void updateTimeDisplay()
 	{
-		title.setText(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + action
+		title.setText(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + offerDescription
 			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)");
+	}
+
+	private String getOfferDescription() {
+		if (offer.isBuy() && offer.isMarginCheck()) {
+			return "Insta Bought";
+		}
+		else if (offer.isBuy() && !offer.isMarginCheck()) {
+			return "Bought";
+		}
+		else if (!offer.isBuy() && offer.isMarginCheck()) {
+			return "Insta Sold";
+		}
+		else if (!offer.isBuy() && !offer.isMarginCheck()) {
+			return"Sold";
+		}
+		else {
+			return "";
+		}
 	}
 }

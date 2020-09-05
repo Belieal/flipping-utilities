@@ -473,7 +473,8 @@ public class StatItemPanel extends JPanel
 
 		quantityFlipped.setText(QuantityFormatter.formatNumber(itemsFlipped) + " Items");
 
-		float roi = (float) flippingExpense >0? profitFromFlips / flippingExpense * 100: 0;
+
+		float roi = (float) flippingExpense >0? (float) profitFromFlips / flippingExpense * 100: 0;
 
 		roiValLabel.setText(String.format("%.2f", roi) + "%");
 		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
