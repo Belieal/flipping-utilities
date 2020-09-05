@@ -29,7 +29,7 @@ package com.flippingutilities.ui.statistics;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -48,8 +48,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -65,6 +67,7 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -72,6 +75,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
 
+@Slf4j
 public class StatsPanel extends JPanel
 {
 	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past 12 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
@@ -170,6 +174,11 @@ public class StatsPanel extends JPanel
 
 	@Getter
 	JLabel resetIcon;
+
+	@Getter
+	private Set<String> expandedItems = new HashSet<>();
+	@Getter
+	private Set<String> expandedTradeHistories = new HashSet<>();
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -477,10 +486,10 @@ public class StatsPanel extends JPanel
 					continue;
 				}
 
-				ArrayList<OfferInfo> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
+				ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
-				if (itemTradeHistory.isEmpty() || item.countItemsFlipped(itemTradeHistory) == 0)
+				if (itemTradeHistory.isEmpty())
 				{
 					continue;
 				}
@@ -548,10 +557,10 @@ public class StatsPanel extends JPanel
 				continue;
 			}
 
-			List<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+			List<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 			totalProfit += item.currentProfit(intervalHistory);
-			totalExpenses += item.getCashflow(startOfInterval, true);
-			totalRevenues += item.getCashflow(startOfInterval, false);
+			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
+			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
 			totalQuantity += item.countItemsFlipped(intervalHistory);
 		}
 
@@ -629,18 +638,18 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateHourlyProfitDisplay(Duration accumulatedTime)
 	{
-		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
 		String profitString;
-		//i think this happens when the profit is absurdly high because the session time is very low (offers come in
-		//just as you start a new session)
-		try
+		double divisor = accumulatedTime.toMillis() / 1000 * 1.0 / (60 * 60);
+
+		if (divisor != 0)
 		{
 			profitString = UIUtilities.quantityToRSDecimalStack((long) (totalProfit / divisor), true);
 		}
-		catch (ArrayIndexOutOfBoundsException e)
+		else
 		{
-			profitString = "NA";
+			profitString = "0";
 		}
+
 		hourlyProfitVal.setText(profitString + " gp/hr");
 		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
 		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");
@@ -717,7 +726,7 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateTimeDisplay()
 	{
-		activePanels.forEach(StatItemPanel::updateTimeDisplay);
+		activePanels.forEach(StatItemPanel::updateTimeLabels);
 	}
 
 	/**
@@ -876,7 +885,7 @@ public class StatsPanel extends JPanel
 			case "Most Profit Each":
 				result.sort(Comparator.comparing(item ->
 				{
-					ArrayList<OfferInfo> intervalHistory = item.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 					int quantity = item.countItemsFlipped(intervalHistory);
 
 					if (quantity == 0)
@@ -891,11 +900,11 @@ public class StatsPanel extends JPanel
 			case "Highest ROI":
 				result.sort((item1, item2) ->
 				{
-					ArrayList<OfferInfo> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
-					ArrayList<OfferInfo> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
 
-					long totalExpense1 = item1.getCashflow(intervalHistory1, true);
-					long totalExpense2 = item2.getCashflow(intervalHistory2, true);
+					long totalExpense1 = item1.getFlippedCashFlow(intervalHistory1, true);
+					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
 
 					if (totalExpense1 == 0 || totalExpense2 == 0)
 					{

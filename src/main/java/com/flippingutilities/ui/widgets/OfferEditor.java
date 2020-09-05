@@ -24,10 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui.flipping;
+package com.flippingutilities.ui.widgets;
 
-import javax.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientStr;
@@ -39,21 +37,21 @@ import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
 
-@Slf4j
-public class FlippingItemWidget
+public class OfferEditor
 {
 	private final Widget parent;
 	private final Client client;
 	private Widget text;
 
-	@Inject
-	public FlippingItemWidget(Widget parent, Client client)
+	public OfferEditor(Widget parent, Client client)
 	{
 		this.parent = parent;
 		this.client = client;
+
+		initialize();
 	}
 
-	private void init()
+	private void initialize()
 	{
 		if (parent == null)
 		{
@@ -78,10 +76,8 @@ public class FlippingItemWidget
 		text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
 	}
 
-	public void showWidget(String mode, int value)
+	public void update(String mode, int value)
 	{
-		init();
-
 		switch (mode)
 		{
 			case ("setCurrentQuantityInTrade"):

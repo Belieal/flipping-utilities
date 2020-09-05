@@ -26,24 +26,25 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.Flip;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferInfo;
+import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.CLOSE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.OPEN_ICON;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -58,6 +59,8 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.ui.components.materialtabs.MaterialTab;
+import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -82,29 +85,14 @@ public class StatItemPanel extends JPanel
 
 	private StatsPanel statsPanel;
 
-	private long totalProfit;
-	private long totalExpense;
-	private long totalRevenue;
-	private int itemCountFlipped;
 	@Getter
 	private int totalFlips;
 
 	private Instant startOfInterval;
-	private ArrayList<OfferInfo> tradeHistory = new ArrayList<>();
+	private ArrayList<OfferEvent> tradeHistory = new ArrayList<>();
 
-	/*
-	 Panels that construct the title panel that contains
-	 identifying information about the item.
-	 */
-	//Holds the item icon, name, item profit labels and collapse icon
-	private JPanel titlePanel = new JPanel(new BorderLayout());
-	//Holds the name and item profit labels
-	private JPanel nameAndProfitTitlePanel = new JPanel(new BorderLayout());
-
-	//Shows the name label for the item
-	private JLabel nameTitleLabel;
 	//Shows the item's profit
-	private JLabel itemProfitTitleLabel = new JLabel();
+	private JLabel itemProfitLabel = new JLabel();
 
 	//Shows the item's icon
 	private JPanel itemIconTitlePanel = new JPanel(new BorderLayout());
@@ -117,39 +105,17 @@ public class StatItemPanel extends JPanel
 	private JLabel totalProfitValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel profitEachValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel timeOfLastFlipValLabel = new JLabel("", SwingConstants.RIGHT);
-	private JLabel quantityValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantityFlipped = new JLabel("", SwingConstants.RIGHT);
 	private JLabel roiValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel avgBuyPriceValLabel = new JLabel("", SwingConstants.RIGHT);
 	private JLabel avgSellPriceValLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantityBoughtLabel = new JLabel("", SwingConstants.RIGHT);
+	private JLabel quantitySoldLabel = new JLabel("", SwingConstants.RIGHT);
 
-	/* These panels contain the sub information regarding the item.
-	   Subinfos are general statistics about an item over the time interval currently selected. */
+	private List<FlipPanel> flipPanels;
+	private List<OfferPanel> offerPanels;
 
-	private JPanel totalProfitPanel = new JPanel(new BorderLayout());
-	private JPanel profitEachPanel = new JPanel(new BorderLayout());
-	private JPanel timeOfLastFlipPanel = new JPanel(new BorderLayout());
-	private JPanel quantityPanel = new JPanel(new BorderLayout());
-	private JPanel padPanel = new JPanel(new BorderLayout());
-	private JPanel roiPanel = new JPanel(new BorderLayout());
-	private JPanel avgBuyPricePanel = new JPanel(new BorderLayout());
-	private JPanel avgSellPricePanel = new JPanel(new BorderLayout());
-
-	private final JPanel[] subInfoPanelArray = {totalProfitPanel, profitEachPanel, timeOfLastFlipPanel, quantityPanel,
-		padPanel, roiPanel, avgBuyPricePanel, avgSellPricePanel};
-
-	private ArrayList<StatItemHistoryPanel> activePanels = new ArrayList<>();
-
-	/* Trade History containers. */
-	//Wraps the title label panel and the item history container.
-	private JPanel tradeHistoryPanel = new JPanel(new BorderLayout());
-	private JPanel tradeHistoryTitlePanel = new JPanel(new BorderLayout());
-	//Holds the individual trades in the history.
-	private JPanel tradeHistoryItemContainer = new JPanel(new GridBagLayout());
-
-	private JLabel collapseTradeHistoryIconLabel = new JLabel(CLOSE_ICON);
-
-	//Constraints for tradeHistoryItemContainer.
-	private GridBagConstraints constraints = new GridBagConstraints();
+	private ItemManager itemManager;
 
 	/**
 	 * This panel represents the middle layer of information. It contains general information about the item
@@ -164,22 +130,233 @@ public class StatItemPanel extends JPanel
 	{
 		this.plugin = plugin;
 		this.flippingItem = flippingItem;
+		this.itemManager = itemManager;
+		this.statsPanel = plugin.getStatPanel();
+
+		startOfInterval = statsPanel.getStartOfInterval();
+		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
+
+		List<OfferEvent> historyShallowCopy = new ArrayList<>(tradeHistory);
+		Collections.reverse(historyShallowCopy);
+		offerPanels = historyShallowCopy.stream().map(OfferPanel::new).collect(Collectors.toList());
+		flipPanels = flippingItem.getFlips(startOfInterval).stream().map(FlipPanel::new).collect(Collectors.toList());
+
+		JPanel allOffersPanel = UIUtilities.stackPanelsVertically((List) offerPanels);
+		JPanel allFlipsPanel = UIUtilities.stackPanelsVertically((List) flipPanels);
+
+		JLabel[] descriptionLabels = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Avg. ROI: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
+			new JLabel(" "), new JLabel("Quantity Bought: "), new JLabel("Quantity Sold: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
+
+		JLabel[] valueLabels = {totalProfitValLabel, profitEachValLabel, roiValLabel, timeOfLastFlipValLabel, quantityFlipped,
+			new JLabel(" "), quantityBoughtLabel, quantitySoldLabel, avgBuyPriceValLabel,
+			avgSellPriceValLabel};
 
 		setLayout(new BorderLayout());
 
-		//Get parent
-		statsPanel = plugin.getStatPanel();
+		JPanel titlePanel = titlePanel(iconPanel(), nameAndProfitPanel(), collapseIcon());
 
-		nameTitleLabel = new JLabel(flippingItem.getItemName());
+		JPanel subInfoPanel = subInfoPanel(descriptionLabels, valueLabels);
 
-		updateDisplays();
+		JPanel tradeHistoryPanel = tradeHistoryPanel(allOffersPanel, allFlipsPanel);
 
-		/* Clear icon */
+		updateLabels();
+
+		//Set background and border of container with sub infos and trade history
+		subInfoAndHistoryContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		subInfoAndHistoryContainer.setBorder(ITEM_INFO_BORDER);
+
+		subInfoAndHistoryContainer.add(subInfoPanel, BorderLayout.CENTER);
+		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
+
+		subInfoAndHistoryContainer.setVisible(statsPanel.getExpandedItems().contains(flippingItem.getItemName()));
+
+		add(titlePanel, BorderLayout.NORTH);
+		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
+
+		//Set font colors of right value labels
+		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantityFlipped.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		avgBuyPriceValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		avgSellPriceValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantityBoughtLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		quantitySoldLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+
+		totalFlips = flipPanels.size();
+
+		revalidate();
+		repaint();
+	}
+
+	private JPanel titlePanel(JPanel itemIconPanel, JPanel nameAndProfitPanel, JLabel collapseIcon)
+	{
+		JPanel titlePanel = new JPanel(new BorderLayout());
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
+		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
+
+		titlePanel.add(itemIconPanel, BorderLayout.WEST);
+		titlePanel.add(nameAndProfitPanel, BorderLayout.CENTER);
+		titlePanel.add(collapseIcon, BorderLayout.EAST);
+
+		titlePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					if (subInfoAndHistoryContainer.isVisible())
+					{
+						collapseIconTitleLabel.setIcon(CLOSE_ICON);
+						subInfoAndHistoryContainer.setVisible(false);
+						statsPanel.getExpandedItems().remove(flippingItem.getItemName());
+					}
+					else
+					{
+						collapseIconTitleLabel.setIcon(OPEN_ICON);
+						subInfoAndHistoryContainer.setVisible(true);
+						statsPanel.getExpandedItems().add(flippingItem.getItemName());
+					}
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				nameAndProfitPanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+				titlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				nameAndProfitPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			}
+		});
+
+		return titlePanel;
+	}
+
+	private JPanel subInfoPanel(JLabel[] descriptionLabels, JLabel[] valueLabels)
+	{
+		JPanel subInfoContainer = new JPanel();
+		subInfoContainer.setLayout(new DynamicGridLayout(valueLabels.length, descriptionLabels.length));
+
+		boolean useAltColor = false;
+		for (int i = 0; i < descriptionLabels.length; i++)
+		{
+			JLabel textLabel = descriptionLabels[i];
+			JLabel valLabel = valueLabels[i];
+			JPanel panel = new JPanel(new BorderLayout());
+
+			panel.add(textLabel, BorderLayout.WEST);
+			panel.add(valLabel, BorderLayout.EAST);
+
+			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
+
+			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+			useAltColor = !useAltColor;
+
+			textLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+
+			textLabel.setFont(FontManager.getRunescapeSmallFont());
+			valLabel.setFont(FontManager.getRunescapeSmallFont());
+
+			subInfoContainer.add(panel);
+		}
+
+		return subInfoContainer;
+	}
+
+	private JPanel tradeHistoryPanel(JPanel offersPanel, JPanel flipsPanel)
+	{
+		boolean shouldExpandTradeHistory = statsPanel.getExpandedTradeHistories().contains(flippingItem.getItemName());
+
+		JPanel tradeHistoryTitlePanel = new JPanel(new BorderLayout());
+		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
+
+		JPanel mainDisplay = new JPanel();
+		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
+		MaterialTab offersTab = new MaterialTab("Buys/Sells", tabGroup, offersPanel);
+		MaterialTab flipsTab = new MaterialTab("Flips", tabGroup, flipsPanel);
+
+		Arrays.asList(offersPanel, flipsPanel).forEach(panel -> {
+			panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+			panel.setBorder(ITEM_HISTORY_BORDER);
+		});
+
+		tabGroup.setBorder(new EmptyBorder(5, 0, 2, 0));
+		tabGroup.addTab(offersTab);
+		tabGroup.addTab(flipsTab);
+
+		tabGroup.select(flipsTab);
+		mainDisplay.setVisible(shouldExpandTradeHistory);
+		tabGroup.setVisible(shouldExpandTradeHistory);
+
+		JLabel collapseTradeHistoryIconLabel = new JLabel(shouldExpandTradeHistory ? OPEN_ICON : CLOSE_ICON);
+		JLabel tradeHistoryTitleLabel = new JLabel("Trade History", SwingConstants.CENTER);
+		tradeHistoryTitlePanel.add(tradeHistoryTitleLabel, BorderLayout.CENTER);
+		tradeHistoryTitlePanel.add(collapseTradeHistoryIconLabel, BorderLayout.EAST);
+		tradeHistoryTitlePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					if (tabGroup.isVisible())
+					{
+						tabGroup.setVisible(false);
+						mainDisplay.setVisible(false);
+						collapseTradeHistoryIconLabel.setIcon(CLOSE_ICON);
+						statsPanel.getExpandedTradeHistories().remove(flippingItem.getItemName());
+					}
+					else
+					{
+						tabGroup.setVisible(true);
+						mainDisplay.setVisible(true);
+						collapseTradeHistoryIconLabel.setIcon(OPEN_ICON);
+						statsPanel.getExpandedTradeHistories().add(flippingItem.getItemName());
+					}
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			}
+		});
+
+
+		JPanel tradeHistoryBody = new JPanel(new BorderLayout());
+		tradeHistoryBody.add(tabGroup, BorderLayout.NORTH);
+		tradeHistoryBody.add(mainDisplay, BorderLayout.CENTER);
+		tradeHistoryBody.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JPanel tradeHistoryPanel = new JPanel(new BorderLayout());
+		tradeHistoryPanel.add(tradeHistoryTitlePanel, BorderLayout.NORTH);
+		tradeHistoryPanel.add(tradeHistoryBody, BorderLayout.CENTER);
+
+		return tradeHistoryPanel;
+	}
+
+
+	private JPanel iconPanel()
+	{
 		JLabel deleteLabel = new JLabel(DELETE_ICON);
 		deleteLabel.setPreferredSize(new Dimension(24, 24));
 		deleteLabel.setVisible(false);
 
-		/* Item icon */
 		AsyncBufferedImage itemImage = itemManager.getImage(flippingItem.getItemId());
 		JLabel itemLabel = new JLabel();
 		Runnable resize = () ->
@@ -219,293 +396,115 @@ public class StatItemPanel extends JPanel
 			}
 		});
 
-		/* Item name and profit label */
-		nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		nameAndProfitTitlePanel.add(nameTitleLabel, BorderLayout.NORTH);
-		nameAndProfitTitlePanel.add(itemProfitTitleLabel, BorderLayout.SOUTH);
-		nameAndProfitTitlePanel.setPreferredSize(new Dimension(0, 0));
-
-		/* Collapse icon */
-		collapseIconTitleLabel.setIcon(flippingItem.isShouldExpandStatItem() ? OPEN_ICON : CLOSE_ICON);
-		collapseIconTitleLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
-
-		subInfoAndHistoryContainer.setVisible(flippingItem.isShouldExpandStatItem());
-
-		titlePanel.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (e.getButton() == MouseEvent.BUTTON1)
-				{
-					if (subInfoAndHistoryContainer.isVisible())
-					{
-						collapseIconTitleLabel.setIcon(CLOSE_ICON);
-						subInfoAndHistoryContainer.setVisible(false);
-						flippingItem.setShouldExpandStatItem(false);
-					}
-					else
-					{
-						collapseIconTitleLabel.setIcon(OPEN_ICON);
-						subInfoAndHistoryContainer.setVisible(true);
-						flippingItem.setShouldExpandStatItem(true);
-					}
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-				titlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				nameAndProfitTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-				itemIconTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-				titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			}
-		});
-
-		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
-		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
-
-		titlePanel.add(itemIconTitlePanel, BorderLayout.WEST);
-		titlePanel.add(nameAndProfitTitlePanel, BorderLayout.CENTER);
-		titlePanel.add(collapseIconTitleLabel, BorderLayout.EAST);
-
-		/* Item sub infos */
-		/* Main subinfo name and value labels */
-		//Using arrays to make it easier to set UI looks en masse
-		JLabel[] textLabelArray = {new JLabel("Total Profit: "), new JLabel("Avg. Profit ea: "), new JLabel("Last Traded: "), new JLabel("Quantity Flipped: "),
-			new JLabel(" "), new JLabel("Avg. ROI: "), new JLabel("Avg. Buy Price: "), new JLabel("Avg. Sell Price: ")};
-
-		JLabel[] valLabelArray = {totalProfitValLabel, profitEachValLabel, timeOfLastFlipValLabel, quantityValLabel,
-			new JLabel(" "), roiValLabel, avgBuyPriceValLabel, avgSellPriceValLabel};
-
-		JPanel subInfoContainer = new JPanel();
-		subInfoContainer.setLayout(new DynamicGridLayout(valLabelArray.length, textLabelArray.length));
-
-		boolean useAltColor = false;
-		for (int i = 0; i < subInfoPanelArray.length; i++)
-		{
-			JLabel textLabel = textLabelArray[i];
-			JLabel valLabel = valLabelArray[i];
-			JPanel panel = subInfoPanelArray[i];
-
-			panel.add(textLabel, BorderLayout.WEST);
-			panel.add(valLabel, BorderLayout.EAST);
-
-			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
-
-			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
-			useAltColor = !useAltColor;
-
-			textLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-
-			textLabel.setFont(FontManager.getRunescapeSmallFont());
-			valLabel.setFont(FontManager.getRunescapeSmallFont());
-
-			subInfoContainer.add(panel);
-		}
-
-		//Set font colors of right value labels
-		timeOfLastFlipValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		profitEachValLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		quantityValLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		avgBuyPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
-		avgSellPriceValLabel.setForeground(UIUtilities.PROFIT_COLOR);
-
-		/* Trade History */
-		//Shows the individual flips made for the item.
-		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
-
-		JLabel tradeHistoryTitleLabel = new JLabel("Trade History", SwingConstants.CENTER);
-		tradeHistoryTitlePanel.add(tradeHistoryTitleLabel, BorderLayout.CENTER);
-		tradeHistoryTitlePanel.add(collapseTradeHistoryIconLabel, BorderLayout.EAST);
-		tradeHistoryTitlePanel.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (e.getButton() == MouseEvent.BUTTON1)
-				{
-					if (tradeHistoryItemContainer.isVisible())
-					{
-						tradeHistoryItemContainer.setVisible(false);
-						flippingItem.setShouldExpandHistory(false);
-						collapseTradeHistoryIconLabel.setIcon(CLOSE_ICON);
-					}
-					else
-					{
-						tradeHistoryItemContainer.setVisible(true);
-						flippingItem.setShouldExpandHistory(true);
-						collapseTradeHistoryIconLabel.setIcon(OPEN_ICON);
-					}
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				tradeHistoryTitlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			}
-		});
-
-		tradeHistoryItemContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		tradeHistoryItemContainer.setVisible(flippingItem.isShouldExpandHistory());
-		tradeHistoryItemContainer.setBorder(ITEM_HISTORY_BORDER);
-
-		tradeHistoryPanel.add(tradeHistoryTitlePanel, BorderLayout.NORTH);
-		tradeHistoryPanel.add(tradeHistoryItemContainer, BorderLayout.CENTER);
-
-		//Set background and border of container with sub infos and trade history
-		subInfoAndHistoryContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		subInfoAndHistoryContainer.setBorder(ITEM_INFO_BORDER);
-
-		subInfoAndHistoryContainer.add(subInfoContainer, BorderLayout.CENTER);
-		subInfoAndHistoryContainer.add(tradeHistoryPanel, BorderLayout.SOUTH);
-
-		rebuildTradeHistory();
-
-		add(titlePanel, BorderLayout.NORTH);
-		add(subInfoAndHistoryContainer, BorderLayout.CENTER);
+		return itemIconTitlePanel;
 	}
 
-	public void rebuildTradeHistory()
+	private JPanel nameAndProfitPanel()
 	{
-		tradeHistoryItemContainer.removeAll();
+		JPanel nameAndProfitPanel = new JPanel(new BorderLayout());
+		nameAndProfitPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		JLabel itemNameLabel = new JLabel(flippingItem.getItemName());
+		nameAndProfitPanel.add(itemNameLabel, BorderLayout.NORTH);
+		nameAndProfitPanel.add(itemProfitLabel, BorderLayout.SOUTH);
+		nameAndProfitPanel.setPreferredSize(new Dimension(0, 0));
+		return nameAndProfitPanel;
+	}
 
-		activePanels = new ArrayList<>();
+	private JLabel collapseIcon()
+	{
+		JLabel collapseIconLabel = new JLabel();
+		collapseIconLabel.setIcon(statsPanel.getExpandedItems().contains(flippingItem.getItemName()) ? OPEN_ICON : CLOSE_ICON);
+		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
+		return collapseIconLabel;
+	}
 
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-
-		totalFlips = 0;
-		int index = 0;
-		for (Flip flip : flippingItem.getFlips(startOfInterval))
+	public void updateLabels()
+	{
+		long numItemsBought = 0;
+		long numItemsSold = 0;
+		for (OfferEvent offer : tradeHistory)
 		{
-			if (flip.getQuantity() == 0)
+			if (offer.isBuy())
 			{
-				continue;
-			}
-
-			if (!flip.isMarginCheck())
-			{
-				totalFlips++;
-			}
-
-			StatItemHistoryPanel newPanel = new StatItemHistoryPanel(flip);
-
-			if (index++ > 0)
-			{
-				JPanel marginWrapper = new JPanel(new BorderLayout());
-				marginWrapper.add(newPanel, BorderLayout.NORTH);
-				tradeHistoryItemContainer.add(marginWrapper, constraints);
+				numItemsBought += offer.getCurrentQuantityInTrade();
 			}
 			else
 			{
-				tradeHistoryItemContainer.add(newPanel, constraints);
+				numItemsSold += offer.getCurrentQuantityInTrade();
 			}
-			activePanels.add(newPanel);
-			constraints.gridy++;
 		}
+		long revenueFromFlippedItems = flippingItem.getFlippedCashFlow(tradeHistory, false);
+		long expenseFromFlippedItems = flippingItem.getFlippedCashFlow(tradeHistory, true);
+		long totalRevenue = flippingItem.getTotalCashFlow(tradeHistory, false);
+		long totalExpense = flippingItem.getTotalCashFlow(tradeHistory, true);
+		int itemCountFlipped = flippingItem.countItemsFlipped(tradeHistory);
 
-		revalidate();
-		repaint();
+		updateTitleLabels(revenueFromFlippedItems - expenseFromFlippedItems, itemCountFlipped);
+		updateFlippingLabels(expenseFromFlippedItems, revenueFromFlippedItems, itemCountFlipped);
+		updateGeneralLabels(totalRevenue, totalExpense, numItemsBought, numItemsSold);
+		updateTimeLabels();
 	}
 
 	/**
-	 * Updates the values that determine what is shown on the panel along with updating the labels themselves.
+	 * Updates the labels on the title panel. This includes the profit label which shows how much profit you made
+	 * from flipping that item and the number of times you flipped that item.
 	 */
-	public void updateDisplays()
+	private void updateTitleLabels(long profitFromFlips, long numItemsFlipped)
 	{
-		startOfInterval = statsPanel.getStartOfInterval();
-		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
-		totalProfit = flippingItem.currentProfit(tradeHistory);
-		totalExpense = flippingItem.getCashflow(tradeHistory, true);
-		totalRevenue = flippingItem.getCashflow(tradeHistory, false);
-		itemCountFlipped = flippingItem.countItemsFlipped(tradeHistory);
+		String totalProfitString = (profitFromFlips >= 0? "+": "") + UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp";
+		totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
 
-		if (itemCountFlipped == 0)
+		itemProfitLabel.setText(totalProfitString);
+		itemProfitLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		itemProfitLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
+		itemProfitLabel.setFont(FontManager.getRunescapeSmallFont());
+	}
+
+	private void updateFlippingLabels(long flippingExpense, long flippingRevenue, int itemsFlipped) {
+		long profitFromFlips = flippingRevenue - flippingExpense;
+		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp");
+		totalProfitValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profitFromFlips) + " gp");
+
+		String profitEach = UIUtilities.quantityToRSDecimalStack(itemsFlipped > 0 ? (profitFromFlips / itemsFlipped) : 0, true) + " gp/ea";
+		profitEachValLabel.setText(profitEach);
+		profitEachValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(itemsFlipped > 0 ? profitFromFlips / itemsFlipped : 0) + " gp/ea");
+
+		quantityFlipped.setText(QuantityFormatter.formatNumber(itemsFlipped) + " Items");
+
+
+		float roi = (float) flippingExpense >0? (float) profitFromFlips / flippingExpense * 100: 0;
+
+		roiValLabel.setText(String.format("%.2f", roi) + "%");
+		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+		roiValLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+	}
+
+	private void updateGeneralLabels(long totalRevenue, long totalExpense, long numBuys, long numSells) {
+		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) numBuys > 0? (totalExpense / numBuys) : 0) + " gp");
+		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) numSells > 0? (totalRevenue / numSells) : 0) + " gp");
+
+		quantityBoughtLabel.setText("" + numBuys);
+		quantitySoldLabel.setText("" + numSells);
+	}
+
+	public void updateTimeLabels()
+	{
+		if (tradeHistory.isEmpty())
 		{
 			return;
 		}
 
-		updateTitleDisplay();
-		updateItemSubInfosDisplay();
-		updateTimeDisplay();
-	}
+		OfferEvent lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
+		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 
-	/* Total profit and name label */
-	private void updateTitleDisplay()
-	{
-		String totalProfitString = ((totalProfit > 0) ? "+" : "") + UIUtilities.quantityToRSDecimalStack(totalProfit, true) + " gp";
-
-		if (itemCountFlipped != 0)
-		{
-			totalProfitString += " (x " + QuantityFormatter.formatNumber(itemCountFlipped) + ")";
-		}
-
-		itemProfitTitleLabel.setText(totalProfitString);
-		itemProfitTitleLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		itemProfitTitleLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
-		itemProfitTitleLabel.setFont(FontManager.getRunescapeSmallFont());
-	}
-
-	private void updateItemSubInfosDisplay()
-	{
-		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(totalProfit, true) + " gp");
-		totalProfitValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		totalProfitPanel.setToolTipText(QuantityFormatter.formatNumber(totalProfit) + " gp");
-
-		profitEachValLabel.setText(UIUtilities.quantityToRSDecimalStack((totalProfit / itemCountFlipped), true) + " gp/ea");
-		profitEachValLabel.setForeground((totalProfit >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		profitEachPanel.setToolTipText(QuantityFormatter.formatNumber(totalProfit / itemCountFlipped) + " gp/ea");
-
-		quantityValLabel.setText(QuantityFormatter.formatNumber(itemCountFlipped) + " Items");
-
-		avgBuyPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalExpense / itemCountFlipped)) + " gp");
-		avgSellPriceValLabel.setText(QuantityFormatter.formatNumber((int) (totalRevenue / itemCountFlipped)) + " gp");
-
-		float roi = (float) totalProfit / totalExpense * 100;
-
-		roiValLabel.setText(String.format("%.2f", roi) + "%");
-		roiValLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
-		roiPanel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
-	}
-
-	public void updateTimeDisplay()
-	{
-		if (!tradeHistory.isEmpty())
-		{
-			OfferInfo lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
-			timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
-			timeOfLastFlipPanel.setToolTipText(UIUtilities.formatTime(lastRecordedTrade.getTime(), plugin.getConfig().twelveHourFormat(), true));
-
-			for (StatItemHistoryPanel panel : activePanels)
-			{
-				panel.updateTimeDisplay();
-			}
-		}
+		flipPanels.forEach(FlipPanel::updateTitle);
+		offerPanels.forEach(OfferPanel::updateTimeDisplay);
 	}
 
 	private void deletePanel()
 	{
 		statsPanel.deletePanel(this, false);
 	}
-
 }

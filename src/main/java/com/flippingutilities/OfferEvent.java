@@ -43,7 +43,7 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
  */
 @Data
 @AllArgsConstructor
-public class OfferInfo
+public class OfferEvent
 {
 	@SerializedName("b")
 	private boolean buy;
@@ -65,9 +65,6 @@ public class OfferInfo
 	private int ticksSinceFirstOffer;
 	@SerializedName("tQIT")
 	private int totalQuantityInTrade;
-	@SerializedName("qSLQ")
-	private int quantitySinceLastOffer;
-
 	//States that determine if the offer is appurtenant to the current scope of the panel.
 	//The states change dependent on user-selected removals.
 	@SerializedName("vSQ")
@@ -103,6 +100,15 @@ public class OfferInfo
 	}
 
 	/**
+	 * when an offer is complete, two events are generated: a buying/selling event and a bought/sold event.
+	 * this method identifies the redundant buying/selling event before the bought/sold event.
+	 */
+	public boolean isRedundantEventBeforeOfferCompletion()
+	{
+		return (state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.SELLING) && currentQuantityInTrade == totalQuantityInTrade;
+	}
+
+	/**
 	 * A margin check is defined as an offer that is either a BOUGHT or SOLD offer and has a currentQuantityInTrade of 1. This
 	 * resembles the typical margin check process wherein you buy an item (currentQuantityInTrade of 1) for a high press, and then
 	 * sell that item (currentQuantityInTrade of 1), to figure out the optimal buying and selling prices.
@@ -116,25 +122,31 @@ public class OfferInfo
 	}
 
 	/**
-	 * Returns an offerInfo object with the currentQuantityInTrade sold/bought the amount of items sold/bought since
-	 * the last event, rather than current currentQuantityInTrade sold/bought overall in the trade. This makes it
-	 * easier to calculate the profit.
-	 * This value could be set from outside and a clone does not need to be returned, but since references
-	 * to the same offerInfo are used throughout the code, avoiding mutation is best.
+	 * We get an event for every empty slot on logic
 	 *
-	 * @param lastOffer the last offer from that slot.
-	 * @return a standardized offer
+	 * @return whether this OfferEvent was caused by an empty slot
 	 */
-	public OfferInfo standardizeOffer(OfferInfo lastOffer)
+	public boolean isCausedByEmptySlot()
 	{
-		OfferInfo standardizedOffer = clone();
-		standardizedOffer.setQuantitySinceLastOffer(getCurrentQuantityInTrade() - lastOffer.getCurrentQuantityInTrade());
-		return standardizedOffer;
+		return (itemId == 0 || state == GrandExchangeOfferState.EMPTY);
 	}
 
-	public OfferInfo clone()
+	/**
+	 * When we first place an offer for a slot we get an offer event that has a quantity traded of 0. This offer marks
+	 * the tick the offer was placed. The reason we need to also check if it wasn't a complete offer is because you can
+	 * cancel a buy or a sell, and provided you didn't buy or sell anything, the quantity in the offer can be 0, but its
+	 * not the start of the offer.
+	 *
+	 * @return boolean value representing whether the offer is a start of a trade.
+	 */
+	public boolean isStartOfOffer()
 	{
-		return new OfferInfo(buy,
+		return currentQuantityInTrade == 0 && !isComplete();
+	}
+
+	public OfferEvent clone()
+	{
+		return new OfferEvent(buy,
 			itemId,
 			currentQuantityInTrade,
 			price,
@@ -144,7 +156,6 @@ public class OfferInfo
 			tickArrivedAt,
 			ticksSinceFirstOffer,
 			totalQuantityInTrade,
-			quantitySinceLastOffer,
 			validStatOffer,
 			validFlippingOffer,
 			madeBy);
@@ -157,18 +168,37 @@ public class OfferInfo
 			return true;
 		}
 
-		if (!(other instanceof OfferInfo))
+		if (!(other instanceof OfferEvent))
 		{
 			return false;
 		}
 
-		OfferInfo otherOffer = (OfferInfo) other;
+		OfferEvent otherOffer = (OfferEvent) other;
 
-		return state == otherOffer.getState() && currentQuantityInTrade == otherOffer.getCurrentQuantityInTrade()
-			&& quantitySinceLastOffer == otherOffer.getQuantitySinceLastOffer();
+		return isDuplicate(otherOffer) && tickArrivedAt == otherOffer.tickArrivedAt
+			&& ticksSinceFirstOffer == otherOffer.ticksSinceFirstOffer && time.equals(otherOffer.time) &&
+			validFlippingOffer == otherOffer.validFlippingOffer && validStatOffer == otherOffer.validStatOffer;
 	}
 
-	public static OfferInfo fromGrandExchangeEvent(GrandExchangeOfferChanged event)
+	/**
+	 * This checks whether the given OfferEvent is a "duplicate" of this OfferEvent. Some fields such as
+	 * tickArrivedAt are omitted because even if they are different, the given offer is still redundant due to all
+	 * the other information being the same and should be screened out by screenOfferEvent in FlippingPlugin, where
+	 * this method is used.
+	 *
+	 * @param other the OfferEvent being compared.
+	 * @return whether or not the given offer event is redundant
+	 */
+	public boolean isDuplicate(OfferEvent other)
+	{
+		return state == other.getState()
+			&& currentQuantityInTrade == other.getCurrentQuantityInTrade()
+			&& slot == other.getSlot()
+			&& totalQuantityInTrade == other.getTotalQuantityInTrade() && itemId == other.getItemId()
+			&& price == other.getPrice();
+	}
+
+	public static OfferEvent fromGrandExchangeEvent(GrandExchangeOfferChanged event)
 	{
 		GrandExchangeOffer offer = event.getOffer();
 
@@ -176,7 +206,7 @@ public class OfferInfo
 			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
 			|| offer.getState() == GrandExchangeOfferState.BUYING;
 
-		return new OfferInfo(
+		return new OfferEvent(
 			isBuy,
 			offer.getItemId(),
 			offer.getQuantitySold(),
@@ -187,10 +217,21 @@ public class OfferInfo
 			0,
 			0,
 			offer.getTotalQuantity(),
-			0,
 			true,
 			true,
 			null);
+	}
+
+	/**
+	 * Sets the ticks since the first offer event of the trade that this offer event belongs to. The ticks since first
+	 * offer event is used to determine whether an offer event is a margin check or not.
+	 *
+	 * @param lastOfferForSlot the last offer event for the slot this offer event belongs to
+	 */
+	public void setTicksSinceFirstOffer(OfferEvent lastOfferForSlot)
+	{
+		int tickDiffFromLastOffer = Math.abs(tickArrivedAt - lastOfferForSlot.getTickArrivedAt());
+		ticksSinceFirstOffer = tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
 	}
 }
 

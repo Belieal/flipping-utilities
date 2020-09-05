@@ -29,6 +29,7 @@ package com.flippingutilities.ui.statistics;
 import com.flippingutilities.Flip;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -38,13 +39,13 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.QuantityFormatter;
 
-public class StatItemHistoryPanel extends JPanel
+public class FlipPanel extends JPanel
 {
-	JLabel timeSince = new JLabel("", SwingConstants.CENTER);
+	JLabel title = new JLabel("", SwingConstants.CENTER);
 
 	private Flip flip;
 
-	StatItemHistoryPanel(Flip flip)
+	FlipPanel(Flip flip)
 	{
 		this.flip = flip;
 
@@ -54,17 +55,10 @@ public class StatItemHistoryPanel extends JPanel
 		int profitEach = flip.getSellPrice() - flip.getBuyPrice();
 		int profitTotal = profitEach * flip.getQuantity();
 
-		timeSince.setOpaque(true);
-		timeSince.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-
-		if (flip.isMarginCheck())
-		{
-			timeSince.setText("Margin Checked " + "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
-		}
-		else
-		{
-			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
-		}
+		title.setOpaque(true);
+		title.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		title.setFont(FontManager.getRunescapeSmallFont());
+		updateTitle();
 
 		JLabel buyPriceText = new JLabel("Buy Price:");
 		JLabel sellPriceText = new JLabel("Sell Price:");
@@ -78,7 +72,7 @@ public class StatItemHistoryPanel extends JPanel
 
 		JLabel profitVal = new JLabel(profitString);
 
-		JLabel[] labelList = {timeSince, buyPriceText, buyPriceVal, sellPriceText, sellPriceVal, profitText, profitVal};
+		JLabel[] labelList = {buyPriceText, buyPriceVal, sellPriceText, sellPriceVal, profitText, profitVal};
 
 		for (JLabel label : labelList)
 		{
@@ -110,20 +104,28 @@ public class StatItemHistoryPanel extends JPanel
 
 		infoContainer.setBorder(new EmptyBorder(0, 2, 1, 2));
 
-		add(timeSince, BorderLayout.NORTH);
+		add(title, BorderLayout.NORTH);
 		add(infoContainer, BorderLayout.CENTER);
 	}
 
-	public void updateTimeDisplay()
+	public void updateTitle()
 	{
 		if (flip.isMarginCheck())
 		{
-			timeSince.setText("Margin Checked (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setText("Margin Checked " + "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
+
+		else if (flip.isOngoing())
+		{
+			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (ongoing)");
+			title.setForeground(UIUtilities.VIBRANT_YELLOW);
+		}
+
 		else
 		{
-			timeSince.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped "
-				+ "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
 	}
 
