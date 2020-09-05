@@ -5,7 +5,7 @@ This external plugin seeks to help users with flipping in OSRS. It stores the la
 
 
 ## Support
-If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or contact us on Discord at (flopping#9667) or (#Belieal6600)! I'm also happy to answer any questions that you may have. :)
+If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or contact us on Discord at (gaymersriseup#4026) or (#Belieal6600)! I'm also happy to answer any questions that you may have. :)
  
 # Table of Contents
 - [Features](#features)
@@ -201,4 +201,4 @@ There may be some failed URLs when it comes to Platinum Tokens, particularly wit
 
 - We're also fixing some critical bugs that caused issues with registering and storing trades. We've not fully found a fix for the bug yet, however we've significantly reduced its disruptive behavior.
 
-*If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or PM me on Discord (#Belieal6600)! I'm also happy to answer any questions that you may have. :)*
+*If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or PM us on Discord (#Belieal6600) or (gaymersriseup#4026)! I'm also happy to answer any questions that you may have. :)*
