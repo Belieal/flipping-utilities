@@ -33,7 +33,7 @@ This panel is designed to be the main utility panel. It shows the information ab
 
 The panel is designed to be "hands-free". This means you can just margin check an item you want to flip and the panel will detect, store and display prices along with calculating the potential profits and tracking the GE limit.
 
-![Demonstration gif](src/main/resources/demo.gif)
+![Demonstration gif](images/demo.gif)
 
 You can use this information to quickly determine if the item is worth it to flip.
 
