@@ -71,7 +71,6 @@ public class OfferEvent
 	private boolean validStatOffer;
 	@SerializedName("vFO")
 	private boolean validFlippingOffer;
-
 	/**
 	 * a offer always belongs to a flipping item. Every flipping item was flipped by an account and only one account and
 	 * has a flipped by attribute. So, the reason this attribute is here is because during the process of creating
@@ -82,6 +81,7 @@ public class OfferEvent
 	 */
 	@SerializedName("mB")
 	private String madeBy;
+	private transient boolean beforeLogin;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -158,7 +158,8 @@ public class OfferEvent
 			totalQuantityInTrade,
 			validStatOffer,
 			validFlippingOffer,
-			madeBy);
+			madeBy,
+			beforeLogin);
 	}
 
 	public boolean equals(Object other)
@@ -219,7 +220,8 @@ public class OfferEvent
 			offer.getTotalQuantity(),
 			true,
 			true,
-			null);
+			null,
+			false);
 	}
 
 	/**

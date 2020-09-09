@@ -65,6 +65,8 @@ public class TradeActivityTimer
 	private Instant lastUpdate = Instant.now();
 	private Instant tradeStartTime = Instant.now();
 	private OfferEvent currentOffer;
+	//is true when we get an offer from when the account was logged out which means we don't know when it occurred.
+	private boolean offerOccurredAtUnknownTime;
 
 	public TradeActivityTimer(FlippingPlugin plugin, Client client, int slotIndex)
 	{
@@ -81,6 +83,12 @@ public class TradeActivityTimer
 
 	public void setCurrentOffer(OfferEvent offer)
 	{
+		if (offer.isBeforeLogin()) {
+			offerOccurredAtUnknownTime = true;
+			return;
+		}
+
+		offerOccurredAtUnknownTime = false;
 		currentOffer = offer;
 		lastUpdate = Instant.now();
 
@@ -102,7 +110,7 @@ public class TradeActivityTimer
 		}
 
 		//Don't need to update if the timer won't be visible to the user.
-		if (slotWidget.isHidden() || plugin.getCurrentlyLoggedInAccount() == null || currentOffer == null)
+		if (slotWidget.isHidden() || plugin.getCurrentlyLoggedInAccount() == null || currentOffer == null || offerOccurredAtUnknownTime)
 		{
 			return;
 		}
@@ -124,7 +132,9 @@ public class TradeActivityTimer
 		if (!isSlotFilled())
 		{
 			//The slot hasn't been filled with an offer, so default to Jagex format.
-			resetToEmpty();
+			slotStateWidget.setText("Empty");
+			slotStateWidget.setFontId(496);
+			slotStateWidget.setXTextAlignment(1);
 			return;
 		}
 
@@ -172,11 +182,27 @@ public class TradeActivityTimer
 	/**
 	 * Resets the offer state text to default Jagex format.
 	 */
-	private void resetToEmpty()
+	public void resetToDefault()
 	{
-		slotStateWidget.setText("Empty");
-		slotStateWidget.setFontId(496);
-		slotStateWidget.setXTextAlignment(1);
+		try {
+			if (!isSlotFilled())
+			{
+				slotStateWidget.setText("Empty");
+			}
+			else if (currentOffer.isBuy())
+			{
+				slotStateWidget.setText("Buy");
+			}
+			else if (!currentOffer.isBuy())
+			{
+				slotStateWidget.setText("Sell");
+			}
+			slotStateWidget.setFontId(496);
+			slotStateWidget.setXTextAlignment(1);
+		}
+		catch (NullPointerException e) {
+			log.info("npe when resetting slot visuals. This is ok");
+		}
 	}
 
 	/**

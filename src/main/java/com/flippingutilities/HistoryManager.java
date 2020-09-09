@@ -103,6 +103,15 @@ public class HistoryManager
 		// when the time of the last offer (most recent offer) is greater than nextGeLimitRefresh,
 		// you know the ge limits have refreshed. Since this is the first offer after the ge limits
 		// have refreshed, the next refresh will be four hours after this offer's buy time.
+
+
+		//if we got the event before login, there could be a problem. If the login was outside the current window
+		//you don't know whether the event occurred within the window or outside.
+
+		//if the login was within the window that was established by the purchase of an item while logged in
+		// there isn't a problem, bc u know to just add to the items bought this window.
+
+
 		if (nextGeLimitRefresh == null || newOfferEvent.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
 			nextGeLimitRefresh = newOfferEvent.getTime().plus(4, ChronoUnit.HOURS);
@@ -115,6 +124,7 @@ public class HistoryManager
 			{
 				itemsBoughtThroughCompleteOffers = 0;
 				itemsBoughtThisLimitWindow = newOfferEvent.getCurrentQuantityInTrade();
+
 			}
 		}
 		//if the last offer (most recent offer) is before the next ge limit refresh, add its currentQuantityInTrade to the

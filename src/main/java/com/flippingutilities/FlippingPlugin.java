@@ -32,7 +32,6 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
-import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -98,7 +97,7 @@ public class FlippingPlugin extends Plugin
 	private ClientThread clientThread;
 	@Inject
 	private ScheduledExecutorService executor;
-	private ScheduledFuture repeatingTasks;
+	private ScheduledFuture generalRepeatingTasks;
 	@Inject
 	private ClientToolbar clientToolbar;
 	private NavigationButton navButton;
@@ -148,7 +147,7 @@ public class FlippingPlugin extends Plugin
 
 	//some events come before a display name has been retrieved and since a display name is crucial for figuring out
 	//which account's trade list to add to, we queue the events here to be processed as soon as a display name is set.
-	private List<GrandExchangeOfferChanged> eventsReceivedBeforeFullLogin = new ArrayList<>();
+	private List<OfferEvent> eventsReceivedBeforeFullLogin = new ArrayList<>();
 
 	//building the account wide trade list is an expensive operation so we store it in this variable and only recompute
 	//it if we have gotten an update since the last account wide trade list build.
@@ -160,10 +159,13 @@ public class FlippingPlugin extends Plugin
 
 	@Setter
 	private List<TradeActivityTimer> slotTimers = new ArrayList<>();
+	private ScheduledFuture slotTimersTask;
 	private Instant startUpTime = Instant.now();
 
 	//name of the account this client last stored trades for.
 	private String thisClientLastStored;
+
+	private int loginTickCount;
 
 	@Override
 	protected void startUp()
@@ -202,7 +204,7 @@ public class FlippingPlugin extends Plugin
 
 			slotTimers = setupSlotTimers();
 
-			repeatingTasks = setupRepeatingTasks(1000);
+			generalRepeatingTasks = setupRepeatingTasks(1000);
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
 			if (client.getGameState() == GameState.LOGGED_IN)
@@ -219,11 +221,12 @@ public class FlippingPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		if (repeatingTasks != null)
+		if (generalRepeatingTasks != null)
 		{
 			//Stop all slotTimers
-			repeatingTasks.cancel(true);
-			repeatingTasks = null;
+			generalRepeatingTasks.cancel(true);
+			slotTimersTask.cancel(true);
+			generalRepeatingTasks = null;
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -234,7 +237,7 @@ public class FlippingPlugin extends Plugin
 	{
 		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedTimeInterval());
 
-		repeatingTasks.cancel(true);
+		generalRepeatingTasks.cancel(true);
 
 		cacheUpdater.stop();
 
@@ -261,22 +264,6 @@ public class FlippingPlugin extends Plugin
 				handleLogout();
 			}
 		}
-	}
-
-	@Subscribe
-	public void onGrandExchangeSearched(GrandExchangeSearched event)
-	{
-		final String input = client.getVar(VarClientStr.INPUT_TEXT);
-		log.info("input is {}", input);
-
-
-		event.consume();
-
-		short[] a = new short[1];
-		a[0] = 10034;
-		client.setGeSearchResultIndex(0);
-		client.setGeSearchResultCount(1);
-		client.setGeSearchResultIds(a);
 	}
 
 	private void onLoggedInGameState()
@@ -338,11 +325,12 @@ public class FlippingPlugin extends Plugin
 			masterPanel.getAccountSelector().addItem(displayName);
 		}
 
+		loginTickCount = client.getTickCount();
 		currentlyLoggedInAccount = displayName;
 
 		//now that we have a display name we can process any events that we received before the display name
 		//was set.
-		eventsReceivedBeforeFullLogin.forEach(this::onGrandExchangeOfferChanged);
+		eventsReceivedBeforeFullLogin.forEach(this::onNewOfferEvent);
 		eventsReceivedBeforeFullLogin.clear();
 
 		if (accountCache.keySet().size() > 1)
@@ -353,6 +341,10 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		masterPanel.getAccountSelector().setSelectedItem(displayName);
+		if (slotTimersTask == null && config.slotTimersEnabled()) {
+			log.info("starting slot timers on login");
+			slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
+		}
 	}
 
 	public void handleLogout()
@@ -360,6 +352,11 @@ public class FlippingPlugin extends Plugin
 		log.info("{} is logging out", currentlyLoggedInAccount);
 		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
+		if (slotTimersTask != null && !slotTimersTask.isCancelled()) {
+			log.info("cancelling slot timers task on logout");
+			slotTimersTask.cancel(true);
+		}
+		slotTimersTask = null;
 		currentlyLoggedInAccount = null;
 	}
 
@@ -410,7 +407,7 @@ public class FlippingPlugin extends Plugin
 
 		accountCache.keySet().forEach(displayName -> masterPanel.getAccountSelector().addItem(displayName));
 
-		//sets the account selector dropdown to visible or not depending on whether the config option has been
+		//sets the accoun            selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
@@ -434,7 +431,6 @@ public class FlippingPlugin extends Plugin
 		{
 			try
 			{
-				slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer()));
 				flippingPanel.updateActivePanelsPriceOutdatedDisplay();
 				flippingPanel.updateActivePanelsGePropertiesDisplay();
 				statPanel.updateTimeDisplay();
@@ -444,15 +440,17 @@ public class FlippingPlugin extends Plugin
 			{
 				log.info("unknown exception in repeating tasks, error = {}", e);
 				log.info("cancelling task and starting it again after 5000 ms delay");
-				repeatingTasks.cancel(true);
-				repeatingTasks = setupRepeatingTasks(5000);
+				generalRepeatingTasks.cancel(true);
+				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
 
 		}, msStartDelay, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
-	 * This method is invoked every time the plugin receives a GrandExchangeOfferChanged event.
+	 * This method is invoked every time the plugin receives a GrandExchangeOfferChanged event which is
+	 * when the user set an offer, cancelled an offer, or when an offer was updated (items bought/sold partially
+	 * or completely).
 	 *
 	 * @param offerChangedEvent the offer event that represents when an offer is updated
 	 *                          (buying, selling, bought, sold, cancelled sell, or cancelled buy)
@@ -462,15 +460,27 @@ public class FlippingPlugin extends Plugin
 	{
 		if (currentlyLoggedInAccount == null)
 		{
-			eventsReceivedBeforeFullLogin.add(offerChangedEvent);
+			OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
+			//event came in before account was fully logged in. This means that the offer actually came through
+			//sometime when the account was logged out, at an undetermined time. We need to mark the offer as such to
+			//avoid adjusting ge limits and slot timers incorrectly (we don't know exactly when the offer came in)
+			newOfferEvent.setBeforeLogin(true);
+			eventsReceivedBeforeFullLogin.add(newOfferEvent);
 			return;
 		}
-
 		OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
+		if (newOfferEvent.getTickArrivedAt() == loginTickCount) {
+			newOfferEvent.setBeforeLogin(true);
+		}
+		onNewOfferEvent(newOfferEvent);
+	}
 
+	public void onNewOfferEvent(OfferEvent newOfferEvent)
+	{
 		Optional<OfferEvent> screenedOfferEvent = screenOfferEvent(newOfferEvent);
 
-		if (!screenedOfferEvent.isPresent()) {
+		if (!screenedOfferEvent.isPresent())
+		{
 			return;
 		}
 
@@ -540,7 +550,8 @@ public class FlippingPlugin extends Plugin
 			return Optional.empty();
 		}
 
-		if (newOfferEvent.getCurrentQuantityInTrade() == 0 && newOfferEvent.isComplete()) {
+		if (newOfferEvent.getCurrentQuantityInTrade() == 0 && newOfferEvent.isComplete())
+		{
 			lastOfferEventForEachSlot.remove(newOfferEvent.getSlot());
 			slotTimers.get(newOfferEvent.getSlot()).setCurrentOffer(newOfferEvent);
 			return Optional.empty();
@@ -1005,7 +1016,9 @@ public class FlippingPlugin extends Plugin
 			//Fired after every GE offer slot redraw
 			//This seems to happen after any offer updates or if buttons are pressed inside the interface
 			//https://github.com/RuneStar/cs2-scripts/blob/a144f1dceb84c3efa2f9e90648419a11ee48e7a2/scripts/%5Bclientscript%2Cge_offers_switchpanel%5D.cs2
-			rebuildTradeTimer();
+			if (config.slotTimersEnabled()) {
+				rebuildTradeTimer();
+			}
 		}
 	}
 
@@ -1054,6 +1067,19 @@ public class FlippingPlugin extends Plugin
 			if (event.getKey().equals(ITEMS_CONFIG_KEY) || event.getKey().equals(TIME_INTERVAL_CONFIG_KEY))
 			{
 				return;
+			}
+
+			if (event.getKey().equals("slotTimersEnabled"))
+			{
+				if (config.slotTimersEnabled())
+				{
+					slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
+				}
+				else
+				{
+					slotTimersTask.cancel(true);
+					slotTimers.forEach(TradeActivityTimer::resetToDefault);
+				}
 			}
 
 			statPanel.rebuild(getTradesForCurrentView());
