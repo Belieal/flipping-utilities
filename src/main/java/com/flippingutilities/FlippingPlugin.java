@@ -477,6 +477,9 @@ public class FlippingPlugin extends Plugin
 
 	public void onNewOfferEvent(OfferEvent newOfferEvent)
 	{
+		if (currentlyLoggedInAccount != null) {
+			newOfferEvent.setMadeBy(currentlyLoggedInAccount);
+		}
 		Optional<OfferEvent> screenedOfferEvent = screenOfferEvent(newOfferEvent);
 
 		if (!screenedOfferEvent.isPresent())
