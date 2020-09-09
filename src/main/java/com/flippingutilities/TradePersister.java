@@ -173,13 +173,6 @@ public class TradePersister
 				accountData = new AccountData();
 			}
 
-			//a bug led to items not having their last active times be updated. This bug is fixed
-			//but the null value remains in the user's items, so this sets it.
-			accountData.getTrades().forEach((item) -> {
-				if (item.getLatestActivityTime() == null) {
-					item.setLatestActivityTime(Instant.now());
-				}
-			});
 			accountsData.put(displayName, accountData);
 		}
 
@@ -207,6 +200,7 @@ public class TradePersister
 		{
 		}.getType();
 		AccountData accountData = gson.fromJson(accountDataJson, type);
+		cleanAccountData(accountData);
 		return accountData;
 	}
 
@@ -243,6 +237,22 @@ public class TradePersister
 			else
 			{
 				log.info("unable to delete {}", fileName);
+			}
+		}
+	}
+
+	private static void cleanAccountData(AccountData accountData) {
+		//a bug led to items not having their last active times be updated. This bug is fixed
+		//but the null value remains in the user's items, so this sets it.
+		for (FlippingItem item: accountData.getTrades()) {
+			if (item.getLatestActivityTime() == null) {
+				item.setLatestActivityTime(Instant.now());
+			}
+
+			for (OfferEvent offerEvent: item.getHistory().getCompressedOfferEvents()) {
+				if (offerEvent.getMadeBy() == null) {
+					offerEvent.setMadeBy(item.getFlippedBy());
+				}
 			}
 		}
 	}
