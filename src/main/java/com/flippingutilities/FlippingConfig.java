@@ -114,4 +114,15 @@ public interface FlippingConfig extends Config
 		return 15;
 	}
 
+	@ConfigItem(
+		keyName = "slotTimersEnabled",
+		name = "toggle slot timers",
+		description = "Have a timer on active GE slots that will show the last time an offer came for the slot. This is useful" +
+			"for knowing whether you should change your offer's price"
+	)
+	default boolean slotTimersEnabled()
+	{
+		return true;
+	}
+
 }
