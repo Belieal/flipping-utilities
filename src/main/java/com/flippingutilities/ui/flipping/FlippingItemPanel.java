@@ -30,6 +30,7 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -114,12 +115,11 @@ public class FlippingItemPanel extends JPanel
 		AsyncBufferedImage itemImage = itemManager.getImage(itemID);
 		JLabel itemIcon = new JLabel();
 		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-		Runnable resize = () ->
-			itemIcon.setIcon(new ImageIcon(itemImage.getSubimage(0, 0, 32, 32).getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
-
-		itemImage.onLoaded(resize);
-		resize.run();
+		itemIcon.setPreferredSize(ICON_SIZE);
+		if (itemImage != null)
+		{
+			itemImage.addTo(itemIcon);
+		}
 
 		/* Arrow icon */
 		arrowIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
