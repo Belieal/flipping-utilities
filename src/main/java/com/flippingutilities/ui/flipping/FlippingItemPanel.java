@@ -83,7 +83,7 @@ public class FlippingItemPanel extends JPanel
 	JLabel profitTotalVal = new JLabel();
 	JLabel limitLabel = new JLabel();
 	JLabel roiLabel = new JLabel();
-	JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
+	JLabel arrowIcon = new JLabel(UIUtilities.STAR_OFF_ICON);
 	JButton clearButton = new JButton(DELETE_ICON);
 	JLabel itemName;
 
@@ -126,7 +126,7 @@ public class FlippingItemPanel extends JPanel
 		arrowIcon.setPreferredSize(new Dimension(24, 24));
 
 		/* Clear button */
-		clearButton.setPreferredSize(new Dimension(24, 24));
+		clearButton.setPreferredSize(ICON_SIZE);
 		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		clearButton.setBorder(null);
 		clearButton.setBorderPainted(false);

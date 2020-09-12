@@ -78,7 +78,7 @@ public class FlippingPanel extends JPanel
 	private static final String ITEMS_PANEL = "ITEMS_PANEL";
 	private static final int DEBOUNCE_DELAY_MS = 250;
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
-		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
+		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR.darker()),
 		BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
 	private final FlippingPlugin plugin;
@@ -125,7 +125,7 @@ public class FlippingPanel extends JPanel
 
 		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
-		container.setLayout(new BorderLayout(0, 2));
+		container.setLayout(new BorderLayout(0, 0));
 		container.setBorder(new EmptyBorder(0, 0, 5, 0));
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -251,31 +251,24 @@ public class FlippingPanel extends JPanel
 
 		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
 
-		final JPanel toolbar = new JPanel(new BorderLayout());
-		toolbar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		toolbar.setBorder(new EmptyBorder(5, 5, 5, 5));
-
 		final JPanel buttonBar = new JPanel();
 		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
 		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		buttonBar.setBorder(new EmptyBorder(new Insets(0, 1, 0, 1)));
+		buttonBar.setBorder(new EmptyBorder(0,0,5,0));
 
-
-		for (JLabel button : toolbarButtons)
-		{
+		for (int i = 0; i < toolbarButtons.length;i++) {
 			JPanel buttonPanel = new JPanel();
 			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			button.setBackground(ColorScheme.GRAND_EXCHANGE_LIMIT);
-			buttonPanel.add(button);
-			buttonPanel.setBorder(BorderFactory.createMatteBorder(0,1,0,1,ColorScheme.BRAND_ORANGE));
+			buttonPanel.add(toolbarButtons[i]);
+			if (i != toolbarButtons.length -1) {
+				buttonPanel.setBorder(BorderFactory.createMatteBorder(0,0,0,1,ColorScheme.BRAND_ORANGE));
+			}
 			buttonBar.add(buttonPanel);
 		}
 
-		toolbar.add(buttonBar, BorderLayout.CENTER);
-
 		final JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		contentPanel.add(toolbar, BorderLayout.NORTH);
+		contentPanel.add(buttonBar, BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		//To switch between greeting and items panels
