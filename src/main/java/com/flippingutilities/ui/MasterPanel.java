@@ -29,8 +29,10 @@ package com.flippingutilities.ui;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.utilities.FastTabGroup;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -176,7 +178,7 @@ public class MasterPanel extends PluginPanel
 	 */
 	private MaterialTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
 	{
-		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
+		MaterialTabGroup tabGroup = new FastTabGroup(mainDisplay);
 		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
 		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statsPanel);
 
