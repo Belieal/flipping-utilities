@@ -244,6 +244,11 @@ public class FlippingPanel extends JPanel
 		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
 		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
 
+		sortByRecent.setToolTipText("Sort by last traded time");
+		sortByROI.setToolTipText("Sort by ROI");
+		sortByProfit.setToolTipText("Sort by potential profit");
+		favoriteModifier.setToolTipText("view your favorite items");
+
 		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
 
 		final JPanel toolbar = new JPanel(new BorderLayout());
@@ -252,10 +257,9 @@ public class FlippingPanel extends JPanel
 
 		final JPanel buttonBar = new JPanel();
 		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
-		buttonBar.setBackground(ColorScheme.BRAND_ORANGE);
+		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		buttonBar.setBorder(new EmptyBorder(new Insets(0, 1, 0, 1)));
 
-		boolean testB = true;
 
 		for (JLabel button : toolbarButtons)
 		{
@@ -263,13 +267,7 @@ public class FlippingPanel extends JPanel
 			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			button.setBackground(ColorScheme.GRAND_EXCHANGE_LIMIT);
 			buttonPanel.add(button);
-
-			if (testB)
-			{
-				buttonPanel.add(new JLabel(UIUtilities.UPWARD_ARROW));
-				testB = false;
-			}
-
+			buttonPanel.setBorder(BorderFactory.createMatteBorder(0,1,0,1,ColorScheme.BRAND_ORANGE));
 			buttonBar.add(buttonPanel);
 		}
 
