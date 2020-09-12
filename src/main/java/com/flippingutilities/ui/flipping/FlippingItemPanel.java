@@ -30,16 +30,17 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -113,19 +114,19 @@ public class FlippingItemPanel extends JPanel
 		AsyncBufferedImage itemImage = itemManager.getImage(itemID);
 		JLabel itemIcon = new JLabel();
 		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-		itemIcon.setPreferredSize(ICON_SIZE);
-		if (itemImage != null)
-		{
-			itemImage.addTo(itemIcon);
-		}
+
+		Runnable resize = () ->
+			itemIcon.setIcon(new ImageIcon(itemImage.getSubimage(0, 0, 32, 32).getScaledInstance(24, 24, Image.SCALE_SMOOTH)));
+
+		itemImage.onLoaded(resize);
+		resize.run();
 
 		/* Arrow icon */
 		arrowIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		arrowIcon.setPreferredSize(ICON_SIZE);
+		arrowIcon.setPreferredSize(new Dimension(24, 24));
 
 		/* Clear button */
-		clearButton.setPreferredSize(ICON_SIZE);
-		clearButton.setFont(FontManager.getRunescapeBoldFont());
+		clearButton.setPreferredSize(new Dimension(24, 24));
 		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		clearButton.setBorder(null);
 		clearButton.setBorderPainted(false);
