@@ -41,12 +41,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages the history for an item. This class is responsible for figuring out how much profit a user made for
  * an item along with tracking how many items they bought since the last ge limit refresh and when the
  * next ge limit refresh for this an item will be.
  */
+@Slf4j
 @AllArgsConstructor
 @NoArgsConstructor
 public class HistoryManager
