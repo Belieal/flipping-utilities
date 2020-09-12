@@ -119,6 +119,7 @@ public class FlippingItemPanel extends JPanel
 			itemImage.addTo(itemIcon);
 		}
 
+
 		/* Arrow icon */
 		arrowIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		arrowIcon.setPreferredSize(ICON_SIZE);
