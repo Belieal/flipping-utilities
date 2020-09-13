@@ -546,5 +546,4 @@ public class FlippingPanel extends JPanel
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		rebuild(result);
 	}
-
 }

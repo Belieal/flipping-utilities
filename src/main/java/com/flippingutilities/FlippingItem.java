@@ -98,6 +98,10 @@ public class FlippingItem
 	@Getter
 	private String flippedBy;
 
+	@Getter
+	@Setter
+	private boolean favorite;
+
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
 		this.itemId = itemId;
@@ -120,7 +124,7 @@ public class FlippingItem
 	{
 		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
 			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy);
+			history.clone(), flippedBy, favorite);
 	}
 
 	/**

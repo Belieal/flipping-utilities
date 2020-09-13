@@ -137,6 +137,7 @@ public class FlippingPlugin extends Plugin
 
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
+	@Getter
 	private String accountCurrentlyViewed = ACCOUNT_WIDE;
 
 	//the display name of the currently logged in user. This is the only account that can actually receive offers
@@ -341,7 +342,8 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		masterPanel.getAccountSelector().setSelectedItem(displayName);
-		if (slotTimersTask == null && config.slotTimersEnabled()) {
+		if (slotTimersTask == null && config.slotTimersEnabled())
+		{
 			log.info("starting slot timers on login");
 			slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
 		}
@@ -352,7 +354,8 @@ public class FlippingPlugin extends Plugin
 		log.info("{} is logging out", currentlyLoggedInAccount);
 		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
-		if (slotTimersTask != null && !slotTimersTask.isCancelled()) {
+		if (slotTimersTask != null && !slotTimersTask.isCancelled())
+		{
 			log.info("cancelling slot timers task on logout");
 			slotTimersTask.cancel(true);
 		}
@@ -469,7 +472,8 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 		OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
-		if (newOfferEvent.getTickArrivedAt() == loginTickCount) {
+		if (newOfferEvent.getTickArrivedAt() == loginTickCount)
+		{
 			newOfferEvent.setBeforeLogin(true);
 		}
 		onNewOfferEvent(newOfferEvent);
@@ -477,7 +481,8 @@ public class FlippingPlugin extends Plugin
 
 	public void onNewOfferEvent(OfferEvent newOfferEvent)
 	{
-		if (currentlyLoggedInAccount != null) {
+		if (currentlyLoggedInAccount != null)
+		{
 			newOfferEvent.setMadeBy(currentlyLoggedInAccount);
 		}
 		Optional<OfferEvent> screenedOfferEvent = screenOfferEvent(newOfferEvent);
@@ -1011,6 +1016,19 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	public void setFavoriteOnAllAccounts(FlippingItem item, boolean favoriteStatus)
+	{
+		for (AccountData account : accountCache.values())
+		{
+			account.
+				getTrades().
+				stream().
+				filter(accountItem -> accountItem.getItemId() == item.getItemId()).
+				findFirst().
+				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
+		}
+	}
+
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
@@ -1019,7 +1037,8 @@ public class FlippingPlugin extends Plugin
 			//Fired after every GE offer slot redraw
 			//This seems to happen after any offer updates or if buttons are pressed inside the interface
 			//https://github.com/RuneStar/cs2-scripts/blob/a144f1dceb84c3efa2f9e90648419a11ee48e7a2/scripts/%5Bclientscript%2Cge_offers_switchpanel%5D.cs2
-			if (config.slotTimersEnabled()) {
+			if (config.slotTimersEnabled())
+			{
 				rebuildTradeTimer();
 			}
 		}
