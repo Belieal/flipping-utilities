@@ -107,6 +107,9 @@ public class FlippingPanel extends JPanel
 	@Setter
 	private boolean itemHighlighted = false;
 
+	@Getter
+	private String selectedSort;
+
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
@@ -187,7 +190,7 @@ public class FlippingPanel extends JPanel
 					//Display warning message
 					final int result = JOptionPane.showOptionDialog(resetIcon, "Are you sure you want to reset the flipping panel?",
 						"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
-						null, new String[] {"Yes", "No"}, "No");
+						null, new String[]{"Yes", "No"}, "No");
 
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
@@ -240,9 +243,34 @@ public class FlippingPanel extends JPanel
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
 		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
+		sortByRecent.setName("recent");
 		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
 		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
 		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
+
+		sortByRecent.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (SwingUtilities.isLeftMouseButton(e))
+				{
+					selectedSort = "Most Recent";
+					log.info("selected sort was most recent, rebuilding!");
+					rebuild(plugin.getTradesForCurrentView());
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+			}
+		});
 
 		sortByRecent.setToolTipText("Sort by last traded time");
 		sortByROI.setToolTipText("Sort by ROI");
@@ -254,14 +282,16 @@ public class FlippingPanel extends JPanel
 		final JPanel buttonBar = new JPanel();
 		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
 		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		buttonBar.setBorder(new EmptyBorder(0,0,5,0));
+		buttonBar.setBorder(new EmptyBorder(0, 0, 5, 0));
 
-		for (int i = 0; i < toolbarButtons.length;i++) {
+		for (int i = 0; i < toolbarButtons.length; i++)
+		{
 			JPanel buttonPanel = new JPanel();
 			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			buttonPanel.add(toolbarButtons[i]);
-			if (i != toolbarButtons.length -1) {
-				buttonPanel.setBorder(BorderFactory.createMatteBorder(0,0,0,1,ColorScheme.BRAND_ORANGE));
+			if (i != toolbarButtons.length - 1)
+			{
+				buttonPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ColorScheme.BRAND_ORANGE));
 			}
 			buttonBar.add(buttonPanel);
 		}
@@ -308,7 +338,7 @@ public class FlippingPanel extends JPanel
 
 			//Keep track of the item index to determine the constraints its built upon
 			int index = 0;
-			for (FlippingItem item : flippingItems)
+			for (FlippingItem item : sortTradeList(flippingItems))
 			{
 				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
 				{
@@ -354,6 +384,32 @@ public class FlippingPanel extends JPanel
 			revalidate();
 			repaint();
 		});
+	}
+
+	public List<FlippingItem> sortTradeList(List<FlippingItem> tradeList)
+	{
+		List<FlippingItem> result = new ArrayList<>(tradeList);
+
+		if (selectedSort == null || result.isEmpty())
+		{
+			return result;
+		}
+
+		switch (selectedSort)
+		{
+			case "Most Recent":
+				result.sort((item1, item2) ->
+				{
+					if (item1 == null || item2 == null)
+					{
+						return -1;
+					}
+
+					return item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime());
+				});
+				break;
+		}
+		return result;
 	}
 
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
