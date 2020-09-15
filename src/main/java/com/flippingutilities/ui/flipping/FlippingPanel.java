@@ -108,6 +108,7 @@ public class FlippingPanel extends JPanel
 	private boolean itemHighlighted = false;
 
 	@Getter
+	@Setter
 	private String selectedSort;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
@@ -242,64 +243,62 @@ public class FlippingPanel extends JPanel
 		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
-		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
-		sortByRecent.setName("recent");
-		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
-
-		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
-		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
-
-		sortByRecent.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (SwingUtilities.isLeftMouseButton(e))
-				{
-					selectedSort = "Most Recent";
-					log.info("selected sort was most recent, rebuilding!");
-					rebuild(plugin.getTradesForCurrentView());
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-			}
-		});
-
-		sortByRecent.setToolTipText("Sort by last traded time");
-		sortByROI.setToolTipText("Sort by ROI");
-		sortByProfit.setToolTipText("Sort by potential profit");
-		favoriteModifier.setToolTipText("view your favorite items");
-
-		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
-
-		final JPanel buttonBar = new JPanel();
-		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
-		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		buttonBar.setBorder(new EmptyBorder(0, 0, 5, 0));
-
-		for (int i = 0; i < toolbarButtons.length; i++)
-		{
-			JPanel buttonPanel = new JPanel();
-			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			buttonPanel.add(toolbarButtons[i]);
-			if (i != toolbarButtons.length - 1)
-			{
-				buttonPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ColorScheme.BRAND_ORANGE));
-			}
-			buttonBar.add(buttonPanel);
-		}
+//		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
+//		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
+//		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
+//		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
+//
+//		sortByRecent.addMouseListener(new MouseAdapter()
+//		{
+//			@Override
+//			public void mousePressed(MouseEvent e)
+//			{
+//				if (SwingUtilities.isLeftMouseButton(e))
+//				{
+//					selectedSort = "Most Recent";
+//					log.info("selected sort was most recent, rebuilding!");
+//					rebuild(plugin.getTradesForCurrentView());
+//				}
+//			}
+//
+//			@Override
+//			public void mouseEntered(MouseEvent e)
+//			{
+//			}
+//
+//			@Override
+//			public void mouseExited(MouseEvent e)
+//			{
+//			}
+//		});
+//
+//		sortByRecent.setToolTipText("Sort by last traded time");
+//		sortByROI.setToolTipText("Sort by ROI");
+//		sortByProfit.setToolTipText("Sort by potential profit");
+//		favoriteModifier.setToolTipText("view your favorite items");
+//
+//		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
+//
+//		final JPanel buttonBar = new JPanel();
+//		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
+//		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+//		buttonBar.setBorder(new EmptyBorder(0, 0, 5, 0));
+//
+//		for (int i = 0; i < toolbarButtons.length; i++)
+//		{
+//			JPanel buttonPanel = new JPanel();
+//			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+//			buttonPanel.add(toolbarButtons[i]);
+//			if (i != toolbarButtons.length - 1)
+//			{
+//				buttonPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ColorScheme.BRAND_ORANGE));
+//			}
+//			buttonBar.add(buttonPanel);
+//		}
 
 		final JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		contentPanel.add(buttonBar, BorderLayout.NORTH);
+		contentPanel.add(new FlippingPanelToolbar(this::onFlippingToolBarButtonPress), BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		//To switch between greeting and items panels
@@ -546,5 +545,10 @@ public class FlippingPanel extends JPanel
 
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		rebuild(result);
+	}
+
+	private void onFlippingToolBarButtonPress(String buttonName) {
+		selectedSort = buttonName;
+		rebuild(plugin.getTradesForCurrentView());
 	}
 }

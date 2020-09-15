@@ -111,12 +111,18 @@ public class UIUtilities
 
 
 	public static final ImageIcon SORT_BY_RECENT_OFF_ICON;
-	public static final ImageIcon SORT_BY_ROI_OFF_ICON;
-	public static final ImageIcon SORT_BY_PROFIT_OFF_ICON;
-
 	public static final ImageIcon SORT_BY_RECENT_ON_ICON;
+	public static final ImageIcon SORT_BY_RECENT_HALF_ON_ICON;
+
+
+	public static final ImageIcon SORT_BY_ROI_OFF_ICON;
 	public static final ImageIcon SORT_BY_ROI_ON_ICON;
+	public static final ImageIcon SORT_BY_ROI_HALF_ON_ICON;
+
+	public static final ImageIcon SORT_BY_PROFIT_OFF_ICON;
 	public static final ImageIcon SORT_BY_PROFIT_ON_ICON;
+	public static final ImageIcon SORT_BY_PROFIT_HALF_ON_ICON;
+
 
 	static
 	{
@@ -162,6 +168,9 @@ public class UIUtilities
 		SORT_BY_PROFIT_ON_ICON = new ImageIcon(sortByProfitOn.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 
 		STAR_HALF_ON_ICON = new ImageIcon(starOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_PROFIT_HALF_ON_ICON = new ImageIcon(sortByProfitOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_RECENT_HALF_ON_ICON = new ImageIcon(sortByRecentOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_ROI_HALF_ON_ICON = new ImageIcon(sortByRoiOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 
 		STAR_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(starOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 		SORT_BY_RECENT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRecentOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
