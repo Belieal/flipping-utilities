@@ -245,6 +245,7 @@ public class FlippingPanel extends JPanel
 		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
 		sortByRecent.setName("recent");
 		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
+
 		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
 		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
 

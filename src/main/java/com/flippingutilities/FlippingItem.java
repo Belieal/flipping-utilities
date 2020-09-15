@@ -201,11 +201,13 @@ public class FlippingItem
 		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
 		{
 			item1.getHistory().getCompressedOfferEvents().addAll(item2.getHistory().getCompressedOfferEvents());
+			item1.setFavorite(item1.isFavorite() || item2.isFavorite());
 			return item1;
 		}
 		else
 		{
 			item2.getHistory().getCompressedOfferEvents().addAll(item1.getHistory().getCompressedOfferEvents());
+			item2.setFavorite(item2.isFavorite() || item1.isFavorite());
 			return item2;
 		}
 	}
