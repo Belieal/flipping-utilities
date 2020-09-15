@@ -32,9 +32,11 @@ import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.util.ColorUtil;
@@ -212,8 +214,8 @@ public class TradeActivityTimer
 	 */
 	private boolean isSlotFilled()
 	{
-		//Child index 0 is exclusively visible on empty slots
-		return slotWidget.getChild(0).isHidden();
+		GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
+		return offers[slotIndex].getItemId() != 0;
 	}
 
 	/**

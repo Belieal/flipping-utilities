@@ -1032,7 +1032,12 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-		if (event.getScriptId() == 804)
+
+		if (event.getScriptId() == ScriptID.GE_ITEM_SEARCH)
+		{
+			log.info("ge searched!");
+		}
+		else if (event.getScriptId() == 804)
 		{
 			//Fired after every GE offer slot redraw
 			//This seems to happen after any offer updates or if buttons are pressed inside the interface
@@ -1095,6 +1100,7 @@ public class FlippingPlugin extends Plugin
 			{
 				if (config.slotTimersEnabled())
 				{
+
 					slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
 				}
 				else
