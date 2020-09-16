@@ -243,59 +243,6 @@ public class FlippingPanel extends JPanel
 		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.setBorder(TOP_PANEL_BORDER);
 
-//		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_ON_ICON);
-//		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
-//		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
-//		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
-//
-//		sortByRecent.addMouseListener(new MouseAdapter()
-//		{
-//			@Override
-//			public void mousePressed(MouseEvent e)
-//			{
-//				if (SwingUtilities.isLeftMouseButton(e))
-//				{
-//					selectedSort = "Most Recent";
-//					log.info("selected sort was most recent, rebuilding!");
-//					rebuild(plugin.getTradesForCurrentView());
-//				}
-//			}
-//
-//			@Override
-//			public void mouseEntered(MouseEvent e)
-//			{
-//			}
-//
-//			@Override
-//			public void mouseExited(MouseEvent e)
-//			{
-//			}
-//		});
-//
-//		sortByRecent.setToolTipText("Sort by last traded time");
-//		sortByROI.setToolTipText("Sort by ROI");
-//		sortByProfit.setToolTipText("Sort by potential profit");
-//		favoriteModifier.setToolTipText("view your favorite items");
-//
-//		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
-//
-//		final JPanel buttonBar = new JPanel();
-//		buttonBar.setLayout(new BoxLayout(buttonBar, BoxLayout.X_AXIS));
-//		buttonBar.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-//		buttonBar.setBorder(new EmptyBorder(0, 0, 5, 0));
-//
-//		for (int i = 0; i < toolbarButtons.length; i++)
-//		{
-//			JPanel buttonPanel = new JPanel();
-//			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-//			buttonPanel.add(toolbarButtons[i]);
-//			if (i != toolbarButtons.length - 1)
-//			{
-//				buttonPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ColorScheme.BRAND_ORANGE));
-//			}
-//			buttonBar.add(buttonPanel);
-//		}
-
 		final JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		contentPanel.add(new FlippingPanelToolbar(this, plugin), BorderLayout.NORTH);
@@ -322,8 +269,23 @@ public class FlippingPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
+			JPanel newFlippingItemsPanel = new JPanel();
+			newFlippingItemsPanel.setLayout(new GridBagLayout());
+			newFlippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
+			newFlippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
+			JPanel wrapper = new JPanel(new BorderLayout());
+			wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+			wrapper.add(newFlippingItemsPanel, BorderLayout.NORTH);
+
+			JScrollPane scrollWrapper = new JScrollPane(wrapper);
+			scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+			scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
+			scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
+			flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 			//Remove previous items from the panel
-			flippingItemsPanel.removeAll();
+			//flippingItemsPanel.removeAll();
+
+
 
 			if (flippingItems == null || flippingItems.size() == 0)
 			{
@@ -366,11 +328,11 @@ public class FlippingPanel extends JPanel
 					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
 					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
 					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					flippingItemsPanel.add(marginWrapper, constraints);
+					newFlippingItemsPanel.add(marginWrapper, constraints);
 				}
 				else
 				{
-					flippingItemsPanel.add(newPanel, constraints);
+					newFlippingItemsPanel.add(newPanel, constraints);
 				}
 				constraints.gridy++;
 				activePanels.add(newPanel);
