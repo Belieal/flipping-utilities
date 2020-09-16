@@ -53,9 +53,7 @@ public class FlippingPanelToolbar extends JPanel
 						toolbarButton.setIcon(BUTTON_STATES.get(toolbarButton.getName())[2]);
 						panel.setSelectedSort(toolbarButton.getName());
 						panel.rebuild(plugin.getTradesForCurrentView());
-						log.info("running deselect");
 						deselectOtherButtons(toolbarButton);
-
 					}
 					else {
 						//pressed on the already selected button, this means that there should no longer be any selected

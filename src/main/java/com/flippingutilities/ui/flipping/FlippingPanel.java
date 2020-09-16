@@ -42,6 +42,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -60,6 +62,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import jdk.internal.jline.internal.Log;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -83,9 +86,6 @@ public class FlippingPanel extends JPanel
 
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
-
-	//Main item panel that holds all the shown items.
-	private final JPanel flippingItemsPanel = new JPanel();
 
 	private final IconTextField searchBar = new IconTextField();
 	private Future<?> runningRequest = null;
@@ -132,21 +132,6 @@ public class FlippingPanel extends JPanel
 		container.setLayout(new BorderLayout(0, 0));
 		container.setBorder(new EmptyBorder(0, 0, 5, 0));
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
-
-		//Holds all the item panels
-		flippingItemsPanel.setLayout(new GridBagLayout());
-		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
-		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-
-		//Wrap the flipping item panel with the scroll wrapper to ensure scrolling capabilities
-		JPanel wrapper = new JPanel(new BorderLayout());
-		wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		wrapper.add(flippingItemsPanel, BorderLayout.NORTH);
-
-		JScrollPane scrollWrapper = new JScrollPane(wrapper);
-		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
-		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 
 		//Search bar beneath the tab manager.
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
@@ -232,7 +217,6 @@ public class FlippingPanel extends JPanel
 
 		resetIcon.setComponentPopupMenu(popupMenu);
 
-		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
 		flippingItemContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
 
@@ -269,6 +253,7 @@ public class FlippingPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
+			Instant rebuildStart = Instant.now();
 			JPanel newFlippingItemsPanel = new JPanel();
 			newFlippingItemsPanel.setLayout(new GridBagLayout());
 			newFlippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
@@ -282,17 +267,11 @@ public class FlippingPanel extends JPanel
 			scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
 			scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 			flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
-			//Remove previous items from the panel
-			//flippingItemsPanel.removeAll();
-
-
 
 			if (flippingItems == null || flippingItems.size() == 0)
 			{
 				//Show the welcome panel if there are no valid flipping items in the list
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-				repaint();
-				revalidate();
 				return;
 			}
 
@@ -333,6 +312,7 @@ public class FlippingPanel extends JPanel
 				else
 				{
 					newFlippingItemsPanel.add(newPanel, constraints);
+
 				}
 				constraints.gridy++;
 				activePanels.add(newPanel);
@@ -343,8 +323,7 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 			}
 
-			revalidate();
-			repaint();
+			log.info("rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 
@@ -370,6 +349,8 @@ public class FlippingPanel extends JPanel
 					return item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime());
 				});
 				break;
+			case "favorite":
+				result = result.stream().filter(item -> item.isFavorite()).collect(Collectors.toList());
 		}
 		return result;
 	}
