@@ -298,7 +298,7 @@ public class FlippingPanel extends JPanel
 
 		final JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		contentPanel.add(new FlippingPanelToolbar(this::onFlippingToolBarButtonPress), BorderLayout.NORTH);
+		contentPanel.add(new FlippingPanelToolbar(this, plugin), BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		//To switch between greeting and items panels

@@ -1,6 +1,7 @@
 package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.Flip;
+import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -14,24 +15,30 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 
+@Slf4j
 public class FlippingPanelToolbar extends JPanel
 {
 	private Map<String, ImageIcon[]> BUTTON_STATES = new HashMap<>();
 	private String buttonCurrentlyPressed;
 	private JLabel[] toolbarButtons;
+	private FlippingPlugin plugin;
+	private FlippingPanel panel;
 
-	FlippingPanelToolbar(Consumer<String> onButtonSelect) {
+	FlippingPanelToolbar(FlippingPanel panel, FlippingPlugin plugin) {
+		this.plugin = plugin;
+		this.panel = panel;
 		createButtonStates();
 		createToolBarButtons();
-		addButtons(onButtonSelect,);
+		addButtons();
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		setBorder(new EmptyBorder(0, 0, 5, 0));
 	}
 
-	private void attachMouseListener(JLabel toolbarButton, Consumer<String> onButtonPress) {
+	private void attachMouseListener(JLabel toolbarButton) {
 		toolbarButton.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -39,15 +46,27 @@ public class FlippingPanelToolbar extends JPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
+					//pressed on a non selected button
 					if (!toolbarButton.getName().equals(buttonCurrentlyPressed)) {
 						buttonCurrentlyPressed = toolbarButton.getName();
+						//set button to "on" visual state
 						toolbarButton.setIcon(BUTTON_STATES.get(toolbarButton.getName())[2]);
-						onButtonPress.accept(buttonCurrentlyPressed);
+						panel.setSelectedSort(toolbarButton.getName());
+						panel.rebuild(plugin.getTradesForCurrentView());
+						log.info("running deselect");
 						deselectOtherButtons(toolbarButton);
 
 					}
 					else {
-
+						//pressed on the already selected button, this means that there should no longer be any selected
+						//button. Rebuild the flipping panel while sorting by recent just to "reset" the panel, and from
+						//then on, don't apply any sort.
+						panel.setSelectedSort("recent");
+						panel.rebuild(plugin.getTradesForCurrentView());
+						panel.setSelectedSort(null);
+						buttonCurrentlyPressed = null;
+						//set button to "off" visual state
+						toolbarButton.setIcon(BUTTON_STATES.get(toolbarButton.getName())[0]);
 					}
 
 				}
@@ -105,28 +124,10 @@ public class FlippingPanelToolbar extends JPanel
 	}
 
 
-	private void addButtons(Consumer<String> onButtonPress, Runnable ) {
-		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_OFF_ICON);
-		sortByRecent.setName("recent");
-		sortByRecent.setToolTipText("Sort by last traded time");
-
-		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
-		sortByROI.setName("roi");
-		sortByROI.setToolTipText("Sort by ROI");
-
-		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
-		sortByProfit.setName("profit");
-		sortByProfit.setToolTipText("Sort by potential profit");
-
-		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
-		favoriteModifier.setName("favorite");
-		favoriteModifier.setToolTipText("view your favorite items");
-
-		JLabel[] toolbarButtons = {sortByRecent, sortByROI, sortByProfit, favoriteModifier};
-
+	private void addButtons() {
 		for (int i = 0; i < toolbarButtons.length; i++)
 		{
-			attachMouseListener(toolbarButtons[i], onButtonPress);
+			attachMouseListener(toolbarButtons[i]);
 			JPanel buttonPanel = new JPanel();
 			buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 			buttonPanel.add(toolbarButtons[i]);
@@ -141,8 +142,8 @@ public class FlippingPanelToolbar extends JPanel
 
 	private void deselectOtherButtons(JLabel toolBarButton) {
 		for (int i = 0; i < toolbarButtons.length;i++) {
-			if (toolbarButtons[i] != toolBarButton) {
-				toolbarButtons[i].setIcon(BUTTON_STATES.get(toolbarButtons[i])[0]);
+			if (!toolbarButtons[i].getName().equals(toolBarButton.getName())) {
+				toolbarButtons[i].setIcon(BUTTON_STATES.get(toolbarButtons[i].getName())[0]);
 			}
 		}
 	}
