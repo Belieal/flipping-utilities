@@ -133,6 +133,7 @@ public class TradeActivityTimer
 
 		if (!isSlotFilled())
 		{
+			//should i set current offer to null?
 			//The slot hasn't been filled with an offer, so default to Jagex format.
 			slotStateWidget.setText("Empty");
 			slotStateWidget.setFontId(496);

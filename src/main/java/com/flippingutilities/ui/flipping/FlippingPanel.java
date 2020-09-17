@@ -351,6 +351,54 @@ public class FlippingPanel extends JPanel
 				break;
 			case "favorite":
 				result = result.stream().filter(item -> item.isFavorite()).collect(Collectors.toList());
+				break;
+			case "profit":
+				result.sort((item1, item2) ->
+				{
+					if (item1 == null || item2 == null)
+					{
+						return -1;
+					}
+					if ((item1.getMarginCheckBuyPrice() != 0  && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0)) {
+						return -1;
+					}
+
+					if ((item2.getMarginCheckBuyPrice() != 0  && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0)) {
+						return 1;
+					}
+
+					if ((item2.getMarginCheckBuyPrice() == 0 || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0)) {
+						return 0;
+					}
+
+					boolean shouldIncludeMarginCheck = plugin.getConfig().marginCheckLoss();
+					boolean shouldUseRemainingGeLimit = plugin.getConfig().geLimitProfit();
+					return item2.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit) - item1.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit);
+				});
+				break;
+			case "roi":
+				result.sort((item1, item2) -> {
+					if ((item1.getMarginCheckBuyPrice() != 0  && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0)) {
+						return -1;
+					}
+
+					if ((item2.getMarginCheckBuyPrice() != 0  && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0)) {
+						return 1;
+					}
+
+					if ((item2.getMarginCheckBuyPrice() == 0  || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0)) {
+						return 0;
+					}
+
+					int item1ProfitEach = item1.getMarginCheckSellPrice() - item1.getMarginCheckBuyPrice();
+					int item2ProfitEach = item2.getMarginCheckSellPrice() - item2.getMarginCheckBuyPrice();
+
+					float item1roi = (float) item1ProfitEach / item1.getMarginCheckBuyPrice() * 100;
+					float item2roi = (float) item2ProfitEach / item2.getMarginCheckBuyPrice() * 100;
+
+					return Float.compare(item2roi, item1roi);
+				});
+				break;
 		}
 		return result;
 	}

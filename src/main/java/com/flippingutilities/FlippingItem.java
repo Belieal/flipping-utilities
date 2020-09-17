@@ -309,4 +309,17 @@ public class FlippingItem
 		sb.append('}');
 		return sb.toString();
 	}
+
+	public int getPotentialProfit(boolean includeMarginCheck, boolean currentGeLimit) {
+		int profitEach = marginCheckSellPrice - marginCheckBuyPrice;
+		if (remainingGeLimit() == 0) {
+			return 0;
+		}
+		int geLimit = currentGeLimit? remainingGeLimit() : totalGELimit;
+		int profitTotal = geLimit * profitEach;
+		if (includeMarginCheck) {
+			profitTotal -= profitEach;
+		}
+		return profitTotal;
+	}
 }
