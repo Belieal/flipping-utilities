@@ -30,6 +30,7 @@ import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -102,6 +103,10 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
+	@Getter
+	@Setter
+	private transient Boolean expand;
+
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
 		this.itemId = itemId;
@@ -124,7 +129,7 @@ public class FlippingItem
 	{
 		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
 			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy, favorite);
+			history.clone(), flippedBy, favorite, expand);
 	}
 
 	/**

@@ -125,4 +125,11 @@ public interface FlippingConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "verboseView",
+		name = "toggle verbose view",
+		description = "show items in the flipping tab with all their tracked info like buy/sell price, roi, potential" +
+			"profit, etc"
+	)
+	default boolean verboseViewEnabled() { return true; }
 }

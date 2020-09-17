@@ -31,6 +31,7 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
+import static com.flippingutilities.ui.utilities.UIUtilities.SETTINGS_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_HALF_ON_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
@@ -42,6 +43,7 @@ import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
+import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -147,6 +149,38 @@ public class FlippingItemPanel extends JPanel
 		itemName.setForeground(Color.WHITE);
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
+		itemName.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (isCollapsed()) {
+					expand();
+					flippingItem.setExpand(true);
+				}
+				else {
+					collapse();
+					flippingItem.setExpand(false);
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				if (isCollapsed()) {
+					itemName.setText("Expand");
+				}
+				else {
+					itemName.setText("Collapse");
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				itemName.setText(flippingItem.getItemName());
+			}
+		});
 
 		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(background.darker());
@@ -197,7 +231,6 @@ public class FlippingItemPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				//log.info("point is {}", e.getPoint());
 				itemIcon.setVisible(false);
 				clearButton.setVisible(true);
 			}
@@ -288,6 +321,21 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.add(rightValuesPanel, BorderLayout.EAST);
 		itemInfo.setBorder(ITEM_INFO_BORDER);
 
+		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
+		if (!plugin.getConfig().verboseViewEnabled()) {
+			collapse();
+		}
+
+		//if user has "overridden" the config option by expanding/collapsing that item, use what they set instead of the config value.
+		if (flippingItem.getExpand() != null) {
+			if (flippingItem.getExpand()) {
+				expand();
+			}
+			else {
+				collapse();
+			}
+		}
+
 		buildPanelValues();
 		updateGePropertiesDisplay();
 		updatePriceOutdatedDisplay();
@@ -326,7 +374,6 @@ public class FlippingItemPanel extends JPanel
 	{
 		if (isCollapsed())
 		{
-			favoriteIcon.setIcon(UIUtilities.OPEN_ICON);
 			itemInfo.setVisible(true);
 		}
 	}
@@ -335,7 +382,6 @@ public class FlippingItemPanel extends JPanel
 	{
 		if (!isCollapsed())
 		{
-			favoriteIcon.setIcon(UIUtilities.CLOSE_ICON);
 			itemInfo.setVisible(false);
 		}
 	}
