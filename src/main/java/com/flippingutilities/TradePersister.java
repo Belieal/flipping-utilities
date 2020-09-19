@@ -241,6 +241,7 @@ public class TradePersister
 		}
 	}
 
+	might need to add some stuff to this now that i removed valid flipping offer and added isvalidflippingpanelitem
 	private static void cleanAccountData(AccountData accountData) {
 		//a bug led to items not having their last active times be updated. This bug is fixed
 		//but the null value remains in the user's items, so this sets it.

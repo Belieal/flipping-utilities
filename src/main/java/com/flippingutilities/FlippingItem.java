@@ -171,19 +171,17 @@ public class FlippingItem
 		int tradePrice = newOffer.getPrice();
 		Instant tradeTime = newOffer.getTime();
 
-		if (newOffer.isValidFlippingOffer())
+		if (newOffer.isBuy())
 		{
-			if (newOffer.isBuy())
-			{
-				marginCheckSellPrice = tradePrice;
-				marginCheckSellTime = tradeTime;
-			}
-			else
-			{
-				marginCheckBuyPrice = tradePrice;
-				marginCheckBuyTime = tradeTime;
-			}
+			marginCheckSellPrice = tradePrice;
+			marginCheckSellTime = tradeTime;
 		}
+		else
+		{
+			marginCheckBuyPrice = tradePrice;
+			marginCheckBuyTime = tradeTime;
+		}
+
 	}
 
 	/**
@@ -226,7 +224,8 @@ public class FlippingItem
 		return history.getFlippedCashFlow(getIntervalHistory(earliestTime), getExpense);
 	}
 
-	public long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense) {
+	public long getTotalCashFlow(List<OfferEvent> tradeList, boolean getExpense)
+	{
 		return history.getTotalCashFlow(tradeList, getExpense);
 	}
 
@@ -270,9 +269,11 @@ public class FlippingItem
 		history.invalidateOffers(offerList);
 	}
 
-	public void setValidFlippingPanelItem(boolean isValid) {
+	public void setValidFlippingPanelItem(boolean isValid)
+	{
 		validFlippingPanelItem = isValid;
-		if (!isValid) {
+		if (!isValid)
+		{
 			marginCheckSellPrice = 0;
 			marginCheckSellTime = null;
 			marginCheckBuyPrice = 0;
