@@ -132,4 +132,11 @@ public interface FlippingConfig extends Config
 			"profit, etc"
 	)
 	default boolean verboseViewEnabled() { return true; }
+
+	@ConfigItem(
+		keyName = "test",
+		name = "test",
+		description = "test"
+	)
+	default String test() { return "1"; }
 }

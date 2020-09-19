@@ -32,6 +32,7 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
+import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -45,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -639,6 +641,7 @@ public class FlippingPlugin extends Plugin
 				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
+			if (flippingItem.get().invalidateOffers();)
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
 		}
@@ -1030,14 +1033,32 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onGrandExchangeSearched(GrandExchangeSearched event)
+	{
+		final String input = client.getVar(VarClientStr.INPUT_TEXT);
+		if (!input.equals("1"))
+		{
+			return;
+		}
+
+		Set<Integer> ids = accountCache.get(currentlyLoggedInAccount).
+			getTrades()
+			.stream()
+			.filter(FlippingItem::isFavorite)
+			.map(FlippingItem::getItemId)
+			.collect(Collectors.toSet());
+
+		client.setGeSearchResultIndex(0);
+		client.setGeSearchResultCount(ids.size());
+		client.setGeSearchResultIds(Shorts.toArray(ids));
+
+		event.consume();
+	}
+
+	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-
-		if (event.getScriptId() == ScriptID.GE_ITEM_SEARCH)
-		{
-			log.info("ge searched!");
-		}
-		else if (event.getScriptId() == 804)
+		if (event.getScriptId() == 804)
 		{
 			//Fired after every GE offer slot redraw
 			//This seems to happen after any offer updates or if buttons are pressed inside the interface
@@ -1141,7 +1162,7 @@ public class FlippingPlugin extends Plugin
 					break;
 				}
 			}
-
+			log.info("canvas location of widget is {}", client.getWidget(WidgetInfo.CHATBOX_TITLE).getCanvasLocation());
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
 			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
 			if (chatInputText.equals("How many do you wish to buy?"))
