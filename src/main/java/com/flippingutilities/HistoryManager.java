@@ -225,7 +225,7 @@ public class HistoryManager
 
 		for (OfferEvent offer : tradeList)
 		{
-			if (!offer.isValidStatOffer())
+			if (!offer.isValidOfferEvent())
 			{
 				continue;
 			}
@@ -256,7 +256,7 @@ public class HistoryManager
 
 		for (OfferEvent offer : tradeList)
 		{
-			if (offer.isBuy() == buyState && offer.isValidStatOffer())
+			if (offer.isBuy() == buyState && offer.isValidOfferEvent())
 			{
 				results.add(offer);
 			}
@@ -286,7 +286,7 @@ public class HistoryManager
 
 		for (OfferEvent offer : tradeList)
 		{
-			if (!offer.isValidStatOffer())
+			if (!offer.isValidOfferEvent())
 			{
 				continue;
 			}
@@ -319,7 +319,7 @@ public class HistoryManager
 
 		for (OfferEvent offer : compressedOfferEvents)
 		{
-			if (offer.getTime().isAfter(earliestTime) && offer.isValidStatOffer())
+			if (offer.getTime().isAfter(earliestTime) && offer.isValidOfferEvent())
 			{
 				result.add(offer);
 			}
@@ -348,68 +348,28 @@ public class HistoryManager
 		}
 	}
 
-	public boolean hasValidOffers(PanelSelection panelSelection)
+	public boolean hasValidOffers()
 	{
-		boolean result = false;
-
-		switch (panelSelection)
-		{
-			case FLIPPING:
-				result = compressedOfferEvents.stream().anyMatch(OfferEvent::isValidFlippingOffer);
-				break;
-
-			case STATS:
-				result = compressedOfferEvents.stream().anyMatch(OfferEvent::isValidStatOffer);
-				break;
-
-			case BOTH:
-				result = compressedOfferEvents.stream().anyMatch(offer -> offer.isValidFlippingOffer() && offer.isValidStatOffer());
-				break;
-		}
-
-		return result;
+		return compressedOfferEvents.stream().anyMatch(OfferEvent::isValidOfferEvent);
 	}
 
-	public void invalidateOffers(PanelSelection panelSelection)
+	public void invalidateOffers(List<OfferEvent> offerList)
 	{
-		invalidateOffers(panelSelection, compressedOfferEvents);
+		offerList.forEach(offer -> offer.setValidOfferEvent(false));
+		removeInvalidatedOfferEvents();
 	}
 
-	public void invalidateOffers(PanelSelection panelSelection, List<OfferEvent> offerList)
-	{
-		switch (panelSelection)
-		{
-			case FLIPPING:
-				offerList.forEach(offer -> offer.setValidFlippingOffer(false));
-				break;
-
-			case STATS:
-				offerList.forEach(offer -> offer.setValidStatOffer(false));
-				break;
-
-			case BOTH:
-				offerList.forEach(offer ->
-				{
-					offer.setValidFlippingOffer(false);
-					offer.setValidStatOffer(false);
-				});
-				break;
-		}
-
-		truncateInvalidOffers();
-	}
-
-	public void truncateInvalidOffers()
+	public void removeInvalidatedOfferEvents()
 	{
 		if (nextGeLimitRefresh == null)
 		{
-			compressedOfferEvents.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer());
+			compressedOfferEvents.removeIf(offer -> !offer.isValidOfferEvent());
 			return;
 		}
 
 		Instant startOfRefresh = nextGeLimitRefresh.minus(4, ChronoUnit.HOURS);
 
-		compressedOfferEvents.removeIf(offer -> !offer.isValidFlippingOffer() && !offer.isValidStatOffer() &&
+		compressedOfferEvents.removeIf(offer -> !offer.isValidOfferEvent() &&
 			(offer.getTime().isAfter(nextGeLimitRefresh) || offer.getTime().isBefore(startOfRefresh)));
 	}
 

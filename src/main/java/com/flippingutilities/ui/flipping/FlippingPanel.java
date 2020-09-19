@@ -255,7 +255,7 @@ public class FlippingPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : flippingItems)
 			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+				if (!item.isValidFlippingPanelItem())
 				{
 					continue;
 				}
@@ -340,11 +340,9 @@ public class FlippingPanel extends JPanel
 	{
 		//We only expect one item.
 		return plugin.getTradesForCurrentView().stream()
-			.filter(item -> item.getItemId() == itemId && item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
+			.filter(item -> item.getItemId() == itemId && item.isValidFlippingPanelItem())
 			.collect(Collectors.toCollection(ArrayList::new));
 	}
-
-	//Updates tooltips on prices to show how long ago the latest margin check was.
 
 	/**
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
@@ -383,7 +381,9 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		itemPanel.getFlippingItem().invalidateOffers(HistoryManager.PanelSelection.FLIPPING);
+		//itemPanel.getFlippingItem().invalidateOffers(HistoryManager.PanelSelection.FLIPPING);
+		FlippingItem item = itemPanel.getFlippingItem();
+		item.setValidFlippingPanelItem(false);
 	}
 
 	public void resetPanel()

@@ -630,9 +630,12 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				item.updateMargin(newOffer);
+			}
+			if (!item.isValidFlippingPanelItem()) {
+				item.setValidFlippingPanelItem(true);
 				trades.remove(item);
 				trades.add(0, item);
-				item.updateMargin(newOffer);
 			}
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
@@ -660,6 +663,7 @@ public class FlippingPlugin extends Plugin
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
 		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
+		flippingItem.setValidFlippingPanelItem(true);
 
 		if (newOffer.isMarginCheck())
 		{
@@ -808,10 +812,10 @@ public class FlippingPlugin extends Plugin
 			{
 				Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
 
-				return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS)
+				return !item.isValidFlippingPanelItem() && !item.hasValidOffers()
 					&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
 			}
-			return !item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING) && !item.hasValidOffers(HistoryManager.PanelSelection.STATS);
+			return !item.isValidFlippingPanelItem() && !item.hasValidOffers();
 		});
 
 		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))

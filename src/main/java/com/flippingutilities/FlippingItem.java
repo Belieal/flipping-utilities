@@ -98,6 +98,11 @@ public class FlippingItem
 	@Getter
 	private String flippedBy;
 
+	//whether the item should be on the flipping panel or not.
+	@SerializedName("vFPI")
+	@Getter
+	private boolean validFlippingPanelItem;
+
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
 		this.itemId = itemId;
@@ -120,7 +125,7 @@ public class FlippingItem
 	{
 		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
 			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy);
+			history.clone(), flippedBy, validFlippingPanelItem);
 	}
 
 	/**
@@ -255,27 +260,24 @@ public class FlippingItem
 		return history.getFlips(earliestTime);
 	}
 
-	public boolean hasValidOffers(HistoryManager.PanelSelection panelSelection)
+	public boolean hasValidOffers()
 	{
-		return history.hasValidOffers(panelSelection);
+		return history.hasValidOffers();
 	}
 
-	public void invalidateOffers(HistoryManager.PanelSelection panelSelection)
+	public void invalidateOffers(ArrayList<OfferEvent> offerList)
 	{
-		if (panelSelection == HistoryManager.PanelSelection.FLIPPING)
-		{
+		history.invalidateOffers(offerList);
+	}
+
+	public void setValidFlippingPanelItem(boolean isValid) {
+		validFlippingPanelItem = isValid;
+		if (!isValid) {
 			marginCheckSellPrice = 0;
 			marginCheckSellTime = null;
-
 			marginCheckBuyPrice = 0;
 			marginCheckBuyTime = null;
 		}
-		history.invalidateOffers(panelSelection);
-	}
-
-	public void invalidateOffers(HistoryManager.PanelSelection panelSelection, ArrayList<OfferEvent> offerList)
-	{
-		history.invalidateOffers(panelSelection, offerList);
 	}
 
 	//generated to string from intellij. I made it not create a representation of the history cause it would be too

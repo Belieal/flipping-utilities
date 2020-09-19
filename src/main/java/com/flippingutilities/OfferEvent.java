@@ -68,9 +68,7 @@ public class OfferEvent
 	//States that determine if the offer is appurtenant to the current scope of the panel.
 	//The states change dependent on user-selected removals.
 	@SerializedName("vSQ")
-	private boolean validStatOffer;
-	@SerializedName("vFO")
-	private boolean validFlippingOffer;
+	private boolean validOfferEvent;
 	/**
 	 * a offer always belongs to a flipping item. Every flipping item was flipped by an account and only one account and
 	 * has a flipped by attribute. So, the reason this attribute is here is because during the process of creating
@@ -156,8 +154,7 @@ public class OfferEvent
 			tickArrivedAt,
 			ticksSinceFirstOffer,
 			totalQuantityInTrade,
-			validStatOffer,
-			validFlippingOffer,
+			validOfferEvent,
 			madeBy,
 			beforeLogin);
 	}
@@ -176,9 +173,11 @@ public class OfferEvent
 
 		OfferEvent otherOffer = (OfferEvent) other;
 
-		return isDuplicate(otherOffer) && tickArrivedAt == otherOffer.tickArrivedAt
-			&& ticksSinceFirstOffer == otherOffer.ticksSinceFirstOffer && time.equals(otherOffer.time) &&
-			validFlippingOffer == otherOffer.validFlippingOffer && validStatOffer == otherOffer.validStatOffer;
+		return isDuplicate(otherOffer)
+			&& tickArrivedAt == otherOffer.tickArrivedAt
+			&& ticksSinceFirstOffer == otherOffer.ticksSinceFirstOffer
+			&& time.equals(otherOffer.time)
+			&& validOfferEvent == otherOffer.validOfferEvent;
 	}
 
 	/**
@@ -218,7 +217,6 @@ public class OfferEvent
 			0,
 			0,
 			offer.getTotalQuantity(),
-			true,
 			true,
 			null,
 			false);

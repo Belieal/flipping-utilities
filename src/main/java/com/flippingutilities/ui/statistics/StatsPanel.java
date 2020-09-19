@@ -481,11 +481,6 @@ public class StatsPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : sortTradeList(tradesList))
 			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
-				{
-					continue;
-				}
-
 				ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
 
 				//Make sure the item has stats we can use
@@ -552,12 +547,10 @@ public class StatsPanel extends JPanel
 
 		for (FlippingItem item : tradesList)
 		{
-			if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
-			{
+			List<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
+			if (intervalHistory.isEmpty()) {
 				continue;
 			}
-
-			List<OfferEvent> intervalHistory = item.getIntervalHistory(startOfInterval);
 			totalProfit += item.currentProfit(intervalHistory);
 			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
 			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
@@ -756,8 +749,7 @@ public class StatsPanel extends JPanel
 
 		FlippingItem item = itemPanel.getFlippingItem();
 
-		item.invalidateOffers(HistoryManager.PanelSelection.STATS, item.getIntervalHistory(reset ? Instant.EPOCH : startOfInterval));
-		plugin.truncateTradeList();
+		item.invalidateOffers(item.getIntervalHistory(reset ? Instant.EPOCH : startOfInterval));
 	}
 
 	/**
@@ -770,6 +762,7 @@ public class StatsPanel extends JPanel
 		{
 			deletePanel(itemPanel, true);
 		}
+		plugin.truncateTradeList();
 	}
 
 	/**
