@@ -641,7 +641,8 @@ public class FlippingPlugin extends Plugin
 				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
-			if (flippingItem.get().invalidateOffers();)
+			//TODO when i merge deletingvfo, add a check in here to see if i should make the item show again in
+			//the flipping panel
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
 		}
@@ -1162,7 +1163,7 @@ public class FlippingPlugin extends Plugin
 					break;
 				}
 			}
-			log.info("canvas location of widget is {}", client.getWidget(WidgetInfo.CHATBOX_TITLE).getCanvasLocation());
+
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
 			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
 			if (chatInputText.equals("How many do you wish to buy?"))
