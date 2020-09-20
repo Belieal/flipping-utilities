@@ -30,6 +30,7 @@ import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -98,6 +99,14 @@ public class FlippingItem
 	@Getter
 	private String flippedBy;
 
+	@Getter
+	@Setter
+	private boolean favorite;
+
+	@Getter
+	@Setter
+	private transient Boolean expand;
+
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
 		this.itemId = itemId;
@@ -120,7 +129,7 @@ public class FlippingItem
 	{
 		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
 			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy);
+			history.clone(), flippedBy, favorite, expand);
 	}
 
 	/**
@@ -197,11 +206,13 @@ public class FlippingItem
 		if (item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime()) >= 0)
 		{
 			item1.getHistory().getCompressedOfferEvents().addAll(item2.getHistory().getCompressedOfferEvents());
+			item1.setFavorite(item1.isFavorite() || item2.isFavorite());
 			return item1;
 		}
 		else
 		{
 			item2.getHistory().getCompressedOfferEvents().addAll(item1.getHistory().getCompressedOfferEvents());
+			item2.setFavorite(item2.isFavorite() || item1.isFavorite());
 			return item2;
 		}
 	}
@@ -297,5 +308,18 @@ public class FlippingItem
 		sb.append(", madeBy='").append(flippedBy).append('\'');
 		sb.append('}');
 		return sb.toString();
+	}
+
+	public int getPotentialProfit(boolean includeMarginCheck, boolean currentGeLimit) {
+		int profitEach = marginCheckSellPrice - marginCheckBuyPrice;
+		if (remainingGeLimit() == 0) {
+			return 0;
+		}
+		int geLimit = currentGeLimit? remainingGeLimit() : totalGELimit;
+		int profitTotal = geLimit * profitEach;
+		if (includeMarginCheck) {
+			profitTotal -= profitEach;
+		}
+		return profitTotal;
 	}
 }

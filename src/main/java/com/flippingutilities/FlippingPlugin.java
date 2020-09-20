@@ -32,6 +32,7 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
+import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.io.IOException;
 import java.time.Duration;
@@ -41,10 +42,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -137,6 +140,7 @@ public class FlippingPlugin extends Plugin
 
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
+	@Getter
 	private String accountCurrentlyViewed = ACCOUNT_WIDE;
 
 	//the display name of the currently logged in user. This is the only account that can actually receive offers
@@ -195,8 +199,7 @@ public class FlippingPlugin extends Plugin
 			accountCache = setupCache();
 			setupAccSelectorDropdown();
 
-			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-			statPanel.setSelectedTimeInterval(lastSelectedInterval);
+			statPanel.setSelectedTimeInterval("Session");
 
 			cacheUpdater = new CacheUpdater();
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
@@ -235,8 +238,6 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedTimeInterval());
-
 		generalRepeatingTasks.cancel(true);
 
 		cacheUpdater.stop();
@@ -341,7 +342,8 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		masterPanel.getAccountSelector().setSelectedItem(displayName);
-		if (slotTimersTask == null && config.slotTimersEnabled()) {
+		if (slotTimersTask == null && config.slotTimersEnabled())
+		{
 			log.info("starting slot timers on login");
 			slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
 		}
@@ -352,7 +354,8 @@ public class FlippingPlugin extends Plugin
 		log.info("{} is logging out", currentlyLoggedInAccount);
 		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
 		storeTrades(currentlyLoggedInAccount);
-		if (slotTimersTask != null && !slotTimersTask.isCancelled()) {
+		if (slotTimersTask != null && !slotTimersTask.isCancelled())
+		{
 			log.info("cancelling slot timers task on logout");
 			slotTimersTask.cancel(true);
 		}
@@ -436,10 +439,15 @@ public class FlippingPlugin extends Plugin
 				statPanel.updateTimeDisplay();
 				updateSessionTime();
 			}
-			catch (Exception e)
+			catch (ConcurrentModificationException e)
 			{
-				log.info("unknown exception in repeating tasks, error = {}", e);
-				log.info("cancelling task and starting it again after 5000 ms delay");
+				log.info("concurrent modification exception. This is fine, will just restart tasks after delay." +
+					" Cancelling general repeating tasks and starting it again after 5000 ms delay");
+				generalRepeatingTasks.cancel(true);
+				generalRepeatingTasks = setupRepeatingTasks(5000);
+			}
+			catch (Exception e) {
+				log.info("unknown exception in repeating tasks, error = {}, will cancel and restart them after 5 sec delay", e);
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
@@ -469,7 +477,8 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 		OfferEvent newOfferEvent = createOfferEvent(offerChangedEvent);
-		if (newOfferEvent.getTickArrivedAt() == loginTickCount) {
+		if (newOfferEvent.getTickArrivedAt() == loginTickCount)
+		{
 			newOfferEvent.setBeforeLogin(true);
 		}
 		onNewOfferEvent(newOfferEvent);
@@ -477,7 +486,8 @@ public class FlippingPlugin extends Plugin
 
 	public void onNewOfferEvent(OfferEvent newOfferEvent)
 	{
-		if (currentlyLoggedInAccount != null) {
+		if (currentlyLoggedInAccount != null)
+		{
 			newOfferEvent.setMadeBy(currentlyLoggedInAccount);
 		}
 		Optional<OfferEvent> screenedOfferEvent = screenOfferEvent(newOfferEvent);
@@ -634,6 +644,8 @@ public class FlippingPlugin extends Plugin
 				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
+			//TODO when i merge deletingvfo, add a check in here to see if i should make the item show again in
+			//the flipping panel
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
 		}
@@ -1011,6 +1023,42 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	public void setFavoriteOnAllAccounts(FlippingItem item, boolean favoriteStatus)
+	{
+		for (AccountData account : accountCache.values())
+		{
+			account.
+				getTrades().
+				stream().
+				filter(accountItem -> accountItem.getItemId() == item.getItemId()).
+				findFirst().
+				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
+		}
+	}
+
+	@Subscribe
+	public void onGrandExchangeSearched(GrandExchangeSearched event)
+	{
+		final String input = client.getVar(VarClientStr.INPUT_TEXT);
+		if (!input.equals(config.favoriteSearchCode()))
+		{
+			return;
+		}
+
+		Set<Integer> ids = accountCache.get(currentlyLoggedInAccount).
+			getTrades()
+			.stream()
+			.filter(FlippingItem::isFavorite)
+			.map(FlippingItem::getItemId)
+			.collect(Collectors.toSet());
+
+		client.setGeSearchResultIndex(0);
+		client.setGeSearchResultCount(ids.size());
+		client.setGeSearchResultIds(Shorts.toArray(ids));
+
+		event.consume();
+	}
+
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
@@ -1019,7 +1067,8 @@ public class FlippingPlugin extends Plugin
 			//Fired after every GE offer slot redraw
 			//This seems to happen after any offer updates or if buttons are pressed inside the interface
 			//https://github.com/RuneStar/cs2-scripts/blob/a144f1dceb84c3efa2f9e90648419a11ee48e7a2/scripts/%5Bclientscript%2Cge_offers_switchpanel%5D.cs2
-			if (config.slotTimersEnabled()) {
+			if (config.slotTimersEnabled())
+			{
 				rebuildTradeTimer();
 			}
 		}
@@ -1076,6 +1125,7 @@ public class FlippingPlugin extends Plugin
 			{
 				if (config.slotTimersEnabled())
 				{
+
 					slotTimersTask = executor.scheduleAtFixedRate(() -> slotTimers.forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
 				}
 				else
