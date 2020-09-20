@@ -31,6 +31,10 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
+import static com.flippingutilities.ui.utilities.UIUtilities.SETTINGS_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.STAR_HALF_ON_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
+import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -39,6 +43,7 @@ import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
+import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -81,7 +86,7 @@ public class FlippingItemPanel extends JPanel
 	JLabel profitTotalVal = new JLabel();
 	JLabel limitLabel = new JLabel();
 	JLabel roiLabel = new JLabel();
-	JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
+	JLabel favoriteIcon = new JLabel();
 	JButton clearButton = new JButton(DELETE_ICON);
 	JLabel itemName;
 
@@ -107,6 +112,8 @@ public class FlippingItemPanel extends JPanel
 
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
+		favoriteIcon.setIcon(flippingItem.isFavorite()? STAR_ON_ICON:STAR_OFF_ICON);
+
 		Color background = getBackground();
 
 		/* Item icon */
@@ -119,13 +126,10 @@ public class FlippingItemPanel extends JPanel
 			itemImage.addTo(itemIcon);
 		}
 
-		/* Arrow icon */
-		arrowIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		arrowIcon.setPreferredSize(ICON_SIZE);
+		favoriteIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		favoriteIcon.setPreferredSize(new Dimension(24, 24));
 
-		/* Clear button */
 		clearButton.setPreferredSize(ICON_SIZE);
-		clearButton.setFont(FontManager.getRunescapeBoldFont());
 		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		clearButton.setBorder(null);
 		clearButton.setBorderPainted(false);
@@ -145,38 +149,88 @@ public class FlippingItemPanel extends JPanel
 		itemName.setForeground(Color.WHITE);
 		itemName.setFont(FontManager.getRunescapeBoldFont());
 		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
-
-		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
-		titlePanel.setBackground(background.darker());
-		titlePanel.add(itemClearPanel, BorderLayout.WEST);
-		titlePanel.add(itemName, BorderLayout.CENTER);
-		titlePanel.add(arrowIcon, BorderLayout.EAST);
-		titlePanel.setBorder(new EmptyBorder(2, 1, 2, 1));
-		titlePanel.addMouseListener(new MouseAdapter()
+		itemName.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				if (e.getButton() == MouseEvent.BUTTON1 && !itemClearPanel.contains(e.getPoint()))
-				{
-					if (isCollapsed())
-					{
-						expand();
-					}
-					else
-					{
-						collapse();
-					}
+				if (isCollapsed()) {
+					expand();
+					flippingItem.setExpand(true);
+				}
+				else {
+					collapse();
+					flippingItem.setExpand(false);
 				}
 			}
 
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				if (!titlePanel.contains(e.getPoint()))
-				{
-					return;
+				if (isCollapsed()) {
+					itemName.setText("Expand");
 				}
+				else {
+					itemName.setText("Collapse");
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				itemName.setText(flippingItem.getItemName());
+			}
+		});
+
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
+		titlePanel.setBackground(background.darker());
+		titlePanel.add(itemClearPanel, BorderLayout.WEST);
+		titlePanel.add(itemName, BorderLayout.CENTER);
+		titlePanel.add(favoriteIcon, BorderLayout.EAST);
+
+		favoriteIcon.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (flippingItem.isFavorite()) {
+					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE)) {
+						plugin.setFavoriteOnAllAccounts(flippingItem, false);
+					}
+					flippingItem.setFavorite(false);
+					favoriteIcon.setIcon(STAR_OFF_ICON);
+				}
+				else {
+					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE)) {
+						plugin.setFavoriteOnAllAccounts(flippingItem, true);
+					}
+					flippingItem.setFavorite(true);
+					favoriteIcon.setIcon(STAR_ON_ICON);
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				if (!flippingItem.isFavorite()) {
+					favoriteIcon.setIcon(STAR_HALF_ON_ICON);
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				if (!flippingItem.isFavorite()) {
+					favoriteIcon.setIcon(STAR_OFF_ICON);
+				}
+			}
+		});
+		titlePanel.setBorder(new EmptyBorder(2, 1, 2, 1));
+		titlePanel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
 				itemIcon.setVisible(false);
 				clearButton.setVisible(true);
 			}
@@ -184,11 +238,6 @@ public class FlippingItemPanel extends JPanel
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				//Mouse is hovering over icon
-				if (titlePanel.contains(e.getPoint()))
-				{
-					return;
-				}
 				clearButton.setVisible(false);
 				itemIcon.setVisible(true);
 			}
@@ -272,6 +321,21 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.add(rightValuesPanel, BorderLayout.EAST);
 		itemInfo.setBorder(ITEM_INFO_BORDER);
 
+		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
+		if (!plugin.getConfig().verboseViewEnabled()) {
+			collapse();
+		}
+
+		//if user has "overridden" the config option by expanding/collapsing that item, use what they set instead of the config value.
+		if (flippingItem.getExpand() != null) {
+			if (flippingItem.getExpand()) {
+				expand();
+			}
+			else {
+				collapse();
+			}
+		}
+
 		buildPanelValues();
 		updateGePropertiesDisplay();
 		updatePriceOutdatedDisplay();
@@ -299,7 +363,7 @@ public class FlippingItemPanel extends JPanel
 		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0 || profitTotal < 0) ? "N/A" : QuantityFormatter
 			.quantityToRSDecimalStack(profitTotal) + " gp");
 
-		roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0 || profitEach <= 0) ? "N/A"
+		roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0) ? "N/A"
 			: String.format("%.2f", roi) + "%"));
 
 		//Color gradient red-yellow-green depending on ROI.
@@ -310,7 +374,6 @@ public class FlippingItemPanel extends JPanel
 	{
 		if (isCollapsed())
 		{
-			arrowIcon.setIcon(UIUtilities.OPEN_ICON);
 			itemInfo.setVisible(true);
 		}
 	}
@@ -319,7 +382,6 @@ public class FlippingItemPanel extends JPanel
 	{
 		if (!isCollapsed())
 		{
-			arrowIcon.setIcon(UIUtilities.CLOSE_ICON);
 			itemInfo.setVisible(false);
 		}
 	}
@@ -333,28 +395,14 @@ public class FlippingItemPanel extends JPanel
 	public void updatePotentialProfit()
 	{
 		profitEach = sellPrice - buyPrice;
-
-		/*
-		If the user wants, we calculate the total profit while taking into account
-		the margin check loss. */
-		if (plugin.getConfig().geLimitProfit())
-		{
-			profitTotal = (flippingItem.remainingGeLimit() == 0) ? 0
-				: flippingItem.remainingGeLimit() * profitEach - (plugin.getConfig().marginCheckLoss()
-				? profitEach : 0);
-		}
-		else
-		{
-			profitTotal = flippingItem.getTotalGELimit() * profitEach
-				- (plugin.getConfig().marginCheckLoss() ? profitEach : 0);
-		}
+		profitTotal = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
 		roi = calculateROI();
 	}
 
 	//Calculates the return on investment percentage.
 	private float calculateROI()
 	{
-		return Math.abs((float) profitEach / buyPrice * 100);
+		return (float) profitEach / buyPrice * 100;
 	}
 
 	/**

@@ -34,6 +34,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -86,6 +87,7 @@ public class UIUtilities
 	);
 
 	public static final Dimension ICON_SIZE = new Dimension(32, 32);
+	public static final int TOOLBAR_BUTTON_SIZE = 20;
 
 	public static final ImageIcon OPEN_ICON;
 	public static final ImageIcon CLOSE_ICON;
@@ -102,6 +104,25 @@ public class UIUtilities
 	public static final ImageIcon DELETE_BUTTON;
 
 	public static final ImageIcon HIGHLIGHT_DELETE_BUTTON;
+
+	public static final ImageIcon STAR_ON_ICON;
+	public static final ImageIcon STAR_HALF_ON_ICON;
+	public static final ImageIcon STAR_OFF_ICON;
+
+
+	public static final ImageIcon SORT_BY_RECENT_OFF_ICON;
+	public static final ImageIcon SORT_BY_RECENT_ON_ICON;
+	public static final ImageIcon SORT_BY_RECENT_HALF_ON_ICON;
+
+
+	public static final ImageIcon SORT_BY_ROI_OFF_ICON;
+	public static final ImageIcon SORT_BY_ROI_ON_ICON;
+	public static final ImageIcon SORT_BY_ROI_HALF_ON_ICON;
+
+	public static final ImageIcon SORT_BY_PROFIT_OFF_ICON;
+	public static final ImageIcon SORT_BY_PROFIT_ON_ICON;
+	public static final ImageIcon SORT_BY_PROFIT_HALF_ON_ICON;
+
 
 	static
 	{
@@ -130,6 +151,31 @@ public class UIUtilities
 
 		final BufferedImage highlightDeleteButton = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/highlightDeleteButton.png");
 		HIGHLIGHT_DELETE_BUTTON = new ImageIcon(highlightDeleteButton);
+
+
+		final BufferedImage starOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/star-gold.png");
+		final BufferedImage sortByRecentOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/clock-gold.png");
+		final BufferedImage sortByRoiOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/roi-gold.png");
+		final BufferedImage sortByProfitOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/profit-gold.png");
+		final BufferedImage starOff = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/star_off_white.png");
+		final BufferedImage sortByRecentOff = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/clock_white.png");
+		final BufferedImage sortByRoiOff = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/thick_roi_white.png");
+		final BufferedImage sortByProfitOff = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toolbar-icons/potential_profit_white.png");
+
+		STAR_ON_ICON = new ImageIcon(starOn.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_RECENT_ON_ICON = new ImageIcon(sortByRecentOn.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_ROI_ON_ICON = new ImageIcon(sortByRoiOn.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_PROFIT_ON_ICON = new ImageIcon(sortByProfitOn.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+
+		STAR_HALF_ON_ICON = new ImageIcon(starOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_PROFIT_HALF_ON_ICON = new ImageIcon(sortByProfitOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_RECENT_HALF_ON_ICON = new ImageIcon(sortByRecentOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_ROI_HALF_ON_ICON = new ImageIcon(sortByRoiOff.getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+
+		STAR_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(starOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_RECENT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRecentOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_ROI_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRoiOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+		SORT_BY_PROFIT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByProfitOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 	}
 
 	/**
@@ -245,7 +291,7 @@ public class UIUtilities
 	}
 
 	/**
-	 * This method calculates the color based on a red-yellow-green gradient.
+	 * This method calculates the red-yellow-green gradient factored by the percentage or max gradient.
 	 *
 	 * @param percentage  The percentage representing the value that needs to be gradiated.
 	 * @param gradientMax The max value representation before the gradient tops out on green.
@@ -255,13 +301,13 @@ public class UIUtilities
 	{
 		if (percentage < gradientMax * 0.5)
 		{
-			return (percentage <= 0) ? Color.RED :
-				ColorUtil.colorLerp(Color.RED, Color.YELLOW, percentage / gradientMax * 2);
+			return (percentage <= 0) ? Color.RED
+				: ColorUtil.colorLerp(Color.RED, Color.YELLOW, percentage / gradientMax * 2);
 		}
 		else
 		{
-			return (percentage >= gradientMax) ? Color.GREEN :
-				ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, percentage / gradientMax * 0.5);
+			return (percentage >= gradientMax) ? Color.GREEN
+				: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, percentage / gradientMax * 0.5);
 		}
 	}
 
@@ -402,7 +448,6 @@ public class UIUtilities
 		modal.setLocationRelativeTo(parent);
 		return modal;
 	}
-
 
 	public static JPanel stackPanelsVertically(List<JPanel> panels)
 	{

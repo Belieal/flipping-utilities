@@ -477,6 +477,7 @@ public class StatsPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
+			Instant rebuildStart = Instant.now();
 			statItemContainer.removeAll();
 			int index = 0;
 			for (FlippingItem item : sortTradeList(tradesList))
@@ -516,6 +517,7 @@ public class StatsPanel extends JPanel
 			updateDisplays(tradesList);
 			revalidate();
 			repaint();
+			log.info("stats panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 
@@ -867,19 +869,34 @@ public class StatsPanel extends JPanel
 		switch (selectedSort)
 		{
 			case "Most Recent":
-				result.sort((item1, item2) ->
-				{
-					if (item1 == null || item2 == null)
-					{
-						return -1;
-					}
-
-					return item1.getLatestActivityTime().compareTo(item2.getLatestActivityTime());
-				});
+				result.sort(Comparator.comparing(FlippingItem::getLatestActivityTime));
 				break;
 
 			case "Most Total Profit":
-				result.sort(Comparator.comparing(item -> item.currentProfit(item.getIntervalHistory(startOfInterval))));
+				result.sort((item1, item2) -> {
+					ArrayList<OfferEvent> intervalHistory1 = item1.getIntervalHistory(startOfInterval);
+					ArrayList<OfferEvent> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
+
+					long totalExpense1 = item1.getFlippedCashFlow(intervalHistory1, true);
+					long totalRevenue1 = item1.getFlippedCashFlow(intervalHistory1, false);
+
+					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
+					long totalRevenue2 = item2.getFlippedCashFlow(intervalHistory2, false);
+
+					if ((totalExpense1 != 0 && totalRevenue1 != 0) && (totalExpense2 ==0 || totalRevenue2 == 0)) {
+						return 1;
+					}
+
+					if ((totalExpense1 == 0 || totalRevenue1 == 0) && (totalExpense2 != 0 && totalRevenue2 != 0)) {
+						return -1;
+					}
+
+					if ((totalExpense1 == 0 || totalRevenue1 == 0) && (totalExpense2 == 0 || totalRevenue2 == 0)) {
+						return 0;
+					}
+
+					return Long.compare(item1.currentProfit(intervalHistory1), item2.currentProfit(intervalHistory2));
+				});
 				break;
 
 			case "Most Profit Each":
@@ -896,7 +913,6 @@ public class StatsPanel extends JPanel
 					return (int) item.currentProfit(intervalHistory) / quantity;
 				}));
 				break;
-
 			case "Highest ROI":
 				result.sort((item1, item2) ->
 				{
@@ -904,11 +920,21 @@ public class StatsPanel extends JPanel
 					ArrayList<OfferEvent> intervalHistory2 = item2.getIntervalHistory(startOfInterval);
 
 					long totalExpense1 = item1.getFlippedCashFlow(intervalHistory1, true);
-					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
+					long totalRevenue1 = item1.getFlippedCashFlow(intervalHistory1, false);
 
-					if (totalExpense1 == 0 || totalExpense2 == 0)
-					{
+					long totalExpense2 = item2.getFlippedCashFlow(intervalHistory2, true);
+					long totalRevenue2 = item2.getFlippedCashFlow(intervalHistory2, false);
+
+					if ((totalExpense1 != 0 && totalRevenue1 != 0) && (totalExpense2 ==0 || totalRevenue2 == 0)) {
+						return 1;
+					}
+
+					if ((totalExpense1 == 0 || totalRevenue1 == 0) && (totalExpense2 != 0 && totalRevenue2 != 0)) {
 						return -1;
+					}
+
+					if ((totalExpense1 == 0 || totalRevenue1 == 0) && (totalExpense2 == 0 || totalRevenue2 == 0)) {
+						return 0;
 					}
 
 					return Float.compare((float) item1.currentProfit(intervalHistory1) / totalExpense1, (float) item2.currentProfit(intervalHistory2) / totalExpense2);
