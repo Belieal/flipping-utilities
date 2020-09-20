@@ -477,6 +477,7 @@ public class StatsPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
+			Instant rebuildStart = Instant.now();
 			statItemContainer.removeAll();
 			int index = 0;
 			for (FlippingItem item : sortTradeList(tradesList))
@@ -516,6 +517,7 @@ public class StatsPanel extends JPanel
 			updateDisplays(tradesList);
 			revalidate();
 			repaint();
+			log.info("stats panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 

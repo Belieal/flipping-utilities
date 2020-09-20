@@ -199,8 +199,7 @@ public class FlippingPlugin extends Plugin
 			accountCache = setupCache();
 			setupAccSelectorDropdown();
 
-			String lastSelectedInterval = configManager.getConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY);
-			statPanel.setSelectedTimeInterval(lastSelectedInterval);
+			statPanel.setSelectedTimeInterval("Session");
 
 			cacheUpdater = new CacheUpdater();
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
@@ -239,8 +238,6 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		configManager.setConfiguration(CONFIG_GROUP, TIME_INTERVAL_CONFIG_KEY, statPanel.getSelectedTimeInterval());
-
 		generalRepeatingTasks.cancel(true);
 
 		cacheUpdater.stop();
@@ -1043,7 +1040,7 @@ public class FlippingPlugin extends Plugin
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
 		final String input = client.getVar(VarClientStr.INPUT_TEXT);
-		if (!input.equals("1"))
+		if (!input.equals(config.favoriteSearchCode()))
 		{
 			return;
 		}

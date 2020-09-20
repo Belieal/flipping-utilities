@@ -323,7 +323,7 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 			}
 
-			log.info("rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 

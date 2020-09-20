@@ -134,9 +134,9 @@ public interface FlippingConfig extends Config
 	default boolean verboseViewEnabled() { return true; }
 
 	@ConfigItem(
-		keyName = "test",
-		name = "test",
-		description = "test"
+		keyName = "favoriteSearchCode",
+		name = "favorite items quick search",
+		description = "What you can type in the ge search bar to automatically populate it with your favorite items"
 	)
-	default String test() { return "1"; }
+	default String favoriteSearchCode() { return "1"; }
 }
