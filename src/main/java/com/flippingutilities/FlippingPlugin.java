@@ -445,7 +445,7 @@ public class FlippingPlugin extends Plugin
 			catch (ConcurrentModificationException e)
 			{
 				log.info("concurrent modification exception. This is fine, will just restart tasks after delay." +
-					"Cancelling general repeating tasks and starting it again after 5000 ms delay");
+					" Cancelling general repeating tasks and starting it again after 5000 ms delay");
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
