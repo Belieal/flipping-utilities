@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -441,10 +442,15 @@ public class FlippingPlugin extends Plugin
 				statPanel.updateTimeDisplay();
 				updateSessionTime();
 			}
-			catch (Exception e)
+			catch (ConcurrentModificationException e)
 			{
-				log.info("unknown exception in repeating tasks, error = {}", e);
-				log.info("cancelling task and starting it again after 5000 ms delay");
+				log.info("concurrent modification exception. This is fine, will just restart tasks after delay." +
+					"Cancelling general repeating tasks and starting it again after 5000 ms delay");
+				generalRepeatingTasks.cancel(true);
+				generalRepeatingTasks = setupRepeatingTasks(5000);
+			}
+			catch (Exception e) {
+				log.info("unknown exception in repeating tasks, error = {}, will cancel and restart them after 5 sec delay", e);
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
