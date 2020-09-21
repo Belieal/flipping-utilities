@@ -30,6 +30,7 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
 import com.flippingutilities.OfferEvent;
+import com.flippingutilities.ui.utilities.Paginator;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -179,6 +180,8 @@ public class StatsPanel extends JPanel
 	private Set<String> expandedItems = new HashSet<>();
 	@Getter
 	private Set<String> expandedTradeHistories = new HashSet<>();
+
+	private Paginator paginator;
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -459,6 +462,8 @@ public class StatsPanel extends JPanel
 		itemContainer.add(scrollWrapper, BorderLayout.CENTER);
 
 		contentWrapper.add(itemContainer, BorderLayout.CENTER);
+
+		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
 
 		add(contentWrapper, BorderLayout.CENTER);
 		add(topPanel, BorderLayout.NORTH);
@@ -963,11 +968,6 @@ public class StatsPanel extends JPanel
 		{
 			timeIntervalDropdown.setSelectedItem(interval);
 		}
-	}
-
-	public String getSelectedTimeInterval()
-	{
-		return (String) timeIntervalDropdown.getSelectedItem();
 	}
 
 }
