@@ -32,6 +32,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
@@ -50,11 +51,14 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
@@ -123,6 +127,12 @@ public class UIUtilities
 	public static final ImageIcon SORT_BY_PROFIT_ON_ICON;
 	public static final ImageIcon SORT_BY_PROFIT_HALF_ON_ICON;
 
+	public static final ImageIcon ARROW_LEFT;
+	public static final ImageIcon ARROW_RIGHT;
+	public static final ImageIcon ARROW_LEFT_HOVER;
+	public static final ImageIcon ARROW_RIGHT_HOVER;
+
+
 
 	static
 	{
@@ -176,6 +186,15 @@ public class UIUtilities
 		SORT_BY_RECENT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRecentOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 		SORT_BY_ROI_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRoiOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 		SORT_BY_PROFIT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByProfitOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+
+		final BufferedImage arrowLeft = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/left-arrow.png");
+		ARROW_LEFT = new ImageIcon(ImageUtil.alphaOffset(arrowLeft,0.53f));
+
+		final BufferedImage arrowRight = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/right-arrow.png");
+		ARROW_RIGHT = new ImageIcon(ImageUtil.alphaOffset(arrowRight,0.53f));
+
+		ARROW_LEFT_HOVER = new ImageIcon(arrowLeft);
+		ARROW_RIGHT_HOVER = new ImageIcon(arrowRight);
 	}
 
 	/**
