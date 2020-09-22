@@ -1,5 +1,6 @@
 package com.flippingutilities.ui.utilities;
 
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -34,20 +35,27 @@ public class Paginator extends JPanel
 		this.statusText = new JLabel("Page 1234 of 1234", SwingUtilities.CENTER);
 		this.arrowLeft = new JLabel(UIUtilities.ARROW_LEFT);
 		this.arrowRight = new JLabel(UIUtilities.ARROW_RIGHT);
+		this.arrowRight.setForeground(Color.blue);
 		setLayout(new FlowLayout());
 		add(arrowLeft);
 		add(statusText);
 		add(arrowRight);
-		setBackground(ColorScheme.DARK_GRAY_COLOR);
-		setBorder(new EmptyBorder(10, 0, 10, 0));
+		setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		setBorder(new EmptyBorder(3, 0, 0, 0));
 		arrowLeft.addMouseListener(onMouse(false));
 		arrowRight.addMouseListener(onMouse(true));
 	}
 
-	public void updateTotalPages(int totalPages)
+	public void updateTotalPages(int numItems)
 	{
-		this.totalPages = totalPages;
-		this.statusText.setText(String.format("Page %d of %d", pageNumber, totalPages));
+		if (numItems <= PAGE_SIZE) {
+			totalPages = 1;
+		}
+		else {
+			totalPages = (int) Math.ceil((float)numItems/PAGE_SIZE);
+		}
+
+		statusText.setText(String.format("Page %d of %d", pageNumber, totalPages));
 	}
 
 	private MouseAdapter onMouse(boolean isIncrease)
@@ -124,7 +132,7 @@ public class Paginator extends JPanel
 	{
 		List<T> pageItems = new ArrayList<>();
 		int startIndex = (pageNumber - 1) * PAGE_SIZE;
-		int endIndex = startIndex + PAGE_SIZE;
+		int endIndex = Math.min(startIndex + PAGE_SIZE, items.size());
 		for (int i = startIndex; i < endIndex; i++)
 		{
 			pageItems.add(items.get(i));

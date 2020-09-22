@@ -239,12 +239,14 @@ public class FlippingPanel extends JPanel
 		contentPanel.add(new FlippingPanelToolbar(this, plugin), BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
+		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
+
 		//To switch between greeting and items panels
 		cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 		container.add(topPanel, BorderLayout.NORTH);
 		container.add(contentPanel, BorderLayout.CENTER);
+		container.add(paginator, BorderLayout.SOUTH);
 
-		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
 
 		add(container, BorderLayout.CENTER);
 	}
@@ -287,6 +289,7 @@ public class FlippingPanel extends JPanel
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 			List<FlippingItem> itemsOnCurrentPage;
+			paginator.updateTotalPages(sortedItems.size());
 			if (sortedItems.size() >= 20) {
 				itemsOnCurrentPage = paginator.getCurrentPageItems(sortedItems);
 			}
@@ -337,11 +340,6 @@ public class FlippingPanel extends JPanel
 			if (activePanels.isEmpty())
 			{
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-			}
-
-			if (sortedItems.size() > 20) {
-				paginator.updateTotalPages((int) Math.ceil(flippingItems.size()/20));
-				newFlippingItemsPanel.add(paginator, constraints);
 			}
 
 			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
