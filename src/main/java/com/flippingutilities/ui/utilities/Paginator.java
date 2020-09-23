@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -27,7 +26,8 @@ public class Paginator extends JPanel
 	private JLabel arrowRight;
 	private JLabel arrowLeft;
 	Runnable onPageChange;
-	private static int PAGE_SIZE = 20;
+	@Setter
+	private int pageSize = 20;
 
 	public Paginator(Runnable onPageChange)
 	{
@@ -48,11 +48,11 @@ public class Paginator extends JPanel
 
 	public void updateTotalPages(int numItems)
 	{
-		if (numItems <= PAGE_SIZE) {
+		if (numItems <= pageSize) {
 			totalPages = 1;
 		}
 		else {
-			totalPages = (int) Math.ceil((float)numItems/PAGE_SIZE);
+			totalPages = (int) Math.ceil((float)numItems/ pageSize);
 		}
 
 		statusText.setText(String.format("Page %d of %d", pageNumber, totalPages));
@@ -131,8 +131,8 @@ public class Paginator extends JPanel
 	public <T> List<T> getCurrentPageItems(List<T> items)
 	{
 		List<T> pageItems = new ArrayList<>();
-		int startIndex = (pageNumber - 1) * PAGE_SIZE;
-		int endIndex = Math.min(startIndex + PAGE_SIZE, items.size());
+		int startIndex = (pageNumber - 1) * pageSize;
+		int endIndex = Math.min(startIndex + pageSize, items.size());
 		for (int i = startIndex; i < endIndex; i++)
 		{
 			pageItems.add(items.get(i));

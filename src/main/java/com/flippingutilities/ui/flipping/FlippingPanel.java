@@ -288,24 +288,13 @@ public class FlippingPanel extends JPanel
 
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
-			List<FlippingItem> itemsOnCurrentPage;
-			paginator.updateTotalPages(sortedItems.size());
-			if (sortedItems.size() >= 20) {
-				itemsOnCurrentPage = paginator.getCurrentPageItems(sortedItems);
-			}
-			else {
-				itemsOnCurrentPage = sortedItems;
-			}
-
+			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING)).collect(Collectors.toList());
+			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
 			//Keep track of the item index to determine the constraints its built upon
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
-				{
-					continue;
-				}
-
 				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
 
 				newPanel.clearButton.addMouseListener(new MouseAdapter()

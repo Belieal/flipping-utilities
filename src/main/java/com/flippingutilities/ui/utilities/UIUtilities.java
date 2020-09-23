@@ -464,10 +464,17 @@ public class UIUtilities
 		return modal;
 	}
 
-	public static JPanel stackPanelsVertically(List<JPanel> panels)
+	public static JPanel stackPanelsVertically(List<JPanel> panels) {
+		JPanel mainPanel = new JPanel();
+		stackPanelsVertically(panels, mainPanel);
+		return mainPanel;
+	}
+
+
+	public static void stackPanelsVertically(List<JPanel> panels, JPanel mainPanel)
 	{
 		GridBagConstraints constraints = new GridBagConstraints();
-		JPanel mainPanel = new JPanel(new GridBagLayout());
+		mainPanel.setLayout(new GridBagLayout());
 
 		constraints.fill = GridBagConstraints.HORIZONTAL;
 		constraints.weightx = 1;
@@ -490,6 +497,5 @@ public class UIUtilities
 
 			constraints.gridy++;
 		}
-		return mainPanel;
 	}
 }
