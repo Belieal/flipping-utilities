@@ -22,8 +22,11 @@ public class Paginator extends JPanel
 	@Setter
 	private int pageNumber = 1;
 	private int totalPages;
+	@Getter
 	private JLabel statusText;
+	@Setter
 	private JLabel arrowRight;
+	@Setter
 	private JLabel arrowLeft;
 	Runnable onPageChange;
 	@Setter
@@ -32,7 +35,7 @@ public class Paginator extends JPanel
 	public Paginator(Runnable onPageChange)
 	{
 		this.onPageChange = onPageChange;
-		this.statusText = new JLabel("Page 1234 of 1234", SwingUtilities.CENTER);
+		this.statusText = new JLabel("Page 1 of 1", SwingUtilities.CENTER);
 		this.arrowLeft = new JLabel(UIUtilities.ARROW_LEFT);
 		this.arrowRight = new JLabel(UIUtilities.ARROW_RIGHT);
 		this.arrowRight.setForeground(Color.blue);
@@ -98,6 +101,7 @@ public class Paginator extends JPanel
 
 					}
 				}
+				statusText.setText(String.format("Page %d of %d", pageNumber, totalPages));
 			}
 
 			@Override

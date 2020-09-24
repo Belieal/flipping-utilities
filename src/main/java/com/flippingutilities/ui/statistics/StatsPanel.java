@@ -438,7 +438,6 @@ public class StatsPanel extends JPanel
 			{
 				return;
 			}
-
 			rebuild(plugin.getTradesForCurrentView());
 		});
 
@@ -840,7 +839,7 @@ public class StatsPanel extends JPanel
 			default:
 				break;
 		}
-
+		paginator.setPageNumber(1);
 		rebuild(plugin.getTradesForCurrentView());
 	}
 

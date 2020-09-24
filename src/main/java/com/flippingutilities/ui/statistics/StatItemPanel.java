@@ -47,6 +47,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
@@ -145,10 +146,19 @@ public class StatItemPanel extends JPanel
 		this.offerPaginator = new Paginator(()-> buildAllOffersPanels());
 		flipPaginator.setPageSize(10);
 		offerPaginator.setPageSize(10);
+		flipPaginator.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		offerPaginator.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		offerPaginator.getStatusText().setFont(FontManager.getRunescapeSmallFont());
+		offerPaginator.setBorder(new EmptyBorder(0,0,0,0));
+		flipPaginator.getStatusText().setFont(FontManager.getRunescapeSmallFont());
+		flipPaginator.setBorder(BorderFactory.createMatteBorder(0,0,3,0, ColorScheme.DARKER_GRAY_HOVER_COLOR));
+		offerPaginator.setBorder(BorderFactory.createMatteBorder(0,0,3,0, ColorScheme.DARKER_GRAY_HOVER_COLOR));
 
 		startOfInterval = statsPanel.getStartOfInterval();
 		tradeHistory = flippingItem.getIntervalHistory(startOfInterval);
 		flips = flippingItem.getFlips(startOfInterval);
+		offerPaginator.updateTotalPages(tradeHistory.size());
+		flipPaginator.updateTotalPages(flips.size());
 
 
 		buildAllFlipsPanel();
@@ -197,17 +207,15 @@ public class StatItemPanel extends JPanel
 
 	public void buildAllOffersPanels() {
 		SwingUtilities.invokeLater(() -> {
-			List<OfferEvent> offersOnCurrentPage = offerPaginator.getCurrentPageItems(tradeHistory);
+			List<OfferEvent> reversedHistory = new ArrayList<>(tradeHistory);
+			Collections.reverse(reversedHistory);
+			List<OfferEvent> offersOnCurrentPage = offerPaginator.getCurrentPageItems(reversedHistory);
 			offerPanels = offersOnCurrentPage.stream().map(OfferPanel::new).collect(Collectors.toList());
-			Collections.reverse(offerPanels);
+			List<JPanel> panels = new ArrayList<>();
+			panels.add(offerPaginator);
+			panels.addAll(offerPanels);
 			allOffersPanel.removeAll();
-			GridBagConstraints constraints = new GridBagConstraints();
-			constraints.fill = GridBagConstraints.HORIZONTAL;
-			constraints.weightx = 1;
-			constraints.gridx = 0;
-			constraints.gridy = 0;
-			allOffersPanel.add(offerPaginator, constraints);
-			UIUtilities.stackPanelsVertically((List) offerPanels, allOffersPanel);
+			UIUtilities.stackPanelsVertically(panels, allOffersPanel);
 			repaint();
 			revalidate();
 		});
@@ -217,8 +225,11 @@ public class StatItemPanel extends JPanel
 		SwingUtilities.invokeLater(() -> {
 			List<Flip> flipsOnCurrentPage = flipPaginator.getCurrentPageItems(flips);
 			flipPanels = flipsOnCurrentPage.stream().map(FlipPanel::new).collect(Collectors.toList());
+			List<JPanel> panels = new ArrayList<>();
+			panels.add(flipPaginator);
+			panels.addAll(flipPanels);
 			allFlipsPanel.removeAll();
-			UIUtilities.stackPanelsVertically((List) flipPanels, allFlipsPanel);
+			UIUtilities.stackPanelsVertically(panels, allFlipsPanel);
 			repaint();
 			revalidate();
 		});
