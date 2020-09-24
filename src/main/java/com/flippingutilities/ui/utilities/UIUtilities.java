@@ -123,6 +123,12 @@ public class UIUtilities
 	public static final ImageIcon SORT_BY_PROFIT_ON_ICON;
 	public static final ImageIcon SORT_BY_PROFIT_HALF_ON_ICON;
 
+	public static final ImageIcon ARROW_LEFT;
+	public static final ImageIcon ARROW_RIGHT;
+	public static final ImageIcon ARROW_LEFT_HOVER;
+	public static final ImageIcon ARROW_RIGHT_HOVER;
+
+
 
 	static
 	{
@@ -176,6 +182,15 @@ public class UIUtilities
 		SORT_BY_RECENT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRecentOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 		SORT_BY_ROI_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByRoiOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
 		SORT_BY_PROFIT_OFF_ICON = new ImageIcon(ImageUtil.alphaOffset(sortByProfitOff, 0.53f).getScaledInstance(TOOLBAR_BUTTON_SIZE, TOOLBAR_BUTTON_SIZE, Image.SCALE_SMOOTH));
+
+		final BufferedImage arrowLeft = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/left-arrow.png");
+		ARROW_LEFT = new ImageIcon(ImageUtil.alphaOffset(arrowLeft,0.70f));
+
+		final BufferedImage arrowRight = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/right-arrow.png");
+		ARROW_RIGHT = new ImageIcon(ImageUtil.alphaOffset(arrowRight,0.70f));
+
+		ARROW_LEFT_HOVER = new ImageIcon(arrowLeft);
+		ARROW_RIGHT_HOVER = new ImageIcon(arrowRight);
 	}
 
 	/**
@@ -449,10 +464,17 @@ public class UIUtilities
 		return modal;
 	}
 
-	public static JPanel stackPanelsVertically(List<JPanel> panels)
+	public static JPanel stackPanelsVertically(List<JPanel> panels) {
+		JPanel mainPanel = new JPanel();
+		stackPanelsVertically(panels, mainPanel);
+		return mainPanel;
+	}
+
+
+	public static void stackPanelsVertically(List<JPanel> panels, JPanel mainPanel)
 	{
 		GridBagConstraints constraints = new GridBagConstraints();
-		JPanel mainPanel = new JPanel(new GridBagLayout());
+		mainPanel.setLayout(new GridBagLayout());
 
 		constraints.fill = GridBagConstraints.HORIZONTAL;
 		constraints.weightx = 1;
@@ -475,6 +497,5 @@ public class UIUtilities
 
 			constraints.gridy++;
 		}
-		return mainPanel;
 	}
 }

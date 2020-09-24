@@ -29,7 +29,10 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
+import com.flippingutilities.ui.utilities.Paginator;
 import com.flippingutilities.ui.utilities.UIUtilities;
+import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_LEFT;
+import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_RIGHT;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -37,6 +40,7 @@ import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -109,6 +113,9 @@ public class FlippingPanel extends JPanel
 	@Getter
 	@Setter
 	private String selectedSort;
+
+	@Getter
+	private Paginator paginator;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
@@ -231,10 +238,14 @@ public class FlippingPanel extends JPanel
 		contentPanel.add(new FlippingPanelToolbar(this, plugin), BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
+		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
+
 		//To switch between greeting and items panels
 		cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 		container.add(topPanel, BorderLayout.NORTH);
 		container.add(contentPanel, BorderLayout.CENTER);
+		container.add(paginator, BorderLayout.SOUTH);
+
 
 		add(container, BorderLayout.CENTER);
 	}
@@ -275,16 +286,14 @@ public class FlippingPanel extends JPanel
 			}
 
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
-
+			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
+			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING)).collect(Collectors.toList());
+			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
 			//Keep track of the item index to determine the constraints its built upon
 			int index = 0;
-			for (FlippingItem item : sortTradeList(flippingItems))
+			for (FlippingItem item : itemsOnCurrentPage)
 			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.FLIPPING))
-				{
-					continue;
-				}
-
 				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
 
 				newPanel.clearButton.addMouseListener(new MouseAdapter()
@@ -311,7 +320,6 @@ public class FlippingPanel extends JPanel
 				else
 				{
 					newFlippingItemsPanel.add(newPanel, constraints);
-
 				}
 				constraints.gridy++;
 				activePanels.add(newPanel);

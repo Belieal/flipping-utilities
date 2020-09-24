@@ -52,6 +52,7 @@ public class FlippingPanelToolbar extends JPanel
 						//set button to "on" visual state
 						toolbarButton.setIcon(BUTTON_STATES.get(toolbarButton.getName())[2]);
 						panel.setSelectedSort(toolbarButton.getName());
+						panel.getPaginator().setPageNumber(1);
 						panel.rebuild(plugin.getTradesForCurrentView());
 						deselectOtherButtons(toolbarButton);
 					}
@@ -60,6 +61,7 @@ public class FlippingPanelToolbar extends JPanel
 						//button. Rebuild the flipping panel while sorting by recent just to "reset" the panel, and from
 						//then on, don't apply any sort.
 						panel.setSelectedSort("recent");
+						panel.getPaginator().setPageNumber(1);
 						panel.rebuild(plugin.getTradesForCurrentView());
 						panel.setSelectedSort(null);
 						buttonCurrentlyPressed = null;

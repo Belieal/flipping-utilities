@@ -30,6 +30,7 @@ import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.HistoryManager;
 import com.flippingutilities.OfferEvent;
+import com.flippingutilities.ui.utilities.Paginator;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -52,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -179,6 +181,8 @@ public class StatsPanel extends JPanel
 	private Set<String> expandedItems = new HashSet<>();
 	@Getter
 	private Set<String> expandedTradeHistories = new HashSet<>();
+
+	private Paginator paginator;
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -434,22 +438,24 @@ public class StatsPanel extends JPanel
 			{
 				return;
 			}
-
 			rebuild(plugin.getTradesForCurrentView());
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		sortPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
+		sortPanel.setBorder(new EmptyBorder(10, 5, 2, 5));
 
 		sortPanel.add(sortLabel, BorderLayout.WEST);
 		sortPanel.add(sortBox, BorderLayout.CENTER);
 
+		statItemContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		JPanel statItemWrapper = new JPanel(new BorderLayout());
 		statItemWrapper.add(statItemContainer, BorderLayout.NORTH);
+		statItemWrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
 
 		JScrollPane scrollWrapper = new JScrollPane(statItemWrapper);
-		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		scrollWrapper.setBorder(new EmptyBorder(3, 5, 5, 5));
+		scrollWrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		scrollWrapper.setBorder(new EmptyBorder(3, 5, 0, 5));
 		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(6, 0));
 		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 3, 0, 0));
 
@@ -457,8 +463,23 @@ public class StatsPanel extends JPanel
 		JPanel itemContainer = new JPanel(new BorderLayout());
 		itemContainer.add(sortPanel, BorderLayout.NORTH);
 		itemContainer.add(scrollWrapper, BorderLayout.CENTER);
+		//itemContainer.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 1, ColorScheme.BRAND_ORANGE));
 
-		contentWrapper.add(itemContainer, BorderLayout.CENTER);
+		paginator = new Paginator(() -> SwingUtilities.invokeLater(() -> {
+			Instant rebuildStart = Instant.now();
+			rebuildStatItemContainer(plugin.getTradesForCurrentView());
+			revalidate();
+			repaint();
+			log.info("page change took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+		}));
+		paginator.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		paginator.setBorder(new EmptyBorder(0, 0, 0, 10));
+		JPanel itemContainerGroup = new JPanel(new BorderLayout());
+
+		itemContainerGroup.setBorder(BorderFactory.createMatteBorder(10, 5, 15,5, ColorScheme.DARK_GRAY_COLOR));
+		itemContainerGroup.add(itemContainer, BorderLayout.CENTER);
+		itemContainerGroup.add(paginator, BorderLayout.SOUTH);
+		contentWrapper.add(itemContainerGroup, BorderLayout.CENTER);
 
 		add(contentWrapper, BorderLayout.CENTER);
 		add(topPanel, BorderLayout.NORTH);
@@ -468,9 +489,9 @@ public class StatsPanel extends JPanel
 	 * Removes old stat items and builds new ones based on the passed trade list.
 	 * Items are initialized with their sub info containers collapsed.
 	 *
-	 * @param tradesList The list of flipping items that get shown on the stat panel.
+	 * @param flippingItems The list of flipping items that get shown on the stat panel.
 	 */
-	public void rebuild(List<FlippingItem> tradesList)
+	public void rebuild(List<FlippingItem> flippingItems)
 	{
 		//Remove old stats
 		activePanels = new ArrayList<>();
@@ -478,48 +499,52 @@ public class StatsPanel extends JPanel
 		SwingUtilities.invokeLater(() ->
 		{
 			Instant rebuildStart = Instant.now();
-			statItemContainer.removeAll();
-			int index = 0;
-			for (FlippingItem item : sortTradeList(tradesList))
-			{
-				if (!item.hasValidOffers(HistoryManager.PanelSelection.STATS))
-				{
-					continue;
-				}
-
-				ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
-
-				//Make sure the item has stats we can use
-				if (itemTradeHistory.isEmpty())
-				{
-					continue;
-				}
-
-				StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, item);
-
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-					marginWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					statItemContainer.add(marginWrapper, constraints);
-				}
-				else
-				{
-					//First item in the wrapper
-					statItemContainer.add(newPanel, constraints);
-				}
-				activePanels.add(newPanel);
-				constraints.gridy++;
-			}
-
-			updateDisplays(tradesList);
+			rebuildStatItemContainer(flippingItems);
+			updateDisplays(flippingItems);
 			revalidate();
 			repaint();
 			log.info("stats panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
+
+	public void rebuildStatItemContainer(List<FlippingItem> flippingItems) {
+		List<FlippingItem> sortedItems = sortTradeList(flippingItems);
+		List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getIntervalHistory(startOfInterval).stream().anyMatch(OfferEvent::isValidStatOffer)).collect(Collectors.toList());
+		paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+		List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
+		statItemContainer.removeAll();
+		int index = 0;
+		for (FlippingItem item : itemsOnCurrentPage)
+		{
+			ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
+
+			//Make sure the item has stats we can use
+			if (itemTradeHistory.isEmpty())
+			{
+				continue;
+			}
+
+			StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, item);
+
+			if (index++ > 0)
+			{
+				JPanel marginWrapper = new JPanel(new BorderLayout());
+				marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+				marginWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
+				marginWrapper.add(newPanel, BorderLayout.NORTH);
+				statItemContainer.add(marginWrapper, constraints);
+			}
+			else
+			{
+				//First item in the wrapper
+				statItemContainer.add(newPanel, constraints);
+			}
+			activePanels.add(newPanel);
+			constraints.gridy++;
+		}
+	}
+
+
 
 	/**
 	 * Updates the display of the total profit value along with the display of sub panels
@@ -551,6 +576,8 @@ public class StatsPanel extends JPanel
 		totalRevenues = 0;
 		totalQuantity = 0;
 		totalFlips = 0;
+		mostCommonItemName = null;
+		mostFlips = 0;
 
 		for (FlippingItem item : tradesList)
 		{
@@ -564,19 +591,12 @@ public class StatsPanel extends JPanel
 			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
 			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
 			totalQuantity += item.countItemsFlipped(intervalHistory);
-		}
-
-		mostCommonItemName = null;
-		mostFlips = 0;
-		for (StatItemPanel panel : activePanels)
-		{
-
-			totalFlips += panel.getTotalFlips();
-
-			if (mostCommonItemName == null || mostFlips < panel.getTotalFlips())
+			int flips = item.getFlips(startOfInterval).size();
+			totalFlips += flips;
+			if (mostCommonItemName == null || mostFlips < flips)
 			{
-				mostFlips = panel.getTotalFlips();
-				mostCommonItemName = panel.getFlippingItem().getItemName();
+				mostFlips =flips;
+				mostCommonItemName = item.getItemName();
 			}
 		}
 
@@ -819,7 +839,7 @@ public class StatsPanel extends JPanel
 			default:
 				break;
 		}
-
+		paginator.setPageNumber(1);
 		rebuild(plugin.getTradesForCurrentView());
 	}
 
@@ -963,11 +983,6 @@ public class StatsPanel extends JPanel
 		{
 			timeIntervalDropdown.setSelectedItem(interval);
 		}
-	}
-
-	public String getSelectedTimeInterval()
-	{
-		return (String) timeIntervalDropdown.getSelectedItem();
 	}
 
 }
