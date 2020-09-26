@@ -31,7 +31,6 @@ import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
-import static com.flippingutilities.ui.utilities.UIUtilities.SETTINGS_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_HALF_ON_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
@@ -43,7 +42,7 @@ import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -65,16 +64,10 @@ public class FlippingItemPanel extends JPanel
 {
 	private static final String NUM_FORMAT = "%,d";
 	private static final String OUTDATED_STRING = "Price is outdated. ";
-
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARK_GRAY_COLOR),
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3));
 
-	private int buyPrice;
-	private int sellPrice;
-	private int profitEach;
-	private int profitTotal;
-	private float roi;
 	@Getter
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
@@ -83,112 +76,27 @@ public class FlippingItemPanel extends JPanel
 	JLabel buyPriceVal = new JLabel();
 	JLabel sellPriceVal = new JLabel();
 	JLabel profitEachVal = new JLabel();
-	JLabel profitTotalVal = new JLabel();
+	JLabel potentialProfitVal = new JLabel();
 	JLabel limitLabel = new JLabel();
 	JLabel roiLabel = new JLabel();
-	JLabel favoriteIcon = new JLabel();
-	JButton clearButton = new JButton(DELETE_ICON);
-	JLabel itemName;
 
 	/* Panels */
 	JPanel titlePanel = new JPanel(new BorderLayout());
 	JPanel itemInfo = new JPanel(new BorderLayout());
-	JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
-	JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
 
-	FlippingItemPanel(final FlippingPlugin plugin, final ItemManager itemManager, final FlippingItem flippingItem)
+	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
 	{
 		this.flippingItem = flippingItem;
-		this.buyPrice = this.flippingItem.getMarginCheckBuyPrice();
-		this.sellPrice = this.flippingItem.getMarginCheckSellPrice();
 		this.plugin = plugin;
-
-		final int itemID = flippingItem.getItemId();
-
-		updatePotentialProfit();
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
+		JLabel favoriteIcon = new JLabel();
 		favoriteIcon.setIcon(flippingItem.isFavorite()? STAR_ON_ICON:STAR_OFF_ICON);
-
-		Color background = getBackground();
-
-		/* Item icon */
-		AsyncBufferedImage itemImage = itemManager.getImage(itemID);
-		JLabel itemIcon = new JLabel();
-		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-		itemIcon.setPreferredSize(ICON_SIZE);
-		if (itemImage != null)
-		{
-			itemImage.addTo(itemIcon);
-		}
-
-
 		favoriteIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		favoriteIcon.setPreferredSize(new Dimension(24, 24));
-
-		clearButton.setPreferredSize(ICON_SIZE);
-		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		clearButton.setBorder(null);
-		clearButton.setBorderPainted(false);
-		clearButton.setContentAreaFilled(false);
-		clearButton.setVisible(false);
-		clearButton.setToolTipText("Delete item");
-
-		JPanel itemClearPanel = new JPanel(new BorderLayout());
-		itemClearPanel.setBackground(background.darker());
-
-		itemClearPanel.add(itemIcon, BorderLayout.WEST);
-		itemClearPanel.add(clearButton, BorderLayout.EAST);
-
-		/* Item name panel */
-		itemName = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
-
-		itemName.setForeground(Color.WHITE);
-		itemName.setFont(FontManager.getRunescapeBoldFont());
-		itemName.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
-		itemName.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				if (isCollapsed()) {
-					expand();
-					flippingItem.setExpand(true);
-				}
-				else {
-					collapse();
-					flippingItem.setExpand(false);
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				if (isCollapsed()) {
-					itemName.setText("Expand");
-				}
-				else {
-					itemName.setText("Collapse");
-				}
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				itemName.setText(flippingItem.getItemName());
-			}
-		});
-
-		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
-		titlePanel.setBackground(background.darker());
-		titlePanel.add(itemClearPanel, BorderLayout.WEST);
-		titlePanel.add(itemName, BorderLayout.CENTER);
-		titlePanel.add(favoriteIcon, BorderLayout.EAST);
-
 		favoriteIcon.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -226,6 +134,88 @@ public class FlippingItemPanel extends JPanel
 				}
 			}
 		});
+
+		Color background = getBackground();
+
+		/* Item icon */
+		JLabel itemIcon = new JLabel();
+		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
+		itemIcon.setPreferredSize(ICON_SIZE);
+		if (itemImage != null)
+		{
+			itemImage.addTo(itemIcon);
+		}
+
+		JButton clearButton = new JButton(DELETE_ICON);
+		clearButton.setPreferredSize(ICON_SIZE);
+		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		clearButton.setBorder(null);
+		clearButton.setBorderPainted(false);
+		clearButton.setContentAreaFilled(false);
+		clearButton.setVisible(false);
+		clearButton.setToolTipText("Delete item");
+		clearButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					flippingItem.setValidFlippingPanelItem(false);
+					onDeleteCallback.run();
+				}
+			}
+		});
+
+		JPanel itemClearPanel = new JPanel(new BorderLayout());
+		itemClearPanel.setBackground(background.darker());
+
+		itemClearPanel.add(itemIcon, BorderLayout.WEST);
+		itemClearPanel.add(clearButton, BorderLayout.EAST);
+
+		/* Item name panel */
+		JLabel itemNameLabel = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
+		itemNameLabel.setForeground(Color.WHITE);
+		itemNameLabel.setFont(FontManager.getRunescapeBoldFont());
+		itemNameLabel.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
+		itemNameLabel.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (isCollapsed()) {
+					expand();
+					flippingItem.setExpand(true);
+				}
+				else {
+					collapse();
+					flippingItem.setExpand(false);
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				if (isCollapsed()) {
+					itemNameLabel.setText("Expand");
+				}
+				else {
+					itemNameLabel.setText("Collapse");
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				itemNameLabel.setText(flippingItem.getItemName());
+			}
+		});
+
+		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
+		titlePanel.setBackground(background.darker());
+		titlePanel.add(itemClearPanel, BorderLayout.WEST);
+		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
+		titlePanel.add(favoriteIcon, BorderLayout.EAST);
 		titlePanel.setBorder(new EmptyBorder(2, 1, 2, 1));
 		titlePanel.addMouseListener(new MouseAdapter()
 		{
@@ -245,6 +235,8 @@ public class FlippingItemPanel extends JPanel
 		});
 
 		/* Prices and profits info */
+		JPanel leftInfoTextPanel = new JPanel(new GridLayout(7, 1));
+		JPanel rightValuesPanel = new JPanel(new GridLayout(7, 1));
 		leftInfoTextPanel.setBackground(background);
 		rightValuesPanel.setBackground(background);
 
@@ -258,7 +250,7 @@ public class FlippingItemPanel extends JPanel
 		buyPriceVal.setHorizontalAlignment(JLabel.RIGHT);
 		sellPriceVal.setHorizontalAlignment(JLabel.RIGHT);
 		profitEachVal.setHorizontalAlignment(JLabel.RIGHT);
-		profitTotalVal.setHorizontalAlignment(JLabel.RIGHT);
+		potentialProfitVal.setHorizontalAlignment(JLabel.RIGHT);
 		roiLabel.setHorizontalAlignment(JLabel.RIGHT);
 
 		/* Left font colors */
@@ -269,21 +261,21 @@ public class FlippingItemPanel extends JPanel
 		limitLabel.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
 
 		/* Tooltips */
-		buyPriceText.setToolTipText("The buy price according to your latest margin check");
-		sellPriceText.setToolTipText("The sell price according to your latest margin check");
+		buyPriceText.setToolTipText("The buy price according to your latest margin check. This is the price you insta sold the item for");
+		sellPriceText.setToolTipText("The sell price according to your latest margin check. This is the price you insta bought the item for");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
 		profitTotalText.setToolTipText(
-			"The total profit according to your latest margin check and GE 4-hour limit");
+			"The potential profit according to your latest margin check and GE 4-hour limit");
 		roiLabel.setToolTipText(
 			"<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 		limitLabel.setToolTipText("The amount you can buy of this item every 4 hours.");
 
 		profitEachVal.setToolTipText(profitEachText.getToolTipText());
-		profitTotalVal.setToolTipText(profitTotalText.getToolTipText());
+		potentialProfitVal.setToolTipText(profitTotalText.getToolTipText());
 
 		/* Right profit labels font colors. */
 		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
-		profitTotalVal.setForeground(UIUtilities.PROFIT_COLOR);
+		potentialProfitVal.setForeground(UIUtilities.PROFIT_COLOR);
 
 		//To space out the pricing and profit labels
 		JLabel padLabel1 = new JLabel(" ");
@@ -303,7 +295,7 @@ public class FlippingItemPanel extends JPanel
 		rightValuesPanel.add(sellPriceVal);
 		rightValuesPanel.add(padLabel2);
 		rightValuesPanel.add(profitEachVal);
-		rightValuesPanel.add(profitTotalVal);
+		rightValuesPanel.add(potentialProfitVal);
 
 		//Separate prices and profit with GE limit and ROI.
 		leftInfoTextPanel.add(padLabel3);
@@ -349,20 +341,21 @@ public class FlippingItemPanel extends JPanel
 	public void buildPanelValues()
 	{
 		//Update latest price
-		this.buyPrice = flippingItem.getMarginCheckBuyPrice();
-		this.sellPrice = flippingItem.getMarginCheckSellPrice();
-
-		updatePotentialProfit();
+		int buyPrice = flippingItem.getMarginCheckBuyPrice();
+		int sellPrice = flippingItem.getMarginCheckSellPrice();
+		int profitEach = sellPrice - buyPrice;
+		int potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
+		float roi = (float) profitEach / buyPrice * 100;
 
 		buyPriceVal
 			.setText((buyPrice == 0) ? "N/A" : String.format(NUM_FORMAT, buyPrice) + " gp");
 		sellPriceVal.setText(
-			(sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, this.sellPrice) + " gp");
+			(sellPrice == 0) ? "N/A" : String.format(NUM_FORMAT, sellPrice) + " gp");
 
 		profitEachVal.setText((buyPrice == 0 || sellPrice == 0) ? "N/A"
 			: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-		profitTotalVal.setText((buyPrice == 0 || sellPrice == 0 || profitTotal < 0) ? "N/A" : QuantityFormatter
-			.quantityToRSDecimalStack(profitTotal) + " gp");
+		potentialProfitVal.setText((buyPrice == 0 || sellPrice == 0 || potentialProfit < 0) ? "N/A" : QuantityFormatter
+			.quantityToRSDecimalStack(potentialProfit) + " gp");
 
 		roiLabel.setText("ROI:  " + ((buyPrice == 0 || sellPrice == 0) ? "N/A"
 			: String.format("%.2f", roi) + "%"));
@@ -390,20 +383,6 @@ public class FlippingItemPanel extends JPanel
 	public boolean isCollapsed()
 	{
 		return !itemInfo.isVisible();
-	}
-
-	//Recalculates profits.
-	public void updatePotentialProfit()
-	{
-		profitEach = sellPrice - buyPrice;
-		profitTotal = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-		roi = calculateROI();
-	}
-
-	//Calculates the return on investment percentage.
-	private float calculateROI()
-	{
-		return (float) profitEach / buyPrice * 100;
 	}
 
 	/**

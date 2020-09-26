@@ -246,7 +246,6 @@ public class FlippingPanel extends JPanel
 		container.add(contentPanel, BorderLayout.CENTER);
 		container.add(paginator, BorderLayout.SOUTH);
 
-
 		add(container, BorderLayout.CENTER);
 	}
 
@@ -294,20 +293,7 @@ public class FlippingPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager, item);
-
-				newPanel.clearButton.addMouseListener(new MouseAdapter()
-				{
-					@Override
-					public void mouseClicked(MouseEvent e)
-					{
-						if (e.getButton() == MouseEvent.BUTTON1)
-						{
-							deleteItemPanel(newPanel);
-							rebuild(plugin.getTradesForCurrentView());
-						}
-					}
-				});
+				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item, () -> rebuild(plugin.getTradesForCurrentView()));
 
 				if (index++ > 0)
 				{
@@ -487,12 +473,6 @@ public class FlippingPanel extends JPanel
 
 	private void deleteItemPanel(FlippingItemPanel itemPanel)
 	{
-		if (!activePanels.contains(itemPanel))
-		{
-			return;
-		}
-
-		//itemPanel.getFlippingItem().invalidateOffers(HistoryManager.PanelSelection.FLIPPING);
 		FlippingItem item = itemPanel.getFlippingItem();
 		item.setValidFlippingPanelItem(false);
 	}
