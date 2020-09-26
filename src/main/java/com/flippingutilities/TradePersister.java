@@ -82,7 +82,6 @@ public class TradePersister
 
 			}
 		}
-
 	}
 
 	/**
@@ -241,6 +240,11 @@ public class TradePersister
 		}
 	}
 
+	/**
+	 * Over time as we delete/add fields, we need to make sure the fields are set properly the first time the user
+	 * loads their trades after the new update. This method serves as a way to sanitize the data.
+	 * @param accountData
+	 */
 	private static void cleanAccountData(AccountData accountData) {
 		//a bug led to items not having their last active times be updated. This bug is fixed
 		//but the null value remains in the user's items, so this sets it.

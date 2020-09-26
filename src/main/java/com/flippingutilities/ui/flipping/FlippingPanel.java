@@ -287,7 +287,7 @@ public class FlippingPanel extends JPanel
 
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
-			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.isValidFlippingPanelItem()).collect(Collectors.toList());
+			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
 			//Keep track of the item index to determine the constraints its built upon
@@ -451,7 +451,7 @@ public class FlippingPanel extends JPanel
 	{
 		//We only expect one item.
 		return plugin.getTradesForCurrentView().stream()
-			.filter(item -> item.getItemId() == itemId && item.isValidFlippingPanelItem())
+			.filter(item -> item.getItemId() == itemId && item.getValidFlippingPanelItem())
 			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
