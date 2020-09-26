@@ -414,6 +414,7 @@ public class FlippingPanel extends JPanel
 
 		if (!itemToHighlight.isEmpty())
 		{
+			paginator.setPageNumber(1);
 			rebuild(itemToHighlight);
 			itemHighlighted = true;
 		}
