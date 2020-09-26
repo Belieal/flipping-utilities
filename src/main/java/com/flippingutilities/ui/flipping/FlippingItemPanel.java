@@ -97,22 +97,13 @@ public class FlippingItemPanel extends JPanel
 		updatePriceOutdatedDisplay();
 
 		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
-		if (!plugin.getConfig().verboseViewEnabled())
-		{
-			collapse();
-		}
+		if (!plugin.getConfig().verboseViewEnabled()) collapse();
 
 		//if user has "overridden" the config option by expanding/collapsing that item, use what they set instead of the config value.
 		if (flippingItem.getExpand() != null)
 		{
-			if (flippingItem.getExpand())
-			{
-				expand();
-			}
-			else
-			{
-				collapse();
-			}
+			if (flippingItem.getExpand()) expand();
+			else collapse();
 		}
 	}
 
