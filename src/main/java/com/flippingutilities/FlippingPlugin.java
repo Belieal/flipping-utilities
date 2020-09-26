@@ -640,15 +640,17 @@ public class FlippingPlugin extends Plugin
 			FlippingItem item = flippingItem.get();
 			if (newOffer.isMarginCheck())
 			{
+				trades.remove(item);
+				trades.add(0, item);
 				item.updateMargin(newOffer);
 			}
-			if (!item.isValidFlippingPanelItem()) {
+			//if a user buys/sells an item they previously deleted from the flipping panel, show the panel again.
+			if (!item.getValidFlippingPanelItem()) {
 				item.setValidFlippingPanelItem(true);
 				trades.remove(item);
 				trades.add(0, item);
 			}
-			//TODO when i merge deletingvfo, add a check in here to see if i should make the item show again in
-			//the flipping panel
+
 			item.updateHistory(newOffer);
 			item.updateLatestTimes(newOffer);
 		}
@@ -824,10 +826,10 @@ public class FlippingPlugin extends Plugin
 			{
 				Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
 
-				return !item.isValidFlippingPanelItem() && !item.hasValidOffers()
+				return !item.getValidFlippingPanelItem() && !item.hasValidOffers()
 					&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
 			}
-			return !item.isValidFlippingPanelItem() && !item.hasValidOffers();
+			return !item.getValidFlippingPanelItem() && !item.hasValidOffers();
 		});
 
 		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))

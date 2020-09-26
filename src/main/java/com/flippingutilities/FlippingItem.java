@@ -102,7 +102,8 @@ public class FlippingItem
 	//whether the item should be on the flipping panel or not.
 	@SerializedName("vFPI")
 	@Getter
-	private boolean validFlippingPanelItem;
+	@Setter
+	private Boolean validFlippingPanelItem;
 
 	@Getter
 	@Setter
