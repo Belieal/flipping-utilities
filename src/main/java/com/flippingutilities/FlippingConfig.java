@@ -125,4 +125,18 @@ public interface FlippingConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "verboseView",
+		name = "toggle verbose view",
+		description = "show items in the flipping tab with all their tracked info like buy/sell price, roi, potential" +
+			"profit, etc"
+	)
+	default boolean verboseViewEnabled() { return true; }
+
+	@ConfigItem(
+		keyName = "favoriteSearchCode",
+		name = "favorite items quick search",
+		description = "What you can type in the ge search bar to automatically populate it with your favorite items"
+	)
+	default String favoriteSearchCode() { return "1"; }
 }
