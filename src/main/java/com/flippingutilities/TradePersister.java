@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
+import net.runelite.client.game.ItemManager;
+import net.runelite.http.api.item.ItemStats;
 
 /**
  * This class is responsible for handling all the IO related tasks for persisting trades. This class should contain
@@ -158,14 +160,14 @@ public class TradePersister
 	 * @return a map of display name to that account's data
 	 * @throws IOException handled in FlippingPlugin
 	 */
-	public static Map<String, AccountData> loadAllTrades() throws IOException
+	public static Map<String, AccountData> loadAllTrades(ItemManager itemManager) throws IOException
 	{
 		Map<String, AccountData> accountsData = new HashMap<>();
 		for (File f : PARENT_DIRECTORY.listFiles())
 		{
 			String displayName = f.getName().split("\\.")[0];
 			log.info("loading data for {}", displayName);
-			AccountData accountData = loadFromFile(f);
+			AccountData accountData = loadFromFile(f, itemManager);
 			if (accountData == null)
 			{
 				log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
@@ -178,11 +180,11 @@ public class TradePersister
 		return accountsData;
 	}
 
-	public static AccountData loadTrades(String displayName) throws IOException
+	public static AccountData loadTrades(String displayName, ItemManager itemManager) throws IOException
 	{
 		log.info("loading data for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
-		AccountData accountData = loadFromFile(accountFile);
+		AccountData accountData = loadFromFile(accountFile, itemManager);
 		if (accountData == null)
 		{
 			log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
@@ -191,7 +193,7 @@ public class TradePersister
 		return accountData;
 	}
 
-	private static AccountData loadFromFile(File f) throws IOException
+	private static AccountData loadFromFile(File f, ItemManager itemManager) throws IOException
 	{
 		String accountDataJson = new String(Files.readAllBytes(f.toPath()));
 		final Gson gson = new Gson();
@@ -199,7 +201,7 @@ public class TradePersister
 		{
 		}.getType();
 		AccountData accountData = gson.fromJson(accountDataJson, type);
-		cleanAccountData(accountData);
+		cleanAccountData(accountData, itemManager);
 		return accountData;
 	}
 
@@ -245,10 +247,16 @@ public class TradePersister
 	 * loads their trades after the new update. This method serves as a way to sanitize the data.
 	 * @param accountData
 	 */
-	private static void cleanAccountData(AccountData accountData) {
+	private static void cleanAccountData(AccountData accountData, ItemManager itemManager) {
 		//a bug led to items not having their last active times be updated. This bug is fixed
 		//but the null value remains in the user's items, so this sets it.
 		for (FlippingItem item: accountData.getTrades()) {
+			//in case ge limits have been updated
+			int tradeItemId = item.getItemId();
+			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+			item.setTotalGELimit(geLimit);
+
 			if (item.getLatestActivityTime() == null) {
 				item.setLatestActivityTime(Instant.now());
 			}

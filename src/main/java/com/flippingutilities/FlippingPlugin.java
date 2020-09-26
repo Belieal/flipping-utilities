@@ -793,7 +793,7 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			Map<String, AccountData> trades = TradePersister.loadAllTrades();
+			Map<String, AccountData> trades = TradePersister.loadAllTrades(itemManager);
 			log.info("successfully loaded trades");
 			return trades;
 		}
@@ -808,7 +808,7 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			return TradePersister.loadTrades(displayName);
+			return TradePersister.loadTrades(displayName, itemManager);
 		}
 		catch (IOException e)
 		{

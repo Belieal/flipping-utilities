@@ -58,7 +58,8 @@ public class FlippingItem
 
 	@SerializedName("tGL")
 	@Getter
-	private final int totalGELimit;
+	@Setter
+	private int totalGELimit;
 
 	@SerializedName("mCBP")
 	@Getter
