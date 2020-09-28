@@ -28,8 +28,10 @@ package com.flippingutilities;
 
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.SettingsPanel;
+import com.flippingutilities.ui.TradeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.utilities.UIUtilities;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.google.common.primitives.Shorts;
@@ -53,6 +55,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.swing.JDialog;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -171,6 +174,10 @@ public class FlippingPlugin extends Plugin
 
 	private int loginTickCount;
 
+	private TradeHistoryTabPanel tradeHistoryTabPanel;
+	private JDialog tradeHistoryModal;
+
+
 	@Override
 	protected void startUp()
 	{
@@ -178,6 +185,9 @@ public class FlippingPlugin extends Plugin
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
+		tradeHistoryTabPanel = new TradeHistoryTabPanel();
+		tradeHistoryModal = UIUtilities.createModalFromPanel(masterPanel, tradeHistoryTabPanel);
+		tradeHistoryModal.setTitle("Trade History Tab Copy");
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -1068,6 +1078,12 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
+		if (event.getScriptId() == 29)
+		{
+			tradeHistoryModal.setVisible(false);
+			log.info("interface closed");
+		}
+
 		if (event.getScriptId() == 804)
 		{
 			//Fired after every GE offer slot redraw
@@ -1083,7 +1099,21 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
+		log.info("widget loaded group id is {}", event.getGroupId());
+		if (event.getGroupId() == 383)
+		{
+			tradeHistoryModal.setVisible(true);
+//			log.info("widget loaded group id {}", event.getGroupId());
+//			clientThread.invokeLater(()-> log.info("widget has {} dynamic children",client.getWidget(383, 3).getDynamicChildren().length));
+		}
+
+		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID) {
+			tradeHistoryModal.setVisible(false);
+		}
+
 		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
+		//this (id 149 and not id 383) will also trigger when the player just exits out of the ge interface offer window screen, which is good
+		//as then the highlight won't linger in that case.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
 			flippingPanel.dehighlightItem();
