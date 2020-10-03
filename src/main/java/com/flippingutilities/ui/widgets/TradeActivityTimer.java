@@ -225,7 +225,7 @@ public class TradeActivityTimer
 	 */
 	private boolean isSlotStagnant()
 	{
-		return tradeStartTime.isBefore(Instant.now().minus(plugin.getConfig().tradeStagnationTime(), ChronoUnit.MINUTES));
+		return lastUpdate.isBefore(Instant.now().minus(plugin.getConfig().tradeStagnationTime(), ChronoUnit.MINUTES));
 	}
 
 
