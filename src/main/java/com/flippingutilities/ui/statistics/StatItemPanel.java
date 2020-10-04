@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -426,8 +427,15 @@ public class StatItemPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				deletePanel();
-				statsPanel.rebuild(plugin.getTradesForCurrentView());
+				int result = JOptionPane.showOptionDialog(itemIconTitlePanel, "Are you sure you want to delete this item's offers from this time interval?",
+					"Are you sure?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+					null, new String[] {"Yes", "No"}, "No");
+
+				if (result == JOptionPane.YES_OPTION)
+				{
+					deletePanel();
+					statsPanel.rebuild(plugin.getTradesForCurrentView());
+				}
 			}
 
 			@Override
