@@ -36,6 +36,7 @@ import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
+import java.awt.Point;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -188,6 +189,7 @@ public class FlippingPlugin extends Plugin
 		tradeHistoryTabPanel = new TradeHistoryTabPanel();
 		tradeHistoryModal = UIUtilities.createModalFromPanel(masterPanel, tradeHistoryTabPanel);
 		tradeHistoryModal.setTitle("Trade History Tab Copy");
+		tradeHistoryModal.setLocation(new Point(650,50));
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -1099,15 +1101,16 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		log.info("widget loaded group id is {}", event.getGroupId());
 		if (event.getGroupId() == 383)
 		{
 			tradeHistoryModal.setVisible(true);
+			clientThread.invokeLater(()-> log.info("widget location {}",client.getWidget(383, 3).getCanvasLocation()));
 //			log.info("widget loaded group id {}", event.getGroupId());
 //			clientThread.invokeLater(()-> log.info("widget has {} dynamic children",client.getWidget(383, 3).getDynamicChildren().length));
 		}
 
-		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID) {
+		//if either ge interface or bank pin interface is loaded, hide the modal
+		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213) {
 			tradeHistoryModal.setVisible(false);
 		}
 

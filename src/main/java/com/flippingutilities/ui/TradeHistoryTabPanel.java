@@ -11,7 +11,7 @@ import net.runelite.client.ui.ColorScheme;
 public class TradeHistoryTabPanel extends JPanel
 {
 	public TradeHistoryTabPanel() {
-		setSize(500, 500);
+		setSize(300, 400);
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 	}
 
