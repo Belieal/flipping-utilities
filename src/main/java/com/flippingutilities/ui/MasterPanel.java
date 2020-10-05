@@ -62,6 +62,14 @@ public class MasterPanel extends PluginPanel
 
 	private FlippingPlugin plugin;
 
+	private FastTabGroup tabGroup;
+
+	private static String FLIPPING_TAB_NAME = "Flipping";
+	private static String STATISTICS_TAB_NAME = "Statistics";
+
+	private MaterialTab flippingTab;
+	private MaterialTab statisticsTab;
+
 	/**
 	 * THe master panel is always present. The components added to it are components that should always be visible
 	 * regardless of whether you are looking at the flipping panel or the statistics panel. The tab group to switch
@@ -90,8 +98,8 @@ public class MasterPanel extends PluginPanel
 			settingsPanel.rebuild();
 		});
 
-		MaterialTabGroup tabSelector = tabSelector(mainDisplay, flippingPanel, statPanel);
-		JPanel header = Header(accountSelector, settingsButton, tabSelector);
+		tabGroup = tabSelector(mainDisplay, flippingPanel, statPanel);
+		JPanel header = Header(accountSelector, settingsButton, tabGroup);
 		add(header, BorderLayout.NORTH);
 		add(mainDisplay, BorderLayout.CENTER);
 	}
@@ -174,25 +182,28 @@ public class MasterPanel extends PluginPanel
 	 *
 	 * @param mainDisplay   the panel on which the tabs will be put and on which either the flipping or stats panel will be
 	 *                      rendered
-	 * @param flippingPanel
-	 * @param statsPanel
 	 * @return
 	 */
-	private MaterialTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statsPanel)
+	private FastTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statPanel)
 	{
-		MaterialTabGroup tabGroup = new FastTabGroup(mainDisplay);
-		MaterialTab flippingTab = new MaterialTab("Flipping", tabGroup, flippingPanel);
-		MaterialTab statTab = new MaterialTab("Statistics", tabGroup, statsPanel);
-
+		FastTabGroup tabGroup = new FastTabGroup(mainDisplay);
+		flippingTab = new MaterialTab(FLIPPING_TAB_NAME, tabGroup, flippingPanel);
+		statisticsTab = new MaterialTab(STATISTICS_TAB_NAME, tabGroup, statPanel);
 		tabGroup.setBorder(new EmptyBorder(5, 35, 2, 0));
 		tabGroup.addTab(flippingTab);
-		tabGroup.addTab(statTab);
-
+		tabGroup.addTab(statisticsTab);
 		// Initialize with flipping tab open.
 		tabGroup.select(flippingTab);
 		return tabGroup;
 	}
 
+	public void selectFlippingTab() {
+		tabGroup.select(flippingTab);
+	}
+
+	public void selectStatisticsTab() {
+		tabGroup.select(statisticsTab);
+	}
 
 	public Set<String> getViewSelectorItems()
 	{
@@ -202,5 +213,9 @@ public class MasterPanel extends PluginPanel
 			items.add(accountSelector.getItemAt(i));
 		}
 		return items;
+	}
+
+	public void showPanel(JPanel panel) {
+		tabGroup.showPanel(panel);
 	}
 }

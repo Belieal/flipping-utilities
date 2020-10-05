@@ -11,18 +11,18 @@ import net.runelite.api.widgets.Widget;
  */
 public class TradeHistoryTabExtractor
 {
-	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets) {
-		//a group of 6 widgets makes up an offer in the trade history tab
-		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets),6);
-		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
-	}
+//	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets) {
+//		//a group of 6 widgets makes up an offer in the trade history tab
+//		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets),6);
+//		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
+//	}
 
-	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets) {
-		//set slot to -1 or something so i can ignore it in history manager
-		OfferEvent offerEvent = new OfferEvent()
-		//state
-		//how many
-		//price
-		//
-	}
+//	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets) {
+//		//set slot to -1 or something so i can ignore it in history manager
+//		OfferEvent offerEvent = new OfferEvent()
+//		//state
+//		//how many
+//		//price
+//		//
+//	}
 }

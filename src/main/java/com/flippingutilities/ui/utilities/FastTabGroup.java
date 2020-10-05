@@ -83,4 +83,15 @@ public class FastTabGroup extends MaterialTabGroup
 		}
 		return true;
 	}
+
+	public void unselectAll() {
+		tabs.forEach(tab-> tab.unselect());
+	}
+
+	public void showPanel(JPanel panel) {
+		unselectAll();
+		display.add(panel, "temp");
+		CardLayout cardLayout = (CardLayout) display.getLayout();
+		cardLayout.show(display, "temp");
+	}
 }

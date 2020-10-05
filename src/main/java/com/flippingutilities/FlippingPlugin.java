@@ -176,8 +176,6 @@ public class FlippingPlugin extends Plugin
 	private int loginTickCount;
 
 	private TradeHistoryTabPanel tradeHistoryTabPanel;
-	private JDialog tradeHistoryModal;
-
 
 	@Override
 	protected void startUp()
@@ -185,11 +183,9 @@ public class FlippingPlugin extends Plugin
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
-		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
 		tradeHistoryTabPanel = new TradeHistoryTabPanel();
-		tradeHistoryModal = UIUtilities.createModalFromPanel(masterPanel, tradeHistoryTabPanel);
-		tradeHistoryModal.setTitle("Trade History Tab Copy");
-		tradeHistoryModal.setLocation(new Point(650,50));
+		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
+		masterPanel.showPanel(tradeHistoryTabPanel);
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -757,17 +753,6 @@ public class FlippingPlugin extends Plugin
 		return configManager.getConfig(FlippingConfig.class);
 	}
 
-	@Subscribe
-	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
-	{
-		Widget widget = event.getWidget();
-		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
-		{
-			flippingPanel.dehighlightItem();
-		}
-	}
-
 	//TODO: Refactor this with a search on the search bar
 	private void highlightOffer()
 	{
@@ -1082,8 +1067,7 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getScriptId() == 29)
 		{
-			tradeHistoryModal.setVisible(false);
-			log.info("interface closed");
+			masterPanel.selectFlippingTab();
 		}
 
 		if (event.getScriptId() == 804)
@@ -1099,19 +1083,29 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
+	{
+		Widget widget = event.getWidget();
+		// If the back button is no longer visible, we know we aren't in the offer setup.
+		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
+		{
+			flippingPanel.dehighlightItem();
+		}
+	}
+
+	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (event.getGroupId() == 383)
 		{
-			tradeHistoryModal.setVisible(true);
-			clientThread.invokeLater(()-> log.info("widget location {}",client.getWidget(383, 3).getCanvasLocation()));
+			masterPanel.showPanel(tradeHistoryTabPanel);
 //			log.info("widget loaded group id {}", event.getGroupId());
 //			clientThread.invokeLater(()-> log.info("widget has {} dynamic children",client.getWidget(383, 3).getDynamicChildren().length));
 		}
 
-		//if either ge interface or bank pin interface is loaded, hide the modal
+		//if either ge interface or bank pin interface is loaded, hide the trade history tab panel again
 		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213) {
-			tradeHistoryModal.setVisible(false);
+			masterPanel.selectFlippingTab();
 		}
 
 		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
