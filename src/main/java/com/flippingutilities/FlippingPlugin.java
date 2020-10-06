@@ -77,7 +77,9 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.item.ItemStats;
 
@@ -1099,8 +1101,9 @@ public class FlippingPlugin extends Plugin
 		if (event.getGroupId() == 383)
 		{
 			masterPanel.showPanel(tradeHistoryTabPanel);
-//			log.info("widget loaded group id {}", event.getGroupId());
-//			clientThread.invokeLater(()-> log.info("widget has {} dynamic children",client.getWidget(383, 3).getDynamicChildren().length));
+			clientThread.invokeLater(()-> {
+				log.info("offers {}",TradeHistoryTabExtractor.convertWidgetsToOfferEvents(client.getWidget(383,3).getDynamicChildren(), currentlyLoggedInAccount));
+			});
 		}
 
 		//if either ge interface or bank pin interface is loaded, hide the trade history tab panel again

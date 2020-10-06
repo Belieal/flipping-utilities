@@ -6,6 +6,7 @@ import java.awt.GraphicsEnvironment;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -30,18 +31,13 @@ public class TradeHistoryTabPanel extends JPanel
 
 	private JPanel createTitlePanel() {
 		JPanel titlePanel = new JPanel(new BorderLayout());
+		titlePanel.setBorder(new EmptyBorder(5,5,5,5));
 		JLabel titleText = new JLabel("Grand Exchange History", SwingConstants.CENTER);
-		JLabel description = new JLabel("<html>Select offers from your GE history to add that<br>&nbsp;&nbsp;&nbsp;&nbsp;weren't already tracked by " +
-			"the plugin<br>(if you were flipping on mobile for example</html>", SwingConstants.CENTER);
 		titleText.setFont(new Font("Verdana", Font.BOLD, 15));
-		titleText.setForeground(ColorScheme.BRAND_ORANGE);
-		description.setFont(new Font("Courier", Font.ITALIC, 10));
-		JLabel titleText2 = new JLabel("Grand Exchange History", SwingConstants.CENTER);
-		titleText2.setFont(new Font("Verasddana", Font.BOLD, 15));
 		titlePanel.add(titleText, BorderLayout.CENTER);
-		titlePanel.add(titleText2, BorderLayout.SOUTH);
-		//titlePanel.add(description, BorderLayout.SOUTH);
-		return titlePanel;
+ 		return titlePanel;
 	}
+
+
 
 }
