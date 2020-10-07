@@ -28,15 +28,13 @@ package com.flippingutilities;
 
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.SettingsPanel;
-import com.flippingutilities.ui.TradeHistoryTabPanel;
+import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
-import com.flippingutilities.ui.utilities.UIUtilities;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
-import java.awt.Point;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +54,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.swing.JDialog;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -77,9 +74,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.NavigationButton;
-import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.item.ItemStats;
 
@@ -177,7 +172,7 @@ public class FlippingPlugin extends Plugin
 
 	private int loginTickCount;
 
-	private TradeHistoryTabPanel tradeHistoryTabPanel;
+	private GeHistoryTabPanel geHistoryTabPanel;
 
 	@Override
 	protected void startUp()
@@ -185,9 +180,9 @@ public class FlippingPlugin extends Plugin
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
-		tradeHistoryTabPanel = new TradeHistoryTabPanel();
+		geHistoryTabPanel = new GeHistoryTabPanel();
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
-		masterPanel.showPanel(tradeHistoryTabPanel);
+		masterPanel.showPanel(geHistoryTabPanel);
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -1100,9 +1095,12 @@ public class FlippingPlugin extends Plugin
 	{
 		if (event.getGroupId() == 383)
 		{
-			masterPanel.showPanel(tradeHistoryTabPanel);
+
 			clientThread.invokeLater(()-> {
-				log.info("offers {}",TradeHistoryTabExtractor.convertWidgetsToOfferEvents(client.getWidget(383,3).getDynamicChildren(), currentlyLoggedInAccount));
+				Widget[] geHistoryTabWidgets = client.getWidget(383,3).getDynamicChildren();
+				List<OfferEvent> offerEvents = GeHistoryTabExtractor.convertWidgetsToOfferEvents(geHistoryTabWidgets, currentlyLoggedInAccount);
+				geHistoryTabPanel.rebuild(offerEvents);
+				masterPanel.showPanel(geHistoryTabPanel);
 			});
 		}
 

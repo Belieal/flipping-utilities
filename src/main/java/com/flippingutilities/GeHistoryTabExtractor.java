@@ -15,16 +15,16 @@ import net.runelite.api.widgets.Widget;
  * the TradeHistoryTabPanel, and all UI components, to pretty much only draw stuff and not do much else, hence the separation.
  */
 @Slf4j
-public class TradeHistoryTabExtractor
+public class GeHistoryTabExtractor
 {
 	private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
+	private static FlippingPlugin plugin;
 
 	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets, String currentlyLoggedInAccount) {
 		//a group of 6 widgets makes up an offer in the trade history tab
 		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets),6);
 		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w, currentlyLoggedInAccount)).collect(Collectors.toList());
 	}
-
 
 	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets, String currentlyLoggedInAccount) {
 		//set slot to -1 so we can handle it appropriately in the history manager.
@@ -37,7 +37,7 @@ public class TradeHistoryTabExtractor
 		Instant time = Instant.now();
 		int totalQuantity = quantity;
 		int tickArrivedAt = -1;
-		//just making ticks since first offer something > 2 so it doesn't count as a margin check
+		//just making ticksSinceFirst offer something > 2 so it doesn't count as a margin check
 		int ticksSinceFirstOffer = 10;
 
 		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, currentlyLoggedInAccount, false);
