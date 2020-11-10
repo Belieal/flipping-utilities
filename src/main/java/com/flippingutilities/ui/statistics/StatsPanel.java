@@ -509,6 +509,7 @@ public class StatsPanel extends JPanel
 
 	public void rebuildStatItemContainer(List<FlippingItem> flippingItems)
 	{
+		activePanels.clear();
 		List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 		List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getIntervalHistory(startOfInterval).stream().anyMatch(OfferEvent::isValidOfferEvent)).collect(Collectors.toList());
 		paginator.updateTotalPages(itemsThatShouldHavePanels.size());
