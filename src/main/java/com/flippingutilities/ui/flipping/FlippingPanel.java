@@ -97,7 +97,7 @@ public class FlippingPanel extends JPanel
 	private final GridBagConstraints constraints = new GridBagConstraints();
 	public final CardLayout cardLayout = new CardLayout();
 
-	@Getter
+	private final JPanel flippingItemsPanel = new JPanel();
 	public final JPanel flippingItemContainer = new JPanel(cardLayout);
 
 	//Keeps track of all items currently displayed on the panel.
@@ -132,6 +132,20 @@ public class FlippingPanel extends JPanel
 		constraints.weightx = 1;
 		constraints.gridx = 0;
 		constraints.gridy = 0;
+
+		//Holds all the item panels
+		flippingItemsPanel.setLayout(new GridBagLayout());
+		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
+		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
+
+		JPanel wrapper = new JPanel(new BorderLayout());
+		wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		wrapper.add(flippingItemsPanel, BorderLayout.NORTH);
+
+		JScrollPane scrollWrapper = new JScrollPane(wrapper);
+		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
+		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 
 		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
@@ -223,6 +237,7 @@ public class FlippingPanel extends JPanel
 
 		resetIcon.setComponentPopupMenu(popupMenu);
 
+		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
 		flippingItemContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
 
@@ -262,20 +277,9 @@ public class FlippingPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
-			Instant rebuildStart = Instant.now();
-			JPanel newFlippingItemsPanel = new JPanel();
-			newFlippingItemsPanel.setLayout(new GridBagLayout());
-			newFlippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
-			newFlippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			JPanel wrapper = new JPanel(new BorderLayout());
-			wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			wrapper.add(newFlippingItemsPanel, BorderLayout.NORTH);
 
-			JScrollPane scrollWrapper = new JScrollPane(wrapper);
-			scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
-			scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
-			flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
+			Instant rebuildStart = Instant.now();
+			flippingItemsPanel.removeAll();
 
 			if (flippingItems == null || flippingItems.size() == 0)
 			{
@@ -301,11 +305,11 @@ public class FlippingPanel extends JPanel
 					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
 					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
 					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					newFlippingItemsPanel.add(marginWrapper, constraints);
+					flippingItemsPanel.add(marginWrapper, constraints);
 				}
 				else
 				{
-					newFlippingItemsPanel.add(newPanel, constraints);
+					flippingItemsPanel.add(newPanel, constraints);
 				}
 				constraints.gridy++;
 				activePanels.add(newPanel);
@@ -315,6 +319,9 @@ public class FlippingPanel extends JPanel
 			{
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 			}
+
+			revalidate();
+			repaint();
 
 			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
