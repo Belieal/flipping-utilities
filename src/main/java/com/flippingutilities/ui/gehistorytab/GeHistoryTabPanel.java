@@ -25,16 +25,14 @@ import net.runelite.client.ui.ColorScheme;
  */
 public class GeHistoryTabPanel extends JPanel
 {
-
-	public final CardLayout cardLayout = new CardLayout();
-	public final JPanel geHistoryTabOfferContainer = new JPanel(cardLayout);
+	public JPanel geHistoryTabOffersPanel = new JPanel();
 
 	public GeHistoryTabPanel() {
-		geHistoryTabOfferContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
-		geHistoryTabOfferContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		geHistoryTabOffersPanel.setBorder((new EmptyBorder(0, 0, 0, 6)));
+		geHistoryTabOffersPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		setLayout(new BorderLayout());
 		add(createTitlePanel(), BorderLayout.NORTH);
-		add(geHistoryTabOfferContainer, BorderLayout.CENTER);
+		add(createOfferContainer(), BorderLayout.CENTER);
 	}
 
 	private JPanel createTitlePanel() {
@@ -47,25 +45,31 @@ public class GeHistoryTabPanel extends JPanel
  		return titlePanel;
 	}
 
+	private JPanel createOfferContainer() {
+		JPanel geHistoryTabOfferContainer = new JPanel(new BorderLayout());
+		JPanel wrapper = new JPanel(new BorderLayout());
+		wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		wrapper.add(geHistoryTabOffersPanel, BorderLayout.NORTH);
+
+		JScrollPane scrollWrapper = new JScrollPane(wrapper);
+		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
+		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
+
+		geHistoryTabOfferContainer.add(scrollWrapper, BorderLayout.CENTER);
+		geHistoryTabOfferContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
+		geHistoryTabOfferContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		return geHistoryTabOfferContainer;
+	}
+
 	public void rebuild(List<OfferEvent> offers) {
 		SwingUtilities.invokeLater(() ->
 		{
+			geHistoryTabOffersPanel.removeAll();
 			List<GeHistoryTabOfferPanel> offerPanels = offers.stream().map(o -> new GeHistoryTabOfferPanel(o)).collect(Collectors.toList());
-			JPanel newGeHistoryTabOffersPanel = UIUtilities.stackPanelsVertically((List) offerPanels, 4);
-			newGeHistoryTabOffersPanel.setBorder((new EmptyBorder(0, 0, 0, 6)));
-			newGeHistoryTabOffersPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-
-			JPanel wrapper = new JPanel(new BorderLayout());
-			wrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			wrapper.add(newGeHistoryTabOffersPanel, BorderLayout.NORTH);
-
-			JScrollPane scrollWrapper = new JScrollPane(wrapper);
-			scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
-			scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
-
-			geHistoryTabOfferContainer.add(scrollWrapper, "items");
-			cardLayout.show(geHistoryTabOfferContainer, "items");
+			UIUtilities.stackPanelsVertically((List) offerPanels, geHistoryTabOffersPanel, 4);
+			revalidate();
+			repaint();
 		});
 	}
 }

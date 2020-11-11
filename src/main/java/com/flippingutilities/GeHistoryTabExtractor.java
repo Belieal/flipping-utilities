@@ -20,13 +20,13 @@ public class GeHistoryTabExtractor
 	private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
 	private static FlippingPlugin plugin;
 
-	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets, String currentlyLoggedInAccount) {
+	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets) {
 		//a group of 6 widgets makes up an offer in the trade history tab
 		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets),6);
-		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w, currentlyLoggedInAccount)).collect(Collectors.toList());
+		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
 	}
 
-	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets, String currentlyLoggedInAccount) {
+	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets) {
 		//set slot to -1 so we can handle it appropriately in the history manager.
 		int slot = -1;
 		GrandExchangeOfferState offerState = getState(widgets.get(2));
@@ -40,7 +40,7 @@ public class GeHistoryTabExtractor
 		//just making ticksSinceFirst offer something > 2 so it doesn't count as a margin check
 		int ticksSinceFirstOffer = 10;
 
-		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, currentlyLoggedInAccount, false);
+		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, null, false);
 		return offerEvent;
 	}
 

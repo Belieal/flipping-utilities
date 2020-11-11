@@ -88,6 +88,7 @@ public class FastTabGroup extends MaterialTabGroup
 		tabs.forEach(tab-> tab.unselect());
 	}
 
+	//potential mem problem with this method
 	public void showPanel(JPanel panel) {
 		unselectAll();
 		display.add(panel, "temp");
