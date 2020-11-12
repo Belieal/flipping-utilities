@@ -40,7 +40,7 @@ public class GeHistoryTabExtractor
 		//just making ticksSinceFirst offer something > 2 so it doesn't count as a margin check
 		int ticksSinceFirstOffer = 10;
 
-		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, null, false);
+		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, null, false, null);
 		return offerEvent;
 	}
 

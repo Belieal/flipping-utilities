@@ -1099,8 +1099,11 @@ public class FlippingPlugin extends Plugin
 			clientThread.invokeLater(()-> {
 				Widget[] geHistoryTabWidgets = client.getWidget(383,3).getDynamicChildren();
 				List<OfferEvent> offerEvents = GeHistoryTabExtractor.convertWidgetsToOfferEvents(geHistoryTabWidgets);
-				offerEvents.forEach(o -> o.setItemName(itemManager.getItemComposition(o.getItemId()).getName()));
-				geHistoryTabPanel.rebuild(offerEvents);
+				offerEvents.forEach(o -> {
+					o.setItemName(itemManager.getItemComposition(o.getItemId()).getName());
+					o.setMadeBy(currentlyLoggedInAccount);
+				});
+				geHistoryTabPanel.rebuild(offerEvents, geHistoryTabWidgets);
 				masterPanel.showPanel(geHistoryTabPanel);
 			});
 		}
