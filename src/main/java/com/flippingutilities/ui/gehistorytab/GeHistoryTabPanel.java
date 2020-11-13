@@ -115,7 +115,7 @@ public class GeHistoryTabPanel extends JPanel
 		addOffersButton.setVisible(selectedOffers.size() > 0);
 	}
 
-	public void rebuild(List<OfferEvent> offers, Widget[] widgets) {
+	public void rebuild(List<OfferEvent> offers, List<List<OfferEvent>> matchingOffers, Widget[] widgets) {
 		offersFromHistoryTab = offers;
 		selectedOffers = new HashSet<>();
 		addOffersButton.setVisible(false);
@@ -127,7 +127,7 @@ public class GeHistoryTabPanel extends JPanel
 			geHistoryTabOffersPanel.removeAll();
 			List<GeHistoryTabOfferPanel> offerPanels = new ArrayList<>();
 			for (int i=0; i < offers.size();i++) {
-				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i), i, this::onCheckBoxChange));
+				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange));
 			}
 			UIUtilities.stackPanelsVertically((List) offerPanels, geHistoryTabOffersPanel, 4);
 			revalidate();

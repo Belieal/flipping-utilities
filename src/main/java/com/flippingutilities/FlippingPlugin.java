@@ -451,7 +451,8 @@ public class FlippingPlugin extends Plugin
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
-			catch (Exception e) {
+			catch (Exception e)
+			{
 				log.info("unknown exception in repeating tasks, error = {}, will cancel and restart them after 5 sec delay", e);
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
@@ -650,7 +651,8 @@ public class FlippingPlugin extends Plugin
 				item.updateMargin(newOffer);
 			}
 			//if a user buys/sells an item they previously deleted from the flipping panel, show the panel again.
-			if (!item.getValidFlippingPanelItem()) {
+			if (!item.getValidFlippingPanelItem())
+			{
 				item.setValidFlippingPanelItem(true);
 				trades.remove(item);
 				trades.add(0, item);
@@ -1096,20 +1098,23 @@ public class FlippingPlugin extends Plugin
 		if (event.getGroupId() == 383)
 		{
 
-			clientThread.invokeLater(()-> {
-				Widget[] geHistoryTabWidgets = client.getWidget(383,3).getDynamicChildren();
+			clientThread.invokeLater(() -> {
+				Widget[] geHistoryTabWidgets = client.getWidget(383, 3).getDynamicChildren();
 				List<OfferEvent> offerEvents = GeHistoryTabExtractor.convertWidgetsToOfferEvents(geHistoryTabWidgets);
+				List<List<OfferEvent>> matchingOffers = new ArrayList<>();
 				offerEvents.forEach(o -> {
 					o.setItemName(itemManager.getItemComposition(o.getItemId()).getName());
 					o.setMadeBy(currentlyLoggedInAccount);
+					matchingOffers.add(GeHistoryTabExtractor.findOfferMatches(o, accountCache.get(currentlyLoggedInAccount).getTrades(), 5));
 				});
-				geHistoryTabPanel.rebuild(offerEvents, geHistoryTabWidgets);
+				geHistoryTabPanel.rebuild(offerEvents, matchingOffers, geHistoryTabWidgets);
 				masterPanel.showPanel(geHistoryTabPanel);
 			});
 		}
 
 		//if either ge interface or bank pin interface is loaded, hide the trade history tab panel again
-		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213) {
+		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213)
+		{
 			masterPanel.selectFlippingTab();
 		}
 

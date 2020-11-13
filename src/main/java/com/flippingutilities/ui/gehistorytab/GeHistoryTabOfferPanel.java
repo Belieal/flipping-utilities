@@ -5,6 +5,7 @@ import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.util.List;
 import java.util.function.BiConsumer;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -21,7 +22,8 @@ public class GeHistoryTabOfferPanel extends JPanel
 	private int offerId;
 	private BiConsumer<Integer, Boolean> onCheckBoxChangeCallback;
 
-	public GeHistoryTabOfferPanel(OfferEvent offer, int offerId, BiConsumer<Integer, Boolean> onCheckBoxChangeCallback) {
+	public GeHistoryTabOfferPanel(OfferEvent offer, List<OfferEvent> matchingOffers, int offerId, BiConsumer<Integer, Boolean> onCheckBoxChangeCallback)
+	{
 		this.offerId = offerId;
 		this.onCheckBoxChangeCallback = onCheckBoxChangeCallback;
 		setLayout(new BorderLayout());
@@ -30,22 +32,22 @@ public class GeHistoryTabOfferPanel extends JPanel
 		checkBox.setFocusPainted(false);
 		checkBox.addItemListener(itemEvent -> onCheckBoxChangeCallback.accept(offerId, itemEvent.getStateChange() == itemEvent.SELECTED));
 		add(checkBox, BorderLayout.WEST);
-		add(createInfoPanel(offer), BorderLayout.CENTER);
+		add(createInfoPanel(offer, matchingOffers), BorderLayout.CENTER);
 	}
 
-	public JPanel createInfoPanel(OfferEvent offer) {
+	public JPanel createInfoPanel(OfferEvent offer, List<OfferEvent> matchingOffers)
+	{
 		JPanel infoPanel = new JPanel(new BorderLayout());
-		infoPanel.setBorder(new EmptyBorder(6,0,0,3));
+		infoPanel.setBorder(new EmptyBorder(6, 0, 0, 3));
+
 		JLabel itemNameLabel = new JLabel(offer.getItemName(), SwingConstants.CENTER);
 
 		JPanel offerDetailsPanel = new JPanel(new DynamicGridLayout(3, 1, 0, 0));
 
-//		label.setFont(FontManager.getRunescapeSmallFont());
-//		label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 
 		JPanel statePanel = new JPanel(new BorderLayout());
 		JLabel leftStateLabel = new JLabel("State:");
-		JLabel rightStateLabel = new JLabel(offer.getState() == GrandExchangeOfferState.BOUGHT? "Bought": "Sold");
+		JLabel rightStateLabel = new JLabel(offer.getState() == GrandExchangeOfferState.BOUGHT ? "Bought" : "Sold");
 		statePanel.add(leftStateLabel, BorderLayout.WEST);
 		statePanel.add(rightStateLabel, BorderLayout.EAST);
 
@@ -57,7 +59,7 @@ public class GeHistoryTabOfferPanel extends JPanel
 
 		JPanel pricePanel = new JPanel(new BorderLayout());
 		JLabel leftPriceLabel = new JLabel("Price Ea:");
-		JLabel rightPriceLabel = new JLabel(UIUtilities.quantityToRSDecimalStack(offer.getPrice(), false));
+		JLabel rightPriceLabel = new JLabel(String.valueOf(offer.getPrice()));
 		pricePanel.add(leftPriceLabel, BorderLayout.WEST);
 		pricePanel.add(rightPriceLabel, BorderLayout.EAST);
 
@@ -65,9 +67,9 @@ public class GeHistoryTabOfferPanel extends JPanel
 		offerDetailsPanel.add(quantityPanel);
 		offerDetailsPanel.add(pricePanel);
 
-
 		infoPanel.add(itemNameLabel, BorderLayout.NORTH);
 		infoPanel.add(offerDetailsPanel, BorderLayout.CENTER);
+		infoPanel.add(new MatchingOffersPanel(matchingOffers), BorderLayout.SOUTH);
 		return infoPanel;
 	}
 }

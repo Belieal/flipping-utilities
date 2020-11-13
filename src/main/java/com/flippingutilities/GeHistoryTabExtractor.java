@@ -1,6 +1,7 @@
 package com.flippingutilities;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -20,13 +21,15 @@ public class GeHistoryTabExtractor
 	private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
 	private static FlippingPlugin plugin;
 
-	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets) {
+	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets)
+	{
 		//a group of 6 widgets makes up an offer in the trade history tab
-		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets),6);
+		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets), 6);
 		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
 	}
 
-	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets) {
+	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets)
+	{
 		//set slot to -1 so we can handle it appropriately in the history manager.
 		int slot = -1;
 		GrandExchangeOfferState offerState = getState(widgets.get(2));
@@ -44,34 +47,77 @@ public class GeHistoryTabExtractor
 		return offerEvent;
 	}
 
-	private static int getPrice(Widget w) {
+	private static int getPrice(Widget w)
+	{
 		String text = w.getText();
 		String numString;
-		if (text.contains("each")) {
+		if (text.contains("each"))
+		{
 			Matcher m = PRICE_PATTERN.matcher(text);
 			m.find();
 			numString = m.group(1);
 		}
-		else {
+		else
+		{
 			numString = text.split(" coins")[0];
 		}
 		StringBuilder s = new StringBuilder();
-		for (char c: numString.toCharArray()) {
-			if (c != ',') {
+		for (char c : numString.toCharArray())
+		{
+			if (c != ',')
+			{
 				s.append(c);
 			}
 		}
 		return Integer.parseInt(s.toString());
 	}
 
-
-	private static GrandExchangeOfferState getState(Widget w) {
+	private static GrandExchangeOfferState getState(Widget w)
+	{
 		String text = w.getText();
-		if (text.startsWith("Bought")) {
+		if (text.startsWith("Bought"))
+		{
 			return GrandExchangeOfferState.BOUGHT;
 		}
-		else {
+		else
+		{
 			return GrandExchangeOfferState.SOLD;
 		}
+	}
+
+	//think about moving this to a more appropriate class. Perhaps its even time to make history a class now, instead of just
+	//a list of flipping items..
+	public static List<OfferEvent> findOfferMatches(OfferEvent offer, List<FlippingItem> history, int limit)
+	{
+		FlippingItem flippingItem = null;
+		List<OfferEvent> matches = new ArrayList<>();
+		for (FlippingItem item : history)
+		{
+			if (item.getItemId() == offer.getItemId())
+			{
+				flippingItem = item;
+				break;
+			}
+		}
+
+		int count = 0;
+		if (flippingItem != null)
+		{
+			List<OfferEvent> itemHistory = flippingItem.getHistory().getCompressedOfferEvents();
+			for (int i = itemHistory.size()-1;i > -1;i--)
+			{
+				OfferEvent pastOffer = itemHistory.get(i);
+				if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
+					&& offer.getState() == pastOffer.getState())
+				{
+					matches.add(pastOffer);
+					count ++;
+					if (count == limit) {
+						break;
+					}
+				}
+			}
+		}
+		return matches;
 	}
 }
