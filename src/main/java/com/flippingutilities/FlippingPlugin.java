@@ -182,7 +182,6 @@ public class FlippingPlugin extends Plugin
 		settingsPanel = new SettingsPanel(this);
 		geHistoryTabPanel = new GeHistoryTabPanel();
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
-		masterPanel.showPanel(geHistoryTabPanel);
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))

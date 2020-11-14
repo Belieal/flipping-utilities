@@ -41,7 +41,7 @@ public class GeHistoryTabPanel extends JPanel
 
 	public GeHistoryTabPanel() {
 		geHistoryTabOffersPanel = new JPanel();
-		geHistoryTabOffersPanel.setBorder((new EmptyBorder(0, 0, 0, 6)));
+		geHistoryTabOffersPanel.setBorder((new EmptyBorder(5, 6, 0, 6)));
 		geHistoryTabOffersPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		setLayout(new BorderLayout());
 		add(createTitlePanel(), BorderLayout.NORTH);
@@ -51,17 +51,17 @@ public class GeHistoryTabPanel extends JPanel
 	private JPanel createTitlePanel() {
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		titlePanel.setBorder(new EmptyBorder(5,5,5,5));
+		titlePanel.setBorder(new EmptyBorder(5,5,10,5));
 		JLabel titleText = new JLabel("Grand Exchange History", SwingConstants.CENTER);
 		titleText.setFont(new Font("Verdana", Font.BOLD, 15));
 		titlePanel.add(titleText, BorderLayout.CENTER);
 
 
-		JPanel statusPanel = new JPanel(new BorderLayout());
+		JPanel statusPanel = new JPanel(new BorderLayout(0, 5));
 		statusPanel.setBorder(new EmptyBorder(7,0,0,0));
 		statusPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
 		statusTextLabel = new JLabel("0 items selected", SwingConstants.CENTER);
-		statusPanel.add(statusTextLabel, BorderLayout.NORTH);
 		statusTextLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		statusTextLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		statusTextLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -73,6 +73,7 @@ public class GeHistoryTabPanel extends JPanel
 		addOffersButton.setVisible(false);
 
 		statusPanel.add(addOffersButton, BorderLayout.CENTER);
+		statusPanel.add(statusTextLabel, BorderLayout.NORTH);
 
 		titlePanel.add(statusPanel, BorderLayout.SOUTH);
  		return titlePanel;
@@ -91,7 +92,7 @@ public class GeHistoryTabPanel extends JPanel
 
 		geHistoryTabOfferContainer.add(scrollWrapper, BorderLayout.CENTER);
 		geHistoryTabOfferContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
-		geHistoryTabOfferContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		geHistoryTabOfferContainer.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		return geHistoryTabOfferContainer;
 	}
 

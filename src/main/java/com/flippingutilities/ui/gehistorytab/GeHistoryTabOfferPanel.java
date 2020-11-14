@@ -27,6 +27,8 @@ public class GeHistoryTabOfferPanel extends JPanel
 		this.offerId = offerId;
 		this.onCheckBoxChangeCallback = onCheckBoxChangeCallback;
 		setLayout(new BorderLayout());
+		setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		setBorder(new EmptyBorder(0,0,0,5));
 		JCheckBox checkBox = new JCheckBox();
 		checkBox.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		checkBox.setFocusPainted(false);
@@ -38,11 +40,16 @@ public class GeHistoryTabOfferPanel extends JPanel
 	public JPanel createInfoPanel(OfferEvent offer, List<OfferEvent> matchingOffers)
 	{
 		JPanel infoPanel = new JPanel(new BorderLayout());
-		infoPanel.setBorder(new EmptyBorder(6, 0, 0, 3));
+		infoPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
+		infoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JLabel itemNameLabel = new JLabel(offer.getItemName(), SwingConstants.CENTER);
+		itemNameLabel.setFont(FontManager.getRunescapeBoldFont());
+		itemNameLabel.setForeground(Color.WHITE);
+		itemNameLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JPanel offerDetailsPanel = new JPanel(new DynamicGridLayout(3, 1, 0, 0));
+
 
 
 		JPanel statePanel = new JPanel(new BorderLayout());
@@ -50,18 +57,21 @@ public class GeHistoryTabOfferPanel extends JPanel
 		JLabel rightStateLabel = new JLabel(offer.getState() == GrandExchangeOfferState.BOUGHT ? "Bought" : "Sold");
 		statePanel.add(leftStateLabel, BorderLayout.WEST);
 		statePanel.add(rightStateLabel, BorderLayout.EAST);
+		statePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JPanel quantityPanel = new JPanel(new BorderLayout());
 		JLabel leftQuantityLabel = new JLabel("Quantity:");
 		JLabel rightQuantityLabel = new JLabel(String.valueOf(offer.getCurrentQuantityInTrade()));
 		quantityPanel.add(leftQuantityLabel, BorderLayout.WEST);
 		quantityPanel.add(rightQuantityLabel, BorderLayout.EAST);
+		quantityPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JPanel pricePanel = new JPanel(new BorderLayout());
 		JLabel leftPriceLabel = new JLabel("Price Ea:");
 		JLabel rightPriceLabel = new JLabel(String.valueOf(offer.getPrice()));
 		pricePanel.add(leftPriceLabel, BorderLayout.WEST);
 		pricePanel.add(rightPriceLabel, BorderLayout.EAST);
+		pricePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		offerDetailsPanel.add(statePanel);
 		offerDetailsPanel.add(quantityPanel);
