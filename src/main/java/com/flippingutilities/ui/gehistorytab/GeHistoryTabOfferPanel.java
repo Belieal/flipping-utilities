@@ -22,6 +22,7 @@ public class GeHistoryTabOfferPanel extends JPanel
 	private int offerId;
 	private BiConsumer<Integer, Boolean> onCheckBoxChangeCallback;
 
+
 	public GeHistoryTabOfferPanel(OfferEvent offer, List<OfferEvent> matchingOffers, int offerId, BiConsumer<Integer, Boolean> onCheckBoxChangeCallback)
 	{
 		this.offerId = offerId;
@@ -29,18 +30,23 @@ public class GeHistoryTabOfferPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		setBorder(new EmptyBorder(0,0,0,5));
+		JPanel checkBoxPanel = new JPanel(new BorderLayout());
+		checkBoxPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		JCheckBox checkBox = new JCheckBox();
 		checkBox.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		//checkBox.setBackground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		checkBox.setFocusPainted(false);
+		//checkBox.setEnabled(false);
+		checkBoxPanel.add(checkBox, BorderLayout.CENTER);
 		checkBox.addItemListener(itemEvent -> onCheckBoxChangeCallback.accept(offerId, itemEvent.getStateChange() == itemEvent.SELECTED));
-		add(checkBox, BorderLayout.WEST);
+		add(checkBoxPanel, BorderLayout.WEST);
 		add(createInfoPanel(offer, matchingOffers), BorderLayout.CENTER);
 	}
 
 	public JPanel createInfoPanel(OfferEvent offer, List<OfferEvent> matchingOffers)
 	{
 		JPanel infoPanel = new JPanel(new BorderLayout());
-		infoPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
+		infoPanel.setBorder(new EmptyBorder(3, 6, 3, 3));
 		infoPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JLabel itemNameLabel = new JLabel(offer.getItemName(), SwingConstants.CENTER);
@@ -81,5 +87,9 @@ public class GeHistoryTabOfferPanel extends JPanel
 		infoPanel.add(offerDetailsPanel, BorderLayout.CENTER);
 		infoPanel.add(new MatchingOffersPanel(matchingOffers), BorderLayout.SOUTH);
 		return infoPanel;
+	}
+
+	public void setAdded() {
+		//disable checkbox, make checkbox panel ge price
 	}
 }

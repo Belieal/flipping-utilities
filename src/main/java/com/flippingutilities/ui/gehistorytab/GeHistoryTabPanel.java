@@ -3,16 +3,15 @@ package com.flippingutilities.ui.gehistorytab;
 import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -33,14 +32,18 @@ public class GeHistoryTabPanel extends JPanel
 {
 	public JPanel geHistoryTabOffersPanel;
 	public JLabel statusTextLabel;
-	public Set<Integer> selectedOffers;
+	public Set<Integer> selectedOfferIds;
 	public List<OfferEvent> offersFromHistoryTab;
 	public JButton addOffersButton;
 	public Widget[] geHistoryTabWidgets;
+	public List<GeHistoryTabOfferPanel> offerPanels;
+	Consumer<OfferEvent> addOffersCallback;
 	private static final int ORIGINAL_WIDGET_COLOR = 16750623;
 
-	public GeHistoryTabPanel() {
-		geHistoryTabOffersPanel = new JPanel();
+	public GeHistoryTabPanel(Consumer<OfferEvent> addOffersCallback) {
+		this.addOffersCallback = addOffersCallback;
+		this.offerPanels = new ArrayList<>();
+		this.geHistoryTabOffersPanel = new JPanel();
 		geHistoryTabOffersPanel.setBorder((new EmptyBorder(5, 6, 0, 6)));
 		geHistoryTabOffersPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		setLayout(new BorderLayout());
@@ -71,12 +74,34 @@ public class GeHistoryTabPanel extends JPanel
 		addOffersButton.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		addOffersButton.setFocusPainted(false);
 		addOffersButton.setVisible(false);
+		addOffersButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					flippingItem.setValidFlippingPanelItem(false);
+					onDeleteCallback.run();
+				}
+			}
+		});
+
 
 		statusPanel.add(addOffersButton, BorderLayout.CENTER);
 		statusPanel.add(statusTextLabel, BorderLayout.NORTH);
 
 		titlePanel.add(statusPanel, BorderLayout.SOUTH);
  		return titlePanel;
+	}
+
+	private void onAddOffersButtonClick() {
+		for (int id: selectedOfferIds) {
+			offerPanels.get(id).setAdded();
+			addOffersCallback.accept(offersFromHistoryTab.get(id));
+		}
+
+		selectedOfferIds.clear();
 	}
 
 	private JPanel createOfferContainer() {
@@ -99,26 +124,26 @@ public class GeHistoryTabPanel extends JPanel
 	private void onCheckBoxChange(int offerId, boolean selected) {
 		int offset = offerId * 6;
 		if (selected) {
-			selectedOffers.add(offerId);
+			selectedOfferIds.add(offerId);
 			geHistoryTabWidgets[offset + 2].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
 			geHistoryTabWidgets[offset + 3].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
 			geHistoryTabWidgets[offset + 5].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
 		}
 		else {
-			if (selectedOffers.contains(offerId)) {
-				selectedOffers.remove(offerId);
+			if (selectedOfferIds.contains(offerId)) {
+				selectedOfferIds.remove(offerId);
 				geHistoryTabWidgets[offset + 2].setTextColor(ORIGINAL_WIDGET_COLOR);
 				geHistoryTabWidgets[offset + 3].setTextColor(ORIGINAL_WIDGET_COLOR);
 				geHistoryTabWidgets[offset + 5].setTextColor(ORIGINAL_WIDGET_COLOR);
 			}
 		}
-		statusTextLabel.setText(selectedOffers.size() + " items selected");
-		addOffersButton.setVisible(selectedOffers.size() > 0);
+		statusTextLabel.setText(selectedOfferIds.size() + " items selected");
+		addOffersButton.setVisible(selectedOfferIds.size() > 0);
 	}
 
 	public void rebuild(List<OfferEvent> offers, List<List<OfferEvent>> matchingOffers, Widget[] widgets) {
 		offersFromHistoryTab = offers;
-		selectedOffers = new HashSet<>();
+		selectedOfferIds = new HashSet<>();
 		addOffersButton.setVisible(false);
 		statusTextLabel.setText("0 items selected");
 		geHistoryTabWidgets = widgets;
@@ -126,7 +151,7 @@ public class GeHistoryTabPanel extends JPanel
 		SwingUtilities.invokeLater(() ->
 		{
 			geHistoryTabOffersPanel.removeAll();
-			List<GeHistoryTabOfferPanel> offerPanels = new ArrayList<>();
+			offerPanels.clear();
 			for (int i=0; i < offers.size();i++) {
 				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange));
 			}

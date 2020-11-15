@@ -180,7 +180,7 @@ public class FlippingPlugin extends Plugin
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
-		geHistoryTabPanel = new GeHistoryTabPanel();
+		geHistoryTabPanel = new GeHistoryTabPanel(this::addSelectedGeTabOffer);
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
@@ -1035,6 +1035,10 @@ public class FlippingPlugin extends Plugin
 				findFirst().
 				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
 		}
+	}
+
+	private void addSelectedGeTabOffer(OfferEvent selectedOffer) {
+
 	}
 
 	@Subscribe
