@@ -48,8 +48,7 @@ public class FastTabGroup extends MaterialTabGroup
 	/* A list of all the tabs contained in this group. */
 	private final List<MaterialTab> tabs = new ArrayList<>();
 	@Getter
-	private String previouslySelectedTab;
-	private String currentlySelectedTab;
+	private String lastSelectedTab;
 	private boolean currentlyShowingView = false;
 
 	public FastTabGroup(JPanel display)
@@ -86,8 +85,7 @@ public class FastTabGroup extends MaterialTabGroup
 			return false;
 		}
 		currentlyShowingView = false;
-		previouslySelectedTab = currentlySelectedTab;
-		currentlySelectedTab = selectedTab.getText();
+		lastSelectedTab = selectedTab.getText();
 		CardLayout cardLayout = (CardLayout) display.getLayout();
 		cardLayout.show(display, selectedTab.getText());
 
@@ -115,13 +113,14 @@ public class FastTabGroup extends MaterialTabGroup
 
 	public void revertToSafeDisplay() {
 		if (currentlyShowingView) {
+
 			selectPreviouslySelectedTab();
 		}
 	}
 
 	public void selectPreviouslySelectedTab() {
 		for (MaterialTab tab: tabs) {
-			if (tab.getText().equals(previouslySelectedTab)) {
+			if (tab.getText().equals(lastSelectedTab)) {
 				select(tab);
 				break;
 			}

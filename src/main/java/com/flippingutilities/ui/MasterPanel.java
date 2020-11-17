@@ -197,14 +197,6 @@ public class MasterPanel extends PluginPanel
 		return tabGroup;
 	}
 
-	public void selectFlippingTab() {
-		tabGroup.select(flippingTab);
-	}
-
-	public void selectStatisticsTab() {
-		tabGroup.select(statisticsTab);
-	}
-
 	public Set<String> getViewSelectorItems()
 	{
 		Set<String> items = new HashSet<>();
@@ -221,6 +213,10 @@ public class MasterPanel extends PluginPanel
 
 	public void showView(String name) {
 		tabGroup.showView(name);
+	}
+
+	public void selectPreviouslySelectedTab() {
+		tabGroup.selectPreviouslySelectedTab();
 	}
 
 	/**

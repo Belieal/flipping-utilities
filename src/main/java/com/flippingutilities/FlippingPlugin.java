@@ -1039,14 +1039,46 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public void addSelectedGeTabOffer(OfferEvent selectedOffer)
+
+	public void addSelectedGeTabOffers(List<OfferEvent> selectedOffers) {
+		for (OfferEvent offerEvent: selectedOffers) {
+			addSelectedGeTabOffer(offerEvent);
+		}
+		//have to add a delay before rebuilding as item limit and name may not have been set yet in addSelectedGeTabOffer due to
+		//clientThread being async and not offering a future on runnable submission...
+		executor.schedule(()-> {
+			flippingPanel.rebuild(getTradesForCurrentView());
+			statPanel.rebuild(getTradesForCurrentView());
+		},500, TimeUnit.MILLISECONDS);
+	}
+
+	private void addSelectedGeTabOffer(OfferEvent selectedOffer)
 	{
 		if (currentlyLoggedInAccount == null) {
 			return;
 		}
 		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == selectedOffer.getItemId()).findFirst();
 		if (flippingItem.isPresent()) {
+			flippingItem.get().updateHistory(selectedOffer);
+		}
+		else {
+			int tradeItemId = selectedOffer.getItemId();
+			FlippingItem item = new FlippingItem(tradeItemId, "", -1, currentlyLoggedInAccount);
+			item.setValidFlippingPanelItem(true);
+			item.updateHistory(selectedOffer);
+			accountCache.get(currentlyLoggedInAccount).getTrades().add(0, item);
 
+			//itemmanager can only be used on the client thread.
+			//i can't put everything in the runnable given to the client thread cause then it executes async and if there
+			//are multiple offers for the same flipping item that doesn't yet exist in trades list, it might create multiple
+			//of them.
+			clientThread.invokeLater(()-> {
+				String itemName = itemManager.getItemComposition(tradeItemId).getName();
+				ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+				int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+				item.setItemName(itemName);
+				item.setTotalGELimit(geLimit);
+			});
 		}
 	}
 
@@ -1086,9 +1118,10 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
+		//ge history interface closed, so the geHistoryTabPanel should no longer show
 		if (event.getScriptId() == 29)
 		{
-			masterPanel.selectFlippingTab();
+			masterPanel.selectPreviouslySelectedTab();
 		}
 
 		if (event.getScriptId() == 804)
@@ -1137,7 +1170,7 @@ public class FlippingPlugin extends Plugin
 		//if either ge interface or bank pin interface is loaded, hide the trade history tab panel again
 		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213)
 		{
-			masterPanel.selectFlippingTab();
+			masterPanel.selectPreviouslySelectedTab();
 		}
 
 		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.

@@ -85,8 +85,8 @@ public class HistoryManager
 
 	public void updateHistory(OfferEvent newOffer)
 	{
-		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came and several trades
-		//may have already happened in that slot, there is no point in updating ge properties or deleting previous offers for the trade.
+		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came or its slot,
+		//there is no point in updating ge properties or trying to delete previous offers for the trade.
 		if (newOffer.getSlot() != -1) {
 			updateGeProperties(newOffer);
 			deletePreviousOffersForTrade(newOffer);

@@ -40,7 +40,6 @@ public class GeHistoryTabOfferPanel extends JPanel
 		checkBox.setFocusPainted(false);
 		checkBoxPanel.add(checkBox, BorderLayout.CENTER);
 		checkBox.addItemListener(itemEvent -> {
-			System.out.println("am firing");
 			onCheckBoxChangeCallback.accept(offerId, itemEvent.getStateChange() == itemEvent.SELECTED);
 			lightCorrespondingWidgets(itemEvent.getStateChange() == itemEvent.SELECTED);
 		});

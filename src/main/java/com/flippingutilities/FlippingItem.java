@@ -54,7 +54,8 @@ public class FlippingItem
 
 	@SerializedName("name")
 	@Getter
-	private final String itemName;
+	@Setter
+	private String itemName;
 
 	@SerializedName("tGL")
 	@Getter

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -41,6 +42,7 @@ public class GeHistoryTabPanel extends JPanel
 	public JButton addOffersButton;
 	public Widget[] geHistoryTabWidgets;
 	public List<GeHistoryTabOfferPanel> offerPanels;
+	public List<List<OfferEvent>> matchingOffers;
 	FlippingPlugin plugin;
 	private static final int ORIGINAL_WIDGET_COLOR = 16750623;
 
@@ -97,13 +99,12 @@ public class GeHistoryTabPanel extends JPanel
 	}
 
 	private void addSelectedOffers() {
-		for (int id: selectedOfferIds) {
-			offerPanels.get(id).setAdded();
-			plugin.addSelectedGeTabOffer(offersFromHistoryTab.get(id));
-		}
-
-		selectedOfferIds.clear();
-		statusTextLabel.setText("0 items selected");
+		List<OfferEvent> selectedOffers = selectedOfferIds.stream().map(idx -> offersFromHistoryTab.get(idx)).collect(Collectors.toList());
+		plugin.addSelectedGeTabOffers(selectedOffers);
+		Set<Integer> tempSelectedOfferIds = new HashSet<>(selectedOfferIds);
+		rebuild(offersFromHistoryTab, matchingOffers, geHistoryTabWidgets);
+		tempSelectedOfferIds.forEach(idx -> offerPanels.get(idx).setAdded());
+		should have some other variable to keep track of selected offers in before rebuild
 	}
 
 	private JPanel createOfferContainer() {
@@ -148,10 +149,11 @@ public class GeHistoryTabPanel extends JPanel
 		{
 			Instant rebuildStart = Instant.now();
 			offersFromHistoryTab = offers;
+			this.matchingOffers = matchingOffers;
+			geHistoryTabWidgets = widgets;
 			selectedOfferIds = new HashSet<>();
 			addOffersButton.setVisible(false);
 			statusTextLabel.setText("0 items selected");
-			geHistoryTabWidgets = widgets;
 			geHistoryTabOffersPanel.removeAll();
 			offerPanels.clear();
 			for (int i=0; i < offers.size();i++) {
