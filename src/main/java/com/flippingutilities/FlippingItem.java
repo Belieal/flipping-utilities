@@ -329,4 +329,9 @@ public class FlippingItem
 		}
 		return profitTotal;
 	}
+
+	public List<OfferEvent> getOfferMatches(OfferEvent offerEvent, int limit)
+	{
+		return history.getOfferMatches(offerEvent, limit);
+	}
 }

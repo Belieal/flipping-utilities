@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import net.runelite.api.GrandExchangeOfferState;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
@@ -20,25 +21,29 @@ import net.runelite.client.ui.FontManager;
 public class GeHistoryTabOfferPanel extends JPanel
 {
 	private int offerId;
-	private BiConsumer<Integer, Boolean> onCheckBoxChangeCallback;
+	private Widget[] geHistoryTabWidgets;
+	private static final int ORIGINAL_WIDGET_COLOR = 16750623;
+	private JCheckBox checkBox;
+	private JPanel checkBoxPanel;
 
-
-	public GeHistoryTabOfferPanel(OfferEvent offer, List<OfferEvent> matchingOffers, int offerId, BiConsumer<Integer, Boolean> onCheckBoxChangeCallback)
+	public GeHistoryTabOfferPanel(OfferEvent offer, List<OfferEvent> matchingOffers, int offerId, BiConsumer<Integer, Boolean> onCheckBoxChangeCallback, Widget[] geHistoryTabWidgets)
 	{
 		this.offerId = offerId;
-		this.onCheckBoxChangeCallback = onCheckBoxChangeCallback;
+		this.geHistoryTabWidgets = geHistoryTabWidgets;
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		setBorder(new EmptyBorder(0,0,0,5));
-		JPanel checkBoxPanel = new JPanel(new BorderLayout());
+		setBorder(new EmptyBorder(0, 0, 0, 5));
+		checkBoxPanel = new JPanel(new BorderLayout());
 		checkBoxPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		JCheckBox checkBox = new JCheckBox();
+		checkBox = new JCheckBox();
 		checkBox.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		//checkBox.setBackground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		checkBox.setFocusPainted(false);
-		//checkBox.setEnabled(false);
 		checkBoxPanel.add(checkBox, BorderLayout.CENTER);
-		checkBox.addItemListener(itemEvent -> onCheckBoxChangeCallback.accept(offerId, itemEvent.getStateChange() == itemEvent.SELECTED));
+		checkBox.addItemListener(itemEvent -> {
+			System.out.println("am firing");
+			onCheckBoxChangeCallback.accept(offerId, itemEvent.getStateChange() == itemEvent.SELECTED);
+			lightCorrespondingWidgets(itemEvent.getStateChange() == itemEvent.SELECTED);
+		});
 		add(checkBoxPanel, BorderLayout.WEST);
 		add(createInfoPanel(offer, matchingOffers), BorderLayout.CENTER);
 	}
@@ -55,8 +60,6 @@ public class GeHistoryTabOfferPanel extends JPanel
 		itemNameLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		JPanel offerDetailsPanel = new JPanel(new DynamicGridLayout(3, 1, 0, 0));
-
-
 
 		JPanel statePanel = new JPanel(new BorderLayout());
 		JLabel leftStateLabel = new JLabel("State:");
@@ -89,7 +92,26 @@ public class GeHistoryTabOfferPanel extends JPanel
 		return infoPanel;
 	}
 
-	public void setAdded() {
-		//disable checkbox, make checkbox panel ge price
+	public void setAdded()
+	{
+		checkBox.setEnabled(false);
+		checkBox.setBackground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		checkBoxPanel.setBackground(ColorScheme.GRAND_EXCHANGE_PRICE);
+	}
+
+	private void lightCorrespondingWidgets(boolean shouldLight) {
+		int offset = offerId * 6;
+		if (shouldLight)
+		{
+			geHistoryTabWidgets[offset + 2].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
+			geHistoryTabWidgets[offset + 3].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
+			geHistoryTabWidgets[offset + 5].setTextColor(ColorScheme.GRAND_EXCHANGE_PRICE.getRGB());
+		}
+		else
+		{
+			geHistoryTabWidgets[offset + 2].setTextColor(ORIGINAL_WIDGET_COLOR);
+			geHistoryTabWidgets[offset + 3].setTextColor(ORIGINAL_WIDGET_COLOR);
+			geHistoryTabWidgets[offset + 5].setTextColor(ORIGINAL_WIDGET_COLOR);
+		}
 	}
 }

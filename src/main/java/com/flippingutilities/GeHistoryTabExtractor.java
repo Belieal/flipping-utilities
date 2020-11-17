@@ -84,40 +84,4 @@ public class GeHistoryTabExtractor
 			return GrandExchangeOfferState.SOLD;
 		}
 	}
-
-	//think about moving this to a more appropriate class. Perhaps its even time to make history a class now, instead of just
-	//a list of flipping items..
-	public static List<OfferEvent> findOfferMatches(OfferEvent offer, List<FlippingItem> history, int limit)
-	{
-		FlippingItem flippingItem = null;
-		List<OfferEvent> matches = new ArrayList<>();
-		for (FlippingItem item : history)
-		{
-			if (item.getItemId() == offer.getItemId())
-			{
-				flippingItem = item;
-				break;
-			}
-		}
-
-		int count = 0;
-		if (flippingItem != null)
-		{
-			List<OfferEvent> itemHistory = flippingItem.getHistory().getCompressedOfferEvents();
-			for (int i = itemHistory.size()-1;i > -1;i--)
-			{
-				OfferEvent pastOffer = itemHistory.get(i);
-				if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
-					&& offer.getState() == pastOffer.getState())
-				{
-					matches.add(pastOffer);
-					count ++;
-					if (count == limit) {
-						break;
-					}
-				}
-			}
-		}
-		return matches;
-	}
 }

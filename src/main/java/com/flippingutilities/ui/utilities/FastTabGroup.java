@@ -32,6 +32,7 @@ import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
@@ -42,10 +43,14 @@ import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 @Slf4j
 public class FastTabGroup extends MaterialTabGroup
 {
-	/* The panel on which the content tab's content will be displayed on. */
+	/* The panel on which the tab's content or the view will be displayed on. */
 	private final JPanel display;
 	/* A list of all the tabs contained in this group. */
 	private final List<MaterialTab> tabs = new ArrayList<>();
+	@Getter
+	private String previouslySelectedTab;
+	private String currentlySelectedTab;
+	private boolean currentlyShowingView = false;
 
 	public FastTabGroup(JPanel display)
 	{
@@ -62,6 +67,17 @@ public class FastTabGroup extends MaterialTabGroup
 		add(tab, BorderLayout.NORTH);
 	}
 
+	/**
+	 * A "view" is just a Jpanel. It just doesn't have a tab that can be selected by the user to display it. As such, a view
+	 * is displayed programatically when it needs to be. For example, the GeHistoryTabPanel is a "view" and doesn't have
+	 * a tab. It is displayed only when the user looks at their ge history.
+	 * @param panel the view to add to the main display panel
+	 * @param name the name of the view. This name is so that the view can be shown using it.
+	 */
+	public void addView(JPanel panel, String name) {
+		display.add(panel, name);
+	}
+
 	public boolean select(MaterialTab selectedTab)
 	{
 		// If the OnTabSelected returned false, exit the method to prevent tab switching
@@ -69,7 +85,9 @@ public class FastTabGroup extends MaterialTabGroup
 		{
 			return false;
 		}
-
+		currentlyShowingView = false;
+		previouslySelectedTab = currentlySelectedTab;
+		currentlySelectedTab = selectedTab.getText();
 		CardLayout cardLayout = (CardLayout) display.getLayout();
 		cardLayout.show(display, selectedTab.getText());
 
@@ -88,11 +106,25 @@ public class FastTabGroup extends MaterialTabGroup
 		tabs.forEach(tab-> tab.unselect());
 	}
 
-	//potential mem problem with this method
-	public void showPanel(JPanel panel) {
+	public void showView(String name) {
+		currentlyShowingView = true;
 		unselectAll();
-		display.add(panel, "temp");
 		CardLayout cardLayout = (CardLayout) display.getLayout();
-		cardLayout.show(display, "temp");
+		cardLayout.show(display, name);
+	}
+
+	public void revertToSafeDisplay() {
+		if (currentlyShowingView) {
+			selectPreviouslySelectedTab();
+		}
+	}
+
+	public void selectPreviouslySelectedTab() {
+		for (MaterialTab tab: tabs) {
+			if (tab.getText().equals(previouslySelectedTab)) {
+				select(tab);
+				break;
+			}
+		}
 	}
 }

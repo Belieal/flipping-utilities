@@ -215,7 +215,20 @@ public class MasterPanel extends PluginPanel
 		return items;
 	}
 
-	public void showPanel(JPanel panel) {
-		tabGroup.showPanel(panel);
+	public void addView(JPanel panel, String name) {
+		tabGroup.addView(panel, name);
+	}
+
+	public void showView(String name) {
+		tabGroup.showView(name);
+	}
+
+	/**
+	 * There are certain views that should not be viewable unless the user is logged in because they require the
+	 * currently logged in account. This method is used to revert back to a "safe" previously selected tab that is
+	 * safe to view when an account is logged out.
+	 */
+	public void revertToSafeDisplay() {
+		tabGroup.revertToSafeDisplay();
 	}
 }

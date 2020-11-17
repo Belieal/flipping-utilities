@@ -404,6 +404,35 @@ public class HistoryManager
 	}
 
 	/**
+	 * Gets offers that have the same quantity, price ea, and buy/sell state as the given offer. This is currently used
+	 * to see if there are any potential duplicates of an offer a user is trying to add manually from their GE history.
+	 * Since the offers scraped from the GE history tab don't have slot information, the slots are not compared here
+	 * to see if an offer is a match/duplicate.
+	 * @param offer offer that duplicates are being found for.
+	 * @parm limit max amount of potentially duplicate offers to find.
+	 * @return offers that could potentially be duplicates of the given offer event.
+	 */
+	public List<OfferEvent> getOfferMatches(OfferEvent offer, int limit) {
+		List<OfferEvent> matches = new ArrayList<>();
+		int count = 0;
+		//look from the back to get the N most recent matches where N = limit.
+		for (int i = compressedOfferEvents.size()-1;i > -1;i--)
+		{
+			OfferEvent pastOffer = compressedOfferEvents.get(i);
+			if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
+				&& offer.getState() == pastOffer.getState())
+			{
+				matches.add(pastOffer);
+				count ++;
+				if (count == limit) {
+					break;
+				}
+			}
+		}
+		return matches;
+	}
+
+	/**
 	 * Creates flips out of a list of offers. It does this by first pairing margin check offers together and then
 	 * pairing regular offers together.
 	 *

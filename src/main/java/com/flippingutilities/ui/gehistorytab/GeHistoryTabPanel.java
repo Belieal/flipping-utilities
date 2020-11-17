@@ -1,5 +1,6 @@
 package com.flippingutilities.ui.gehistorytab;
 
+import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.OfferEvent;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
@@ -7,11 +8,12 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -19,6 +21,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -28,6 +31,7 @@ import net.runelite.client.ui.FontManager;
  * trades they did while not using runelite (those trades will be in the GE trade history tab, assuming they are complete
  * and not too long ago).
  */
+@Slf4j
 public class GeHistoryTabPanel extends JPanel
 {
 	public JPanel geHistoryTabOffersPanel;
@@ -37,11 +41,11 @@ public class GeHistoryTabPanel extends JPanel
 	public JButton addOffersButton;
 	public Widget[] geHistoryTabWidgets;
 	public List<GeHistoryTabOfferPanel> offerPanels;
-	Consumer<OfferEvent> addOffersCallback;
+	FlippingPlugin plugin;
 	private static final int ORIGINAL_WIDGET_COLOR = 16750623;
 
-	public GeHistoryTabPanel(Consumer<OfferEvent> addOffersCallback) {
-		this.addOffersCallback = addOffersCallback;
+	public GeHistoryTabPanel(FlippingPlugin plugin) {
+		this.plugin = plugin;
 		this.offerPanels = new ArrayList<>();
 		this.geHistoryTabOffersPanel = new JPanel();
 		geHistoryTabOffersPanel.setBorder((new EmptyBorder(5, 6, 0, 6)));
@@ -57,8 +61,6 @@ public class GeHistoryTabPanel extends JPanel
 		titlePanel.setBorder(new EmptyBorder(5,5,10,5));
 		JLabel titleText = new JLabel("Grand Exchange History", SwingConstants.CENTER);
 		titleText.setFont(new Font("Verdana", Font.BOLD, 15));
-		titlePanel.add(titleText, BorderLayout.CENTER);
-
 
 		JPanel statusPanel = new JPanel(new BorderLayout(0, 5));
 		statusPanel.setBorder(new EmptyBorder(7,0,0,0));
@@ -81,27 +83,27 @@ public class GeHistoryTabPanel extends JPanel
 			{
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
-					flippingItem.setValidFlippingPanelItem(false);
-					onDeleteCallback.run();
+					addSelectedOffers();
 				}
 			}
 		});
 
-
 		statusPanel.add(addOffersButton, BorderLayout.CENTER);
 		statusPanel.add(statusTextLabel, BorderLayout.NORTH);
 
+		titlePanel.add(titleText, BorderLayout.CENTER);
 		titlePanel.add(statusPanel, BorderLayout.SOUTH);
  		return titlePanel;
 	}
 
-	private void onAddOffersButtonClick() {
+	private void addSelectedOffers() {
 		for (int id: selectedOfferIds) {
 			offerPanels.get(id).setAdded();
-			addOffersCallback.accept(offersFromHistoryTab.get(id));
+			plugin.addSelectedGeTabOffer(offersFromHistoryTab.get(id));
 		}
 
 		selectedOfferIds.clear();
+		statusTextLabel.setText("0 items selected");
 	}
 
 	private JPanel createOfferContainer() {
@@ -142,22 +144,23 @@ public class GeHistoryTabPanel extends JPanel
 	}
 
 	public void rebuild(List<OfferEvent> offers, List<List<OfferEvent>> matchingOffers, Widget[] widgets) {
-		offersFromHistoryTab = offers;
-		selectedOfferIds = new HashSet<>();
-		addOffersButton.setVisible(false);
-		statusTextLabel.setText("0 items selected");
-		geHistoryTabWidgets = widgets;
-
 		SwingUtilities.invokeLater(() ->
 		{
+			Instant rebuildStart = Instant.now();
+			offersFromHistoryTab = offers;
+			selectedOfferIds = new HashSet<>();
+			addOffersButton.setVisible(false);
+			statusTextLabel.setText("0 items selected");
+			geHistoryTabWidgets = widgets;
 			geHistoryTabOffersPanel.removeAll();
 			offerPanels.clear();
 			for (int i=0; i < offers.size();i++) {
-				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange));
+				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange, geHistoryTabWidgets));
 			}
 			UIUtilities.stackPanelsVertically((List) offerPanels, geHistoryTabOffersPanel, 4);
 			revalidate();
 			repaint();
+			log.info("GeHistoryTabPanel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 }

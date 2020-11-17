@@ -180,8 +180,9 @@ public class FlippingPlugin extends Plugin
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
-		geHistoryTabPanel = new GeHistoryTabPanel(this::addSelectedGeTabOffer);
+		geHistoryTabPanel = new GeHistoryTabPanel(this);
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
+		masterPanel.addView(geHistoryTabPanel, "ge history");
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -365,6 +366,7 @@ public class FlippingPlugin extends Plugin
 		}
 		slotTimersTask = null;
 		currentlyLoggedInAccount = null;
+		masterPanel.revertToSafeDisplay();
 	}
 
 	/**
@@ -414,7 +416,7 @@ public class FlippingPlugin extends Plugin
 
 		accountCache.keySet().forEach(displayName -> masterPanel.getAccountSelector().addItem(displayName));
 
-		//sets the accoun            selector dropdown to visible or not depending on whether the config option has been
+		//sets the account selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
@@ -1037,8 +1039,25 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	private void addSelectedGeTabOffer(OfferEvent selectedOffer) {
+	public void addSelectedGeTabOffer(OfferEvent selectedOffer)
+	{
+		if (currentlyLoggedInAccount == null) {
+			return;
+		}
+		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == selectedOffer.getItemId()).findFirst();
+		if (flippingItem.isPresent()) {
 
+		}
+	}
+
+	private List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
+	{
+		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == offerEvent.getItemId()).findFirst();
+		if (!flippingItem.isPresent())
+		{
+			return new ArrayList<>();
+		}
+		return flippingItem.get().getOfferMatches(offerEvent, limit);
 	}
 
 	@Subscribe
@@ -1108,10 +1127,10 @@ public class FlippingPlugin extends Plugin
 				offerEvents.forEach(o -> {
 					o.setItemName(itemManager.getItemComposition(o.getItemId()).getName());
 					o.setMadeBy(currentlyLoggedInAccount);
-					matchingOffers.add(GeHistoryTabExtractor.findOfferMatches(o, accountCache.get(currentlyLoggedInAccount).getTrades(), 5));
+					matchingOffers.add(findOfferMatches(o, 5));
 				});
 				geHistoryTabPanel.rebuild(offerEvents, matchingOffers, geHistoryTabWidgets);
-				masterPanel.showPanel(geHistoryTabPanel);
+				masterPanel.showView("ge history");
 			});
 		}
 
