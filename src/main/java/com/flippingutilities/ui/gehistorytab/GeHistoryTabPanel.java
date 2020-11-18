@@ -153,14 +153,15 @@ public class GeHistoryTabPanel extends JPanel
 			offersFromHistoryTab = offers;
 			this.matchingOffers = matchingOffers;
 			geHistoryTabWidgets = widgets;
+			selectedOfferIds.clear();
 			if (!keepHighlightedPanels) {
 				highlightedPanels.clear();
 			}
+			offerPanels.clear();
 			addOffersButton.setVisible(false);
 			statusTextLabel.setText("0 items selected");
-			selectedOfferIds.clear();
 			geHistoryTabOffersPanel.removeAll();
-			offerPanels.clear();
+
 			for (int i=0; i < offers.size();i++) {
 				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange, geHistoryTabWidgets));
 			}
