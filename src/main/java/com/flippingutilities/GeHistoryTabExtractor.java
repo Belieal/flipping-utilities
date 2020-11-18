@@ -29,7 +29,7 @@ public class GeHistoryTabExtractor
 
 	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets)
 	{
-		//set slot to -1 so we can handle it appropriately in the history manager.
+		//set slot to -1 so we can handle it appropriately in the history manager when the offer is added.
 		int slot = -1;
 		GrandExchangeOfferState offerState = getState(widgets.get(2));
 		int quantity = widgets.get(4).getItemQuantity();

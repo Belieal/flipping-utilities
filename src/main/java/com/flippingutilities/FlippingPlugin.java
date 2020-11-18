@@ -1150,9 +1150,11 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
+		//ge history widget loaded
+		//GE_HISTORY_TAB_WIDGET_ID does not load when history tab is opened from the banker right click. It only loads, when
+		//the "history" button is clicked for the ge interface. However, 383 loads in both situations.
 		if (event.getGroupId() == 383)
 		{
-
 			clientThread.invokeLater(() -> {
 				Widget[] geHistoryTabWidgets = client.getWidget(383, 3).getDynamicChildren();
 				List<OfferEvent> offerEvents = GeHistoryTabExtractor.convertWidgetsToOfferEvents(geHistoryTabWidgets);
@@ -1173,7 +1175,7 @@ public class FlippingPlugin extends Plugin
 			masterPanel.selectPreviouslySelectedTab();
 		}
 
-		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
+		//The player opens the trade history tab from the ge interface. Necessary since the back button isn't considered hidden here.
 		//this (id 149 and not id 383) will also trigger when the player just exits out of the ge interface offer window screen, which is good
 		//as then the highlight won't linger in that case.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
