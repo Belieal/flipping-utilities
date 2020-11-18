@@ -38,6 +38,7 @@ public class GeHistoryTabPanel extends JPanel
 	public JPanel geHistoryTabOffersPanel;
 	public JLabel statusTextLabel;
 	public Set<Integer> selectedOfferIds;
+	public Set<Integer> highlightedPanels;
 	public List<OfferEvent> offersFromHistoryTab;
 	public JButton addOffersButton;
 	public Widget[] geHistoryTabWidgets;
@@ -50,6 +51,8 @@ public class GeHistoryTabPanel extends JPanel
 		this.plugin = plugin;
 		this.offerPanels = new ArrayList<>();
 		this.geHistoryTabOffersPanel = new JPanel();
+		this.selectedOfferIds = new HashSet<>();
+		this.highlightedPanels = new HashSet<>();
 		geHistoryTabOffersPanel.setBorder((new EmptyBorder(5, 6, 0, 6)));
 		geHistoryTabOffersPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		setLayout(new BorderLayout());
@@ -100,11 +103,10 @@ public class GeHistoryTabPanel extends JPanel
 
 	private void addSelectedOffers() {
 		List<OfferEvent> selectedOffers = selectedOfferIds.stream().map(idx -> offersFromHistoryTab.get(idx)).collect(Collectors.toList());
+		highlightedPanels.addAll(selectedOfferIds);
 		plugin.addSelectedGeTabOffers(selectedOffers);
-		Set<Integer> tempSelectedOfferIds = new HashSet<>(selectedOfferIds);
-		rebuild(offersFromHistoryTab, matchingOffers, geHistoryTabWidgets);
-		tempSelectedOfferIds.forEach(idx -> offerPanels.get(idx).setAdded());
-		should have some other variable to keep track of selected offers in before rebuild
+		matchingOffers = offersFromHistoryTab.stream().map(o -> plugin.findOfferMatches(o,5)).collect(Collectors.toList());
+		rebuild(offersFromHistoryTab, matchingOffers, geHistoryTabWidgets, true);
 	}
 
 	private JPanel createOfferContainer() {
@@ -144,22 +146,26 @@ public class GeHistoryTabPanel extends JPanel
 		addOffersButton.setVisible(selectedOfferIds.size() > 0);
 	}
 
-	public void rebuild(List<OfferEvent> offers, List<List<OfferEvent>> matchingOffers, Widget[] widgets) {
+	public void rebuild(List<OfferEvent> offers, List<List<OfferEvent>> matchingOffers, Widget[] widgets, boolean keepHighlightedPanels) {
 		SwingUtilities.invokeLater(() ->
 		{
 			Instant rebuildStart = Instant.now();
 			offersFromHistoryTab = offers;
 			this.matchingOffers = matchingOffers;
 			geHistoryTabWidgets = widgets;
-			selectedOfferIds = new HashSet<>();
+			if (!keepHighlightedPanels) {
+				highlightedPanels.clear();
+			}
 			addOffersButton.setVisible(false);
 			statusTextLabel.setText("0 items selected");
+			selectedOfferIds.clear();
 			geHistoryTabOffersPanel.removeAll();
 			offerPanels.clear();
 			for (int i=0; i < offers.size();i++) {
 				offerPanels.add(new GeHistoryTabOfferPanel(offers.get(i),matchingOffers.get(i), i, this::onCheckBoxChange, geHistoryTabWidgets));
 			}
 			UIUtilities.stackPanelsVertically((List) offerPanels, geHistoryTabOffersPanel, 4);
+			highlightedPanels.forEach(idx -> offerPanels.get(idx).setAdded());
 			revalidate();
 			repaint();
 			log.info("GeHistoryTabPanel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());

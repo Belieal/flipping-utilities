@@ -1045,7 +1045,7 @@ public class FlippingPlugin extends Plugin
 			addSelectedGeTabOffer(offerEvent);
 		}
 		//have to add a delay before rebuilding as item limit and name may not have been set yet in addSelectedGeTabOffer due to
-		//clientThread being async and not offering a future on runnable submission...
+		//clientThread being async and not offering a future to wait on when you submit a runnable...
 		executor.schedule(()-> {
 			flippingPanel.rebuild(getTradesForCurrentView());
 			statPanel.rebuild(getTradesForCurrentView());
@@ -1082,7 +1082,7 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	private List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
+	public List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
 	{
 		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == offerEvent.getItemId()).findFirst();
 		if (!flippingItem.isPresent())
@@ -1162,7 +1162,7 @@ public class FlippingPlugin extends Plugin
 					o.setMadeBy(currentlyLoggedInAccount);
 					matchingOffers.add(findOfferMatches(o, 5));
 				});
-				geHistoryTabPanel.rebuild(offerEvents, matchingOffers, geHistoryTabWidgets);
+				geHistoryTabPanel.rebuild(offerEvents, matchingOffers, geHistoryTabWidgets, false);
 				masterPanel.showView("ge history");
 			});
 		}
