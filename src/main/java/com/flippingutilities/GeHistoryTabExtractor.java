@@ -19,7 +19,6 @@ import net.runelite.api.widgets.Widget;
 public class GeHistoryTabExtractor
 {
 	private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
-	private static FlippingPlugin plugin;
 
 	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets)
 	{
