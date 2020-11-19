@@ -28,6 +28,7 @@ package com.flippingutilities;
 
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.SettingsPanel;
+import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
@@ -171,13 +172,17 @@ public class FlippingPlugin extends Plugin
 
 	private int loginTickCount;
 
+	private GeHistoryTabPanel geHistoryTabPanel;
+
 	@Override
 	protected void startUp()
 	{
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
+		geHistoryTabPanel = new GeHistoryTabPanel(this);
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
+		masterPanel.addView(geHistoryTabPanel, "ge history");
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
 			.icon(ImageUtil.getResourceStreamFromClass(getClass(), "/graph_icon_green.png"))
@@ -361,6 +366,7 @@ public class FlippingPlugin extends Plugin
 		}
 		slotTimersTask = null;
 		currentlyLoggedInAccount = null;
+		masterPanel.revertToSafeDisplay();
 	}
 
 	/**
@@ -410,7 +416,7 @@ public class FlippingPlugin extends Plugin
 
 		accountCache.keySet().forEach(displayName -> masterPanel.getAccountSelector().addItem(displayName));
 
-		//sets the accoun            selector dropdown to visible or not depending on whether the config option has been
+		//sets the account selector dropdown to visible or not depending on whether the config option has been
 		//selected and there are > 1 accounts.
 		if (accountCache.keySet().size() > 1)
 		{
@@ -446,7 +452,8 @@ public class FlippingPlugin extends Plugin
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
 			}
-			catch (Exception e) {
+			catch (Exception e)
+			{
 				log.info("unknown exception in repeating tasks, error = {}, will cancel and restart them after 5 sec delay", e);
 				generalRepeatingTasks.cancel(true);
 				generalRepeatingTasks = setupRepeatingTasks(5000);
@@ -645,7 +652,8 @@ public class FlippingPlugin extends Plugin
 				item.updateMargin(newOffer);
 			}
 			//if a user buys/sells an item they previously deleted from the flipping panel, show the panel again.
-			if (!item.getValidFlippingPanelItem()) {
+			if (!item.getValidFlippingPanelItem())
+			{
 				item.setValidFlippingPanelItem(true);
 				trades.remove(item);
 				trades.add(0, item);
@@ -743,17 +751,6 @@ public class FlippingPlugin extends Plugin
 	FlippingConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(FlippingConfig.class);
-	}
-
-	@Subscribe
-	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
-	{
-		Widget widget = event.getWidget();
-		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
-		{
-			flippingPanel.dehighlightItem();
-		}
 	}
 
 	//TODO: Refactor this with a search on the search bar
@@ -1042,6 +1039,59 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+
+	public void addSelectedGeTabOffers(List<OfferEvent> selectedOffers) {
+		for (OfferEvent offerEvent: selectedOffers) {
+			addSelectedGeTabOffer(offerEvent);
+		}
+		//have to add a delay before rebuilding as item limit and name may not have been set yet in addSelectedGeTabOffer due to
+		//clientThread being async and not offering a future to wait on when you submit a runnable...
+		executor.schedule(()-> {
+			flippingPanel.rebuild(getTradesForCurrentView());
+			statPanel.rebuild(getTradesForCurrentView());
+		},500, TimeUnit.MILLISECONDS);
+	}
+
+	private void addSelectedGeTabOffer(OfferEvent selectedOffer)
+	{
+		if (currentlyLoggedInAccount == null) {
+			return;
+		}
+		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == selectedOffer.getItemId()).findFirst();
+		if (flippingItem.isPresent()) {
+			flippingItem.get().updateHistory(selectedOffer);
+		}
+		else {
+			int tradeItemId = selectedOffer.getItemId();
+			FlippingItem item = new FlippingItem(tradeItemId, "", -1, currentlyLoggedInAccount);
+			item.setValidFlippingPanelItem(true);
+			item.updateHistory(selectedOffer);
+			accountCache.get(currentlyLoggedInAccount).getTrades().add(0, item);
+
+			//itemmanager can only be used on the client thread.
+			//i can't put everything in the runnable given to the client thread cause then it executes async and if there
+			//are multiple offers for the same flipping item that doesn't yet exist in trades list, it might create multiple
+			//of them.
+			clientThread.invokeLater(()-> {
+				String itemName = itemManager.getItemComposition(tradeItemId).getName();
+				ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+				int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+				item.setItemName(itemName);
+				item.setTotalGELimit(geLimit);
+			});
+		}
+	}
+
+	public List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
+	{
+		Optional<FlippingItem> flippingItem = accountCache.get(currentlyLoggedInAccount).getTrades().stream().filter(item -> item.getItemId() == offerEvent.getItemId()).findFirst();
+		if (!flippingItem.isPresent())
+		{
+			return new ArrayList<>();
+		}
+		return flippingItem.get().getOfferMatches(offerEvent, limit);
+	}
+
 	@Subscribe
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
@@ -1068,6 +1118,12 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
+		//ge history interface closed, so the geHistoryTabPanel should no longer show
+		if (event.getScriptId() == 29)
+		{
+			masterPanel.selectPreviouslySelectedTab();
+		}
+
 		if (event.getScriptId() == 804)
 		{
 			//Fired after every GE offer slot redraw
@@ -1081,9 +1137,47 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
+	{
+		Widget widget = event.getWidget();
+		// If the back button is no longer visible, we know we aren't in the offer setup.
+		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
+		{
+			flippingPanel.dehighlightItem();
+		}
+	}
+
+	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		//The player opens the trade history tab. Necessary since the back button isn't considered hidden here.
+		//ge history widget loaded
+		//GE_HISTORY_TAB_WIDGET_ID does not load when history tab is opened from the banker right click. It only loads, when
+		//the "history" button is clicked for the ge interface. However, 383 loads in both situations.
+		if (event.getGroupId() == 383)
+		{
+			clientThread.invokeLater(() -> {
+				Widget[] geHistoryTabWidgets = client.getWidget(383, 3).getDynamicChildren();
+				List<OfferEvent> offerEvents = GeHistoryTabExtractor.convertWidgetsToOfferEvents(geHistoryTabWidgets);
+				List<List<OfferEvent>> matchingOffers = new ArrayList<>();
+				offerEvents.forEach(o -> {
+					o.setItemName(itemManager.getItemComposition(o.getItemId()).getName());
+					o.setMadeBy(currentlyLoggedInAccount);
+					matchingOffers.add(findOfferMatches(o, 5));
+				});
+				geHistoryTabPanel.rebuild(offerEvents, matchingOffers, geHistoryTabWidgets, false);
+				masterPanel.showView("ge history");
+			});
+		}
+
+		//if either ge interface or bank pin interface is loaded, hide the trade history tab panel again
+		if (event.getGroupId() == WidgetID.GRAND_EXCHANGE_GROUP_ID || event.getGroupId() == 213)
+		{
+			masterPanel.selectPreviouslySelectedTab();
+		}
+
+		//The player opens the trade history tab from the ge interface. Necessary since the back button isn't considered hidden here.
+		//this (id 149 and not id 383) will also trigger when the player just exits out of the ge interface offer window screen, which is good
+		//as then the highlight won't linger in that case.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
 			flippingPanel.dehighlightItem();

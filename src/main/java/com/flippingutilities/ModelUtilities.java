@@ -34,4 +34,18 @@ public class ModelUtilities
 		}
 		return subLists;
 	}
+
+	/**
+	 * Splits array into list containing lists of chunk size. Guava and apache commons have this functionality but
+	 * i didn't want to bring in a dependency and increase plugin size just for this method.
+	 * @param <T>
+	 * @return
+	 */
+	public static <T> List<List<T>> splitListIntoChunks(List<T> list, int chunkSize) {
+		List<List<T>> chunks = new ArrayList<>();
+		for (int i = 0;i< list.size();i+=chunkSize) {
+			chunks.add(list.subList(i,Math.min(list.size(),i + chunkSize)));
+		}
+		return chunks;
+	}
 }

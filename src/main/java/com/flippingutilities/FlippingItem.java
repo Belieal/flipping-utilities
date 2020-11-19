@@ -54,7 +54,8 @@ public class FlippingItem
 
 	@SerializedName("name")
 	@Getter
-	private final String itemName;
+	@Setter
+	private String itemName;
 
 	@SerializedName("tGL")
 	@Getter
@@ -328,5 +329,10 @@ public class FlippingItem
 			profitTotal -= profitEach;
 		}
 		return profitTotal;
+	}
+
+	public List<OfferEvent> getOfferMatches(OfferEvent offerEvent, int limit)
+	{
+		return history.getOfferMatches(offerEvent, limit);
 	}
 }

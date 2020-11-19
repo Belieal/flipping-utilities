@@ -216,7 +216,7 @@ public class StatItemPanel extends JPanel
 			panels.add(offerPaginator);
 			panels.addAll(offerPanels);
 			allOffersPanel.removeAll();
-			UIUtilities.stackPanelsVertically(panels, allOffersPanel);
+			UIUtilities.stackPanelsVertically(panels, allOffersPanel,0);
 			repaint();
 			revalidate();
 		});
@@ -230,7 +230,7 @@ public class StatItemPanel extends JPanel
 			panels.add(flipPaginator);
 			panels.addAll(flipPanels);
 			allFlipsPanel.removeAll();
-			UIUtilities.stackPanelsVertically(panels, allFlipsPanel);
+			UIUtilities.stackPanelsVertically(panels, allFlipsPanel,0);
 			repaint();
 			revalidate();
 		});

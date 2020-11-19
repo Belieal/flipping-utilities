@@ -28,6 +28,7 @@ package com.flippingutilities;
 
 
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.internal.$Gson$Preconditions;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.AllArgsConstructor;
@@ -80,6 +81,8 @@ public class OfferEvent
 	@SerializedName("mB")
 	private String madeBy;
 	private transient boolean beforeLogin;
+	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far.
+	private transient String itemName;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -156,7 +159,8 @@ public class OfferEvent
 			totalQuantityInTrade,
 			validOfferEvent,
 			madeBy,
-			beforeLogin);
+			beforeLogin,
+			itemName);
 	}
 
 	public boolean equals(Object other)
@@ -219,7 +223,8 @@ public class OfferEvent
 			offer.getTotalQuantity(),
 			true,
 			null,
-			false);
+			false,
+			null);
 	}
 
 	/**

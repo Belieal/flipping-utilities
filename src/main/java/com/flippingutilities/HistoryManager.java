@@ -85,8 +85,13 @@ public class HistoryManager
 
 	public void updateHistory(OfferEvent newOffer)
 	{
-		updateGeProperties(newOffer);
-		deletePreviousOffersForTrade(newOffer);
+		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came or its slot,
+		//there is no point in updating ge properties or trying to delete previous offers for the trade.
+		if (newOffer.getSlot() != -1) {
+			updateGeProperties(newOffer);
+			deletePreviousOffersForTrade(newOffer);
+		}
+
 		compressedOfferEvents.add(newOffer);
 	}
 
@@ -396,6 +401,35 @@ public class HistoryManager
 		Collections.reverse(flips);
 
 		return flips;
+	}
+
+	/**
+	 * Gets offers that have the same quantity, price ea, and buy/sell state as the given offer. This is currently used
+	 * to see if there are any potential duplicates of an offer a user is trying to add manually from their GE history.
+	 * Since the offers scraped from the GE history tab don't have slot information, the slots are not compared here
+	 * to see if an offer is a match/duplicate.
+	 * @param offer offer that duplicates are being found for.
+	 * @parm limit max amount of potentially duplicate offers to find.
+	 * @return offers that could potentially be duplicates of the given offer event.
+	 */
+	public List<OfferEvent> getOfferMatches(OfferEvent offer, int limit) {
+		List<OfferEvent> matches = new ArrayList<>();
+		int count = 0;
+		//look from the back to get the N most recent matches where N = limit.
+		for (int i = compressedOfferEvents.size()-1;i > -1;i--)
+		{
+			OfferEvent pastOffer = compressedOfferEvents.get(i);
+			if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
+				&& offer.getState() == pastOffer.getState())
+			{
+				matches.add(pastOffer);
+				count ++;
+				if (count == limit) {
+					break;
+				}
+			}
+		}
+		return matches;
 	}
 
 	/**

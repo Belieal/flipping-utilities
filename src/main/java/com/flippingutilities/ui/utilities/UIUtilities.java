@@ -464,14 +464,14 @@ public class UIUtilities
 		return modal;
 	}
 
-	public static JPanel stackPanelsVertically(List<JPanel> panels) {
+	public static JPanel stackPanelsVertically(List<JPanel> panels, int gap) {
 		JPanel mainPanel = new JPanel();
-		stackPanelsVertically(panels, mainPanel);
+		stackPanelsVertically(panels, mainPanel, gap);
 		return mainPanel;
 	}
 
-
-	public static void stackPanelsVertically(List<JPanel> panels, JPanel mainPanel)
+	//make this take a supplier to supply it with the desired margin wrapper.
+	public static void stackPanelsVertically(List<JPanel> panels, JPanel mainPanel, int vGap)
 	{
 		GridBagConstraints constraints = new GridBagConstraints();
 		mainPanel.setLayout(new GridBagLayout());
@@ -488,6 +488,7 @@ public class UIUtilities
 			{
 				JPanel marginWrapper = new JPanel(new BorderLayout());
 				marginWrapper.add(panel, BorderLayout.NORTH);
+				marginWrapper.setBorder(new EmptyBorder(vGap,0,0,0));
 				mainPanel.add(marginWrapper, constraints);
 			}
 			else
