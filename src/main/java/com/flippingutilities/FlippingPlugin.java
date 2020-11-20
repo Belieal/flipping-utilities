@@ -649,7 +649,6 @@ public class FlippingPlugin extends Plugin
 			{
 				trades.remove(item);
 				trades.add(0, item);
-				item.updateMargin(newOffer);
 			}
 			//if a user buys/sells an item they previously deleted from the flipping panel, show the panel again.
 			if (!item.getValidFlippingPanelItem())
@@ -660,7 +659,7 @@ public class FlippingPlugin extends Plugin
 			}
 
 			item.updateHistory(newOffer);
-			item.updateLatestTimes(newOffer);
+			item.updateLatestProperties(newOffer);
 		}
 		else
 		{
@@ -684,15 +683,10 @@ public class FlippingPlugin extends Plugin
 		ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 		int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
-		FlippingItem flippingItem = new FlippingItem(tradeItemId, itemName, geLimit, currentlyLoggedInAccount);
+		FlippingItem flippingItem = new FlippingItem(itemName, geLimit, currentlyLoggedInAccount);
 		flippingItem.setValidFlippingPanelItem(true);
-
-		if (newOffer.isMarginCheck())
-		{
-			flippingItem.updateMargin(newOffer);
-		}
 		flippingItem.updateHistory(newOffer);
-		flippingItem.updateLatestTimes(newOffer);
+		flippingItem.updateLatestProperties(newOffer);
 
 		tradesList.add(0, flippingItem);
 	}
@@ -1063,8 +1057,9 @@ public class FlippingPlugin extends Plugin
 		}
 		else {
 			int tradeItemId = selectedOffer.getItemId();
-			FlippingItem item = new FlippingItem(tradeItemId, "", -1, currentlyLoggedInAccount);
+			FlippingItem item = new FlippingItem("", -1, currentlyLoggedInAccount);
 			item.setValidFlippingPanelItem(true);
+			item.updateLatestProperties(selectedOffer);
 			item.updateHistory(selectedOffer);
 			accountCache.get(currentlyLoggedInAccount).getTrades().add(0, item);
 
@@ -1288,25 +1283,25 @@ public class FlippingPlugin extends Plugin
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getMarginCheckBuyPrice() == 0)
+					if (selectedItem == null || selectedItem.getLatestMarginCheckBuyPrice() == 0)
 					{
 						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.update("setBuyPrice", selectedItem.getMarginCheckBuyPrice());
+						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckBuyPrice());
 					}
 				}
 				else if (offerText.equals("Sell offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getMarginCheckSellPrice() == 0)
+					if (selectedItem == null || selectedItem.getLatestMarginCheckSellPrice() == 0)
 					{
 						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.update("setSellPrice", selectedItem.getMarginCheckSellPrice());
+						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckSellPrice());
 					}
 				}
 			}

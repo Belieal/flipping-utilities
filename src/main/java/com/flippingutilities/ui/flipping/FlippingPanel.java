@@ -28,11 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.HistoryManager;
 import com.flippingutilities.ui.utilities.Paginator;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_LEFT;
-import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_RIGHT;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -40,10 +36,8 @@ import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
@@ -55,7 +49,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -359,17 +352,17 @@ public class FlippingPanel extends JPanel
 					{
 						return -1;
 					}
-					if ((item1.getMarginCheckBuyPrice() != 0 && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuyPrice() != 0 && item1.getLatestMarginCheckSellPrice() != 0) && (item2.getLatestMarginCheckSellPrice() == 0 || item2.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return -1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() != 0 && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuyPrice() != 0 && item2.getLatestMarginCheckSellPrice() != 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return 1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() == 0 || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuyPrice() == 0 || item2.getLatestMarginCheckSellPrice() == 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return 0;
 					}
@@ -381,26 +374,26 @@ public class FlippingPanel extends JPanel
 				break;
 			case "roi":
 				result.sort((item1, item2) -> {
-					if ((item1.getMarginCheckBuyPrice() != 0 && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuyPrice() != 0 && item1.getLatestMarginCheckSellPrice() != 0) && (item2.getLatestMarginCheckSellPrice() == 0 || item2.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return -1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() != 0 && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuyPrice() != 0 && item2.getLatestMarginCheckSellPrice() != 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return 1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() == 0 || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuyPrice() == 0 || item2.getLatestMarginCheckSellPrice() == 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
 					{
 						return 0;
 					}
 
-					int item1ProfitEach = item1.getMarginCheckSellPrice() - item1.getMarginCheckBuyPrice();
-					int item2ProfitEach = item2.getMarginCheckSellPrice() - item2.getMarginCheckBuyPrice();
+					int item1ProfitEach = item1.getLatestMarginCheckSellPrice() - item1.getLatestMarginCheckBuyPrice();
+					int item2ProfitEach = item2.getLatestMarginCheckSellPrice() - item2.getLatestMarginCheckBuyPrice();
 
-					float item1roi = (float) item1ProfitEach / item1.getMarginCheckBuyPrice() * 100;
-					float item2roi = (float) item2ProfitEach / item2.getMarginCheckBuyPrice() * 100;
+					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuyPrice() * 100;
+					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuyPrice() * 100;
 
 					return Float.compare(item2roi, item1roi);
 				});

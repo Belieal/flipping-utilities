@@ -257,9 +257,6 @@ public class TradePersister
 			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 			item.setTotalGELimit(geLimit);
 
-			if (item.getLatestActivityTime() == null) {
-				item.setLatestActivityTime(Instant.now());
-			}
 			//when this change was made the field will not exist and will be null
 			if (item.getValidFlippingPanelItem() == null) {
 				item.setValidFlippingPanelItem(true);

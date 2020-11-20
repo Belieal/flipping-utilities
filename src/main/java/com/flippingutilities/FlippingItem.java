@@ -34,6 +34,7 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.graalvm.compiler.nodes.calc.IntegerDivRemNode;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
@@ -48,10 +49,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class FlippingItem
 {
-	@SerializedName("id")
-	@Getter
-	private final int itemId;
-
 	@SerializedName("name")
 	@Getter
 	@Setter
@@ -61,36 +58,6 @@ public class FlippingItem
 	@Getter
 	@Setter
 	private int totalGELimit;
-
-	@SerializedName("mCBP")
-	@Getter
-	private int marginCheckBuyPrice;
-
-	@SerializedName("mCSP")
-	@Getter
-	private int marginCheckSellPrice;
-
-	@SerializedName("mCBT")
-	@Getter
-	private Instant marginCheckBuyTime;
-
-	@SerializedName("mCST")
-	@Getter
-	private Instant marginCheckSellTime;
-
-	@SerializedName("lBT")
-	@Getter
-	private Instant latestBuyTime;
-
-	@SerializedName("lST")
-	@Getter
-	private Instant latestSellTime;
-
-	//An activity is described as a completed offer event.
-	@SerializedName("lAT")
-	@Getter
-	@Setter
-	private Instant latestActivityTime;
 
 	@SerializedName("h")
 	@Getter
@@ -111,13 +78,28 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
+	private transient int latestMarginCheckBuyPrice;
+
+	private transient int latestMarginCheckSellPrice;
+
+	private transient Instant latestMarginCheckBuyTime;
+
+	private transient Instant latestMarginCheckSellTime;
+
+	private transient Instant latestBuyTime;
+
+	private transient Instant latestSellTime;
+
+	private transient int latestSellPrice;
+
+	private transient int latestBuyPrice;
+
 	@Getter
 	@Setter
 	private transient Boolean expand;
 
-	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
+	public FlippingItem(String itemName, int totalGeLimit, String flippedBy)
 	{
-		this.itemId = itemId;
 		this.itemName = itemName;
 		this.totalGELimit = totalGeLimit;
 		this.flippedBy = flippedBy;
@@ -135,9 +117,9 @@ public class FlippingItem
 
 	public FlippingItem clone()
 	{
-		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
-			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy, validFlippingPanelItem, favorite, expand);
+		return new FlippingItem(itemName, totalGELimit, latestMarginCheckBuyPrice, latestMarginCheckSellPrice,
+			ci(latestMarginCheckBuyTime), ci(latestMarginCheckSellTime), ci(latestBuyTime), ci(latestSellTime),
+			history.clone(), flippedBy, validFlippingPanelItem, favorite, expand, latestSellPrice, latestBuyPrice);
 	}
 
 	/**
@@ -152,46 +134,31 @@ public class FlippingItem
 	}
 
 	/**
-	 * Updates the latest buy/sell times of an item. This will be used to display an overlay on
-	 * GE slots to show whether an item is active or not.
+	 * Updates the latest buy/sell times/prices of an item.
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateLatestTimes(OfferEvent newOffer)
+	public void updateLatestProperties(OfferEvent newOffer)
 	{
 		if (newOffer.isBuy())
 		{
+			if (newOffer.isMarginCheck())
+			{
+				latestMarginCheckSellPrice = newOffer.getPrice();
+				latestMarginCheckSellTime = newOffer.getTime();
+			}
+			latestBuyPrice = newOffer.getPrice();
 			latestBuyTime = newOffer.getTime();
 		}
 		else
 		{
+			if (newOffer.isMarginCheck())
+			{
+				latestMarginCheckBuyPrice = newOffer.getPrice();
+				latestMarginCheckBuyTime = newOffer.getTime();
+			}
+			latestSellPrice = newOffer.getPrice();
 			latestSellTime = newOffer.getTime();
-		}
-
-		latestActivityTime = newOffer.getTime();
-	}
-
-	/**
-	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by FlippingPlugin's updateFlippingItem method in the plugin class which itself is only
-	 * invoked when an offer is a margin check.
-	 *
-	 * @param newOffer the new offer just received.
-	 */
-	public void updateMargin(OfferEvent newOffer)
-	{
-		int tradePrice = newOffer.getPrice();
-		Instant tradeTime = newOffer.getTime();
-
-		if (newOffer.isBuy())
-		{
-			marginCheckSellPrice = tradePrice;
-			marginCheckSellTime = tradeTime;
-		}
-		else
-		{
-			marginCheckBuyPrice = tradePrice;
-			marginCheckBuyTime = tradeTime;
 		}
 	}
 
@@ -287,10 +254,10 @@ public class FlippingItem
 		validFlippingPanelItem = isValid;
 		if (!isValid)
 		{
-			marginCheckSellPrice = 0;
-			marginCheckSellTime = null;
-			marginCheckBuyPrice = 0;
-			marginCheckBuyTime = null;
+			latestMarginCheckSellPrice = 0;
+			latestMarginCheckSellTime = null;
+			latestMarginCheckBuyPrice = 0;
+			latestMarginCheckBuyTime = null;
 		}
 	}
 
@@ -300,16 +267,14 @@ public class FlippingItem
 	public String toString()
 	{
 		final StringBuilder sb = new StringBuilder("FlippingItem{");
-		sb.append("itemId=").append(itemId);
 		sb.append(", itemName='").append(itemName).append('\'');
 		sb.append(", totalGELimit=").append(totalGELimit);
-		sb.append(", marginCheckBuyPrice=").append(marginCheckBuyPrice);
-		sb.append(", marginCheckSellPrice=").append(marginCheckSellPrice);
-		sb.append(", marginCheckBuyTime=").append(marginCheckBuyTime);
-		sb.append(", marginCheckSellTime=").append(marginCheckSellTime);
+		sb.append(", marginCheckBuyPrice=").append(latestMarginCheckBuyPrice);
+		sb.append(", marginCheckSellPrice=").append(latestMarginCheckSellPrice);
+		sb.append(", marginCheckBuyTime=").append(latestMarginCheckBuyTime);
+		sb.append(", marginCheckSellTime=").append(latestMarginCheckSellTime);
 		sb.append(", latestBuyTime=").append(latestBuyTime);
 		sb.append(", latestSellTime=").append(latestSellTime);
-		sb.append(", latestActivityTime=").append(latestActivityTime);
 		sb.append(", madeBy='").append(flippedBy).append('\'');
 		sb.append('}');
 		return sb.toString();
@@ -317,7 +282,7 @@ public class FlippingItem
 
 	public int getPotentialProfit(boolean includeMarginCheck, boolean currentGeLimit)
 	{
-		int profitEach = marginCheckSellPrice - marginCheckBuyPrice;
+		int profitEach = latestMarginCheckSellPrice - latestMarginCheckBuyPrice;
 		if (remainingGeLimit() == 0)
 		{
 			return 0;
@@ -334,5 +299,35 @@ public class FlippingItem
 	public List<OfferEvent> getOfferMatches(OfferEvent offerEvent, int limit)
 	{
 		return history.getOfferMatches(offerEvent, limit);
+	}
+
+	public Optional<Integer> getLatestPrice(boolean isBuy)
+	{
+		return history.getLatestOfferThatMatchesPredicate(isBuy).map(offerEvent -> offerEvent.getPrice());
+	}
+
+	public Instant getLatestActivityTime()
+	{
+		return history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
+	}
+
+	public int getItemId() {
+		return history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getItemId();
+	}
+
+	public Optional<OfferEvent> getLatestMarginCheckSell() {
+		return history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+	}
+
+	public Optional<OfferEvent> getLatestMarginCheckBuy() {
+		return history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+	}
+
+	public Optional<OfferEvent> getLatestBuy() {
+		return history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
+	}
+
+	public Optional<OfferEvent> getLatestSell() {
+		return history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
 	}
 }

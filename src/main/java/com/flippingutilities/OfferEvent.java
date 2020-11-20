@@ -81,7 +81,7 @@ public class OfferEvent
 	@SerializedName("mB")
 	private String madeBy;
 	private transient boolean beforeLogin;
-	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far.
+	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far just to resolve item name from an id.
 	private transient String itemName;
 
 	/**
