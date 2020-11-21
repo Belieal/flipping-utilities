@@ -34,7 +34,6 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.graalvm.compiler.nodes.calc.IntegerDivRemNode;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
@@ -78,21 +77,13 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
-	private transient int latestMarginCheckBuyPrice;
+	private transient Optional<OfferEvent> latestMarginCheckBuy;
 
-	private transient int latestMarginCheckSellPrice;
+	private transient Optional<OfferEvent> latestMarginCheckSell;
 
-	private transient Instant latestMarginCheckBuyTime;
+	private transient Optional<OfferEvent> latestBuy;
 
-	private transient Instant latestMarginCheckSellTime;
-
-	private transient Instant latestBuyTime;
-
-	private transient Instant latestSellTime;
-
-	private transient int latestSellPrice;
-
-	private transient int latestBuyPrice;
+	private transient Optional<OfferEvent> latestSell;
 
 	@Getter
 	@Setter
@@ -105,21 +96,20 @@ public class FlippingItem
 		this.flippedBy = flippedBy;
 	}
 
-	//utility for cloning an instant...
-	private Instant ci(Instant i)
-	{
-		if (i == null)
-		{
-			return null;
-		}
-		return Instant.ofEpochMilli(i.toEpochMilli());
-	}
-
 	public FlippingItem clone()
 	{
-		return new FlippingItem(itemName, totalGELimit, latestMarginCheckBuyPrice, latestMarginCheckSellPrice,
-			ci(latestMarginCheckBuyTime), ci(latestMarginCheckSellTime), ci(latestBuyTime), ci(latestSellTime),
-			history.clone(), flippedBy, validFlippingPanelItem, favorite, expand, latestSellPrice, latestBuyPrice);
+		return new FlippingItem(
+				itemName,
+				totalGELimit,
+				history.clone(),
+				flippedBy,
+				validFlippingPanelItem,
+				favorite,
+				latestMarginCheckBuy.map(o -> o.clone()),
+				latestMarginCheckSell.map(o -> o.clone()),
+				latestBuy.map(o -> o.clone()),
+				latestSell.map(o -> o.clone()),
+				expand);
 	}
 
 	/**
@@ -134,7 +124,9 @@ public class FlippingItem
 	}
 
 	/**
-	 * Updates the latest buy/sell times/prices of an item.
+	 * Updates the latest margin check/buy/sell offers. Technically, we don't need this and we can just
+	 * query the history manager, but this saves us from querying the history manager which would have
+	 * to search through the offers.
 	 *
 	 * @param newOffer new offer just received
 	 */
@@ -144,21 +136,17 @@ public class FlippingItem
 		{
 			if (newOffer.isMarginCheck())
 			{
-				latestMarginCheckSellPrice = newOffer.getPrice();
-				latestMarginCheckSellTime = newOffer.getTime();
+				latestMarginCheckBuy = Optional.of(newOffer);
 			}
-			latestBuyPrice = newOffer.getPrice();
-			latestBuyTime = newOffer.getTime();
+			latestBuy = Optional.of(newOffer);
 		}
 		else
 		{
 			if (newOffer.isMarginCheck())
 			{
-				latestMarginCheckBuyPrice = newOffer.getPrice();
-				latestMarginCheckBuyTime = newOffer.getTime();
+				latestMarginCheckSell = Optional.of(newOffer);
 			}
-			latestSellPrice = newOffer.getPrice();
-			latestSellTime = newOffer.getTime();
+			latestSell = Optional.of(newOffer);
 		}
 	}
 
@@ -254,56 +242,31 @@ public class FlippingItem
 		validFlippingPanelItem = isValid;
 		if (!isValid)
 		{
-			latestMarginCheckSellPrice = 0;
-			latestMarginCheckSellTime = null;
-			latestMarginCheckBuyPrice = 0;
-			latestMarginCheckBuyTime = null;
+			latestMarginCheckBuy = Optional.empty();
+			latestMarginCheckSell = Optional.empty();
 		}
 	}
 
-	//generated to string from intellij. I made it not create a representation of the history cause it would be too
-	//long and you typically don't want to see that.
-	@Override
-	public String toString()
+	public Optional<Integer> getPotentialProfit(boolean includeMarginCheck, boolean shouldUseRemainingGeLimit)
 	{
-		final StringBuilder sb = new StringBuilder("FlippingItem{");
-		sb.append(", itemName='").append(itemName).append('\'');
-		sb.append(", totalGELimit=").append(totalGELimit);
-		sb.append(", marginCheckBuyPrice=").append(latestMarginCheckBuyPrice);
-		sb.append(", marginCheckSellPrice=").append(latestMarginCheckSellPrice);
-		sb.append(", marginCheckBuyTime=").append(latestMarginCheckBuyTime);
-		sb.append(", marginCheckSellTime=").append(latestMarginCheckSellTime);
-		sb.append(", latestBuyTime=").append(latestBuyTime);
-		sb.append(", latestSellTime=").append(latestSellTime);
-		sb.append(", madeBy='").append(flippedBy).append('\'');
-		sb.append('}');
-		return sb.toString();
-	}
-
-	public int getPotentialProfit(boolean includeMarginCheck, boolean currentGeLimit)
-	{
-		int profitEach = latestMarginCheckSellPrice - latestMarginCheckBuyPrice;
-		if (remainingGeLimit() == 0)
-		{
-			return 0;
+		if (!latestMarginCheckBuy.isPresent() || !latestMarginCheckSell.isPresent()) {
+			return Optional.empty();
 		}
-		int geLimit = currentGeLimit ? remainingGeLimit() : totalGELimit;
+
+		int profitEach = latestMarginCheckSell.get().getPrice() - latestMarginCheckBuy.get().getPrice();
+		int remainingGeLimit = remainingGeLimit();
+		int geLimit = shouldUseRemainingGeLimit ? remainingGeLimit : totalGELimit;
 		int profitTotal = geLimit * profitEach;
 		if (includeMarginCheck)
 		{
 			profitTotal -= profitEach;
 		}
-		return profitTotal;
+		return Optional.of(profitTotal);
 	}
 
 	public List<OfferEvent> getOfferMatches(OfferEvent offerEvent, int limit)
 	{
 		return history.getOfferMatches(offerEvent, limit);
-	}
-
-	public Optional<Integer> getLatestPrice(boolean isBuy)
-	{
-		return history.getLatestOfferThatMatchesPredicate(isBuy).map(offerEvent -> offerEvent.getPrice());
 	}
 
 	public Instant getLatestActivityTime()
@@ -316,18 +279,40 @@ public class FlippingItem
 	}
 
 	public Optional<OfferEvent> getLatestMarginCheckSell() {
-		return history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+		if (latestMarginCheckSell == null) {
+			latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+		}
+		return latestMarginCheckSell;
 	}
 
 	public Optional<OfferEvent> getLatestMarginCheckBuy() {
-		return history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+		if (latestMarginCheckBuy == null) {
+			latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+		}
+		return latestMarginCheckBuy;
 	}
 
 	public Optional<OfferEvent> getLatestBuy() {
-		return history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
+		if (latestBuy == null) {
+			latestBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
+		}
+		return latestBuy;
 	}
 
 	public Optional<OfferEvent> getLatestSell() {
-		return history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
+		if (latestSell == null) {
+			latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
+		}
+		return latestSell;
+	}
+
+	public Optional<Float> getCurrentRoi() {
+		return getCurrentProfitEach().isPresent() && getLatestMarginCheckBuy().isPresent()?
+				Optional.of((float)getCurrentProfitEach().get() / getLatestMarginCheckBuy().get().getPrice() * 100) : Optional.empty();
+	}
+
+	public Optional<Integer> getCurrentProfitEach() {
+		return getLatestMarginCheckBuy().isPresent() && getLatestMarginCheckSell().isPresent()?
+				Optional.of(getLatestMarginCheckBuy().get().getPrice() - getLatestMarginCheckSell().get().getPrice()) : Optional.empty();
 	}
 }

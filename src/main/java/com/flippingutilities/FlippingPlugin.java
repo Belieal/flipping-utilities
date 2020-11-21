@@ -1283,25 +1283,25 @@ public class FlippingPlugin extends Plugin
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestMarginCheckBuyPrice() == 0)
+					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
 					{
 						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckBuyPrice());
+						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckBuy().get().getPrice());
 					}
 				}
 				else if (offerText.equals("Sell offer"))
 				{
 					//No recorded data; hide the widget
-					if (selectedItem == null || selectedItem.getLatestMarginCheckSellPrice() == 0)
+					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
 					{
 						flippingWidget.update("reset", 0);
 					}
 					else
 					{
-						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckSellPrice());
+						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckSell().get().getPrice());
 					}
 				}
 			}

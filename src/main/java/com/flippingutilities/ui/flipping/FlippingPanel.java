@@ -265,7 +265,6 @@ public class FlippingPanel extends JPanel
 	 */
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
-		//Reset active panel list
 		activePanels.clear();
 
 		SwingUtilities.invokeLater(() ->
@@ -286,7 +285,7 @@ public class FlippingPanel extends JPanel
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-			//Keep track of the item index to determine the constraints its built upon
+
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
@@ -352,48 +351,48 @@ public class FlippingPanel extends JPanel
 					{
 						return -1;
 					}
-					if ((item1.getLatestMarginCheckBuyPrice() != 0 && item1.getLatestMarginCheckSellPrice() != 0) && (item2.getLatestMarginCheckSellPrice() == 0 || item2.getLatestMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getLatestMarginCheckBuyPrice() != 0 && item2.getLatestMarginCheckSellPrice() != 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((item2.getLatestMarginCheckBuyPrice() == 0 || item2.getLatestMarginCheckSellPrice() == 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
+					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 0;
 					}
 
 					boolean shouldIncludeMarginCheck = plugin.getConfig().marginCheckLoss();
 					boolean shouldUseRemainingGeLimit = plugin.getConfig().geLimitProfit();
-					return item2.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit) - item1.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit);
+					return item2.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit).orElse(0) - item1.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit).orElse(0);
 				});
 				break;
 			case "roi":
 				result.sort((item1, item2) -> {
-					if ((item1.getLatestMarginCheckBuyPrice() != 0 && item1.getLatestMarginCheckSellPrice() != 0) && (item2.getLatestMarginCheckSellPrice() == 0 || item2.getLatestMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getLatestMarginCheckBuyPrice() != 0 && item2.getLatestMarginCheckSellPrice() != 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((item2.getLatestMarginCheckBuyPrice() == 0 || item2.getLatestMarginCheckSellPrice() == 0) && (item1.getLatestMarginCheckSellPrice() == 0 || item1.getLatestMarginCheckBuyPrice() == 0))
+					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 0;
 					}
 
-					int item1ProfitEach = item1.getLatestMarginCheckSellPrice() - item1.getLatestMarginCheckBuyPrice();
-					int item2ProfitEach = item2.getLatestMarginCheckSellPrice() - item2.getLatestMarginCheckBuyPrice();
+					int item1ProfitEach = item1.getLatestMarginCheckSell().get().getPrice() - item1.getLatestMarginCheckBuy().get().getPrice();
+					int item2ProfitEach = item2.getLatestMarginCheckSell().get().getPrice() - item2.getLatestMarginCheckBuy().get().getPrice();
 
-					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuyPrice() * 100;
-					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuyPrice() * 100;
+					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuy().get().getPrice() * 100;
+					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuy().get().getPrice() * 100;
 
 					return Float.compare(item2roi, item1roi);
 				});

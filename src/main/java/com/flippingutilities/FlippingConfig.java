@@ -42,17 +42,6 @@ public interface FlippingConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "outOfDateWarning",
-		name = "Set how long before prices are outdated",
-		description = "Set how long before warning that prices are outdated"
-	)
-	@Units(Units.MINUTES)
-	default int outOfDateWarning()
-	{
-		return 30;
-	}
-
-	@ConfigItem(
 		keyName = "roiGradientMax",
 		name = "Set ROI gradient range limit",
 		description = "Set the limit of the range before the gradient is bright green"

@@ -67,7 +67,6 @@ import net.runelite.client.util.QuantityFormatter;
 public class FlippingItemPanel extends JPanel
 {
 	private static final String NUM_FORMAT = "%,d";
-	private static final String OUTDATED_STRING = "Price is outdated. ";
 	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARK_GRAY_COLOR),
 		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3));
@@ -374,32 +373,30 @@ public class FlippingItemPanel extends JPanel
 
 		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
 		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
-		Optional<Integer> latestBuyPrice = flippingItem.getl
-		Optional<Integer> latestSellPrice = flippingItem.getLatestPrice(false);
-		Optional<Integer> profitEach =
-			latestMarginCheckBuy.isPresent() && latestMarginCheckSell.isPresent()?
-				Optional.of(latestMarginCheckBuy.get().getPrice() - latestMarginCheckSell.get().getPrice()) : Optional.empty();
-		int potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-		float roi = (float) profitEach / latestMarginCheckBuyPrice * 100;
 
-		priceCheckBuyVal
-			.setText(!latestMarginCheckBuy.isPresent() ? "N/A" : String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp");
-		priceCheckSellVal.
-			setText(!latestMarginCheckSell.isPresent() ? "N/A" : String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp");
+		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
+		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
 
-		latestBuyPriceVal.setText(latestBuyPrice.isPresent() ? String.format(NUM_FORMAT, latestBuyPrice.get()) + " gp" : "N/A");
-		latestSellPriceVal.setText(latestSellPrice.isPresent() ? String.format(NUM_FORMAT, latestSellPrice.get()) + " gp" : "N/A");
 
-		profitEachVal.setText((latestMarginCheckBuyPrice == 0 || latestMarginCheckSellPrice == 0) ? "N/A"
-			: QuantityFormatter.quantityToRSDecimalStack(profitEach) + " gp");
-		potentialProfitVal.setText((latestMarginCheckBuyPrice == 0 || latestMarginCheckSellPrice == 0 || potentialProfit < 0) ? "N/A" : QuantityFormatter
-			.quantityToRSDecimalStack(potentialProfit) + " gp");
+		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
 
-		roiLabel.setText("ROI:  " + ((latestMarginCheckBuyPrice == 0 || latestMarginCheckSellPrice == 0) ? "N/A"
-			: String.format("%.2f", roi) + "%"));
+		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
+
+		Optional<Float> roi =  flippingItem.getCurrentRoi();
+
+		priceCheckBuyVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
+		priceCheckSellVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
+
+		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
+		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
+
+		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
+		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
+
+		roiLabel.setText("ROI:  " + (roi.isPresent()? String.format("%.2f", roi) + "%" : "N/A"));
 
 		//Color gradient red-yellow-green depending on ROI.
-		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi, plugin.getConfig().roiGradientMax()));
+		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
 		JLabel padLabel1 = new JLabel(" ");
 		JLabel padLabel2 = new JLabel(" ");
@@ -503,45 +500,24 @@ public class FlippingItemPanel extends JPanel
 	public void updatePriceOutdatedDisplay()
 	{
 		//Update time of latest price update.
-		Instant latestBuyTime = flippingItem.getLatestMarginCheckBuyTime();
-		Instant latestSellTime = flippingItem.getLatestMarginCheckSellTime();
+		Optional<Instant> latestMarginCheckBuyTime = flippingItem.getLatestMarginCheckBuy().map(o -> o.getTime());
+		Optional<Instant> latestMarginCheckSellTime = flippingItem.getLatestMarginCheckSell().map(o -> o.getTime());
+		Optional<Instant> latestBuyTime = flippingItem.getLatestBuy().map(o -> o.getTime());
+		Optional<Instant> latestSellTime = flippingItem.getLatestSell().map(o -> o.getTime());
 
-		//Update price texts with the string formatter
-		final String latestBuyString = UIUtilities.formatDurationTruncated(latestBuyTime) + " old";
-		final String latestSellString = UIUtilities.formatDurationTruncated(latestSellTime) + " old";
+		updatePriceOutdatedDisplay(priceCheckBuyVal, latestMarginCheckBuyTime);
+		updatePriceOutdatedDisplay(priceCheckSellVal, latestMarginCheckSellTime);
+		updatePriceOutdatedDisplay(latestBuyPriceVal, latestBuyTime);
+		updatePriceOutdatedDisplay(latestSellPriceVal, latestSellTime);
+	}
 
-		//As the config unit is in minutes.
-		final int latestBuyTimeAgo =
-			latestBuyTime != null ? (int) (Instant.now().getEpochSecond() - latestBuyTime
-				.getEpochSecond()) : 0;
-		final int latestSellTimeAgo =
-			latestSellTime != null ? (int) (Instant.now().getEpochSecond() - latestSellTime
-				.getEpochSecond()) : 0;
-
-		//Check if, according to the user-defined settings, prices are outdated, else set default color.
-		if (latestBuyTimeAgo != 0 && latestBuyTimeAgo / 60 > plugin.getConfig().outOfDateWarning())
-		{
-			priceCheckBuyVal.setForeground(UIUtilities.OUTDATED_COLOR);
-			priceCheckBuyVal.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestBuyString + "</html>");
+	private void updatePriceOutdatedDisplay(JLabel timeDisplay, Optional<Instant> timeValue) {
+		if (!timeValue.isPresent()) {
+			timeDisplay.setToolTipText("N/A");
 		}
-		else
-		{
-			priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-			priceCheckBuyVal.setToolTipText(latestBuyString);
-		}
-		//Sell value
-		if (latestSellTimeAgo != 0 && latestSellTimeAgo / 60 > plugin.getConfig().outOfDateWarning())
-		{
-			priceCheckSellVal.setForeground(UIUtilities.OUTDATED_COLOR);
-			priceCheckSellVal
-				.setToolTipText("<html>" + OUTDATED_STRING + "<br>" + latestSellString + "</html>");
-		}
-		else
-		{
-			priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-			priceCheckSellVal.setToolTipText(latestSellString);
-		}
-
+		Instant timeSinceLastActivity = timeValue.get();
+		String latestActivityTimeString = UIUtilities.formatDurationTruncated(timeSinceLastActivity) + " old";
+		timeDisplay.setToolTipText(latestActivityTimeString);
 	}
 
 	/**
