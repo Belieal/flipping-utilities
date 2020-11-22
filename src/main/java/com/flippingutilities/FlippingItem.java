@@ -105,10 +105,10 @@ public class FlippingItem
 				flippedBy,
 				validFlippingPanelItem,
 				favorite,
-				latestMarginCheckBuy.map(o -> o.clone()),
-				latestMarginCheckSell.map(o -> o.clone()),
-				latestBuy.map(o -> o.clone()),
-				latestSell.map(o -> o.clone()),
+				getLatestMarginCheckBuy().map(o -> o.clone()),
+				getLatestMarginCheckSell().map(o -> o.clone()),
+				getLatestBuy().map(o -> o.clone()),
+				getLatestSell().map(o -> o.clone()),
 				expand);
 	}
 
@@ -249,11 +249,11 @@ public class FlippingItem
 
 	public Optional<Integer> getPotentialProfit(boolean includeMarginCheck, boolean shouldUseRemainingGeLimit)
 	{
-		if (!latestMarginCheckBuy.isPresent() || !latestMarginCheckSell.isPresent()) {
+		if (!getLatestMarginCheckBuy().isPresent() || !getLatestMarginCheckSell().isPresent()) {
 			return Optional.empty();
 		}
 
-		int profitEach = latestMarginCheckSell.get().getPrice() - latestMarginCheckBuy.get().getPrice();
+		int profitEach = getLatestMarginCheckSell().get().getPrice() - getLatestMarginCheckSell().get().getPrice();
 		int remainingGeLimit = remainingGeLimit();
 		int geLimit = shouldUseRemainingGeLimit ? remainingGeLimit : totalGELimit;
 		int profitTotal = geLimit * profitEach;
