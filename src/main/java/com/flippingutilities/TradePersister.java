@@ -135,12 +135,6 @@ public class TradePersister
 				}
 			}
 
-			//sets the madeBy field on each offer as its required in the process for constructing the account wide tradelist.
-			//Every new offer that comes in (After this update) already gets it set, but the old offers won't have it and
-			//I don't want to have to delete all the user's data, so i am just making it conform to the new format.
-			accountSpecificData.getTrades().forEach(item -> item.getHistory().getCompressedOfferEvents().forEach(offer ->
-				offer.setMadeBy(item.getFlippedBy())));
-
 			try
 			{
 				storeTrades(displayName, accountSpecificData);
@@ -160,14 +154,14 @@ public class TradePersister
 	 * @return a map of display name to that account's data
 	 * @throws IOException handled in FlippingPlugin
 	 */
-	public static Map<String, AccountData> loadAllTrades(ItemManager itemManager) throws IOException
+	public static Map<String, AccountData> loadAllTrades() throws IOException
 	{
 		Map<String, AccountData> accountsData = new HashMap<>();
 		for (File f : PARENT_DIRECTORY.listFiles())
 		{
 			String displayName = f.getName().split("\\.")[0];
 			log.info("loading data for {}", displayName);
-			AccountData accountData = loadFromFile(f, itemManager);
+			AccountData accountData = loadFromFile(f);
 			if (accountData == null)
 			{
 				log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
@@ -180,11 +174,11 @@ public class TradePersister
 		return accountsData;
 	}
 
-	public static AccountData loadTrades(String displayName, ItemManager itemManager) throws IOException
+	public static AccountData loadTrades(String displayName) throws IOException
 	{
 		log.info("loading data for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
-		AccountData accountData = loadFromFile(accountFile, itemManager);
+		AccountData accountData = loadFromFile(accountFile);
 		if (accountData == null)
 		{
 			log.info("data for {} is null for some reason, setting it to a empty AccountData object", displayName);
@@ -193,7 +187,7 @@ public class TradePersister
 		return accountData;
 	}
 
-	private static AccountData loadFromFile(File f, ItemManager itemManager) throws IOException
+	private static AccountData loadFromFile(File f) throws IOException
 	{
 		String accountDataJson = new String(Files.readAllBytes(f.toPath()));
 		final Gson gson = new Gson();
@@ -201,7 +195,6 @@ public class TradePersister
 		{
 		}.getType();
 		AccountData accountData = gson.fromJson(accountDataJson, type);
-		cleanAccountData(accountData, itemManager);
 		return accountData;
 	}
 
@@ -238,34 +231,6 @@ public class TradePersister
 			else
 			{
 				log.info("unable to delete {}", fileName);
-			}
-		}
-	}
-
-	/**
-	 * Over time as we delete/add fields, we need to make sure the fields are set properly the first time the user
-	 * loads their trades after the new update. This method serves as a way to sanitize the data.
-	 * @param accountData
-	 */
-	private static void cleanAccountData(AccountData accountData, ItemManager itemManager) {
-		//a bug led to items not having their last active times be updated. This bug is fixed
-		//but the null value remains in the user's items, so this sets it.
-		for (FlippingItem item: accountData.getTrades()) {
-			//in case ge limits have been updated
-			int tradeItemId = item.getItemId();
-			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
-			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
-			item.setTotalGELimit(geLimit);
-
-			//when this change was made the field will not exist and will be null
-			if (item.getValidFlippingPanelItem() == null) {
-				item.setValidFlippingPanelItem(true);
-			}
-
-			for (OfferEvent offerEvent: item.getHistory().getCompressedOfferEvents()) {
-				if (offerEvent.getMadeBy() == null) {
-					offerEvent.setMadeBy(item.getFlippedBy());
-				}
 			}
 		}
 	}

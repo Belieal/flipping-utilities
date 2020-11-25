@@ -35,26 +35,25 @@ import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_HALF_ON_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
+
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
@@ -67,37 +66,57 @@ import net.runelite.client.util.QuantityFormatter;
 public class FlippingItemPanel extends JPanel
 {
 	private static final String NUM_FORMAT = "%,d";
-	private static final Border ITEM_INFO_BORDER = new CompoundBorder(
-		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARK_GRAY_COLOR),
-		BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 3));
+
 	@Getter
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
-	JLabel priceCheckBuyVal;
-	JLabel priceCheckSellVal;
-	JLabel latestBuyPriceVal;
-	JLabel latestSellPriceVal;
-	JLabel profitEachVal;
-	JLabel potentialProfitVal;
-	JLabel roiLabel;
-	JLabel limitLabel;
+	JLabel priceCheckBuyVal = new JLabel();
+	JLabel priceCheckSellVal = new JLabel();
+	JLabel latestBuyPriceVal = new JLabel();
+	JLabel latestSellPriceVal = new JLabel();
+	JLabel profitEachVal = new JLabel();
+	JLabel potentialProfitVal = new JLabel();
+
+	JLabel roiLabel = new JLabel();
+	JLabel limitLabel = new JLabel();
+
+	JLabel priceCheckBuyText = new JLabel("Should buy at: ");
+	JLabel priceCheckSellText = new JLabel("Should sell at: ");
+	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
+	JLabel latestSellPriceText = new JLabel("Last sell price: ");
+	JLabel profitEachText = new JLabel("Profit each: ");
+	JLabel profitTotalText = new JLabel("Potential profit: ");
+
 	JPanel itemInfo;
+
+	JPanel timeInfoPanel;
+
+	JLabel geRefreshTimeVal = new JLabel();
+	JLabel priceCheckBuyTimeVal = new JLabel();
+	JLabel priceCheckSellTimeVal = new JLabel();
+	JLabel latestBuyTimeVal = new JLabel();
+	JLabel latestSellTimeVal = new JLabel();
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
 	{
 		this.flippingItem = flippingItem;
 		this.plugin = plugin;
-		setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		flippingItem.validateGeProperties();
+		setBackground(UIUtilities.DARK_GRAY);
 		setLayout(new BorderLayout());
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
 		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(onDeleteCallback), createItemNameLabel(), createFavoriteIcon());
-		itemInfo = createItemInfoPanel(createLeftLabelsPanel(), createRightLabelsPanel());
+		itemInfo = createItemInfoPanel();
+		timeInfoPanel = createTimeInfoPanel();
+		timeInfoPanel.setVisible(false);
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
+		add(timeInfoPanel, BorderLayout.SOUTH);
 
-		updateGePropertiesDisplay();
-		updatePriceOutdatedDisplay();
+		setDescriptionLabels();
+		setValueLabels();
+		updateTimerDisplays();
 
 		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
 		if (!plugin.getConfig().verboseViewEnabled())
@@ -120,21 +139,172 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	/**
-	 * Creates the panel which holds the right and left labels panels. Those panels hold values such as the buy price,
-	 * sell price, roi, etc.
-	 *
-	 * @param leftLabelsPanel  Holds names of of values such as "Buy price:", "Sell price:"
-	 * @param rightLabelsPanel Holds values such as "100,000".
+	 * Creates the panel which contains all the info about the item like its price check prices, limit
+	 * remaining, etc.
 	 * @return
 	 */
-	private JPanel createItemInfoPanel(JPanel leftLabelsPanel, JPanel rightLabelsPanel)
+	private JPanel createItemInfoPanel()
 	{
-		JPanel itemInfo = new JPanel(new BorderLayout());
+		JPanel itemInfo = new JPanel(new DynamicGridLayout(7, 1));
 		itemInfo.setBackground(getBackground());
-		itemInfo.add(leftLabelsPanel, BorderLayout.WEST);
-		itemInfo.add(rightLabelsPanel, BorderLayout.EAST);
-		itemInfo.setBorder(ITEM_INFO_BORDER);
+
+		JPanel priceCheckBuyPanel = new JPanel(new BorderLayout());
+		JPanel priceCheckSellPanel = new JPanel(new BorderLayout());
+		JPanel latestBuyPanel = new JPanel(new BorderLayout());
+		JPanel latestSellPanel = new JPanel(new BorderLayout());
+		JPanel profitEachPanel = new JPanel(new BorderLayout());
+		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
+		JPanel roiAndGeLimitPanel = new JPanel(new BorderLayout());
+
+		JPanel[] panels = {priceCheckBuyPanel, priceCheckSellPanel, latestBuyPanel, latestSellPanel, profitEachPanel, potentialProfitPanel, roiAndGeLimitPanel};
+		JLabel[] descriptionLabels = {priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText, limitLabel};
+		JLabel[] valueLabels = {priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal,profitEachVal, potentialProfitVal, roiLabel};
+
+
+		for (int i=0;i<panels.length;i++) {
+			panels[i].setBackground(UIUtilities.DARK_GRAY);
+			panels[i].setBorder(new EmptyBorder(4,8,8,8));
+			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
+			panels[i].add(valueLabels[i], BorderLayout.EAST);
+			itemInfo.add(panels[i]);
+			if (i == panels.length-2) {
+				panels[i].setBorder(new EmptyBorder(4,8,4,8));
+			}
+			if (i == panels.length-1) {
+				panels[i].setBorder(new EmptyBorder(0,8,8,8));
+			}
+		}
+
+
+		panels[panels.length-1].add(createTimerIcon(), BorderLayout.CENTER);
+
 		return itemInfo;
+	}
+
+	private JPanel createTimeInfoPanel() {
+		JPanel timeInfoPanel = new JPanel(new DynamicGridLayout(5, 1));
+		timeInfoPanel.setBackground(getBackground());
+
+		JPanel geLimitTimePanel = new JPanel(new BorderLayout());
+		JPanel priceCheckBuyTimePanel = new JPanel(new BorderLayout());
+		JPanel priceCheckSellTimePanel = new JPanel(new BorderLayout());
+		JPanel latestBuyTimePanel = new JPanel(new BorderLayout());
+		JPanel latestSellTimePanel = new JPanel(new BorderLayout());
+
+		JLabel geRefreshTimeText = new JLabel("GE Limit refresh timer: ");
+		JLabel priceCheckBuyTimeText = new JLabel("Time since price check buy: ");
+		JLabel priceCheckSellTimeText = new JLabel("Time since price check sell: ");
+		JLabel latestBuyTimeText = new JLabel("Time since last buy: ");
+		JLabel latestSellTimeText = new JLabel("Time since last sell: ");
+
+		JPanel[] panels = {geLimitTimePanel, priceCheckBuyTimePanel, priceCheckSellTimePanel, latestBuyTimePanel, latestSellTimePanel};
+		JLabel[] descriptionLabels = {geRefreshTimeText, priceCheckBuyTimeText, priceCheckSellTimeText, latestBuyTimeText, latestSellTimeText};
+		JLabel[] timerValueLabels = {geRefreshTimeVal,priceCheckBuyTimeVal,priceCheckSellTimeVal,latestBuyTimeVal,latestSellTimeVal};
+
+		for (int i=0;i<panels.length;i++) {
+			panels[i].setBackground(UIUtilities.DARK_GRAY);
+			panels[i].setBorder(new EmptyBorder(4,8,8,8));
+			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
+			panels[i].add(timerValueLabels[i], BorderLayout.EAST);
+			timeInfoPanel.add(panels[i]);
+		}
+		return timeInfoPanel;
+		}
+
+	private JLabel createTimerIcon() {
+		JLabel timerIcon = new JLabel(UIUtilities.TIMER);
+		timerIcon.setToolTipText("Click to see time related info such as when the ge limit for this item will reset");
+		timerIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (timeInfoPanel.isVisible()) {
+					timeInfoPanel.setVisible(false);
+					timerIcon.setIcon(UIUtilities.TIMER);
+				}
+				else {
+					timeInfoPanel.setVisible(true);
+					timerIcon.setIcon(UIUtilities.TIMER_HOVER);
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				if (!timeInfoPanel.isVisible()) {
+					timerIcon.setIcon(UIUtilities.TIMER_HOVER);
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				if (!timeInfoPanel.isVisible()) {
+					timerIcon.setIcon(UIUtilities.TIMER);
+				}
+			}
+		});
+	return timerIcon;
+	}
+
+
+	private void setValueLabels() {
+
+		Arrays.asList(priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal, profitEachVal, potentialProfitVal, roiLabel, limitLabel).
+				forEach(label -> {
+					if (label == limitLabel) {
+						label.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
+					}
+					label.setHorizontalAlignment(JLabel.RIGHT);
+					label.setFont(plugin.getFont());
+				});
+
+		roiLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+
+		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
+		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
+
+		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
+		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
+
+
+		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
+
+		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
+
+		Optional<Float> roi =  flippingItem.getCurrentRoi();
+
+		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
+		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
+
+		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
+		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
+
+		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
+		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
+
+		roiLabel.setText("ROI:  " + (roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A"));
+		//Color gradient red-yellow-green depending on ROI.
+		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
+
+		if (flippingItem.getTotalGELimit() > 0) {
+			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+		} else {
+			limitLabel.setText("GE limit: Unknown");
+		}
+	}
+
+	private void setDescriptionLabels() {
+		Arrays.asList(priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText).
+				forEach(label -> {
+					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+					label.setFont(plugin.getFont());
+				});
+
+		/* Tooltips */
+		priceCheckBuyText.setToolTipText("The buy price according to your latest margin check. This is the price you insta sold the item for");
+		priceCheckSellText.setToolTipText("The sell price according to your latest margin check. This is the price you insta bought the item for");
+		latestBuyPriceText.setToolTipText("The last price you bought this item for");
+		latestSellPriceText.setToolTipText("The last price you sold this item for");
+		profitEachText.setToolTipText("The profit margin according to your latest margin check");
+		profitTotalText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
 	}
 
 	/**
@@ -150,13 +320,13 @@ public class FlippingItemPanel extends JPanel
 	private JPanel createTitlePanel(JLabel itemIcon, JButton deleteButton, JLabel itemNameLabel, JLabel favoriteButton)
 	{
 		JPanel itemClearPanel = new JPanel(new BorderLayout());
-		itemClearPanel.setBackground(getBackground().darker());
+		itemClearPanel.setBackground(getBackground());
 		itemClearPanel.add(itemIcon, BorderLayout.WEST);
 		itemClearPanel.add(deleteButton, BorderLayout.EAST);
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
-		titlePanel.setBackground(getBackground().darker());
+		titlePanel.setBackground(getBackground());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
 		titlePanel.add(favoriteButton, BorderLayout.EAST);
@@ -238,7 +408,6 @@ public class FlippingItemPanel extends JPanel
 	private JLabel createItemNameLabel()
 	{
 		JLabel itemNameLabel = new JLabel(flippingItem.getItemName(), SwingConstants.CENTER);
-		itemNameLabel.setForeground(Color.WHITE);
 		itemNameLabel.setFont(FontManager.getRunescapeBoldFont());
 		itemNameLabel.setPreferredSize(new Dimension(0, 0)); //Make sure the item name fits
 		itemNameLabel.addMouseListener(new MouseAdapter()
@@ -338,138 +507,6 @@ public class FlippingItemPanel extends JPanel
 		return favoriteIcon;
 	}
 
-	/**
-	 * Creates the panel which holds the labels on the right side of the FlippingItemPanel. These are labels that have
-	 * corresponding values for the left labels. For example, the left label might be "buy price" and the corresponding
-	 * label on this panel would be "100,000".
-	 *
-	 * @return right labels panel
-	 */
-	private JPanel createRightLabelsPanel()
-	{
-		JPanel rightValuesPanel = new JPanel(new GridLayout(10, 1));
-		rightValuesPanel.setBackground(getBackground());
-
-		priceCheckBuyVal = new JLabel();
-		priceCheckSellVal = new JLabel();
-		latestBuyPriceVal = new JLabel();
-		latestSellPriceVal = new JLabel();
-		profitEachVal = new JLabel();
-		potentialProfitVal = new JLabel();
-		roiLabel = new JLabel();
-
-		priceCheckBuyVal.setHorizontalAlignment(JLabel.RIGHT);
-		priceCheckSellVal.setHorizontalAlignment(JLabel.RIGHT);
-		latestBuyPriceVal.setHorizontalAlignment(JLabel.RIGHT);
-		latestSellPriceVal.setHorizontalAlignment(JLabel.RIGHT);
-		profitEachVal.setHorizontalAlignment(JLabel.RIGHT);
-		potentialProfitVal.setHorizontalAlignment(JLabel.RIGHT);
-		roiLabel.setHorizontalAlignment(JLabel.RIGHT);
-
-		roiLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
-
-		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
-		potentialProfitVal.setForeground(UIUtilities.PROFIT_COLOR);
-
-		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
-		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
-
-		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
-		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
-
-
-		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
-
-		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-
-		Optional<Float> roi =  flippingItem.getCurrentRoi();
-
-		priceCheckBuyVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
-		priceCheckSellVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
-
-		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
-		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
-
-		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
-		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
-
-		roiLabel.setText("ROI:  " + (roi.isPresent()? String.format("%.2f", roi) + "%" : "N/A"));
-
-		//Color gradient red-yellow-green depending on ROI.
-		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
-
-		JLabel padLabel1 = new JLabel(" ");
-		JLabel padLabel2 = new JLabel(" ");
-		JLabel padLabel3 = new JLabel(" ");
-
-		rightValuesPanel.add(priceCheckBuyVal);
-		rightValuesPanel.add(priceCheckSellVal);
-		rightValuesPanel.add(padLabel1);
-		rightValuesPanel.add(latestBuyPriceVal);
-		rightValuesPanel.add(latestSellPriceVal);
-		rightValuesPanel.add(padLabel2);
-		rightValuesPanel.add(profitEachVal);
-		rightValuesPanel.add(potentialProfitVal);
-		rightValuesPanel.add(padLabel3);
-		rightValuesPanel.add(roiLabel);
-
-		rightValuesPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
-		return rightValuesPanel;
-	}
-
-	/**
-	 * Creates the panel which holds the labels on the left side of the FlippingItemPanel. These are labels such as
-	 * "buy price", "sell price", etc.
-	 *
-	 * @return left labels panel
-	 */
-	private JPanel createLeftLabelsPanel()
-	{
-		JPanel leftInfoTextPanel = new JPanel(new GridLayout(10, 1));
-		leftInfoTextPanel.setBackground(getBackground());
-		/* Left labels */
-		JLabel priceCheckBuyText = new JLabel("Price check buy: ");
-		JLabel priceCheckSellText = new JLabel("Price check sell: ");
-		JLabel latestBuyPrice = new JLabel("Last buy price: ");
-		JLabel latestSellPrice = new JLabel("Last sell price: ");
-		JLabel profitEachText = new JLabel("Profit each: ");
-		JLabel profitTotalText = new JLabel("Potential profit: ");
-		limitLabel = new JLabel();
-		/* Left font colors */
-		priceCheckBuyText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		priceCheckSellText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		latestBuyPrice.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		latestSellPrice.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		profitEachText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		profitTotalText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		limitLabel.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
-		/* Tooltips */
-		priceCheckBuyText.setToolTipText("The buy price according to your latest margin check. This is the price you insta sold the item for");
-		priceCheckSellText.setToolTipText("The sell price according to your latest margin check. This is the price you insta bought the item for");
-		profitEachText.setToolTipText("The profit margin according to your latest margin check");
-		profitTotalText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
-		limitLabel.setToolTipText("The amount you can buy of this item every 4 hours.");
-
-		JLabel padLabel1 = new JLabel(" ");
-		JLabel padLabel2 = new JLabel(" ");
-		JLabel padLabel3 = new JLabel(" ");
-
-		leftInfoTextPanel.add(priceCheckBuyText);
-		leftInfoTextPanel.add(priceCheckSellText);
-		leftInfoTextPanel.add(padLabel1);
-		leftInfoTextPanel.add(latestBuyPrice);
-		leftInfoTextPanel.add(latestSellPrice);
-		leftInfoTextPanel.add(padLabel2);
-		leftInfoTextPanel.add(profitEachText);
-		leftInfoTextPanel.add(profitTotalText);
-		leftInfoTextPanel.add(padLabel3);
-		leftInfoTextPanel.add(limitLabel);
-
-		leftInfoTextPanel.setBorder(new EmptyBorder(2, 5, 2, 5));
-		return leftInfoTextPanel;
-	}
-
-
 	public void expand()
 	{
 		if (isCollapsed())
@@ -492,81 +529,57 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	/**
-	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
-	 * This is called in two places:
-	 * On initialization of a FlippingItemPanel and in FlippingPlugin by the scheduler which calls it
-	 * every second.
+	 * Refresh properties that could be stale due to a new offer event. Other properties like the
+	 * price check buy and sell price don't have to be refreshed like this cause offers that would cause
+	 * them to change already trigger rebuilds of the flipping panel which will reconstruct this panel anyway.
 	 */
-	public void updatePriceOutdatedDisplay()
-	{
-		//Update time of latest price update.
-		Optional<Instant> latestMarginCheckBuyTime = flippingItem.getLatestMarginCheckBuy().map(o -> o.getTime());
-		Optional<Instant> latestMarginCheckSellTime = flippingItem.getLatestMarginCheckSell().map(o -> o.getTime());
-		Optional<Instant> latestBuyTime = flippingItem.getLatestBuy().map(o -> o.getTime());
-		Optional<Instant> latestSellTime = flippingItem.getLatestSell().map(o -> o.getTime());
+	public void refreshProperties() {
+		latestBuyPriceVal.setText(flippingItem.getLatestBuy().isPresent() ?
+				String.format(NUM_FORMAT, flippingItem.getLatestBuy().get().getPrice()) + " gp" : "N/A");
+		latestSellPriceVal.setText(flippingItem.getLatestSell().isPresent() ?
+				String.format(NUM_FORMAT, flippingItem.getLatestSell().get().getPrice()) + " gp" : "N/A");
 
-		updatePriceOutdatedDisplay(priceCheckBuyVal, latestMarginCheckBuyTime);
-		updatePriceOutdatedDisplay(priceCheckSellVal, latestMarginCheckSellTime);
-		updatePriceOutdatedDisplay(latestBuyPriceVal, latestBuyTime);
-		updatePriceOutdatedDisplay(latestSellPriceVal, latestSellTime);
-	}
+		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
+		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp" : "N/A");
 
-	private void updatePriceOutdatedDisplay(JLabel timeDisplay, Optional<Instant> timeValue) {
-		if (!timeValue.isPresent()) {
-			timeDisplay.setToolTipText("N/A");
-		}
-		Instant timeSinceLastActivity = timeValue.get();
-		String latestActivityTimeString = UIUtilities.formatDurationTruncated(timeSinceLastActivity) + " old";
-		timeDisplay.setToolTipText(latestActivityTimeString);
-	}
-
-	/**
-	 * uses the properties of the FlippingItem to show the ge limit and refresh time display.
-	 * Places where this is called:
-	 * on initialization of a FlippingItemPanel
-	 * In {@link FlippingPanel#updateActivePanelsGePropertiesDisplay} which itself is envoked in two places in
-	 * the FlippingPlugin, a background thread, and every time an offer comes in.
-	 */
-	public void updateGePropertiesDisplay()
-	{
-		flippingItem.validateGeProperties();
-		boolean unknownLimit = false;
-
-		//New items can show as having a total GE limit of 0.
-		if (flippingItem.getTotalGELimit() > 0)
-		{
-			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.remainingGeLimit()));
-		}
-		else
-		{
+		if (flippingItem.getTotalGELimit() > 0) {
+			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+		} else {
 			limitLabel.setText("GE limit: Unknown");
-			unknownLimit = true;
 		}
+	}
 
-		String tooltipText = "";
+	public void updateTimerDisplays() {
 
-		if (unknownLimit)
-		{
-			tooltipText = "<html>This item's total GE limit is unknown.<br>";
+		//should do something like this for the tooltips.
+//		+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
+
+
+		flippingItem.validateGeProperties();
+
+		geRefreshTimeVal.setText(flippingItem.getGeLimitResetTime() == null?
+				UIUtilities.formatDuration(Duration.ZERO):
+				UIUtilities.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
+
+		setTimeString(flippingItem.getLatestMarginCheckBuy(), priceCheckBuyTimeVal);
+		setTimeString(flippingItem.getLatestMarginCheckSell(), priceCheckSellTimeVal);
+		setTimeString(flippingItem.getLatestBuy(), latestBuyTimeVal);
+		setTimeString(flippingItem.getLatestSell(), latestSellTimeVal);
+	}
+
+	private void setTimeString(Optional<OfferEvent> offerEvent, JLabel timeLabel) {
+		if (!offerEvent.isPresent()) {
+			timeLabel.setText("N/A");
 		}
-
-		if (flippingItem.getGeLimitResetTime() == null)
-		{
-			tooltipText += "<html>None has been bought in the past 4 hours.</html>";
+		else {
+			//if difference is more than a day don't show it as HH:MM:SS
+			if (Instant.now().getEpochSecond() - offerEvent.get().getTime().getEpochSecond() > 86400) {
+				timeLabel.setText(UIUtilities.formatDurationTruncated(offerEvent.get().getTime()) + " old");
+			}
+			else {
+				timeLabel.setText(UIUtilities.formatDuration(offerEvent.get().getTime()));
+			}
 		}
-		else
-		{
-			final long remainingSeconds = flippingItem.getGeLimitResetTime().getEpochSecond() - Instant.now().getEpochSecond();
-			final long remainingMinutes = remainingSeconds / 60 % 60;
-			final long remainingHours = remainingSeconds / 3600 % 24;
-			String timeString = String.format("%02d:%02d ", remainingHours, remainingMinutes)
-				+ (remainingHours > 1 ? "hours" : "hour");
-
-			tooltipText += "<html>GE limit is reset in " + timeString + "."
-				+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
-				+ ".</html>";
-		}
-		limitLabel.setToolTipText(tooltipText);
 	}
 
 }

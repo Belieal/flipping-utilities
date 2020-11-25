@@ -463,7 +463,6 @@ public class StatsPanel extends JPanel
 		JPanel itemContainer = new JPanel(new BorderLayout());
 		itemContainer.add(sortPanel, BorderLayout.NORTH);
 		itemContainer.add(scrollWrapper, BorderLayout.CENTER);
-		//itemContainer.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 1, ColorScheme.BRAND_ORANGE));
 
 		paginator = new Paginator(() -> SwingUtilities.invokeLater(() -> {
 			Instant rebuildStart = Instant.now();

@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
+import net.runelite.client.game.ItemManager;
+import net.runelite.http.api.item.ItemStats;
 
 @Data
 public class AccountData
@@ -52,5 +54,26 @@ public class AccountData
 		sessionStartTime = Instant.now();
 		accumulatedSessionTime = Duration.ZERO;
 		lastSessionTimeUpdate = null;
+	}
+
+	/**
+	 * Over time as we delete/add fields, we need to make sure the fields are set properly the first time the user
+	 * loads their trades after the new update. This method serves as a way to sanitize the data. It also ensures
+	 * that the FlippingItems have their non persisted fields set from history.
+	 */
+	public void prepareForUse(ItemManager itemManager) {
+		for (FlippingItem item: trades) {
+			//in case ge limits have been updated
+			int tradeItemId = item.getItemId();
+			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+
+			item.setTotalGELimit(geLimit);
+			item.syncState();
+			//when this change was made the field will not exist and will be null
+			if (item.getValidFlippingPanelItem() == null) {
+				item.setValidFlippingPanelItem(true);
+			}
+		}
 	}
 }

@@ -394,7 +394,7 @@ public class FlippingPanel extends JPanel
 					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuy().get().getPrice() * 100;
 					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuy().get().getPrice() * 100;
 
-					return Float.compare(item2roi, item1roi);
+					return Float.compare(item1roi, item2roi);
 				});
 				break;
 		}
@@ -445,29 +445,11 @@ public class FlippingPanel extends JPanel
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
 	 * This method is called in FlippingPlugin every second by the scheduler.
 	 */
-	public void updateActivePanelsPriceOutdatedDisplay()
+	public void updateTimerDisplays()
 	{
 		for (FlippingItemPanel activePanel : activePanels)
 		{
-			activePanel.updatePriceOutdatedDisplay();
-		}
-	}
-
-	/**
-	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is invoked
-	 * in the FlippingPlugin in two places:
-	 * <p>
-	 * 1. Everytime an offer comes in (in onGrandExchangeOfferChanged) and the user
-	 * is currently looking at either the account wide trade list or trades list of the account currently
-	 * logged in
-	 * <p>
-	 * 2. In a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
-	 */
-	public void updateActivePanelsGePropertiesDisplay()
-	{
-		for (FlippingItemPanel activePanel : activePanels)
-		{
-			activePanel.updateGePropertiesDisplay();
+			activePanel.updateTimerDisplays();
 		}
 	}
 
@@ -535,5 +517,13 @@ public class FlippingPanel extends JPanel
 	{
 		selectedSort = buttonName;
 		rebuild(plugin.getTradesForCurrentView());
+	}
+
+	public void refreshPricesForFlippingItemPanel(int itemId) {
+		for (FlippingItemPanel panel:activePanels) {
+			if (panel.getFlippingItem().getItemId() == itemId) {
+				panel.refreshProperties();
+			}
+		}
 	}
 }

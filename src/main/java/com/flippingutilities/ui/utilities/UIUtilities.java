@@ -47,6 +47,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
@@ -55,6 +56,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
@@ -71,6 +73,8 @@ public class UIUtilities
 	public static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	public static final Color PROFIT_COLOR = new Color(255, 175, 55);
 	public static final Color DARK_GRAY_ALT_ROW_COLOR = new Color(35, 35, 35);
+	public static final Color DARK_GRAY = new Color(27, 27, 27);
+
 	public static final Color VIBRANT_YELLOW = new Color(230, 220, 6);
 
 	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
@@ -127,6 +131,9 @@ public class UIUtilities
 	public static final ImageIcon ARROW_RIGHT;
 	public static final ImageIcon ARROW_LEFT_HOVER;
 	public static final ImageIcon ARROW_RIGHT_HOVER;
+
+	public static final ImageIcon TIMER;
+	public static final ImageIcon TIMER_HOVER;
 
 
 
@@ -191,6 +198,12 @@ public class UIUtilities
 
 		ARROW_LEFT_HOVER = new ImageIcon(arrowLeft);
 		ARROW_RIGHT_HOVER = new ImageIcon(arrowRight);
+
+		final BufferedImage timer = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/timer.png");
+		TIMER = new ImageIcon(timer);
+
+		final BufferedImage timerHover = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/timeron.png");
+		TIMER_HOVER = new ImageIcon(timerHover);
 	}
 
 	/**
@@ -205,14 +218,15 @@ public class UIUtilities
 		return String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, (seconds % 60));
 	}
 
+
 	/**
 	 * Formats an instant into a duration between the parameter and now.
 	 *
 	 * @return Formatted (HH:MM:SS) string
 	 */
-	public static String formatDuration(Instant instant)
+	public static String formatDuration(Instant fromInstant)
 	{
-		return formatDuration(Duration.between(instant, Instant.now()));
+		return formatDuration(Duration.between(fromInstant, Instant.now()));
 	}
 
 	/**
@@ -321,8 +335,8 @@ public class UIUtilities
 		}
 		else
 		{
-			return (percentage >= gradientMax) ? Color.GREEN
-				: ColorUtil.colorLerp(Color.YELLOW, Color.GREEN, percentage / gradientMax * 0.5);
+			return (percentage >= gradientMax) ? ColorScheme.GRAND_EXCHANGE_PRICE
+				: ColorUtil.colorLerp(Color.YELLOW, ColorScheme.GRAND_EXCHANGE_PRICE, percentage / gradientMax * 0.5);
 		}
 	}
 

@@ -77,8 +77,8 @@ public class OfferEvent
 	 * differentiate offer. This functionality is currently only used in getFlips as, when getting the flips for the
 	 * account wide list, you don't want to match offers from different accounts!
 	 */
-	@SerializedName("mB")
-	private String madeBy;
+	private transient String madeBy;
+
 	private transient boolean beforeLogin;
 	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far just to resolve item name from an id.
 	private transient String itemName;

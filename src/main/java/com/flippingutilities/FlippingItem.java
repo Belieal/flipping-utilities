@@ -34,6 +34,7 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
@@ -46,8 +47,14 @@ import lombok.Setter;
  * of a panel which is then displayed.
  */
 @AllArgsConstructor
+@Slf4j
 public class FlippingItem
 {
+
+	@SerializedName("id")
+	@Getter
+	private final int itemId;
+
 	@SerializedName("name")
 	@Getter
 	@Setter
@@ -77,21 +84,36 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
+	//non persisted fields start here.
+	@Getter
 	private transient Optional<OfferEvent> latestMarginCheckBuy;
 
+	@Getter
 	private transient Optional<OfferEvent> latestMarginCheckSell;
 
+	@Getter
 	private transient Optional<OfferEvent> latestBuy;
 
+	@Getter
 	private transient Optional<OfferEvent> latestSell;
+
+	//does not have to Optional because a flipping item always has at least one offer, which establishes
+	//latestActivityTime.
+	@Getter
+	private transient Instant latestActivityTime;
 
 	@Getter
 	@Setter
 	private transient Boolean expand;
 
-	public FlippingItem(String itemName, int totalGeLimit, String flippedBy)
+	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
+		this.latestMarginCheckBuy = Optional.empty();
+		this.latestMarginCheckSell = Optional.empty();
+		this.latestBuy = Optional.empty();
+		this.latestSell = Optional.empty();
 		this.itemName = itemName;
+		this.itemId = itemId;
 		this.totalGELimit = totalGeLimit;
 		this.flippedBy = flippedBy;
 	}
@@ -99,16 +121,18 @@ public class FlippingItem
 	public FlippingItem clone()
 	{
 		return new FlippingItem(
+				itemId,
 				itemName,
 				totalGELimit,
 				history.clone(),
 				flippedBy,
 				validFlippingPanelItem,
 				favorite,
-				getLatestMarginCheckBuy().map(o -> o.clone()),
-				getLatestMarginCheckSell().map(o -> o.clone()),
-				getLatestBuy().map(o -> o.clone()),
-				getLatestSell().map(o -> o.clone()),
+				latestMarginCheckBuy,
+				latestMarginCheckSell,
+				latestBuy,
+				latestSell,
+				latestActivityTime,
 				expand);
 	}
 
@@ -148,10 +172,11 @@ public class FlippingItem
 			}
 			latestSell = Optional.of(newOffer);
 		}
+		latestActivityTime = newOffer.getTime();
 	}
 
 	/**
-	 * combines two flipping items together (this only make sense if they are for the same item) by adding
+	 * combines two flipping items together (this only makes sense if they are for the same item) by adding
 	 * their histories together and retaining the other properties of the latest active item.
 	 *
 	 * @return merged flipping item
@@ -207,8 +232,8 @@ public class FlippingItem
 		return history.getIntervalsHistory(earliestTime);
 	}
 
-	public int remainingGeLimit()
-	{
+	public int getRemainingGeLimit()
+		{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
 	}
 
@@ -244,6 +269,8 @@ public class FlippingItem
 		{
 			latestMarginCheckBuy = Optional.empty();
 			latestMarginCheckSell = Optional.empty();
+			latestBuy = Optional.empty();
+			latestSell = Optional.empty();
 		}
 	}
 
@@ -253,8 +280,8 @@ public class FlippingItem
 			return Optional.empty();
 		}
 
-		int profitEach = getLatestMarginCheckSell().get().getPrice() - getLatestMarginCheckSell().get().getPrice();
-		int remainingGeLimit = remainingGeLimit();
+		int profitEach = getCurrentProfitEach().get();
+		int remainingGeLimit = getRemainingGeLimit();
 		int geLimit = shouldUseRemainingGeLimit ? remainingGeLimit : totalGELimit;
 		int profitTotal = geLimit * profitEach;
 		if (includeMarginCheck)
@@ -269,50 +296,32 @@ public class FlippingItem
 		return history.getOfferMatches(offerEvent, limit);
 	}
 
-	public Instant getLatestActivityTime()
-	{
-		return history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
-	}
-
-	public int getItemId() {
-		return history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getItemId();
-	}
-
-	public Optional<OfferEvent> getLatestMarginCheckSell() {
-		if (latestMarginCheckSell == null) {
-			latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
-		}
-		return latestMarginCheckSell;
-	}
-
-	public Optional<OfferEvent> getLatestMarginCheckBuy() {
-		if (latestMarginCheckBuy == null) {
-			latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
-		}
-		return latestMarginCheckBuy;
-	}
-
-	public Optional<OfferEvent> getLatestBuy() {
-		if (latestBuy == null) {
-			latestBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
-		}
-		return latestBuy;
-	}
-
-	public Optional<OfferEvent> getLatestSell() {
-		if (latestSell == null) {
-			latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
-		}
-		return latestSell;
-	}
-
 	public Optional<Float> getCurrentRoi() {
-		return getCurrentProfitEach().isPresent() && getLatestMarginCheckBuy().isPresent()?
-				Optional.of((float)getCurrentProfitEach().get() / getLatestMarginCheckBuy().get().getPrice() * 100) : Optional.empty();
+		return getCurrentProfitEach().isPresent()?
+				Optional.of((float)getCurrentProfitEach().get() / getLatestMarginCheckSell().get().getPrice() * 100) : Optional.empty();
 	}
 
 	public Optional<Integer> getCurrentProfitEach() {
 		return getLatestMarginCheckBuy().isPresent() && getLatestMarginCheckSell().isPresent()?
 				Optional.of(getLatestMarginCheckBuy().get().getPrice() - getLatestMarginCheckSell().get().getPrice()) : Optional.empty();
 	}
+
+	/**
+	 * When the plugin starts up, the flipping items are constructed, but they are going to be missing
+	 * values for certain fields that aren't persisted. I chose not to persist those fields as those fields
+	 * can be constructed using the history that is already persisted. The downside, is that I have to
+	 * manually sync state when flipping items are created at plugin startup.
+	 */
+	public void syncState() {
+		latestBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
+		latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
+		latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+		latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+		latestActivityTime = history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
+	}
+
+	public void setOfferMadeBy() {
+		history.getCompressedOfferEvents().forEach(o -> o.setMadeBy(flippedBy));
+	}
+
 }
