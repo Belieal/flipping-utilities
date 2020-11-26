@@ -84,7 +84,7 @@ public interface FlippingConfig extends Config
 
 	@ConfigItem(
 		keyName = "subInfoFont",
-		name = "Set sub info font",
+		name = "Font style",
 		description = "Choose the font for sub information on the panel"
 	)
 	default Fonts subInfoFontStyle()
