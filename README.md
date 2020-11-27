@@ -1,5 +1,5 @@
 # Flipping Utilities plugin for RuneLite
-This external plugin seeks to help users with flipping in OSRS. It stores the latest prices and calculates the potential profits according to the margin checks you've done. Along with this, the plugin features a statistics tab that shows various information about the user's flipping history, including trade histories and profits made on individual items.
+Flipping Utilities is a Runelite plugin that aids over 10000 players in making flipping more profitable and enjoyable. It calculates your profits in real time, allows you to quick search for your favorite items, lets you quickly input optimal prices according to your margin checks with just a button click, and a lot more!
 
 **Disclaimer: This is not an OSBuddy Exchange replacement, as it does not send or receive price data from other users.**
 
@@ -35,7 +35,7 @@ The panel is designed to be "hands-free". This means you can just margin check a
 
 ![Demonstration gif](images/demo.gif)
 
-You can use this information to quickly determine if the item is worth it to flip.
+You can use this information to quickly determine if the item is worth it to flip, when the gre
 
 ### The Statistics Panel
 This panel serves as way to analyze the flips you've made over a period of time, that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
