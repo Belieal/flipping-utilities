@@ -31,9 +31,11 @@ The plugin is divided into two panels, the flipping panel and statistics panel. 
 ### The Flipping Panel
 This panel is designed to be the main utility panel. It shows the information about your flips that is most relevant when you're actively flipping.
 
-The panel is designed to be "hands-free". This means you can just margin check an item you want to flip and the panel will detect, store and display prices along with calculating the potential profits and tracking the GE limit.
+The panel is designed to be "hands-free". This means you don't have to do anything but your regular flipping and everything will be tracked for you!
 
-![Demonstration gif](images/demo.gif)
+Here is a look at the flipping tab.
+
+![flipping tab](images/flippingtab.png)
 
 You can use this information to quickly determine if the item is worth it to flip, when the gre
 
