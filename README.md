@@ -26,16 +26,17 @@ If you notice any bugs or have any suggestions, let us know by making an [issue]
 
 
 # Features
-The plugin is divided into two panels, the flipping panel and statistics panel. Each panel shows different information about the flips you've made.
+The plugin is divided into two tabs, the flipping tab and statistics tab. Each panel shows different information about the flips you've made.
 
 ### The Flipping Panel
 This panel is designed to be the main utility panel. It shows the information about your flips that is most relevant when you're actively flipping.
 
-The panel is designed to be "hands-free". This means you can just margin check an item you want to flip and the panel will detect, store and display prices along with calculating the potential profits and tracking the GE limit.
+The panel is designed to be "hands-free". That means that you don't need to do anything but your regular flipping and it will track everything for you!
 
-![Demonstration gif](images/demo.gif)
+Here is a the full view of the flipping tab with all its features.
 
-You can use this information to quickly determine if the item is worth it to flip.
+![flipping tab](images/flippingtab.png)
+
 
 ### The Statistics Panel
 This panel serves as way to analyze the flips you've made over a period of time, that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
