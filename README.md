@@ -13,11 +13,13 @@ If you notice any bugs or have any suggestions, let us know by making an [issue]
     + [The Statistics Panel](#the-statistics-panel)
     + [Additional Features](#additional-features)
     
-      - [GE limit tracking](#ge-limit-tracking--so-you-can-see-the-remaining-items-you-can-buy-in-the-limit-along-with-when-the-limit-expires)
-      - [Time of latest margin check.](#time-of-latest-margin-check--so-that-you-can-make-sure-your-prices-are-up-to-date)
+      - [Slot timers](#slot-timers)
       - [Widgets](#widgets)
+      - [Multi acc support](#multi-acc-support)
+      - [Add untracked trades easily](#add-untracked-trades-easily)
+      - [Favorites lookup](#favorites-lookup)
       
-- [Potential future features](#potential-future-features)
+      
 - [Changelog](#changelog)
   * [v1.2](#v12)
   * [v1.3 - Statistics Tab update](#v13---statistics-tab-update)
@@ -61,6 +63,11 @@ the ge limit resets along with when the ge limit will reset in your local time.
 <p align="center"> 
   <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/card.png">
 </p>
+
+If you click on the ge limit timer the item card will expand to show the last time you margin checked
+the item and the last time you bought/sold the item
+
+
 
 ### The Statistics Panel
 This panel serves as way to analyze the flips you've made over a time interval that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
@@ -113,7 +120,9 @@ This is where you can view the individual flips you've made along with all the b
 Slot timers help you figure out when you should cancel an offer. They show you how long it has been 
 since the offer was last active.
 
-
+<p align="center">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/timer.png">
+</p>
 
 #### Widgets
 
@@ -124,6 +133,33 @@ The Flipping widget seeks to help you set up your offers quickly! The widget wil
 </p>
 
 Simply click the red text and press enter. 
+
+#### Multi acc support
+
+Flip on multiple accounts? Don't worry, each account has its data stored separately and viewing different
+accounts is easy with the account selector dropdown
+
+<p align="center">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/multiacc.png">
+</p>
+
+#### Add untracked trades easily
+
+Flip on mobile and have untracked trades? Just pop open your ge history and easily add untracked trades
+
+<p align="center">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/manual.png">
+</p>
+
+#### Favorites lookup
+
+Quickly lookup your favorited items just by typing "1" in the ge search!
+
+<p align="center">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/lookup.png">
+</p>
+
+
 
 ## Icon Attributions
 All icons were either made by Belieal or downloaded from the creators on www.flaticon.com below.
