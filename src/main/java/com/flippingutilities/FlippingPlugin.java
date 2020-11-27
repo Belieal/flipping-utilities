@@ -951,9 +951,6 @@ public class FlippingPlugin extends Plugin
 			map(FlippingItem::clone).
 			collect(Collectors.groupingBy(FlippingItem::getItemName));
 
-		//we need each offer's madeBy attribute to be set.
-		groupedItems.values().forEach(itemList -> itemList.forEach(FlippingItem::setOfferMadeBy));
-
 		//take every list containing flipping items of the same type and reduce it to one merged flipping item and put that
 		//item in a final merged list
 		List<FlippingItem> mergedItems = groupedItems.values().stream().

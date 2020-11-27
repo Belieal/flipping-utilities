@@ -86,18 +86,25 @@ public class FlippingItemPanel extends JPanel
 	JLabel latestSellPriceText = new JLabel("Last sell price: ");
 	JLabel profitEachText = new JLabel("Profit each: ");
 	JLabel profitTotalText = new JLabel("Potential profit: ");
+	JLabel roiText = new JLabel("ROI:", JLabel.CENTER);
+	JLabel geLimitText = new JLabel("GE limit:",JLabel.CENTER);
 
 	JPanel itemInfo;
-
 	JPanel timeInfoPanel;
 
-	JLabel geRefreshTimeVal = new JLabel();
 	JLabel priceCheckBuyTimeVal = new JLabel();
 	JLabel priceCheckSellTimeVal = new JLabel();
 	JLabel latestBuyTimeVal = new JLabel();
 	JLabel latestSellTimeVal = new JLabel();
 
 	JLabel geRefreshLabel = new JLabel();
+	JLabel geRefreshAtLabel = new JLabel();
+
+	JLabel latestPcBuyAt = new JLabel();
+	JLabel latestPcSellAt = new JLabel();
+	JLabel latestBoughtAt = new JLabel();
+	JLabel latestSoldAt = new JLabel();
+
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
 	{
@@ -119,15 +126,6 @@ public class FlippingItemPanel extends JPanel
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 		add(timeInfoPanel, BorderLayout.SOUTH);
-
-		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		geRefreshLabel.setOpaque(true);
-		geRefreshLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
-		geRefreshLabel.setHorizontalAlignment(JLabel.CENTER);
-
-
-
 
 		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
 		if (!plugin.getConfig().verboseViewEnabled())
@@ -165,7 +163,6 @@ public class FlippingItemPanel extends JPanel
 		JPanel latestSellPanel = new JPanel(new BorderLayout());
 		JPanel profitEachPanel = new JPanel(new BorderLayout());
 		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
-		JPanel roiAndGeLimitPanel = new JPanel(new BorderLayout());
 
 		JPanel[] panels = {priceCheckBuyPanel, priceCheckSellPanel, latestBuyPanel, latestSellPanel, profitEachPanel, potentialProfitPanel};
 		JLabel[] descriptionLabels = {priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText};
@@ -183,124 +180,152 @@ public class FlippingItemPanel extends JPanel
 			}
 		}
 
-
-		JPanel a = new JPanel(new DynamicGridLayout(2,1,0,5));
-		a.setBorder(new EmptyBorder(0,0,0,10));
-		a.setBackground(UIUtilities.DARK_GRAY);
-		JLabel labelText = new JLabel("GE limit:",JLabel.CENTER);
-		labelText.setFont(FontManager.getRunescapeSmallFont());
-		labelText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		a.add(labelText);
-		limitLabel.setHorizontalAlignment(JLabel.CENTER);
-		a.add(limitLabel);
-
-		JPanel b = new JPanel(new DynamicGridLayout(2,1,0,5));
-		b.setBackground(UIUtilities.DARK_GRAY);
-		b.setBorder(new EmptyBorder(0,15,0,0));
-		JLabel roiText = new JLabel("ROI:", JLabel.CENTER);
-		roiText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		roiText.setFont(FontManager.getRunescapeSmallFont());
-		b.add(roiText);
-		roiLabel.setHorizontalAlignment(JLabel.CENTER);
-		b.add(roiLabel);
-
-
-
-
-		JPanel lastPanel = new JPanel(new BorderLayout());
-		lastPanel.setBorder(new EmptyBorder(10,8,6,8));
-		//limitLabel.setBorder(new EmptyBorder(0,0,0,10));
-		//roiLabel.setBorder(new EmptyBorder(0,15,0,0));
-		lastPanel.setBackground(UIUtilities.DARK_GRAY);
-		lastPanel.add(geRefreshLabel, BorderLayout.CENTER);
-		lastPanel.add(a, BorderLayout.WEST);
-		lastPanel.add(b, BorderLayout.EAST);
-		geRefreshLabel.setBorder(new EmptyBorder(8,6,6,6));
-		//panels[panels.length-1].add(createTimerIcon(), BorderLayout.CENTER);
-		itemInfo.add(lastPanel);
-
-//		roiAndGeLimitPanel.add(limitLabel, BorderLayout.WEST);
-//		roiAndGeLimitPanel.add(roiLabel, BorderLayout.EAST);
-//		roiAndGeLimitPanel.setBackground(UIUtilities.DARK_GRAY);
-//		roiAndGeLimitPanel.setBorder(new EmptyBorder(0,8,6,8));
-//		itemInfo.add(roiAndGeLimitPanel);
+		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
 
 		return itemInfo;
 	}
 
-	private JPanel createTimeInfoPanel() {
-		JPanel timeInfoPanel = new JPanel(new DynamicGridLayout(5, 1));
-		timeInfoPanel.setBackground(getBackground());
+	/**
+	 * holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
+	 * @return
+	 */
+	private JPanel createGeLimitRefreshTimeAndRoiPanel() {
+		JPanel geLimitPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
+		geLimitPanel.setBorder(new EmptyBorder(0,0,0,10));
+		geLimitPanel.setBackground(UIUtilities.DARK_GRAY);
+		geLimitPanel.add(geLimitText);
+		geLimitPanel.add(limitLabel);
 
-		JPanel geLimitTimePanel = new JPanel(new BorderLayout());
-		JPanel priceCheckBuyTimePanel = new JPanel(new BorderLayout());
-		JPanel priceCheckSellTimePanel = new JPanel(new BorderLayout());
-		JPanel latestBuyTimePanel = new JPanel(new BorderLayout());
-		JPanel latestSellTimePanel = new JPanel(new BorderLayout());
+		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
+		roiPanel.setBackground(UIUtilities.DARK_GRAY);
+		roiPanel.setBorder(new EmptyBorder(0,15,0,0));
+		roiPanel.add(roiText);
+		roiPanel.add(roiLabel);
 
-		JLabel geRefreshTimeText = new JLabel("GE Limit refresh timer: ");
-		JLabel priceCheckBuyTimeText = new JLabel("Time since PC buy: ");
-		JLabel priceCheckSellTimeText = new JLabel("Time since PC sell: ");
-		JLabel latestBuyTimeText = new JLabel("Time since last buy: ");
-		JLabel latestSellTimeText = new JLabel("Time since last sell: ");
+		//hold the ge limit timer and the text that shows the local time the limit will refresh at
+		JPanel geRefreshTimePanel = new JPanel(new DynamicGridLayout(2,1,0, 2));
+		geRefreshTimePanel.setBorder(new EmptyBorder(5,0,5,0));
+		geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		geRefreshTimePanel.add(geRefreshLabel);
+		geRefreshTimePanel.add(geRefreshAtLabel);
 
-		JPanel[] panels = {geLimitTimePanel, priceCheckBuyTimePanel, priceCheckSellTimePanel, latestBuyTimePanel, latestSellTimePanel};
-		JLabel[] descriptionLabels = {geRefreshTimeText, priceCheckBuyTimeText, priceCheckSellTimeText, latestBuyTimeText, latestSellTimeText};
-		JLabel[] timerValueLabels = {geRefreshTimeVal,priceCheckBuyTimeVal,priceCheckSellTimeVal,latestBuyTimeVal,latestSellTimeVal};
 
-		for (int i=0;i<panels.length;i++) {
-			panels[i].setBackground(UIUtilities.DARK_GRAY);
-			panels[i].setBorder(new EmptyBorder(4,8,8,8));
-			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
-			panels[i].add(timerValueLabels[i], BorderLayout.EAST);
-			timeInfoPanel.add(panels[i]);
-		}
-		return timeInfoPanel;
-		}
+		//holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
+		JPanel geLimitRefreshTimeAndRoiPanel = new JPanel(new BorderLayout());
+		geLimitRefreshTimeAndRoiPanel.setBorder(new EmptyBorder(10,8,6,8));
+		geLimitRefreshTimeAndRoiPanel.setBackground(UIUtilities.DARK_GRAY);
+		geLimitRefreshTimeAndRoiPanel.add(geRefreshTimePanel, BorderLayout.CENTER);
+		geLimitRefreshTimeAndRoiPanel.add(geLimitPanel, BorderLayout.WEST);
+		geLimitRefreshTimeAndRoiPanel.add(roiPanel, BorderLayout.EAST);
 
-	private JLabel createTimerIcon() {
-		JLabel timerIcon = new JLabel(UIUtilities.TIMER);
-		timerIcon.setToolTipText("Click to see time related info such as when the ge limit for this item will reset");
-		timerIcon.addMouseListener(new MouseAdapter() {
+		MouseAdapter geRefreshLabelsListener = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (timeInfoPanel.isVisible()) {
 					timeInfoPanel.setVisible(false);
-					timerIcon.setIcon(UIUtilities.TIMER);
 				}
 				else {
 					timeInfoPanel.setVisible(true);
-					timerIcon.setIcon(UIUtilities.TIMER_HOVER);
 				}
 			}
 
 			@Override
 			public void mouseEntered(MouseEvent e) {
 				if (!timeInfoPanel.isVisible()) {
-					timerIcon.setIcon(UIUtilities.TIMER_HOVER);
+					geRefreshTimePanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
 				}
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e) {
 				if (!timeInfoPanel.isVisible()) {
-					timerIcon.setIcon(UIUtilities.TIMER);
+					geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 				}
 			}
-		});
-	return timerIcon;
+		};
+
+		//i have to attach it to everything cause otherwise it only listens to the specific area not covered by some other component.
+		geRefreshTimePanel.addMouseListener(geRefreshLabelsListener);
+		geRefreshLabel.addMouseListener(geRefreshLabelsListener);
+		geRefreshAtLabel.addMouseListener(geRefreshLabelsListener);
+
+		return geLimitRefreshTimeAndRoiPanel;
 	}
+
+	private JPanel createTimeInfoPanel() {
+		JPanel timeInfoPanel = new JPanel(new DynamicGridLayout(5, 1));
+		timeInfoPanel.setBackground(getBackground());
+
+		JPanel priceCheckBuyTimePanel = new JPanel(new BorderLayout());
+		JPanel priceCheckSellTimePanel = new JPanel(new BorderLayout());
+		JPanel latestBuyTimePanel = new JPanel(new BorderLayout());
+		JPanel latestSellTimePanel = new JPanel(new BorderLayout());
+
+		JLabel priceCheckBuyTimeText = new JLabel("Time since PC buy: ");
+		JLabel priceCheckSellTimeText = new JLabel("Time since PC sell: ");
+		JLabel latestBuyTimeText = new JLabel("Time since last buy: ");
+		JLabel latestSellTimeText = new JLabel("Time since last sell: ");
+
+		JPanel[] panels = {priceCheckBuyTimePanel, priceCheckSellTimePanel, latestBuyTimePanel, latestSellTimePanel};
+		JLabel[] descriptionLabels = {priceCheckBuyTimeText, priceCheckSellTimeText, latestBuyTimeText, latestSellTimeText};
+		JLabel[] timerValueLabels = {priceCheckBuyTimeVal,priceCheckSellTimeVal,latestBuyTimeVal,latestSellTimeVal};
+		JLabel[] dateLabels = {latestPcBuyAt, latestPcSellAt, latestBoughtAt, latestSoldAt};
+
+		for (int i=0;i<panels.length;i++) {
+			descriptionLabels[i].setFont(plugin.getFont());
+			descriptionLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			timerValueLabels[i].setHorizontalAlignment(JLabel.CENTER);
+			dateLabels[i].setHorizontalAlignment(JLabel.CENTER);
+			dateLabels[i].setFont(plugin.getFont());
+			dateLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			timerValueLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			timerValueLabels[i].setFont(FontManager.getRunescapeBoldFont());
+			timerValueLabels[i].setOpaque(true);
+			timerValueLabels[i].setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			panels[i].setBackground(UIUtilities.DARK_GRAY);
+			panels[i].setBorder(new EmptyBorder(4,8,8,8));
+			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
+			panels[i].add(createTimerAndDatePanel(timerValueLabels[i], dateLabels[i]), BorderLayout.EAST);
+			timeInfoPanel.add(panels[i]);
+		}
+		return timeInfoPanel;
+	}
+
+	private JPanel createTimerAndDatePanel(JLabel timerLabel, JLabel dateLabel) {
+		JPanel timerAndDatePanel = new JPanel(new DynamicGridLayout(2,1,0,2));
+		timerAndDatePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		timerAndDatePanel.setBorder(new EmptyBorder(5,5,5,5));
+		timerAndDatePanel.add(timerLabel);
+		timerAndDatePanel.add(dateLabel);
+		return timerAndDatePanel;
+	}
+
+
 
 	private void setValueLabels() {
 
 		Arrays.asList(priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal, profitEachVal, potentialProfitVal, roiLabel, limitLabel).
 				forEach(label -> {
-					if (label == limitLabel) {
-						label.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
-					}
 					label.setHorizontalAlignment(JLabel.RIGHT);
 					label.setFont(plugin.getFont());
+					if (label == limitLabel) {
+						limitLabel.setHorizontalAlignment(JLabel.CENTER);
+						label.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
+					}
+					if (label == roiLabel) {
+						roiLabel.setHorizontalAlignment(JLabel.CENTER);
+					}
 				});
+
+		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
+		geRefreshLabel.setHorizontalAlignment(JLabel.CENTER);
+		geRefreshLabel.setToolTipText("This is a timer displaying how much time is left before the GE limit refreshes for this item");
+
+		geRefreshAtLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		geRefreshAtLabel.setFont(FontManager.getRunescapeSmallFont());
+		geRefreshAtLabel.setHorizontalAlignment(JLabel.CENTER);
+		geRefreshAtLabel.setToolTipText("This shows the local time when the ge limit will refresh");
 
 		roiLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
@@ -330,6 +355,11 @@ public class FlippingItemPanel extends JPanel
 		//Color gradient red-yellow-green depending on ROI.
 		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
+		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? UIUtilities.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
+		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? UIUtilities.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
+		latestBoughtAt.setText(latestBuy.isPresent()? UIUtilities.formatTime(latestBuy.get().getTime(), true, true):"N/A");
+		latestSoldAt.setText(latestSell.isPresent()? UIUtilities.formatTime(latestSell.get().getTime(), true, true):"N/A");
+
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
@@ -338,7 +368,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	private void setDescriptionLabels() {
-		Arrays.asList(priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText).
+		Arrays.asList(priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 					label.setFont(plugin.getFont());
@@ -589,27 +619,28 @@ public class FlippingItemPanel extends JPanel
 		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp" : "N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabel.setText("GE limit: " + String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabel.setText("GE limit: Unknown");
+			limitLabel.setText("Unknown");
 		}
 	}
 
 	public void updateTimerDisplays() {
 
-		//should do something like this for the tooltips.
-//		+ "<br>This will be at " + UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), plugin.getConfig().twelveHourFormat(), false)
-
-
 		flippingItem.validateGeProperties();
-
-		geRefreshTimeVal.setText(flippingItem.getGeLimitResetTime() == null?
-				UIUtilities.formatDuration(Duration.ZERO):
-				UIUtilities.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
 
 		geRefreshLabel.setText(flippingItem.getGeLimitResetTime() == null?
 				UIUtilities.formatDuration(Duration.ZERO):
 				UIUtilities.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
+
+		//need to update this so it can be reset when the timer runs down.
+		if (flippingItem.getTotalGELimit() > 0) {
+			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+		} else {
+			limitLabel.setText("Unknown");
+		}
+
+		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), true, false));
 
 		setTimeString(flippingItem.getLatestMarginCheckBuy(), priceCheckBuyTimeVal);
 		setTimeString(flippingItem.getLatestMarginCheckSell(), priceCheckSellTimeVal);

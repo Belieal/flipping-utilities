@@ -63,11 +63,13 @@ public class AccountData
 	 */
 	public void prepareForUse(ItemManager itemManager) {
 		for (FlippingItem item: trades) {
+
 			//in case ge limits have been updated
 			int tradeItemId = item.getItemId();
 			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
 			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
+			item.setOfferMadeBy();
 			item.setTotalGELimit(geLimit);
 			item.syncState();
 			//when this change was made the field will not exist and will be null

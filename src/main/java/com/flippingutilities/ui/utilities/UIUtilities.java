@@ -132,11 +132,6 @@ public class UIUtilities
 	public static final ImageIcon ARROW_LEFT_HOVER;
 	public static final ImageIcon ARROW_RIGHT_HOVER;
 
-	public static final ImageIcon TIMER;
-	public static final ImageIcon TIMER_HOVER;
-
-
-
 	static
 	{
 		final BufferedImage openIcon = ImageUtil
@@ -198,12 +193,6 @@ public class UIUtilities
 
 		ARROW_LEFT_HOVER = new ImageIcon(arrowLeft);
 		ARROW_RIGHT_HOVER = new ImageIcon(arrowRight);
-
-		final BufferedImage timer = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/timer.png");
-		TIMER = new ImageIcon(timer);
-
-		final BufferedImage timerHover = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/timeron.png");
-		TIMER_HOVER = new ImageIcon(timerHover);
 	}
 
 	/**
