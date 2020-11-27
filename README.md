@@ -39,13 +39,38 @@ Here is a look at the flipping tab.
   <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/flippingtab.png">
 </p>
 
+There are two main parts to the flipping tab. The toolbar and the item cards.
 
-You can use this information to quickly determine if the item is worth it to flip, when the gre
+#### Flipping toolbar
+
+The flipping toolbar allows you to see different views of the flipping tab. For example, by selecting the star, 
+you can see only your favorite items:
+
+<p align="center"> 
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/favorites.png">
+</p>
+
+The other views allow you to sort the items by ROI, potential profit, and last traded time.
+
+#### Item cards
+
+The item cards contain the margin check prices for that item, the last buy and sell prices, profit per flip,
+potential profit if you flip the entire limit amount, the remaining ge limit, and a timer that counts down until
+the ge limit resets along with when the ge limit will reset in your local time.
+
+<p align="center"> 
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/card.png">
+</p>
 
 ### The Statistics Panel
-This panel serves as way to analyze the flips you've made over a period of time, that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
+This panel serves as way to analyze the flips you've made over a time interval that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
 
-The panel consists of various menu-layers. This means that all the menus within the panel are expandable and collapsible.
+Here is a look at the statistics tab
+
+<p align="center"> 
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/statstab.png">
+</p>
+
 
 #### The Top Panel
 
@@ -55,7 +80,7 @@ The panel consists of various menu-layers. This means that all the menus within 
 
 This panel allows you to specify the time span of flips you'd like to see the statistics of. Below that you're shown the general information about your flipping statistics. You can see the total profit (or loss) you've accrued during the time span, that you specified. You can click on this bar to expand or collapse the sub information that is shown below.
 
-#### Item Panels
+#### Item Cards
 
 <p align="center">
   <img src="https://i.imgur.com/XaTiKcZ.png">
