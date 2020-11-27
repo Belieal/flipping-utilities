@@ -499,6 +499,7 @@ public class FlippingItemPanel extends JPanel
 				else
 				{
 					collapse();
+					plugin.search(flippingItem.getItemName());
 					flippingItem.setExpand(false);
 				}
 			}

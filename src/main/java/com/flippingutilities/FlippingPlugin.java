@@ -1127,6 +1127,13 @@ public class FlippingPlugin extends Plugin
 		event.consume();
 	}
 
+	public void search(String name) {
+		log.info("searching!!!!");
+		clientThread.invokeLater(() -> {
+			client.setVar(VarClientStr.CHATBOX_TYPED_TEXT, name);
+		});
+	}
+
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
