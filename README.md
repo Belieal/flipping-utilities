@@ -67,7 +67,9 @@ the ge limit resets along with when the ge limit will reset in your local time.
 If you click on the ge limit timer the item card will expand to show the last time you margin checked
 the item and the last time you bought/sold the item
 
-
+<p align="center"> 
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/times.png">
+</p>
 
 ### The Statistics Panel
 This panel serves as way to analyze the flips you've made over a time interval that you specify. You will be able to see everything from the profits you've gained and the items you've flipped to the individual flip history for each item. It's all automatically recorded by the plugin and will be updated alongside your flipping.
