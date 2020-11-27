@@ -89,7 +89,7 @@ This panel allows you to specify the time span of flips you'd like to see the st
 Below the top panel, you have the item panels. These are the panels that hold information about individual items, that you've flipped. These can also be clicked on to expand with detailed information about each item.
 
 <p align="center">
-  <img src="https://i.imgur.com/yaD2Ezu.png">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/statscard.png">
 </p>
 
 This shows the expanded state of an item panel. Notice that you can also access the trade history from here.
@@ -97,32 +97,23 @@ This shows the expanded state of an item panel. Notice that you can also access 
 #### Trade History
 
 <p align="center">
-  <img src="https://i.imgur.com/yz9YSgg.png">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/flips.png">
 </p>
 
-This is where you can view the individual flips that you've made along with margin checks. This panel is only updated after a flip is complete (one completed buy offer and one completed sell offer, their quantities bought/sold don't need to match).
+This is where you can view the individual flips you've made along with all the buys/sells.
 
+<p align="center">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/buys.png">
+</p>
 
 ## Additional Features
 
-This plugin also features a lot of handy tooltips that will show you important information such as:
-#### GE limit tracking, so you can see the remaining items you can buy in the limit along with when the limit expires.
+#### Slot timers
 
-<p align="center">
-  <img src="https://i.imgur.com/DPT0AXv.png">
-</p>
+Slot timers help you figure out when you should cancel an offer. They show you how long it has been 
+since the offer was last active.
 
-#### Time of latest margin check, so that you can make sure your prices are up-to-date.
 
-<p align="center">
-  <img src="https://i.imgur.com/E2xPEju.png">
-</p>
-
-#### Detailed descriptions of what texts and values mean
-
-<p align="center">
-  <img src="https://i.imgur.com/RCQEFIA.png">
-</p>
 
 #### Widgets
 
@@ -140,13 +131,6 @@ All icons were either made by Belieal or downloaded from the creators on www.fla
 <div>Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 <div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 
-
-## Potential future features
-* Optional notification when a GE limit expires.
-* Favorited items.
-* When setting up buy offers, provide an option to set quantity to only what you have gold for.
-* Collapsing trades after the GE limit has been bought.
-* Grouped checklist tab with import and export features so you can keep track of the items you like to flip most!
 
 ## Changelog
 
