@@ -35,7 +35,10 @@ The panel is designed to be "hands-free". This means you don't have to do anythi
 
 Here is a look at the flipping tab.
 
+<p align="center"> 
 ![flipping tab](images/flippingtab.png)
+</p>
+
 
 You can use this information to quickly determine if the item is worth it to flip, when the gre
 
