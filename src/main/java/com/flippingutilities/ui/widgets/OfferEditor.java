@@ -90,7 +90,7 @@ public class OfferEditor
 				});
 				break;
 			case ("setSellPrice"):
-				text.setText("Set to latest sell price: " + String.format("%,d", value) + " gp");
+				text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
 				text.setAction(1, "Set price");
 				text.setOnOpListener((JavaScriptCallback) ev ->
 				{
@@ -99,7 +99,7 @@ public class OfferEditor
 				});
 				break;
 			case ("setBuyPrice"):
-				text.setText("Set to latest buy price: " + String.format("%,d", value) + " gp");
+				text.setText("Set to latest price check buy price: " + String.format("%,d", value) + " gp");
 				text.setAction(1, "Set price");
 				text.setOnOpListener((JavaScriptCallback) ev ->
 				{

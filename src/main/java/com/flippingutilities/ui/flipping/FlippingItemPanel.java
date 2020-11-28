@@ -70,15 +70,26 @@ public class FlippingItemPanel extends JPanel
 	@Getter
 	private final FlippingItem flippingItem;
 	private FlippingPlugin plugin;
+
+	//All the labels that hold the actual values for these properties.
 	JLabel priceCheckBuyVal = new JLabel();
 	JLabel priceCheckSellVal = new JLabel();
 	JLabel latestBuyPriceVal = new JLabel();
 	JLabel latestSellPriceVal = new JLabel();
 	JLabel profitEachVal = new JLabel();
 	JLabel potentialProfitVal = new JLabel();
-
-	JLabel roiLabel = new JLabel();
-	JLabel limitLabel = new JLabel();
+	JLabel roiLabelVal = new JLabel();
+	JLabel limitLabelVal = new JLabel();
+	JLabel priceCheckBuyTimeVal = new JLabel();
+	JLabel priceCheckSellTimeVal = new JLabel();
+	JLabel latestBuyTimeVal = new JLabel();
+	JLabel latestSellTimeVal = new JLabel();
+	JLabel geRefreshLabel = new JLabel();
+	JLabel geRefreshAtLabel = new JLabel();
+	JLabel latestPcBuyAt = new JLabel();
+	JLabel latestPcSellAt = new JLabel();
+	JLabel latestBoughtAt = new JLabel();
+	JLabel latestSoldAt = new JLabel();
 
 	JLabel priceCheckBuyText = new JLabel("Should buy at: ");
 	JLabel priceCheckSellText = new JLabel("Should sell at: ");
@@ -91,20 +102,6 @@ public class FlippingItemPanel extends JPanel
 
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
-
-	JLabel priceCheckBuyTimeVal = new JLabel();
-	JLabel priceCheckSellTimeVal = new JLabel();
-	JLabel latestBuyTimeVal = new JLabel();
-	JLabel latestSellTimeVal = new JLabel();
-
-	JLabel geRefreshLabel = new JLabel();
-	JLabel geRefreshAtLabel = new JLabel();
-
-	JLabel latestPcBuyAt = new JLabel();
-	JLabel latestPcSellAt = new JLabel();
-	JLabel latestBoughtAt = new JLabel();
-	JLabel latestSoldAt = new JLabel();
-
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
 	{
@@ -180,6 +177,7 @@ public class FlippingItemPanel extends JPanel
 			}
 		}
 
+		//last grid contains the panel that contains the ge limit, the ge refresh timer, and the roi.
 		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
 
 		return itemInfo;
@@ -194,13 +192,13 @@ public class FlippingItemPanel extends JPanel
 		geLimitPanel.setBorder(new EmptyBorder(0,0,0,10));
 		geLimitPanel.setBackground(UIUtilities.DARK_GRAY);
 		geLimitPanel.add(geLimitText);
-		geLimitPanel.add(limitLabel);
+		geLimitPanel.add(limitLabelVal);
 
 		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
 		roiPanel.setBackground(UIUtilities.DARK_GRAY);
 		roiPanel.setBorder(new EmptyBorder(0,15,0,0));
 		roiPanel.add(roiText);
-		roiPanel.add(roiLabel);
+		roiPanel.add(roiLabelVal);
 
 		//hold the ge limit timer and the text that shows the local time the limit will refresh at
 		JPanel geRefreshTimePanel = new JPanel(new DynamicGridLayout(2,1,0, 2));
@@ -304,16 +302,17 @@ public class FlippingItemPanel extends JPanel
 
 	private void setValueLabels() {
 
-		Arrays.asList(priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal, profitEachVal, potentialProfitVal, roiLabel, limitLabel).
+		Arrays.asList(priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal, profitEachVal, potentialProfitVal,
+				roiLabelVal, limitLabelVal).
 				forEach(label -> {
 					label.setHorizontalAlignment(JLabel.RIGHT);
 					label.setFont(plugin.getFont());
-					if (label == limitLabel) {
-						limitLabel.setHorizontalAlignment(JLabel.CENTER);
+					if (label == limitLabelVal) {
+						limitLabelVal.setHorizontalAlignment(JLabel.CENTER);
 						label.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
 					}
-					if (label == roiLabel) {
-						roiLabel.setHorizontalAlignment(JLabel.CENTER);
+					if (label == roiLabelVal) {
+						roiLabelVal.setHorizontalAlignment(JLabel.CENTER);
 					}
 				});
 
@@ -327,7 +326,7 @@ public class FlippingItemPanel extends JPanel
 		geRefreshAtLabel.setHorizontalAlignment(JLabel.CENTER);
 		geRefreshAtLabel.setToolTipText("This shows the local time when the ge limit will refresh");
 
-		roiLabel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
+		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
 		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
 		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
@@ -351,9 +350,9 @@ public class FlippingItemPanel extends JPanel
 		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
 		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
 
-		roiLabel.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
+		roiLabelVal.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
 		//Color gradient red-yellow-green depending on ROI.
-		roiLabel.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
+		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
 		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? UIUtilities.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
 		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? UIUtilities.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
@@ -361,9 +360,9 @@ public class FlippingItemPanel extends JPanel
 		latestSoldAt.setText(latestSell.isPresent()? UIUtilities.formatTime(latestSell.get().getTime(), true, true):"N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabel.setText("Unknown");
+			limitLabelVal.setText("Unknown");
 		}
 	}
 
@@ -619,9 +618,9 @@ public class FlippingItemPanel extends JPanel
 		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp" : "N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabel.setText("Unknown");
+			limitLabelVal.setText("Unknown");
 		}
 	}
 
@@ -635,9 +634,9 @@ public class FlippingItemPanel extends JPanel
 
 		//need to update this so it can be reset when the timer runs down.
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabel.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabel.setText("Unknown");
+			limitLabelVal.setText("Unknown");
 		}
 
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), true, false));
