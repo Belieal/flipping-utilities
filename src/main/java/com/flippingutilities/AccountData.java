@@ -33,9 +33,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.http.api.item.ItemStats;
 
+@Slf4j
 @Data
 public class AccountData
 {
@@ -61,9 +63,10 @@ public class AccountData
 	 * loads their trades after the new update. This method serves as a way to sanitize the data. It also ensures
 	 * that the FlippingItems have their non persisted fields set from history.
 	 */
-	public void prepareForUse(ItemManager itemManager) {
-		for (FlippingItem item: trades) {
-
+	public void prepareForUse(ItemManager itemManager)
+	{
+		for (FlippingItem item : trades)
+		{
 			//in case ge limits have been updated
 			int tradeItemId = item.getItemId();
 			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
@@ -73,7 +76,8 @@ public class AccountData
 			item.setTotalGELimit(geLimit);
 			item.syncState();
 			//when this change was made the field will not exist and will be null
-			if (item.getValidFlippingPanelItem() == null) {
+			if (item.getValidFlippingPanelItem() == null)
+			{
 				item.setValidFlippingPanelItem(true);
 			}
 		}
