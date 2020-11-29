@@ -1057,7 +1057,6 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-
 	public void addSelectedGeTabOffers(List<OfferEvent> selectedOffers)
 	{
 		for (OfferEvent offerEvent : selectedOffers)

@@ -425,8 +425,10 @@ public class HistoryManager
 		for (int i = compressedOfferEvents.size() - 1; i > -1; i--)
 		{
 			OfferEvent pastOffer = compressedOfferEvents.get(i);
+			//don't just compare state because the scraped offer will only be of state BOUGHT/SOLD, whereas the offer in history
+			//might be CANCELLED_BUY/CANCELLED_SELL
 			if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
-				&& offer.getState() == pastOffer.getState())
+				&& offer.isBuy() == pastOffer.isBuy() && pastOffer.isComplete())
 			{
 				matches.add(pastOffer);
 				count++;
