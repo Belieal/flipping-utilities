@@ -1120,18 +1120,7 @@ public class FlippingPlugin extends Plugin
 
 	public Font getFont()
 	{
-		if (config.subInfoFontStyle() == Fonts.BOLD_FONT)
-		{
-			return FontManager.getRunescapeBoldFont();
-		}
-		else if (config.subInfoFontStyle() == Fonts.REGULAR_FONT)
-		{
-			return FontManager.getRunescapeFont();
-		}
-		else
-		{
-			return FontManager.getRunescapeSmallFont();
-		}
+		return FontManager.getRunescapeSmallFont();
 	}
 
 	@Subscribe
