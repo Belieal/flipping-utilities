@@ -58,7 +58,6 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
-import org.pushingpixels.substance.api.UiThreadingViolationException;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -321,8 +320,8 @@ public class FlippingItemPanel extends JPanel
 
 		latestBuyPriceVal.setForeground(Color.white);
 		latestSellPriceVal.setForeground(Color.white);
-		latestBuyPriceVal.setFont(UIUtilities.runescapeBoldFont);
-		latestSellPriceVal.setFont(UIUtilities.runescapeBoldFont);
+		latestBuyPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
+		latestSellPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
 
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
