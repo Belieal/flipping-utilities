@@ -317,7 +317,7 @@ public class FlippingItem
 		latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
 		latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
 		latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
-		latestActivityTime = history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
+		latestActivityTime = history.getCompressedOfferEvents().size() == 0? Instant.now() : history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
 	}
 
 	public void setOfferMadeBy() {
