@@ -32,8 +32,8 @@ import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.Color;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GrandExchangeOffer;
@@ -47,28 +47,28 @@ public class TradeActivityTimer
 	//Spacing between the slot state text and the timer
 	private static final String BUY_SPACER = "          ";
 	private static final String SELL_SPACER = "          ";
-
-	//AKA RunescapeFont (non-bold)
 	private static final int FONT_ID = 495;
 
 	//The slot that this timer object embeds to
 	@Getter
-	private Widget slotWidget;
-	private FlippingPlugin plugin;
-	private Client client;
+	private transient Widget slotWidget;
+	//The widget of the text at the top of the offer slot
+	private transient Widget slotStateWidget;
+	//The state can be one of "Sell", "Buy" and "Empty", depending on the slot's offer state
+	private transient String slotStateString;
+
+	@Setter
+	private transient FlippingPlugin plugin;
+	@Setter
+	private transient Client client;
+
 	//Index of the slot widget from left to right, top to bottom. (0-7)
 	private int slotIndex;
-
-	//The widget of the text at the top of the offer slot
-	private Widget slotStateWidget;
-	//The state can be one of "Sell", "Buy" and "Empty", depending on the slot's offer state
-	private String slotStateString;
-
-	private Instant lastUpdate = Instant.now();
-	private Instant tradeStartTime = Instant.now();
+	private Instant lastUpdate;
+	private Instant tradeStartTime;
 	private OfferEvent currentOffer;
 	//is true when we get an offer from when the account was logged out which means we don't know when it occurred.
-	private boolean offerOccurredAtUnknownTime;
+	private transient boolean offerOccurredAtUnknownTime;
 
 	public TradeActivityTimer(FlippingPlugin plugin, Client client, int slotIndex)
 	{
@@ -80,7 +80,8 @@ public class TradeActivityTimer
 	public void setWidget(Widget slotWidget)
 	{
 		this.slotWidget = slotWidget;
-		slotStateString = slotWidget.getChild(16).getText();
+		slotStateWidget = slotWidget.getChild(16);
+		slotStateString = slotStateWidget.getText();
 	}
 
 	public void setCurrentOffer(OfferEvent offer)
@@ -111,8 +112,7 @@ public class TradeActivityTimer
 			return;
 		}
 
-		//Don't need to update if the timer won't be visible to the user.
-		if (slotWidget.isHidden() || plugin.getCurrentlyLoggedInAccount() == null || currentOffer == null || offerOccurredAtUnknownTime)
+		if (slotWidget.isHidden() || plugin.getCurrentlyLoggedInAccount() == null || currentOffer == null || offerOccurredAtUnknownTime || tradeStartTime == null)
 		{
 			return;
 		}

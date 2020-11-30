@@ -36,12 +36,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GrandExchangeOfferState;
 
 /**
  * Manages the history for an item. This class is responsible for figuring out how much profit a user made for
@@ -87,7 +90,8 @@ public class HistoryManager
 	{
 		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came or its slot,
 		//there is no point in updating ge properties or trying to delete previous offers for the trade.
-		if (newOffer.getSlot() != -1) {
+		if (newOffer.getSlot() != -1)
+		{
 			updateGeProperties(newOffer);
 			deletePreviousOffersForTrade(newOffer);
 		}
@@ -408,23 +412,28 @@ public class HistoryManager
 	 * to see if there are any potential duplicates of an offer a user is trying to add manually from their GE history.
 	 * Since the offers scraped from the GE history tab don't have slot information, the slots are not compared here
 	 * to see if an offer is a match/duplicate.
+	 *
 	 * @param offer offer that duplicates are being found for.
-	 * @parm limit max amount of potentially duplicate offers to find.
 	 * @return offers that could potentially be duplicates of the given offer event.
+	 * @parm limit max amount of potentially duplicate offers to find.
 	 */
-	public List<OfferEvent> getOfferMatches(OfferEvent offer, int limit) {
+	public List<OfferEvent> getOfferMatches(OfferEvent offer, int limit)
+	{
 		List<OfferEvent> matches = new ArrayList<>();
 		int count = 0;
 		//look from the back to get the N most recent matches where N = limit.
-		for (int i = compressedOfferEvents.size()-1;i > -1;i--)
+		for (int i = compressedOfferEvents.size() - 1; i > -1; i--)
 		{
 			OfferEvent pastOffer = compressedOfferEvents.get(i);
+			//don't just compare state because the scraped offer will only be of state BOUGHT/SOLD, whereas the offer in history
+			//might be CANCELLED_BUY/CANCELLED_SELL
 			if (offer.getPrice() == pastOffer.getPrice() && offer.getCurrentQuantityInTrade() == pastOffer.getCurrentQuantityInTrade()
-				&& offer.getState() == pastOffer.getState())
+				&& offer.isBuy() == pastOffer.isBuy() && pastOffer.isComplete())
 			{
 				matches.add(pastOffer);
-				count ++;
-				if (count == limit) {
+				count++;
+				if (count == limit)
+				{
 					break;
 				}
 			}
@@ -597,5 +606,17 @@ public class HistoryManager
 		}
 
 		return flips;
+	}
+
+	public Optional<OfferEvent> getLatestOfferThatMatchesPredicate(Predicate<OfferEvent> predicate)
+	{
+		for (int i = compressedOfferEvents.size() - 1; i > -1; i--)
+		{
+			if (predicate.test(compressedOfferEvents.get(i)))
+			{
+				return Optional.of(compressedOfferEvents.get(i));
+			}
+		}
+		return Optional.empty();
 	}
 }

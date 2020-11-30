@@ -28,11 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.HistoryManager;
 import com.flippingutilities.ui.utilities.Paginator;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_LEFT;
-import static com.flippingutilities.ui.utilities.UIUtilities.ARROW_RIGHT;
 import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
@@ -40,10 +36,8 @@ import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
@@ -55,7 +49,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -272,7 +265,6 @@ public class FlippingPanel extends JPanel
 	 */
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
-		//Reset active panel list
 		activePanels.clear();
 
 		SwingUtilities.invokeLater(() ->
@@ -293,7 +285,7 @@ public class FlippingPanel extends JPanel
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-			//Keep track of the item index to determine the constraints its built upon
+
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
@@ -359,50 +351,50 @@ public class FlippingPanel extends JPanel
 					{
 						return -1;
 					}
-					if ((item1.getMarginCheckBuyPrice() != 0 && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() != 0 && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() == 0 || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 0;
 					}
 
 					boolean shouldIncludeMarginCheck = plugin.getConfig().marginCheckLoss();
 					boolean shouldUseRemainingGeLimit = plugin.getConfig().geLimitProfit();
-					return item2.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit) - item1.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit);
+					return item2.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit).orElse(0) - item1.getPotentialProfit(shouldIncludeMarginCheck, shouldUseRemainingGeLimit).orElse(0);
 				});
 				break;
 			case "roi":
 				result.sort((item1, item2) -> {
-					if ((item1.getMarginCheckBuyPrice() != 0 && item1.getMarginCheckSellPrice() != 0) && (item2.getMarginCheckSellPrice() == 0 || item2.getMarginCheckBuyPrice() == 0))
+					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() != 0 && item2.getMarginCheckSellPrice() != 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((item2.getMarginCheckBuyPrice() == 0 || item2.getMarginCheckSellPrice() == 0) && (item1.getMarginCheckSellPrice() == 0 || item1.getMarginCheckBuyPrice() == 0))
+					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
 					{
 						return 0;
 					}
 
-					int item1ProfitEach = item1.getMarginCheckSellPrice() - item1.getMarginCheckBuyPrice();
-					int item2ProfitEach = item2.getMarginCheckSellPrice() - item2.getMarginCheckBuyPrice();
+					int item1ProfitEach = item1.getLatestMarginCheckSell().get().getPrice() - item1.getLatestMarginCheckBuy().get().getPrice();
+					int item2ProfitEach = item2.getLatestMarginCheckSell().get().getPrice() - item2.getLatestMarginCheckBuy().get().getPrice();
 
-					float item1roi = (float) item1ProfitEach / item1.getMarginCheckBuyPrice() * 100;
-					float item2roi = (float) item2ProfitEach / item2.getMarginCheckBuyPrice() * 100;
+					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuy().get().getPrice() * 100;
+					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuy().get().getPrice() * 100;
 
-					return Float.compare(item2roi, item1roi);
+					return Float.compare(item1roi, item2roi);
 				});
 				break;
 		}
@@ -453,29 +445,11 @@ public class FlippingPanel extends JPanel
 	 * Checks if a FlippingItem's margins (buy and sell price) are outdated and updates the tooltip.
 	 * This method is called in FlippingPlugin every second by the scheduler.
 	 */
-	public void updateActivePanelsPriceOutdatedDisplay()
+	public void updateTimerDisplays()
 	{
 		for (FlippingItemPanel activePanel : activePanels)
 		{
-			activePanel.updatePriceOutdatedDisplay();
-		}
-	}
-
-	/**
-	 * uses the properties of the FlippingItem to show the ge limit and refresh time display. This is invoked
-	 * in the FlippingPlugin in two places:
-	 * <p>
-	 * 1. Everytime an offer comes in (in onGrandExchangeOfferChanged) and the user
-	 * is currently looking at either the account wide trade list or trades list of the account currently
-	 * logged in
-	 * <p>
-	 * 2. In a background thread every second, as initiated in the startUp() method of the FlippingPlugin.
-	 */
-	public void updateActivePanelsGePropertiesDisplay()
-	{
-		for (FlippingItemPanel activePanel : activePanels)
-		{
-			activePanel.updateGePropertiesDisplay();
+			activePanel.updateTimerDisplays();
 		}
 	}
 
@@ -543,5 +517,13 @@ public class FlippingPanel extends JPanel
 	{
 		selectedSort = buttonName;
 		rebuild(plugin.getTradesForCurrentView());
+	}
+
+	public void refreshPricesForFlippingItemPanel(int itemId) {
+		for (FlippingItemPanel panel:activePanels) {
+			if (panel.getFlippingItem().getItemId() == itemId) {
+				panel.refreshProperties();
+			}
+		}
 	}
 }

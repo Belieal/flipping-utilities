@@ -463,7 +463,6 @@ public class StatsPanel extends JPanel
 		JPanel itemContainer = new JPanel(new BorderLayout());
 		itemContainer.add(sortPanel, BorderLayout.NORTH);
 		itemContainer.add(scrollWrapper, BorderLayout.CENTER);
-		//itemContainer.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 1, ColorScheme.BRAND_ORANGE));
 
 		paginator = new Paginator(() -> SwingUtilities.invokeLater(() -> {
 			Instant rebuildStart = Instant.now();
@@ -848,26 +847,10 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateSubInfoFont()
 	{
-		Font font = null;
-		switch (plugin.getConfig().subInfoFontStyle())
-		{
-			case SMALL_FONT:
-				font = FontManager.getRunescapeSmallFont();
-				break;
-
-			case REGULAR_FONT:
-				font = FontManager.getRunescapeFont();
-				break;
-
-			case BOLD_FONT:
-				font = FontManager.getRunescapeBoldFont();
-				break;
-		}
-
 		for (int i = 0; i < textLabelArray.length; i++)
 		{
-			textLabelArray[i].setFont(font);
-			valLabelArray[i].setFont(font);
+			textLabelArray[i].setFont(plugin.getFont());
+			valLabelArray[i].setFont(plugin.getFont());
 		}
 	}
 

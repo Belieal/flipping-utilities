@@ -28,7 +28,7 @@ If you notice any bugs or have any suggestions, let us know by making an [issue]
 
 
 # Features
-The plugin is divided into two panels, the flipping panel and statistics panel. Each panel shows different information about the flips you've made.
+The plugin is divided into two tabs, the flipping tab and statistics tab. Each panel shows different information about the flips you've made.
 
 ### The Flipping Panel
 This panel is designed to be the main utility panel. It shows the information about your flips that is most relevant when you're actively flipping.
@@ -38,7 +38,7 @@ The panel is designed to be "hands-free". This means you don't have to do anythi
 Here is a look at the flipping tab.
 
 <p align="center"> 
-  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/flippingtab.png">
+  <img src = "https://github.com/Belieal/flipping-utilities/blob/master/images/flippingtabpic.png">
 </p>
 
 There are two main parts to the flipping tab. The toolbar and the item cards.

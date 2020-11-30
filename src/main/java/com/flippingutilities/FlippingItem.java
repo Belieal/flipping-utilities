@@ -34,6 +34,7 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class is the representation of an item that a user is flipping. It contains information about the
@@ -46,8 +47,10 @@ import lombok.Setter;
  * of a panel which is then displayed.
  */
 @AllArgsConstructor
+@Slf4j
 public class FlippingItem
 {
+
 	@SerializedName("id")
 	@Getter
 	private final int itemId;
@@ -61,36 +64,6 @@ public class FlippingItem
 	@Getter
 	@Setter
 	private int totalGELimit;
-
-	@SerializedName("mCBP")
-	@Getter
-	private int marginCheckBuyPrice;
-
-	@SerializedName("mCSP")
-	@Getter
-	private int marginCheckSellPrice;
-
-	@SerializedName("mCBT")
-	@Getter
-	private Instant marginCheckBuyTime;
-
-	@SerializedName("mCST")
-	@Getter
-	private Instant marginCheckSellTime;
-
-	@SerializedName("lBT")
-	@Getter
-	private Instant latestBuyTime;
-
-	@SerializedName("lST")
-	@Getter
-	private Instant latestSellTime;
-
-	//An activity is described as a completed offer event.
-	@SerializedName("lAT")
-	@Getter
-	@Setter
-	private Instant latestActivityTime;
 
 	@SerializedName("h")
 	@Getter
@@ -111,33 +84,56 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
+	//non persisted fields start here.
+	@Getter
+	private transient Optional<OfferEvent> latestMarginCheckBuy;
+
+	@Getter
+	private transient Optional<OfferEvent> latestMarginCheckSell;
+
+	@Getter
+	private transient Optional<OfferEvent> latestBuy;
+
+	@Getter
+	private transient Optional<OfferEvent> latestSell;
+
+	//does not have to Optional because a flipping item always has at least one offer, which establishes
+	//latestActivityTime.
+	@Getter
+	private transient Instant latestActivityTime;
+
 	@Getter
 	@Setter
 	private transient Boolean expand;
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
-		this.itemId = itemId;
+		this.latestMarginCheckBuy = Optional.empty();
+		this.latestMarginCheckSell = Optional.empty();
+		this.latestBuy = Optional.empty();
+		this.latestSell = Optional.empty();
 		this.itemName = itemName;
+		this.itemId = itemId;
 		this.totalGELimit = totalGeLimit;
 		this.flippedBy = flippedBy;
 	}
 
-	//utility for cloning an instant...
-	private Instant ci(Instant i)
-	{
-		if (i == null)
-		{
-			return null;
-		}
-		return Instant.ofEpochMilli(i.toEpochMilli());
-	}
-
 	public FlippingItem clone()
 	{
-		return new FlippingItem(itemId, itemName, totalGELimit, marginCheckBuyPrice, marginCheckSellPrice,
-			ci(marginCheckBuyTime), ci(marginCheckSellTime), ci(latestBuyTime), ci(latestSellTime), ci(latestActivityTime),
-			history.clone(), flippedBy, validFlippingPanelItem, favorite, expand);
+		return new FlippingItem(
+				itemId,
+				itemName,
+				totalGELimit,
+				history.clone(),
+				flippedBy,
+				validFlippingPanelItem,
+				favorite,
+				latestMarginCheckBuy,
+				latestMarginCheckSell,
+				latestBuy,
+				latestSell,
+				latestActivityTime,
+				expand);
 	}
 
 	/**
@@ -152,51 +148,35 @@ public class FlippingItem
 	}
 
 	/**
-	 * Updates the latest buy/sell times of an item. This will be used to display an overlay on
-	 * GE slots to show whether an item is active or not.
+	 * Updates the latest margin check/buy/sell offers. Technically, we don't need this and we can just
+	 * query the history manager, but this saves us from querying the history manager which would have
+	 * to search through the offers.
 	 *
 	 * @param newOffer new offer just received
 	 */
-	public void updateLatestTimes(OfferEvent newOffer)
+	public void updateLatestProperties(OfferEvent newOffer)
 	{
 		if (newOffer.isBuy())
 		{
-			latestBuyTime = newOffer.getTime();
+			if (newOffer.isMarginCheck())
+			{
+				latestMarginCheckBuy = Optional.of(newOffer);
+			}
+			latestBuy = Optional.of(newOffer);
 		}
 		else
 		{
-			latestSellTime = newOffer.getTime();
+			if (newOffer.isMarginCheck())
+			{
+				latestMarginCheckSell = Optional.of(newOffer);
+			}
+			latestSell = Optional.of(newOffer);
 		}
-
 		latestActivityTime = newOffer.getTime();
 	}
 
 	/**
-	 * This method is used to update the margin of an item. As such it is only invoked when an offer is a
-	 * margin check. It is invoked by FlippingPlugin's updateFlippingItem method in the plugin class which itself is only
-	 * invoked when an offer is a margin check.
-	 *
-	 * @param newOffer the new offer just received.
-	 */
-	public void updateMargin(OfferEvent newOffer)
-	{
-		int tradePrice = newOffer.getPrice();
-		Instant tradeTime = newOffer.getTime();
-
-		if (newOffer.isBuy())
-		{
-			marginCheckSellPrice = tradePrice;
-			marginCheckSellTime = tradeTime;
-		}
-		else
-		{
-			marginCheckBuyPrice = tradePrice;
-			marginCheckBuyTime = tradeTime;
-		}
-	}
-
-	/**
-	 * combines two flipping items together (this only make sense if they are for the same item) by adding
+	 * combines two flipping items together (this only makes sense if they are for the same item) by adding
 	 * their histories together and retaining the other properties of the latest active item.
 	 *
 	 * @return merged flipping item
@@ -252,8 +232,8 @@ public class FlippingItem
 		return history.getIntervalsHistory(earliestTime);
 	}
 
-	public int remainingGeLimit()
-	{
+	public int getRemainingGeLimit()
+		{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
 	}
 
@@ -287,52 +267,61 @@ public class FlippingItem
 		validFlippingPanelItem = isValid;
 		if (!isValid)
 		{
-			marginCheckSellPrice = 0;
-			marginCheckSellTime = null;
-			marginCheckBuyPrice = 0;
-			marginCheckBuyTime = null;
+			latestMarginCheckBuy = Optional.empty();
+			latestMarginCheckSell = Optional.empty();
+			latestBuy = Optional.empty();
+			latestSell = Optional.empty();
 		}
 	}
 
-	//generated to string from intellij. I made it not create a representation of the history cause it would be too
-	//long and you typically don't want to see that.
-	@Override
-	public String toString()
+	public Optional<Integer> getPotentialProfit(boolean includeMarginCheck, boolean shouldUseRemainingGeLimit)
 	{
-		final StringBuilder sb = new StringBuilder("FlippingItem{");
-		sb.append("itemId=").append(itemId);
-		sb.append(", itemName='").append(itemName).append('\'');
-		sb.append(", totalGELimit=").append(totalGELimit);
-		sb.append(", marginCheckBuyPrice=").append(marginCheckBuyPrice);
-		sb.append(", marginCheckSellPrice=").append(marginCheckSellPrice);
-		sb.append(", marginCheckBuyTime=").append(marginCheckBuyTime);
-		sb.append(", marginCheckSellTime=").append(marginCheckSellTime);
-		sb.append(", latestBuyTime=").append(latestBuyTime);
-		sb.append(", latestSellTime=").append(latestSellTime);
-		sb.append(", latestActivityTime=").append(latestActivityTime);
-		sb.append(", madeBy='").append(flippedBy).append('\'');
-		sb.append('}');
-		return sb.toString();
-	}
-
-	public int getPotentialProfit(boolean includeMarginCheck, boolean currentGeLimit)
-	{
-		int profitEach = marginCheckSellPrice - marginCheckBuyPrice;
-		if (remainingGeLimit() == 0)
-		{
-			return 0;
+		if (!getLatestMarginCheckBuy().isPresent() || !getLatestMarginCheckSell().isPresent()) {
+			return Optional.empty();
 		}
-		int geLimit = currentGeLimit ? remainingGeLimit() : totalGELimit;
+
+		int profitEach = getCurrentProfitEach().get();
+		int remainingGeLimit = getRemainingGeLimit();
+		int geLimit = shouldUseRemainingGeLimit ? remainingGeLimit : totalGELimit;
 		int profitTotal = geLimit * profitEach;
 		if (includeMarginCheck)
 		{
 			profitTotal -= profitEach;
 		}
-		return profitTotal;
+		return Optional.of(profitTotal);
 	}
 
 	public List<OfferEvent> getOfferMatches(OfferEvent offerEvent, int limit)
 	{
 		return history.getOfferMatches(offerEvent, limit);
 	}
+
+	public Optional<Float> getCurrentRoi() {
+		return getCurrentProfitEach().isPresent()?
+				Optional.of((float)getCurrentProfitEach().get() / getLatestMarginCheckSell().get().getPrice() * 100) : Optional.empty();
+	}
+
+	public Optional<Integer> getCurrentProfitEach() {
+		return getLatestMarginCheckBuy().isPresent() && getLatestMarginCheckSell().isPresent()?
+				Optional.of(getLatestMarginCheckBuy().get().getPrice() - getLatestMarginCheckSell().get().getPrice()) : Optional.empty();
+	}
+
+	/**
+	 * When the plugin starts up, the flipping items are constructed, but they are going to be missing
+	 * values for certain fields that aren't persisted. I chose not to persist those fields as those fields
+	 * can be constructed using the history that is already persisted. The downside, is that I have to
+	 * manually sync state when flipping items are created at plugin startup.
+	 */
+	public void syncState() {
+		latestBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
+		latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
+		latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+		latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+		latestActivityTime = history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
+	}
+
+	public void setOfferMadeBy() {
+		history.getCompressedOfferEvents().forEach(o -> o.setMadeBy(flippedBy));
+	}
+
 }
