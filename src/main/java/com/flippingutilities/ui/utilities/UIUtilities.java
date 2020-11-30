@@ -32,10 +32,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
@@ -55,8 +59,10 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.StyleContext;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
@@ -69,6 +75,41 @@ import okhttp3.HttpUrl;
 @Slf4j
 public class UIUtilities
 {
+
+	public static Font RUNESCAPE_BOLD_FONT;
+
+	static
+	{
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+
+		try
+		{
+			Font font = Font.createFont(Font.TRUETYPE_FONT,
+					FontManager.class.getResourceAsStream("runescape.ttf"))
+					.deriveFont(Font.PLAIN, 16);
+			ge.registerFont(font);
+
+			Font boldFont = Font.createFont(Font.TRUETYPE_FONT,
+					FontManager.class.getResourceAsStream("runescape_bold.ttf"))
+					.deriveFont(Font.BOLD, 16);
+			ge.registerFont(boldFont);
+
+			RUNESCAPE_BOLD_FONT = StyleContext.getDefaultStyleContext()
+					.getFont(boldFont.getName(), Font.BOLD, 13);
+			ge.registerFont(RUNESCAPE_BOLD_FONT);
+		}
+		catch (FontFormatException ex)
+		{
+			log.info("couldn't load font due to {}", ex);
+			RUNESCAPE_BOLD_FONT = FontManager.getRunescapeBoldFont();
+		}
+		catch (IOException ex)
+		{
+			log.info("font file not found");
+			RUNESCAPE_BOLD_FONT = FontManager.getRunescapeBoldFont();
+		}
+	}
+
 
 	public static final Color OUTDATED_COLOR = new Color(250, 74, 75);
 	public static final Color PROFIT_COLOR = new Color(255, 175, 55);

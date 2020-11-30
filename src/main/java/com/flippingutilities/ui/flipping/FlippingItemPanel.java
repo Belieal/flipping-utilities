@@ -37,6 +37,7 @@ import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
 import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
@@ -91,8 +92,8 @@ public class FlippingItemPanel extends JPanel
 	JLabel latestBoughtAt = new JLabel();
 	JLabel latestSoldAt = new JLabel();
 
-	JLabel priceCheckBuyText = new JLabel("Should buy at: ");
-	JLabel priceCheckSellText = new JLabel("Should sell at: ");
+	JLabel priceCheckBuyText = new JLabel("Last margin buy: ");
+	JLabel priceCheckSellText = new JLabel("Last margin sell: ");
 	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
 	JLabel latestSellPriceText = new JLabel("Last sell price: ");
 	JLabel profitEachText = new JLabel("Profit each: ");
@@ -162,8 +163,8 @@ public class FlippingItemPanel extends JPanel
 		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
 
 		JPanel[] panels = {priceCheckBuyPanel, priceCheckSellPanel, latestBuyPanel, latestSellPanel, profitEachPanel, potentialProfitPanel};
-		JLabel[] descriptionLabels = {priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText};
-		JLabel[] valueLabels = {priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal,profitEachVal, potentialProfitVal};
+		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
+		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal,profitEachVal, potentialProfitVal};
 
 
 		for (int i=0;i<panels.length;i++) {
@@ -302,7 +303,7 @@ public class FlippingItemPanel extends JPanel
 
 	private void setValueLabels() {
 
-		Arrays.asList(priceCheckBuyVal, priceCheckSellVal, latestBuyPriceVal, latestSellPriceVal, profitEachVal, potentialProfitVal,
+		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
 				roiLabelVal, limitLabelVal).
 				forEach(label -> {
 					label.setHorizontalAlignment(JLabel.RIGHT);
@@ -315,6 +316,21 @@ public class FlippingItemPanel extends JPanel
 						roiLabelVal.setHorizontalAlignment(JLabel.CENTER);
 					}
 				});
+
+
+		latestBuyPriceVal.setForeground(Color.white);
+		latestSellPriceVal.setForeground(Color.white);
+		latestBuyPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
+		latestSellPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
+
+		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+
+
+
+		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
+		potentialProfitVal.setForeground(UIUtilities.PROFIT_COLOR);
+
 
 		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -367,7 +383,7 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	private void setDescriptionLabels() {
-		Arrays.asList(priceCheckBuyText, priceCheckSellText, latestBuyPriceText, latestSellPriceText, profitEachText, profitTotalText, geLimitText, roiText).
+		Arrays.asList(latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 					label.setFont(plugin.getFont());
