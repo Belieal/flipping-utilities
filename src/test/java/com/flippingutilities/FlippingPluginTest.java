@@ -22,7 +22,7 @@ public class FlippingPluginTest
 		plugin = new FlippingPlugin();
 		plugin.setCurrentlyLoggedInAccount("testacc");
 		plugin.setAccountCache(Collections.singletonMap("testacc", new AccountData()));
-		plugin.setSlotTimers(plugin.setupSlotTimers());
+		plugin.getAccountCache().get("testacc").setSlotTimers(plugin.setupSlotTimers());
 	}
 
 	/**

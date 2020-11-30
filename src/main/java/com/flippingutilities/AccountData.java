@@ -26,6 +26,7 @@
 
 package com.flippingutilities;
 
+import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class AccountData
 	private Instant sessionStartTime = Instant.now();
 	private Duration accumulatedSessionTime = Duration.ZERO;
 	private Instant lastSessionTimeUpdate;
+	private List<TradeActivityTimer> slotTimers;
 
 	/**
 	 * Resets all session related data associated with an account. This is called when the plugin first starts
