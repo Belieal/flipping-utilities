@@ -26,7 +26,6 @@
 
 package com.flippingutilities;
 
-import com.flippingutilities.FlippingConfig.Fonts;
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
@@ -351,7 +350,15 @@ public class FlippingPlugin extends Plugin
 		if (slotTimersTask == null && config.slotTimersEnabled())
 		{
 			log.info("starting slot timers on login");
-			slotTimersTask = executor.scheduleAtFixedRate(() -> accountCache.get(currentlyLoggedInAccount).getSlotTimers().forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
+			slotTimersTask = executor.scheduleAtFixedRate(() -> accountCache.get(currentlyLoggedInAccount).getSlotTimers().forEach(timer ->
+				clientThread.invokeLater(() -> {
+					try {
+						timer.updateTimer();
+					}
+					catch (Exception e) {
+						log.info("exception when trying to update timer. e: {}", e);
+					}
+				})), 1000, 1000, TimeUnit.MILLISECONDS);
 		}
 	}
 
