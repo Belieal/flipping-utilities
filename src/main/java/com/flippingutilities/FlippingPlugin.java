@@ -836,6 +836,17 @@ public class FlippingPlugin extends Plugin
 		{
 			AccountData accountData = TradePersister.loadTrades(displayName);
 			accountData.prepareForUse(itemManager);
+			if (accountData.getSlotTimers() == null)
+			{
+				accountData.setSlotTimers(setupSlotTimers());
+			}
+			else
+			{
+				accountData.getSlotTimers().forEach(timer -> {
+					timer.setClient(client);
+					timer.setPlugin(this);
+				});
+			}
 			return accountData;
 		}
 		catch (IOException e)
