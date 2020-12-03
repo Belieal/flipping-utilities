@@ -167,14 +167,24 @@ public class FlippingItemPanel extends JPanel
 		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal,profitEachVal, potentialProfitVal};
 
 
+
+		boolean isFirstInPair = true;
+
 		for (int i=0;i<panels.length;i++) {
 			panels[i].setBackground(UIUtilities.DARK_GRAY);
-			panels[i].setBorder(new EmptyBorder(4,8,6,8));
+			if (isFirstInPair) {
+				panels[i].setBorder(new EmptyBorder(6,8,2,8));
+			}
+			else {
+				panels[i].setBorder(new EmptyBorder(2,8,8,8));
+			}
+
+			isFirstInPair = !isFirstInPair;
 			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
 			panels[i].add(valueLabels[i], BorderLayout.EAST);
 			itemInfo.add(panels[i]);
 			if (i == panels.length-1) {
-				panels[i].setBorder(new EmptyBorder(4,8,0,8));
+				panels[i].setBorder(new EmptyBorder(2,8,2,8));
 			}
 		}
 
@@ -302,7 +312,6 @@ public class FlippingItemPanel extends JPanel
 
 
 	private void setValueLabels() {
-
 		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
 				roiLabelVal, limitLabelVal).
 				forEach(label -> {
@@ -317,7 +326,6 @@ public class FlippingItemPanel extends JPanel
 					}
 				});
 
-
 		latestBuyPriceVal.setForeground(Color.white);
 		latestSellPriceVal.setForeground(Color.white);
 		latestBuyPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
@@ -326,11 +334,8 @@ public class FlippingItemPanel extends JPanel
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
-
-
 		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
 		potentialProfitVal.setForeground(UIUtilities.PROFIT_COLOR);
-
 
 		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -350,9 +355,7 @@ public class FlippingItemPanel extends JPanel
 		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
 		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
 
-
 		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
-
 		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
 
 		Optional<Float> roi =  flippingItem.getCurrentRoi();
