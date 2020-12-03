@@ -173,7 +173,7 @@ public class FlippingItemPanel extends JPanel
 		for (int i=0;i<panels.length;i++) {
 			panels[i].setBackground(UIUtilities.DARK_GRAY);
 			if (isFirstInPair) {
-				panels[i].setBorder(new EmptyBorder(6,8,2,8));
+				panels[i].setBorder(new EmptyBorder(6,8,3,8));
 			}
 			else {
 				panels[i].setBorder(new EmptyBorder(2,8,8,8));
@@ -184,7 +184,7 @@ public class FlippingItemPanel extends JPanel
 			panels[i].add(valueLabels[i], BorderLayout.EAST);
 			itemInfo.add(panels[i]);
 			if (i == panels.length-1) {
-				panels[i].setBorder(new EmptyBorder(2,8,2,8));
+				panels[i].setBorder(new EmptyBorder(2,8,3,8));
 			}
 		}
 
