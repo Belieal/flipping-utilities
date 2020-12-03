@@ -33,10 +33,14 @@ import com.flippingutilities.ui.utilities.FastTabGroup;
 import com.flippingutilities.ui.utilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.font.TextAttribute;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -46,6 +50,7 @@ import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -116,16 +121,61 @@ public class MasterPanel extends PluginPanel
 	 */
 	private JPanel Header(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
 	{
+		JPanel accountSelectorPanel = new JPanel(new BorderLayout());
+		accountSelectorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		accountSelectorPanel.add(accountSelector, BorderLayout.CENTER);
+
 		JPanel tabGroupArea = new JPanel(new BorderLayout());
 		tabGroupArea.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		tabGroupArea.add(tabSelector, BorderLayout.CENTER);
 		tabGroupArea.add(settingsButton, BorderLayout.EAST);
+		tabGroupArea.add(sponsorPanel(), BorderLayout.NORTH);
 
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		header.add(accountSelector, BorderLayout.NORTH);
 		header.add(tabGroupArea, BorderLayout.CENTER);
+
 		return header;
+	}
+
+	private JPanel sponsorPanel() {
+		JLabel sponsorText = new JLabel("Help fund plugin development", JLabel.CENTER);
+		sponsorText.setFont(FontManager.getRunescapeSmallFont());
+		Font font = sponsorText.getFont();
+		Map attributes = font.getAttributes();
+		attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
+		sponsorText.setFont(font.deriveFont(attributes));
+		Color defaultColor = sponsorText.getForeground();
+
+		sponsorText.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				super.mousePressed(e);
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				sponsorText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				sponsorText.setForeground(defaultColor);
+			}
+		});
+
+		JPanel sponsorPanel = new JPanel();
+		sponsorPanel.setToolTipText("Click me");
+		sponsorPanel.setBorder(new EmptyBorder(0,10,0,0));
+		sponsorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		sponsorPanel.add(sponsorText);
+		sponsorPanel.add(new JLabel(UIUtilities.HEART_ICON));
+		return sponsorPanel;
 	}
 
 	/**

@@ -173,6 +173,8 @@ public class UIUtilities
 	public static final ImageIcon ARROW_LEFT_HOVER;
 	public static final ImageIcon ARROW_RIGHT_HOVER;
 
+	public static final ImageIcon HEART_ICON;
+
 	static
 	{
 		final BufferedImage openIcon = ImageUtil
@@ -234,6 +236,10 @@ public class UIUtilities
 
 		ARROW_LEFT_HOVER = new ImageIcon(arrowLeft);
 		ARROW_RIGHT_HOVER = new ImageIcon(arrowRight);
+
+		final BufferedImage heart = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/heart.png");
+		HEART_ICON = new ImageIcon(heart);
+
 	}
 
 	/**
