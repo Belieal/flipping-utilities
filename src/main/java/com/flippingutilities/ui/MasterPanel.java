@@ -26,6 +26,7 @@
 
 package com.flippingutilities.ui;
 
+import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
@@ -45,7 +46,9 @@ import java.util.Set;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +58,7 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
+import net.runelite.client.util.LinkBrowser;
 
 @Slf4j
 public class MasterPanel extends PluginPanel
@@ -142,18 +146,35 @@ public class MasterPanel extends PluginPanel
 	private JPanel sponsorPanel() {
 		JLabel sponsorText = new JLabel("Help fund plugin development", JLabel.CENTER);
 		sponsorText.setFont(FontManager.getRunescapeSmallFont());
+		sponsorText.setToolTipText("Click me");
 		Font font = sponsorText.getFont();
 		Map attributes = font.getAttributes();
 		attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
 		sponsorText.setFont(font.deriveFont(attributes));
 		Color defaultColor = sponsorText.getForeground();
 
+		JPanel sponsorPanel = new JPanel();
+		sponsorPanel.setBorder(new EmptyBorder(0,10,0,0));
+		sponsorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		sponsorPanel.add(sponsorText);
+		sponsorPanel.add(new JLabel(UIUtilities.HEART_ICON));
+
+		final JMenuItem patreonLink = new JMenuItem("Patreon Link");
+		patreonLink.addActionListener(e -> LinkBrowser.browse("https://www.patreon.com/FlippingUtilities"));
+		final JMenuItem paypalLink = new JMenuItem("Paypal Link");
+		paypalLink.addActionListener(e -> LinkBrowser.browse("http://paypal.com/donate?hosted_button_id=BPCG76L7B7ZAY"));
+
+		final JPopupMenu popupMenu = new JPopupMenu();
+		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+		popupMenu.add(patreonLink);
+		popupMenu.add(paypalLink);
+		sponsorPanel.setComponentPopupMenu(popupMenu);
+
 		sponsorText.addMouseListener(new MouseAdapter()
 		{
 			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				super.mousePressed(e);
+			public void mouseClicked(MouseEvent e) {
+				popupMenu.show(e.getComponent(), e.getX(), e.getY());
 			}
 
 			@Override
@@ -169,12 +190,6 @@ public class MasterPanel extends PluginPanel
 			}
 		});
 
-		JPanel sponsorPanel = new JPanel();
-		sponsorPanel.setToolTipText("Click me");
-		sponsorPanel.setBorder(new EmptyBorder(0,10,0,0));
-		sponsorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		sponsorPanel.add(sponsorText);
-		sponsorPanel.add(new JLabel(UIUtilities.HEART_ICON));
 		return sponsorPanel;
 	}
 
@@ -239,7 +254,7 @@ public class MasterPanel extends PluginPanel
 		FastTabGroup tabGroup = new FastTabGroup(mainDisplay);
 		flippingTab = new MaterialTab(FLIPPING_TAB_NAME, tabGroup, flippingPanel);
 		statisticsTab = new MaterialTab(STATISTICS_TAB_NAME, tabGroup, statPanel);
-		tabGroup.setBorder(new EmptyBorder(5, 35, 2, 0));
+		tabGroup.setBorder(new EmptyBorder(0, 35, 2, 0));
 		tabGroup.addTab(flippingTab);
 		tabGroup.addTab(statisticsTab);
 		// Initialize with flipping tab open.
