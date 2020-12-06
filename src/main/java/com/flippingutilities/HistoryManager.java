@@ -72,13 +72,6 @@ public class HistoryManager
 	@SerializedName("pIB")
 	private int itemsBoughtThroughCompleteOffers;
 
-	public enum PanelSelection
-	{
-		FLIPPING,
-		STATS,
-		BOTH
-	}
-
 	public HistoryManager clone()
 	{
 		List<OfferEvent> clonedCompressedOfferEvents = compressedOfferEvents.stream().map(OfferEvent::clone).collect(Collectors.toList());

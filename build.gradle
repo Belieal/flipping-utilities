@@ -4,7 +4,6 @@ plugins {
 }
 
 repositories {
-	mavenLocal()
 	maven {
 		url = 'http://repo.runelite.net'
 	}
@@ -24,6 +23,8 @@ dependencies {
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion, {
         exclude group: 'ch.qos.logback', module: 'logback-classic'
     }
+    implementation 'org.apache.poi:poi:4.1.2'
+    implementation 'org.apache.poi:poi-ooxml:4.1.2'
 }
 
 group = 'com.flippingutilities'
