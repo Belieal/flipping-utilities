@@ -26,15 +26,10 @@
 
 package com.flippingutilities.ui.flipping;
 
-import com.flippingutilities.FlippingItem;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
-import static com.flippingutilities.ui.utilities.UIUtilities.STAR_HALF_ON_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.STAR_OFF_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.STAR_ON_ICON;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -109,7 +104,7 @@ public class FlippingItemPanel extends JPanel
 		this.flippingItem = flippingItem;
 		this.plugin = plugin;
 		flippingItem.validateGeProperties();
-		setBackground(UIUtilities.DARK_GRAY);
+		setBackground(CustomColors.DARK_GRAY);
 		setLayout(new BorderLayout());
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
@@ -171,7 +166,7 @@ public class FlippingItemPanel extends JPanel
 		boolean isFirstInPair = true;
 
 		for (int i=0;i<panels.length;i++) {
-			panels[i].setBackground(UIUtilities.DARK_GRAY);
+			panels[i].setBackground(CustomColors.DARK_GRAY);
 			if (isFirstInPair) {
 				panels[i].setBorder(new EmptyBorder(6,8,3,8));
 			}
@@ -201,12 +196,12 @@ public class FlippingItemPanel extends JPanel
 	private JPanel createGeLimitRefreshTimeAndRoiPanel() {
 		JPanel geLimitPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
 		geLimitPanel.setBorder(new EmptyBorder(0,0,0,10));
-		geLimitPanel.setBackground(UIUtilities.DARK_GRAY);
+		geLimitPanel.setBackground(CustomColors.DARK_GRAY);
 		geLimitPanel.add(geLimitText);
 		geLimitPanel.add(limitLabelVal);
 
 		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
-		roiPanel.setBackground(UIUtilities.DARK_GRAY);
+		roiPanel.setBackground(CustomColors.DARK_GRAY);
 		roiPanel.setBorder(new EmptyBorder(0,15,0,0));
 		roiPanel.add(roiText);
 		roiPanel.add(roiLabelVal);
@@ -222,7 +217,7 @@ public class FlippingItemPanel extends JPanel
 		//holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
 		JPanel geLimitRefreshTimeAndRoiPanel = new JPanel(new BorderLayout());
 		geLimitRefreshTimeAndRoiPanel.setBorder(new EmptyBorder(10,8,6,8));
-		geLimitRefreshTimeAndRoiPanel.setBackground(UIUtilities.DARK_GRAY);
+		geLimitRefreshTimeAndRoiPanel.setBackground(CustomColors.DARK_GRAY);
 		geLimitRefreshTimeAndRoiPanel.add(geRefreshTimePanel, BorderLayout.CENTER);
 		geLimitRefreshTimeAndRoiPanel.add(geLimitPanel, BorderLayout.WEST);
 		geLimitRefreshTimeAndRoiPanel.add(roiPanel, BorderLayout.EAST);
@@ -291,7 +286,7 @@ public class FlippingItemPanel extends JPanel
 			timerValueLabels[i].setFont(FontManager.getRunescapeBoldFont());
 			timerValueLabels[i].setOpaque(true);
 			timerValueLabels[i].setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			panels[i].setBackground(UIUtilities.DARK_GRAY);
+			panels[i].setBackground(CustomColors.DARK_GRAY);
 			panels[i].setBorder(new EmptyBorder(4,8,8,8));
 			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
 			panels[i].add(createTimerAndDatePanel(timerValueLabels[i], dateLabels[i]), BorderLayout.EAST);
@@ -328,14 +323,14 @@ public class FlippingItemPanel extends JPanel
 
 		latestBuyPriceVal.setForeground(Color.white);
 		latestSellPriceVal.setForeground(Color.white);
-		latestBuyPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
-		latestSellPriceVal.setFont(UIUtilities.RUNESCAPE_BOLD_FONT);
+		latestBuyPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
+		latestSellPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
 
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
-		profitEachVal.setForeground(UIUtilities.PROFIT_COLOR);
-		potentialProfitVal.setForeground(UIUtilities.PROFIT_COLOR);
+		profitEachVal.setForeground(CustomColors.PROFIT_COLOR);
+		potentialProfitVal.setForeground(CustomColors.PROFIT_COLOR);
 
 		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -373,10 +368,10 @@ public class FlippingItemPanel extends JPanel
 		//Color gradient red-yellow-green depending on ROI.
 		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
-		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? UIUtilities.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
-		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? UIUtilities.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
-		latestBoughtAt.setText(latestBuy.isPresent()? UIUtilities.formatTime(latestBuy.get().getTime(), true, true):"N/A");
-		latestSoldAt.setText(latestSell.isPresent()? UIUtilities.formatTime(latestSell.get().getTime(), true, true):"N/A");
+		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
+		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
+		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
+		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
@@ -419,7 +414,7 @@ public class FlippingItemPanel extends JPanel
 		itemClearPanel.add(deleteButton, BorderLayout.EAST);
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
+		titlePanel.setComponentPopupMenu(ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(getBackground());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
@@ -454,7 +449,7 @@ public class FlippingItemPanel extends JPanel
 	{
 		JLabel itemIcon = new JLabel();
 		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-		itemIcon.setPreferredSize(ICON_SIZE);
+		itemIcon.setPreferredSize(Icons.ICON_SIZE);
 		if (itemImage != null)
 		{
 			itemImage.addTo(itemIcon);
@@ -470,8 +465,8 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JButton createDeleteButton(Runnable onDeleteCallback)
 	{
-		JButton clearButton = new JButton(DELETE_ICON);
-		clearButton.setPreferredSize(ICON_SIZE);
+		JButton clearButton = new JButton(Icons.DELETE_ICON);
+		clearButton.setPreferredSize(Icons.ICON_SIZE);
 		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		clearButton.setBorder(null);
 		clearButton.setBorderPainted(false);
@@ -551,7 +546,7 @@ public class FlippingItemPanel extends JPanel
 	private JLabel createFavoriteIcon()
 	{
 		JLabel favoriteIcon = new JLabel();
-		favoriteIcon.setIcon(flippingItem.isFavorite() ? STAR_ON_ICON : STAR_OFF_ICON);
+		favoriteIcon.setIcon(flippingItem.isFavorite() ? Icons.STAR_ON_ICON : Icons.STAR_OFF_ICON);
 		favoriteIcon.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		favoriteIcon.setPreferredSize(new Dimension(24, 24));
 		favoriteIcon.addMouseListener(new MouseAdapter()
@@ -566,7 +561,7 @@ public class FlippingItemPanel extends JPanel
 						plugin.setFavoriteOnAllAccounts(flippingItem, false);
 					}
 					flippingItem.setFavorite(false);
-					favoriteIcon.setIcon(STAR_OFF_ICON);
+					favoriteIcon.setIcon(Icons.STAR_OFF_ICON);
 				}
 				else
 				{
@@ -575,7 +570,7 @@ public class FlippingItemPanel extends JPanel
 						plugin.setFavoriteOnAllAccounts(flippingItem, true);
 					}
 					flippingItem.setFavorite(true);
-					favoriteIcon.setIcon(STAR_ON_ICON);
+					favoriteIcon.setIcon(Icons.STAR_ON_ICON);
 				}
 			}
 
@@ -584,7 +579,7 @@ public class FlippingItemPanel extends JPanel
 			{
 				if (!flippingItem.isFavorite())
 				{
-					favoriteIcon.setIcon(STAR_HALF_ON_ICON);
+					favoriteIcon.setIcon(Icons.STAR_HALF_ON_ICON);
 				}
 			}
 
@@ -593,7 +588,7 @@ public class FlippingItemPanel extends JPanel
 			{
 				if (!flippingItem.isFavorite())
 				{
-					favoriteIcon.setIcon(STAR_OFF_ICON);
+					favoriteIcon.setIcon(Icons.STAR_OFF_ICON);
 				}
 			}
 		});
@@ -648,8 +643,8 @@ public class FlippingItemPanel extends JPanel
 		flippingItem.validateGeProperties();
 
 		geRefreshLabel.setText(flippingItem.getGeLimitResetTime() == null?
-				UIUtilities.formatDuration(Duration.ZERO):
-				UIUtilities.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
+				TimeFormatters.formatDuration(Duration.ZERO):
+				TimeFormatters.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
 
 		//need to update this so it can be reset when the timer runs down.
 		if (flippingItem.getTotalGELimit() > 0) {
@@ -658,7 +653,7 @@ public class FlippingItemPanel extends JPanel
 			limitLabelVal.setText("Unknown");
 		}
 
-		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": UIUtilities.formatTime(flippingItem.getGeLimitResetTime(), true, false));
+		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
 
 		setTimeString(flippingItem.getLatestMarginCheckBuy(), priceCheckBuyTimeVal);
 		setTimeString(flippingItem.getLatestMarginCheckSell(), priceCheckSellTimeVal);
@@ -673,10 +668,10 @@ public class FlippingItemPanel extends JPanel
 		else {
 			//if difference is more than a day don't show it as HH:MM:SS
 			if (Instant.now().getEpochSecond() - offerEvent.get().getTime().getEpochSecond() > 86400) {
-				timeLabel.setText(UIUtilities.formatDurationTruncated(offerEvent.get().getTime()));
+				timeLabel.setText(TimeFormatters.formatDurationTruncated(offerEvent.get().getTime()));
 			}
 			else {
-				timeLabel.setText(UIUtilities.formatDuration(offerEvent.get().getTime()));
+				timeLabel.setText(TimeFormatters.formatDuration(offerEvent.get().getTime()));
 			}
 		}
 	}

@@ -26,14 +26,13 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.FlippingItem;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.HistoryManager;
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.Paginator;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.CustomColors;
+import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.Paginator;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -68,6 +67,8 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
+
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -119,7 +120,7 @@ public class StatsPanel extends JPanel
 	private JLabel totalProfitVal = new JLabel();
 
 	//Sets the visible state for subinfo
-	private JLabel arrowIcon = new JLabel(UIUtilities.OPEN_ICON);
+	private JLabel arrowIcon = new JLabel(Icons.OPEN_ICON);
 
 	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly Profit: ");
@@ -221,7 +222,7 @@ public class StatsPanel extends JPanel
 		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
-		resetIcon = new JLabel(RESET_ICON);
+		resetIcon = new JLabel(Icons.RESET_ICON);
 		resetIcon.setToolTipText("Reset Statistics");
 		resetIcon.setPreferredSize(ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -249,13 +250,13 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(RESET_ICON);
+				resetIcon.setIcon(Icons.RESET_ICON);
 			}
 		});
 
@@ -331,13 +332,13 @@ public class StatsPanel extends JPanel
 					if (subInfoContainer.isVisible())
 					{
 						//Collapse sub info
-						arrowIcon.setIcon(UIUtilities.CLOSE_ICON);
+						arrowIcon.setIcon(Icons.CLOSE_ICON);
 						subInfoContainer.setVisible(false);
 					}
 					else
 					{
 						//Expand sub info
-						arrowIcon.setIcon(UIUtilities.OPEN_ICON);
+						arrowIcon.setIcon(Icons.OPEN_ICON);
 						subInfoContainer.setVisible(true);
 					}
 				}
@@ -402,7 +403,7 @@ public class StatsPanel extends JPanel
 			}
 		});
 
-		sessionTimeVal.setText(UIUtilities.formatDuration(plugin.getAccumulatedTimeForCurrentView()));
+		sessionTimeVal.setText(TimeFormatters.formatDuration(plugin.getAccumulatedTimeForCurrentView()));
 		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
 		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		sessionTimePanel.setToolTipText("Right-click to reset session timer");
@@ -560,7 +561,7 @@ public class StatsPanel extends JPanel
 		{
 			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
 			subInfoContainer.add(panel);
-			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+			panel.setBackground(useAltColor ? CustomColors.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 
 			useAltColor = !useAltColor;
 		}
@@ -635,7 +636,7 @@ public class StatsPanel extends JPanel
 		if (totalProfit < 0)
 		{
 			//]-inf, 0[
-			totalProfitVal.setForeground(UIUtilities.OUTDATED_COLOR);
+			totalProfitVal.setForeground(CustomColors.OUTDATED_COLOR);
 		}
 		else if (totalProfit <= 100000)
 		{
@@ -672,7 +673,7 @@ public class StatsPanel extends JPanel
 		}
 
 		hourlyProfitVal.setText(profitString + " gp/hr");
-		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		hourlyProfitVal.setForeground(totalProfit >= 0 ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
 		hourlyProfitPanel.setToolTipText("Hourly profit as determined by the session time");
 	}
 
@@ -708,7 +709,7 @@ public class StatsPanel extends JPanel
 		totalRevenueVal.setToolTipText("Total amount of gp collected");
 
 		totalExpenseVal.setText(UIUtilities.quantityToRSDecimalStack(totalExpenses, true) + " gp");
-		totalExpenseVal.setForeground(UIUtilities.OUTDATED_COLOR);
+		totalExpenseVal.setForeground(CustomColors.OUTDATED_COLOR);
 		totalExpensePanel.setToolTipText("Total amount of gp invested");
 	}
 
@@ -758,7 +759,7 @@ public class StatsPanel extends JPanel
 	 */
 	public void updateSessionTimeDisplay(Duration accumulatedTime)
 	{
-		sessionTimeVal.setText(UIUtilities.formatDuration(accumulatedTime));
+		sessionTimeVal.setText(TimeFormatters.formatDuration(accumulatedTime));
 	}
 
 	/**

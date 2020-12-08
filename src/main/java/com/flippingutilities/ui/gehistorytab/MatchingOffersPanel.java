@@ -1,9 +1,9 @@
 package com.flippingutilities.ui.gehistorytab;
 
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.CLOSE_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.OPEN_ICON;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -18,7 +18,6 @@ import net.runelite.client.ui.FontManager;
 
 public class MatchingOffersPanel extends JPanel
 {
-
 	MatchingOffersPanel(List<OfferEvent> matchingOffers) {
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -30,7 +29,7 @@ public class MatchingOffersPanel extends JPanel
 		titleTextLabel.setFont(FontManager.getRunescapeBoldFont());
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		titleTextLabel.setForeground(matchingOffers.size() == 0? ColorScheme.GRAND_EXCHANGE_PRICE: ColorScheme.GRAND_EXCHANGE_ALCH);
-		JLabel collapsePanelIconLabel = new JLabel(OPEN_ICON);
+		JLabel collapsePanelIconLabel = new JLabel(Icons.OPEN_ICON);
 		titlePanel.add(titleTextLabel, BorderLayout.CENTER);
 		titlePanel.add(collapsePanelIconLabel, BorderLayout.EAST);
 		titlePanel.setBorder(new EmptyBorder(3,0,0,0));
@@ -53,12 +52,12 @@ public class MatchingOffersPanel extends JPanel
 					if (matchingOffersPanelBody.isVisible())
 					{
 						matchingOffersPanelBody.setVisible(false);
-						collapsePanelIconLabel.setIcon(OPEN_ICON);
+						collapsePanelIconLabel.setIcon(Icons.OPEN_ICON);
 					}
 					else
 					{
 						matchingOffersPanelBody.setVisible(true);
-						collapsePanelIconLabel.setIcon(CLOSE_ICON);
+						collapsePanelIconLabel.setIcon(Icons.CLOSE_ICON);
 					}
 				}
 			}
@@ -80,11 +79,10 @@ public class MatchingOffersPanel extends JPanel
 		add(matchingOffersPanelBody, BorderLayout.CENTER);
 	}
 
-
 	JPanel createMatchingOfferPanel(OfferEvent offerEvent) {
 		JPanel matchingOfferPanel = new JPanel(new BorderLayout());
 		matchingOfferPanel.add(new JLabel("Same Offer Made:"), BorderLayout.WEST);
-		matchingOfferPanel.add(new JLabel(UIUtilities.formatDurationTruncated(offerEvent.getTime()) + " ago"), BorderLayout.EAST);
+		matchingOfferPanel.add(new JLabel(TimeFormatters.formatDurationTruncated(offerEvent.getTime()) + " ago"), BorderLayout.EAST);
 		return matchingOfferPanel;
 	}
 }

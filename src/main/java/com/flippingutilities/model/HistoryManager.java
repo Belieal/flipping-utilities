@@ -25,8 +25,9 @@
  */
 
 
-package com.flippingutilities;
+package com.flippingutilities.model;
 
+import com.flippingutilities.utilities.ListUtils;
 import com.google.gson.annotations.SerializedName;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,7 +45,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.GrandExchangeOfferState;
 
 /**
  * Manages the history for an item. This class is responsible for figuring out how much profit a user made for
@@ -443,7 +443,7 @@ public class HistoryManager
 	 */
 	public static List<Flip> createFlips(List<OfferEvent> offers)
 	{
-		List<OfferEvent>[] subLists = ModelUtilities.partition(
+		List<OfferEvent>[] subLists = ListUtils.partition(
 			offers.stream().map(OfferEvent::clone).collect(Collectors.toList()),
 			o -> o.isMarginCheck() && o.isBuy(),
 			o -> o.isMarginCheck() && !o.isBuy(),

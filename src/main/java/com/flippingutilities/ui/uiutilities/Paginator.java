@@ -1,4 +1,4 @@
-package com.flippingutilities.ui.utilities;
+package com.flippingutilities.ui.uiutilities;
 
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -36,8 +36,8 @@ public class Paginator extends JPanel
 	{
 		this.onPageChange = onPageChange;
 		this.statusText = new JLabel("Page 1 of 1", SwingUtilities.CENTER);
-		this.arrowLeft = new JLabel(UIUtilities.ARROW_LEFT);
-		this.arrowRight = new JLabel(UIUtilities.ARROW_RIGHT);
+		this.arrowLeft = new JLabel(Icons.ARROW_LEFT);
+		this.arrowRight = new JLabel(Icons.ARROW_RIGHT);
 		this.arrowRight.setForeground(Color.blue);
 		setLayout(new FlowLayout());
 		add(arrowLeft);
@@ -109,11 +109,11 @@ public class Paginator extends JPanel
 			{
 				if (isIncrease)
 				{
-					arrowRight.setIcon(UIUtilities.ARROW_RIGHT_HOVER);
+					arrowRight.setIcon(Icons.ARROW_RIGHT_HOVER);
 				}
 				else
 				{
-					arrowLeft.setIcon(UIUtilities.ARROW_LEFT_HOVER);
+					arrowLeft.setIcon(Icons.ARROW_LEFT_HOVER);
 				}
 			}
 
@@ -122,11 +122,11 @@ public class Paginator extends JPanel
 			{
 				if (isIncrease)
 				{
-					arrowRight.setIcon(UIUtilities.ARROW_RIGHT);
+					arrowRight.setIcon(Icons.ARROW_RIGHT);
 				}
 				else
 				{
-					arrowLeft.setIcon(UIUtilities.ARROW_LEFT);
+					arrowLeft.setIcon(Icons.ARROW_LEFT);
 				}
 			}
 		};

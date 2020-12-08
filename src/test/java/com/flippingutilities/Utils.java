@@ -1,6 +1,8 @@
 package com.flippingutilities;
 
 import java.time.Instant;
+
+import com.flippingutilities.model.OfferEvent;
 import net.runelite.api.GrandExchangeOfferState;
 
 public class Utils

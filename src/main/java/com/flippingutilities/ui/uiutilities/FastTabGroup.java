@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui.utilities;
+package com.flippingutilities.ui.uiutilities;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;

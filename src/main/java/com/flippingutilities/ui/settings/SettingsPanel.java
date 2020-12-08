@@ -24,10 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.ui;
+package com.flippingutilities.ui.settings;
 
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.ui.uiutilities.Icons;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -113,7 +114,7 @@ public class SettingsPanel extends JPanel
 	 */
 	private JLabel accountLabel(String name)
 	{
-		JLabel accountLabel = new JLabel(UIUtilities.ACCOUNT_ICON, JLabel.LEFT);
+		JLabel accountLabel = new JLabel(Icons.ACCOUNT_ICON, JLabel.LEFT);
 		accountLabel.setOpaque(true);
 		accountLabel.setMaximumSize(new Dimension(170, ACCOUNT_LABEL_HEIGHT));
 		accountLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -195,7 +196,7 @@ public class SettingsPanel extends JPanel
 	 */
 	private JLabel accountDeleteButton()
 	{
-		JLabel deleteButton = new JLabel(UIUtilities.DELETE_BUTTON);
+		JLabel deleteButton = new JLabel(Icons.DELETE_BUTTON);
 		deleteButton.setToolTipText("Deletes the file that stores all of this account's trades. This cannot" +
 			"be undone!");
 		deleteButton.addMouseListener(new MouseAdapter()
@@ -226,13 +227,13 @@ public class SettingsPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				deleteButton.setIcon(UIUtilities.HIGHLIGHT_DELETE_BUTTON);
+				deleteButton.setIcon(Icons.HIGHLIGHT_DELETE_BUTTON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				deleteButton.setIcon(UIUtilities.DELETE_BUTTON);
+				deleteButton.setIcon(Icons.DELETE_BUTTON);
 			}
 		});
 
