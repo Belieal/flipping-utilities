@@ -34,13 +34,6 @@ import net.runelite.client.config.Units;
 @ConfigGroup(FlippingPlugin.CONFIG_GROUP)
 public interface FlippingConfig extends Config
 {
-	enum Fonts
-	{
-		SMALL_FONT,
-		REGULAR_FONT,
-		BOLD_FONT
-	}
-
 	@ConfigItem(
 		keyName = "roiGradientMax",
 		name = "Set ROI gradient range limit",

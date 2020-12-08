@@ -1,8 +1,8 @@
 package com.flippingutilities.ui.gehistorytab;
 
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;

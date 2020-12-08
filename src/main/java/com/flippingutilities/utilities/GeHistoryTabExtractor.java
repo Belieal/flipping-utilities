@@ -1,12 +1,14 @@
-package com.flippingutilities;
+package com.flippingutilities.utilities;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.flippingutilities.model.OfferEvent;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.widgets.Widget;
@@ -23,7 +25,8 @@ public class GeHistoryTabExtractor
 	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets)
 	{
 		//a group of 6 widgets makes up an offer in the trade history tab
-		List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets), 6);
+		List<List<Widget>> groupsOfWidgets = Lists.partition(Arrays.asList(widgets), 6);
+		//List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets), 6);
 		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
 	}
 

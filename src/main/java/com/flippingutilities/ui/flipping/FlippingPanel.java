@@ -26,12 +26,10 @@
 
 package com.flippingutilities.ui.flipping;
 
-import com.flippingutilities.FlippingItem;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.ui.utilities.Paginator;
-import static com.flippingutilities.ui.utilities.UIUtilities.ICON_SIZE;
-import static com.flippingutilities.ui.utilities.UIUtilities.RESET_HOVER_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.RESET_ICON;
+import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.Paginator;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -176,9 +174,9 @@ public class FlippingPanel extends JPanel
 			"For items to show up, margin check an item.");
 
 		//Clears the config and resets the items panel.
-		resetIcon = new JLabel(RESET_ICON);
+		resetIcon = new JLabel(Icons.RESET_ICON);
 		resetIcon.setToolTipText("Reset trade history");
-		resetIcon.setPreferredSize(ICON_SIZE);
+		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -204,13 +202,13 @@ public class FlippingPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(RESET_ICON);
+				resetIcon.setIcon(Icons.RESET_ICON);
 			}
 		});
 
@@ -511,12 +509,6 @@ public class FlippingPanel extends JPanel
 
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
 		rebuild(result);
-	}
-
-	private void onFlippingToolBarButtonPress(String buttonName)
-	{
-		selectedSort = buttonName;
-		rebuild(plugin.getTradesForCurrentView());
 	}
 
 	public void refreshPricesForFlippingItemPanel(int itemId) {

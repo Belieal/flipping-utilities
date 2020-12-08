@@ -26,14 +26,14 @@
 
 package com.flippingutilities.ui;
 
-import com.flippingutilities.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
+import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
-import com.flippingutilities.ui.utilities.FastTabGroup;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.ui.uiutilities.FastTabGroup;
+import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ItemEvent;
@@ -157,7 +157,7 @@ public class MasterPanel extends PluginPanel
 		sponsorPanel.setBorder(new EmptyBorder(0,10,0,0));
 		sponsorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		sponsorPanel.add(sponsorText);
-		sponsorPanel.add(new JLabel(UIUtilities.HEART_ICON));
+		sponsorPanel.add(new JLabel(Icons.HEART_ICON));
 
 		final JMenuItem patreonLink = new JMenuItem("Patreon Link");
 		patreonLink.addActionListener(e -> LinkBrowser.browse("https://www.patreon.com/FlippingUtilities"));
@@ -228,9 +228,9 @@ public class MasterPanel extends PluginPanel
 	 */
 	private JLabel settingsButton(Runnable callback)
 	{
-		JLabel button = new JLabel(UIUtilities.SETTINGS_ICON);
+		JLabel button = new JLabel(Icons.SETTINGS_ICON);
 		button.setToolTipText("Open Settings Panel");
-		button.setPreferredSize(UIUtilities.ICON_SIZE);
+		button.setPreferredSize(Icons.ICON_SIZE);
 		button.addMouseListener(new MouseAdapter()
 		{
 			public void mouseClicked(MouseEvent e)

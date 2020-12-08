@@ -26,13 +26,19 @@
 
 package com.flippingutilities;
 
+import com.flippingutilities.db.TradePersister;
+import com.flippingutilities.model.AccountData;
+import com.flippingutilities.model.FlippingItem;
+import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.MasterPanel;
-import com.flippingutilities.ui.SettingsPanel;
+import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
+import com.flippingutilities.utilities.CacheUpdater;
+import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.awt.Font;

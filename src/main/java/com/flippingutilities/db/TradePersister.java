@@ -24,23 +24,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.db;
 
+import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.model.AccountData;
+import com.flippingutilities.model.FlippingItem;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
-import net.runelite.client.game.ItemManager;
-import net.runelite.http.api.item.ItemStats;
 
 /**
  * This class is responsible for handling all the IO related tasks for persisting trades. This class should contain

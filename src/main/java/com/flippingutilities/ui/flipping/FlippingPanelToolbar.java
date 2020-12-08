@@ -1,13 +1,11 @@
 package com.flippingutilities.ui.flipping;
 
-import com.flippingutilities.Flip;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.ui.uiutilities.Icons;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -91,10 +89,10 @@ public class FlippingPanelToolbar extends JPanel
 	}
 
 	private void createButtonStates() {
-		ImageIcon[] RECENT_BUTTON_STATES = {UIUtilities.SORT_BY_RECENT_OFF_ICON, UIUtilities.SORT_BY_RECENT_HALF_ON_ICON, UIUtilities.SORT_BY_RECENT_ON_ICON};
-		ImageIcon[] FAVORITE_BUTTON_STATES = {UIUtilities.STAR_OFF_ICON, UIUtilities.STAR_HALF_ON_ICON, UIUtilities.STAR_ON_ICON};
-		ImageIcon[] PROFIT_BUTTON_STATES = {UIUtilities.SORT_BY_PROFIT_OFF_ICON, UIUtilities.SORT_BY_PROFIT_HALF_ON_ICON, UIUtilities.SORT_BY_PROFIT_ON_ICON};
-		ImageIcon[] ROI_BUTTON_STATES = {UIUtilities.SORT_BY_ROI_OFF_ICON, UIUtilities.SORT_BY_ROI_HALF_ON_ICON, UIUtilities.SORT_BY_ROI_ON_ICON};
+		ImageIcon[] RECENT_BUTTON_STATES = {Icons.SORT_BY_RECENT_OFF_ICON, Icons.SORT_BY_RECENT_HALF_ON_ICON, Icons.SORT_BY_RECENT_ON_ICON};
+		ImageIcon[] FAVORITE_BUTTON_STATES = {Icons.STAR_OFF_ICON, Icons.STAR_HALF_ON_ICON, Icons.STAR_ON_ICON};
+		ImageIcon[] PROFIT_BUTTON_STATES = {Icons.SORT_BY_PROFIT_OFF_ICON, Icons.SORT_BY_PROFIT_HALF_ON_ICON, Icons.SORT_BY_PROFIT_ON_ICON};
+		ImageIcon[] ROI_BUTTON_STATES = {Icons.SORT_BY_ROI_OFF_ICON, Icons.SORT_BY_ROI_HALF_ON_ICON, Icons.SORT_BY_ROI_ON_ICON};
 
 		BUTTON_STATES.put("recent", RECENT_BUTTON_STATES);
 		BUTTON_STATES.put("favorite", FAVORITE_BUTTON_STATES);
@@ -103,19 +101,19 @@ public class FlippingPanelToolbar extends JPanel
 	}
 
 	private void createToolBarButtons() {
-		JLabel sortByRecent = new JLabel(UIUtilities.SORT_BY_RECENT_OFF_ICON);
+		JLabel sortByRecent = new JLabel(Icons.SORT_BY_RECENT_OFF_ICON);
 		sortByRecent.setName("recent");
 		sortByRecent.setToolTipText("Sort by last traded time");
 
-		JLabel sortByROI = new JLabel(UIUtilities.SORT_BY_ROI_OFF_ICON);
+		JLabel sortByROI = new JLabel(Icons.SORT_BY_ROI_OFF_ICON);
 		sortByROI.setName("roi");
 		sortByROI.setToolTipText("Sort by ROI");
 
-		JLabel sortByProfit = new JLabel(UIUtilities.SORT_BY_PROFIT_OFF_ICON);
+		JLabel sortByProfit = new JLabel(Icons.SORT_BY_PROFIT_OFF_ICON);
 		sortByProfit.setName("profit");
 		sortByProfit.setToolTipText("Sort by potential profit");
 
-		JLabel favoriteModifier = new JLabel(UIUtilities.STAR_OFF_ICON);
+		JLabel favoriteModifier = new JLabel(Icons.STAR_OFF_ICON);
 		favoriteModifier.setName("favorite");
 		favoriteModifier.setToolTipText("view your favorite items");
 

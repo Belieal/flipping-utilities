@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.model;
 
 import java.time.Instant;
 import lombok.AllArgsConstructor;

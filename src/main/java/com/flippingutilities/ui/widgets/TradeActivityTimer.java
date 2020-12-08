@@ -27,11 +27,13 @@
 package com.flippingutilities.ui.widgets;
 
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.CustomColors;
 import java.awt.Color;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -165,7 +167,7 @@ public class TradeActivityTimer
 			spacer = SELL_SPACER;
 		}
 
-		Color color = isSlotStagnant() ? UIUtilities.OUTDATED_COLOR : Color.WHITE;
+		Color color = isSlotStagnant() ? CustomColors.OUTDATED_COLOR : Color.WHITE;
 
 		if (currentOffer.isComplete())
 		{
@@ -233,12 +235,12 @@ public class TradeActivityTimer
 	{
 		if (currentOffer.isComplete())
 		{
-			return UIUtilities.formatDuration(tradeStartTime, lastUpdate);
+			return TimeFormatters.formatDuration(tradeStartTime, lastUpdate);
 		}
 
 		else
 		{
-			return UIUtilities.formatDuration(lastUpdate, Instant.now());
+			return TimeFormatters.formatDuration(lastUpdate, Instant.now());
 		}
 	}
 }

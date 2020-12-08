@@ -26,19 +26,14 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.Flip;
-import com.flippingutilities.FlippingItem;
+import com.flippingutilities.model.Flip;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.Paginator;
-import com.flippingutilities.ui.utilities.UIUtilities;
-import static com.flippingutilities.ui.utilities.UIUtilities.CLOSE_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.DELETE_ICON;
-import static com.flippingutilities.ui.utilities.UIUtilities.OPEN_ICON;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.*;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -47,7 +42,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
@@ -60,6 +54,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -240,7 +236,7 @@ public class StatItemPanel extends JPanel
 	private JPanel titlePanel(JPanel itemIconPanel, JPanel nameAndProfitPanel, JLabel collapseIcon)
 	{
 		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setComponentPopupMenu(UIUtilities.createGeTrackerLinksPopup(flippingItem));
+		titlePanel.setComponentPopupMenu(ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
 
@@ -257,13 +253,13 @@ public class StatItemPanel extends JPanel
 				{
 					if (subInfoAndHistoryContainer.isVisible())
 					{
-						collapseIconTitleLabel.setIcon(CLOSE_ICON);
+						collapseIconTitleLabel.setIcon(Icons.CLOSE_ICON);
 						subInfoAndHistoryContainer.setVisible(false);
 						statsPanel.getExpandedItems().remove(flippingItem.getItemName());
 					}
 					else
 					{
-						collapseIconTitleLabel.setIcon(OPEN_ICON);
+						collapseIconTitleLabel.setIcon(Icons.OPEN_ICON);
 						subInfoAndHistoryContainer.setVisible(true);
 						statsPanel.getExpandedItems().add(flippingItem.getItemName());
 					}
@@ -307,7 +303,7 @@ public class StatItemPanel extends JPanel
 
 			panel.setBorder(new EmptyBorder(4, 2, 4, 2));
 
-			panel.setBackground(useAltColor ? UIUtilities.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+			panel.setBackground(useAltColor ? CustomColors.DARK_GRAY_ALT_ROW_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 			useAltColor = !useAltColor;
 
 			textLabel.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
@@ -346,7 +342,7 @@ public class StatItemPanel extends JPanel
 		mainDisplay.setVisible(shouldExpandTradeHistory);
 		tabGroup.setVisible(shouldExpandTradeHistory);
 
-		JLabel collapseTradeHistoryIconLabel = new JLabel(shouldExpandTradeHistory ? OPEN_ICON : CLOSE_ICON);
+		JLabel collapseTradeHistoryIconLabel = new JLabel(shouldExpandTradeHistory ? Icons.OPEN_ICON : Icons.CLOSE_ICON);
 		JLabel tradeHistoryTitleLabel = new JLabel("Trade History", SwingConstants.CENTER);
 		tradeHistoryTitlePanel.add(tradeHistoryTitleLabel, BorderLayout.CENTER);
 		tradeHistoryTitlePanel.add(collapseTradeHistoryIconLabel, BorderLayout.EAST);
@@ -361,14 +357,14 @@ public class StatItemPanel extends JPanel
 					{
 						tabGroup.setVisible(false);
 						mainDisplay.setVisible(false);
-						collapseTradeHistoryIconLabel.setIcon(CLOSE_ICON);
+						collapseTradeHistoryIconLabel.setIcon(Icons.CLOSE_ICON);
 						statsPanel.getExpandedTradeHistories().remove(flippingItem.getItemName());
 					}
 					else
 					{
 						tabGroup.setVisible(true);
 						mainDisplay.setVisible(true);
-						collapseTradeHistoryIconLabel.setIcon(OPEN_ICON);
+						collapseTradeHistoryIconLabel.setIcon(Icons.OPEN_ICON);
 						statsPanel.getExpandedTradeHistories().add(flippingItem.getItemName());
 					}
 				}
@@ -403,7 +399,7 @@ public class StatItemPanel extends JPanel
 
 	private JPanel iconPanel()
 	{
-		JLabel deleteLabel = new JLabel(DELETE_ICON);
+		JLabel deleteLabel = new JLabel(Icons.DELETE_ICON);
 		deleteLabel.setPreferredSize(new Dimension(24, 24));
 		deleteLabel.setVisible(false);
 
@@ -470,7 +466,7 @@ public class StatItemPanel extends JPanel
 	private JLabel collapseIcon()
 	{
 		JLabel collapseIconLabel = new JLabel();
-		collapseIconLabel.setIcon(statsPanel.getExpandedItems().contains(flippingItem.getItemName()) ? OPEN_ICON : CLOSE_ICON);
+		collapseIconLabel.setIcon(statsPanel.getExpandedItems().contains(flippingItem.getItemName()) ? Icons.OPEN_ICON : Icons.CLOSE_ICON);
 		collapseIconLabel.setBorder(new EmptyBorder(2, 2, 2, 2));
 		return collapseIconLabel;
 	}
@@ -512,7 +508,7 @@ public class StatItemPanel extends JPanel
 		totalProfitString += " (x " + QuantityFormatter.formatNumber(numItemsFlipped) + ")";
 
 		itemProfitLabel.setText(totalProfitString);
-		itemProfitLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		itemProfitLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
 		itemProfitLabel.setBorder(new EmptyBorder(0, 0, 2, 0));
 		itemProfitLabel.setFont(FontManager.getRunescapeSmallFont());
 	}
@@ -520,12 +516,12 @@ public class StatItemPanel extends JPanel
 	private void updateFlippingLabels(long flippingExpense, long flippingRevenue, int itemsFlipped) {
 		long profitFromFlips = flippingRevenue - flippingExpense;
 		totalProfitValLabel.setText(UIUtilities.quantityToRSDecimalStack(profitFromFlips, true) + " gp");
-		totalProfitValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		totalProfitValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
 		totalProfitValLabel.setToolTipText(QuantityFormatter.formatNumber(profitFromFlips) + " gp");
 
 		String profitEach = UIUtilities.quantityToRSDecimalStack(itemsFlipped > 0 ? (profitFromFlips / itemsFlipped) : 0, true) + " gp/ea";
 		profitEachValLabel.setText(profitEach);
-		profitEachValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitEachValLabel.setForeground((profitFromFlips >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
 		profitEachValLabel.setToolTipText(QuantityFormatter.formatNumber(itemsFlipped > 0 ? profitFromFlips / itemsFlipped : 0) + " gp/ea");
 
 		quantityFlipped.setText(QuantityFormatter.formatNumber(itemsFlipped) + " Items");
@@ -554,12 +550,11 @@ public class StatItemPanel extends JPanel
 		}
 
 		OfferEvent lastRecordedTrade = tradeHistory.get(tradeHistory.size() - 1);
-		timeOfLastFlipValLabel.setText(UIUtilities.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
+		timeOfLastFlipValLabel.setText(TimeFormatters.formatDurationTruncated(lastRecordedTrade.getTime()) + " ago");
 		if (flipPanels != null && offerPanels != null) {
 			flipPanels.forEach(FlipPanel::updateTitle);
 			offerPanels.forEach(OfferPanel::updateTimeDisplay);
 		}
-
 	}
 
 	private void deletePanel()

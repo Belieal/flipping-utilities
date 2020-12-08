@@ -26,10 +26,11 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.Flip;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.model.Flip;
+import com.flippingutilities.ui.uiutilities.CustomColors;
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -80,8 +81,8 @@ public class FlipPanel extends JPanel
 			label.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		}
 
-		profitText.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
-		profitVal.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : UIUtilities.OUTDATED_COLOR);
+		profitText.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
+		profitVal.setForeground((profitTotal >= 0) ? ColorScheme.GRAND_EXCHANGE_PRICE : CustomColors.OUTDATED_COLOR);
 
 		JPanel buyPricePanel = new JPanel(new BorderLayout());
 		JPanel sellPricePanel = new JPanel(new BorderLayout());
@@ -112,19 +113,19 @@ public class FlipPanel extends JPanel
 	{
 		if (flip.isMarginCheck())
 		{
-			title.setText("Margin Checked " + "(" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setText("Margin Checked " + "(" + TimeFormatters.formatDurationTruncated(flip.getTime()) + " ago)");
 			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
 
 		else if (flip.isOngoing())
 		{
 			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (ongoing)");
-			title.setForeground(UIUtilities.VIBRANT_YELLOW);
+			title.setForeground(CustomColors.VIBRANT_YELLOW);
 		}
 
 		else
 		{
-			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + UIUtilities.formatDurationTruncated(flip.getTime()) + " ago)");
+			title.setText(QuantityFormatter.formatNumber(flip.getQuantity()) + " Flipped (" + TimeFormatters.formatDurationTruncated(flip.getTime()) + " ago)");
 			title.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		}
 	}

@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.utilities;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -42,6 +42,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import com.flippingutilities.db.TradePersister;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -96,7 +98,6 @@ public class CacheUpdater
 		try
 		{
 			log.info("monitoring directory for changes!");
-
 			WatchService watchService = FileSystems.getDefault().newWatchService();
 
 			Path path = TradePersister.PARENT_DIRECTORY.toPath();

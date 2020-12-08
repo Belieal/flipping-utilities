@@ -1,7 +1,8 @@
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.OfferEvent;
-import com.flippingutilities.ui.utilities.UIUtilities;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.CustomColors;
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import java.awt.BorderLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -25,12 +26,12 @@ public class OfferPanel extends JPanel
 
 		this.offerDescription = getOfferDescription();
 		this.title = new JLabel(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + offerDescription
-			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)", SwingConstants.CENTER);
+			+ " " + "(" + TimeFormatters.formatDurationTruncated(offer.getTime()) + " ago)", SwingConstants.CENTER);
 
 		title.setOpaque(true);
 		title.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		title.setFont(FontManager.getRunescapeSmallFont());
-		title.setForeground(offer.isBuy() ? UIUtilities.OUTDATED_COLOR : ColorScheme.GRAND_EXCHANGE_PRICE);
+		title.setForeground(offer.isBuy() ? CustomColors.OUTDATED_COLOR : ColorScheme.GRAND_EXCHANGE_PRICE);
 
 		JPanel body = new JPanel(new DynamicGridLayout(2, 2, 0, 2));
 		body.setBorder(new EmptyBorder(0, 2, 1, 2));
@@ -68,7 +69,7 @@ public class OfferPanel extends JPanel
 	public void updateTimeDisplay()
 	{
 		title.setText(QuantityFormatter.formatNumber(offer.getCurrentQuantityInTrade()) + " " + offerDescription
-			+ " " + "(" + UIUtilities.formatDurationTruncated(offer.getTime()) + " ago)");
+			+ " " + "(" + TimeFormatters.formatDurationTruncated(offer.getTime()) + " ago)");
 	}
 
 	private String getOfferDescription() {
