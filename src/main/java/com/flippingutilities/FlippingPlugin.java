@@ -457,7 +457,7 @@ public class FlippingPlugin extends Plugin
 	}
 
 	/**
-	 * Currently used for updating time sensitive displays such as the accumulate session time,
+	 * Currently used for updating time sensitive displays such as the accumulated session time,
 	 * how long ago an item was flipped, etc.
 	 *
 	 * @return a future object that can be used to cancel the tasks

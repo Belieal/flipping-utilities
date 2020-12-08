@@ -26,7 +26,6 @@ public class GeHistoryTabExtractor
 	{
 		//a group of 6 widgets makes up an offer in the trade history tab
 		List<List<Widget>> groupsOfWidgets = Lists.partition(Arrays.asList(widgets), 6);
-		//List<List<Widget>> groupsOfWidgets = ModelUtilities.splitListIntoChunks(Arrays.asList(widgets), 6);
 		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
 	}
 
