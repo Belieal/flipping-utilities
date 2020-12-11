@@ -85,9 +85,7 @@ public class StatsPanel extends JPanel
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
-	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
-		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder(5, 2, 1, 8));
+	private static final Border TOP_PANEL_BORDER = new EmptyBorder(5,0,0,0);
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -260,33 +258,10 @@ public class StatsPanel extends JPanel
 			}
 		});
 
-		//Adds option to completely reset the trade history.
-		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
-		clearMenuOption.addActionListener(e ->
-		{
-			resetPanel();
-			plugin.getFlippingPanel().resetPanel();
-			rebuild(plugin.getTradesForCurrentView());
-			plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
-		});
-
-		final JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-		popupMenu.add(clearMenuOption);
-
-		resetIcon.setComponentPopupMenu(popupMenu);
-
-		//Since the combobox can't be resized using setBorder, we have to use a wrapper.
-		JPanel wrapper = new JPanel(new BorderLayout());
-		wrapper.setBorder(new EmptyBorder(0, 2, 0, 11));
-		wrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		wrapper.add(timeIntervalDropdown, BorderLayout.CENTER);
-
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		topPanel.setBorder(TOP_PANEL_BORDER);
-		topPanel.add(new JLabel("Time Span:"), BorderLayout.WEST);
-		topPanel.add(wrapper, BorderLayout.CENTER);
+		topPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
 
 		//Title text for the big total profit label.
@@ -307,13 +282,13 @@ public class StatsPanel extends JPanel
 
 		//Formats the profit text and value.
 		JPanel profitTextAndVal = new JPanel(new BorderLayout());
-		profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		profitTextAndVal.setBackground(CustomColors.DARK_GRAY);
 		profitTextAndVal.add(totalProfitVal, BorderLayout.CENTER);
 		profitTextAndVal.add(profitText, BorderLayout.NORTH);
 
 		//Contains the total profit information.
 		JPanel totalProfitContainer = new JPanel(new BorderLayout());
-		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		totalProfitContainer.setBackground(CustomColors.DARK_GRAY);
 		totalProfitContainer.setBorder(TOTAL_PROFIT_CONTAINER_BORDER);
 
 		//totalProfitContainer.add(, BorderLayout.NORTH);
@@ -354,8 +329,8 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				totalProfitContainer.setBackground(CustomColors.DARK_GRAY);
+				profitTextAndVal.setBackground(CustomColors.DARK_GRAY);
 			}
 		};
 
