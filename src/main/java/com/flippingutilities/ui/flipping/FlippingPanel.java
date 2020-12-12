@@ -443,11 +443,9 @@ public class FlippingPanel extends JPanel
 
 	public void resetPanel()
 	{
-		for (FlippingItemPanel itemPanel : activePanels)
-		{
-			deleteItemPanel(itemPanel);
-		}
-
+		plugin.getTradesForCurrentView().forEach(item -> {
+			item.setValidFlippingPanelItem(false);
+		});
 		plugin.truncateTradeList();
 		setItemHighlighted(false);
 	}
