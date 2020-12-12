@@ -559,6 +559,6 @@ public class StatItemPanel extends JPanel
 
 	private void deletePanel()
 	{
-		statsPanel.deletePanel(this, false);
+		statsPanel.deletePanel(this);
 	}
 }

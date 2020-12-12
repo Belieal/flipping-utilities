@@ -171,7 +171,7 @@ public class FlippingPanel extends JPanel
 		//The welcome panel instructs the user on how to use the plugin
 		//Shown whenever there are no items on the panel
 		welcomePanel.setContent("Flipping Utilities",
-			"For items to show up, margin check an item.");
+			"Make offers for items to show up!");
 
 		//Clears the config and resets the items panel.
 		resetIcon = new JLabel(Icons.RESET_ICON);
@@ -193,7 +193,7 @@ public class FlippingPanel extends JPanel
 					if (result == JOptionPane.YES_OPTION)
 					{
 						resetPanel();
-						cardLayout.show(flippingItemContainer, FlippingPanel.getWELCOME_PANEL());
+						cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
@@ -211,22 +211,6 @@ public class FlippingPanel extends JPanel
 				resetIcon.setIcon(Icons.RESET_ICON);
 			}
 		});
-
-		//To easily remove all panels in one click.
-		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
-		clearMenuOption.addActionListener(e ->
-		{
-			resetPanel();
-			plugin.getStatPanel().resetPanel();
-			rebuild(plugin.getTradesForCurrentView());
-			plugin.getStatPanel().rebuild(plugin.getTradesForCurrentView());
-		});
-
-		final JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-		popupMenu.add(clearMenuOption);
-
-		resetIcon.setComponentPopupMenu(popupMenu);
 
 		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);

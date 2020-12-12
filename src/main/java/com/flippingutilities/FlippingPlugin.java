@@ -862,9 +862,7 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public void truncateTradeList()
-	{
-		List<FlippingItem> currItems = getTradesForCurrentView();
+	public void deleteRemovedItems(List<FlippingItem> currItems) {
 		currItems.removeIf((item) ->
 		{
 			if (item.getGeLimitResetTime() != null)
@@ -872,14 +870,19 @@ public class FlippingPlugin extends Plugin
 				Instant startOfRefresh = item.getGeLimitResetTime().minus(4, ChronoUnit.HOURS);
 
 				return !item.getValidFlippingPanelItem() && !item.hasValidOffers()
-					&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
+						&& (!Instant.now().isAfter(item.getGeLimitResetTime()) || item.getGeLimitResetTime().isBefore(startOfRefresh));
 			}
 			return !item.getValidFlippingPanelItem() && !item.hasValidOffers();
 		});
+	}
 
-		if (!accountCurrentlyViewed.equals(ACCOUNT_WIDE))
-		{
-			accountCache.get(accountCurrentlyViewed).setTrades(currItems);
+	public void truncateTradeList()
+	{
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+			accountCache.values().forEach(account -> deleteRemovedItems(account.getTrades()));
+		}
+		else {
+			deleteRemovedItems(getTradesForCurrentView());
 		}
 	}
 
@@ -1154,6 +1157,21 @@ public class FlippingPlugin extends Plugin
 	public Font getFont()
 	{
 		return FontManager.getRunescapeSmallFont();
+	}
+
+	public void invalidateOffers(Instant startOfInterval) {
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+			for (AccountData account : accountCache.values()) {
+				for (FlippingItem item: account.getTrades()) {
+					item.invalidateOffers(item.getIntervalHistory(startOfInterval));
+				}
+			}
+		}
+		else {
+			getTradesForCurrentView().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
+		}
+
+		truncateTradeList();
 	}
 
 	@Subscribe

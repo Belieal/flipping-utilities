@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 
 @Slf4j
 public class Paginator extends JPanel
@@ -36,6 +37,7 @@ public class Paginator extends JPanel
 	{
 		this.onPageChange = onPageChange;
 		this.statusText = new JLabel("Page 1 of 1", SwingUtilities.CENTER);
+		this.statusText.setFont(FontManager.getRunescapeBoldFont());
 		this.arrowLeft = new JLabel(Icons.ARROW_LEFT);
 		this.arrowRight = new JLabel(Icons.ARROW_RIGHT);
 		this.arrowRight.setForeground(Color.blue);

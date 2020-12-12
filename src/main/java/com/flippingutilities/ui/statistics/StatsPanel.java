@@ -123,43 +123,32 @@ public class StatsPanel extends JPanel
 	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly Profit: ");
 	private final JLabel roiText = new JLabel("ROI: ");
-	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
-	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
-	private final JLabel totalQuantityText = new JLabel("Total Items Flipped: ");
 	private final JLabel totalFlipsText = new JLabel("Total Flips Made: ");
 	private final JLabel mostCommonFlipText = new JLabel("Most Common: ");
 	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, totalFlipsText, mostCommonFlipText, sessionTimeText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalFlipsText, mostCommonFlipText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel roiVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalQuantityVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalFlipsVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel mostCommonFlipVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, totalFlipsVal, mostCommonFlipVal, sessionTimeVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalFlipsVal, mostCommonFlipVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
-	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
-	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
-	private final JPanel totalQuantityPanel = new JPanel(new BorderLayout());
 	private final JPanel totalFlipsPanel = new JPanel(new BorderLayout());
 	private final JPanel mostCommonFlipPanel = new JPanel(new BorderLayout());
 	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, totalFlipsPanel, mostCommonFlipPanel, sessionTimePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel,totalFlipsPanel, mostCommonFlipPanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
 	private long totalExpenses;
-	private long totalRevenues;
-	private long totalQuantity;
 	private int totalFlips;
 	private String mostCommonItemName;
 	private int mostFlips;
@@ -239,7 +228,7 @@ public class StatsPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						resetPanel();
+						plugin.invalidateOffers(startOfInterval);
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
@@ -282,16 +271,15 @@ public class StatsPanel extends JPanel
 
 		//Formats the profit text and value.
 		JPanel profitTextAndVal = new JPanel(new BorderLayout());
-		profitTextAndVal.setBackground(CustomColors.DARK_GRAY);
+		profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		profitTextAndVal.setBorder(new EmptyBorder(5,0,3,0));
 		profitTextAndVal.add(totalProfitVal, BorderLayout.CENTER);
 		profitTextAndVal.add(profitText, BorderLayout.NORTH);
 
 		//Contains the total profit information.
 		JPanel totalProfitContainer = new JPanel(new BorderLayout());
-		totalProfitContainer.setBackground(CustomColors.DARK_GRAY);
+		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		totalProfitContainer.setBorder(TOTAL_PROFIT_CONTAINER_BORDER);
-
-		//totalProfitContainer.add(, BorderLayout.NORTH);
 		totalProfitContainer.add(profitTextAndVal, BorderLayout.CENTER);
 		totalProfitContainer.add(arrowIcon, BorderLayout.EAST);
 		totalProfitContainer.add(padLabel, BorderLayout.WEST);
@@ -329,8 +317,8 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				totalProfitContainer.setBackground(CustomColors.DARK_GRAY);
-				profitTextAndVal.setBackground(CustomColors.DARK_GRAY);
+				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 			}
 		};
 
@@ -387,7 +375,7 @@ public class StatsPanel extends JPanel
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
 		totalProfitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
 		totalProfitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
-		totalProfitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
+		totalProfitWrapper.setBorder(new EmptyBorder(5, 6, 5, 5));
 
 		//Holds all the main content of the panel.
 		JPanel contentWrapper = new JPanel(new BorderLayout());
@@ -447,11 +435,11 @@ public class StatsPanel extends JPanel
 			repaint();
 			log.info("page change took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		}));
-		paginator.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		paginator.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		paginator.setBorder(new EmptyBorder(0, 0, 0, 10));
-		JPanel itemContainerGroup = new JPanel(new BorderLayout());
 
-		itemContainerGroup.setBorder(BorderFactory.createMatteBorder(10, 5, 15, 5, ColorScheme.DARK_GRAY_COLOR));
+		JPanel itemContainerGroup = new JPanel(new BorderLayout());
+		itemContainerGroup.setBorder(new EmptyBorder(5,6,5,5));
 		itemContainerGroup.add(itemContainer, BorderLayout.CENTER);
 		itemContainerGroup.add(paginator, BorderLayout.SOUTH);
 		contentWrapper.add(itemContainerGroup, BorderLayout.CENTER);
@@ -549,8 +537,6 @@ public class StatsPanel extends JPanel
 
 		totalProfit = 0;
 		totalExpenses = 0;
-		totalRevenues = 0;
-		totalQuantity = 0;
 		totalFlips = 0;
 		mostCommonItemName = null;
 		mostFlips = 0;
@@ -564,8 +550,6 @@ public class StatsPanel extends JPanel
 			}
 			totalProfit += item.currentProfit(intervalHistory);
 			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
-			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
-			totalQuantity += item.countItemsFlipped(intervalHistory);
 			int flips = item.getFlips(startOfInterval).size();
 			totalFlips += flips;
 			if (mostCommonItemName == null || mostFlips < flips)
@@ -584,8 +568,6 @@ public class StatsPanel extends JPanel
 			updateHourlyProfitDisplay(accumulatedTime);
 		}
 		updateRoiDisplay();
-		updateRevenueAndExpenseDisplay();
-		updateTotalQuantityDisplay();
 		updateTotalFlipsDisplay();
 		updateMostCommonFlip();
 	}
@@ -674,27 +656,6 @@ public class StatsPanel extends JPanel
 		roiPanel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 	}
 
-	/**
-	 * Updates both the revenue and expense display along with setting their font colors.
-	 */
-	private void updateRevenueAndExpenseDisplay()
-	{
-		totalRevenueVal.setText(UIUtilities.quantityToRSDecimalStack(totalRevenues, true) + " gp");
-		totalRevenueVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		totalRevenueVal.setToolTipText("Total amount of gp collected");
-
-		totalExpenseVal.setText(UIUtilities.quantityToRSDecimalStack(totalExpenses, true) + " gp");
-		totalExpenseVal.setForeground(CustomColors.OUTDATED_COLOR);
-		totalExpensePanel.setToolTipText("Total amount of gp invested");
-	}
-
-	private void updateTotalQuantityDisplay()
-	{
-		totalQuantityVal.setText(QuantityFormatter.formatNumber(totalQuantity));
-		totalQuantityVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		totalQuantityPanel.setToolTipText("Total quantity of items flipped");
-	}
-
 	private void updateTotalFlipsDisplay()
 	{
 		totalFlipsVal.setText(QuantityFormatter.formatNumber(totalFlips));
@@ -742,9 +703,8 @@ public class StatsPanel extends JPanel
 	 * This means the panel will not be built upon the next rebuild calls of StatPanel.
 	 *
 	 * @param itemPanel The panel which holds the FlippingItem to be terminated.
-	 * @param reset     Determines if this was called by the resetPanel method so that the interval is set to all
 	 */
-	public void deletePanel(StatItemPanel itemPanel, boolean reset)
+	public void deletePanel(StatItemPanel itemPanel)
 	{
 		if (!activePanels.contains(itemPanel))
 		{
@@ -753,20 +713,7 @@ public class StatsPanel extends JPanel
 
 		FlippingItem item = itemPanel.getFlippingItem();
 
-		item.invalidateOffers(item.getIntervalHistory(reset ? Instant.EPOCH : startOfInterval));
-	}
-
-	/**
-	 * Designates every panel that is currently shown on the StatPanel to be terminated.
-	 * Read deletePanel method's doc for information on how this is done.
-	 */
-	public void resetPanel()
-	{
-		for (StatItemPanel itemPanel : activePanels)
-		{
-			deletePanel(itemPanel, true);
-		}
-		plugin.truncateTradeList();
+		item.invalidateOffers(item.getIntervalHistory(startOfInterval));
 	}
 
 	/**
