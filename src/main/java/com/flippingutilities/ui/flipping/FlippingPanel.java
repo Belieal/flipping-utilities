@@ -271,7 +271,7 @@ public class FlippingPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item, () -> rebuild(plugin.getTradesForCurrentView()));
+				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item);
 
 				if (index++ > 0)
 				{
@@ -433,12 +433,6 @@ public class FlippingPanel extends JPanel
 		{
 			activePanel.updateTimerDisplays();
 		}
-	}
-
-	private void deleteItemPanel(FlippingItemPanel itemPanel)
-	{
-		FlippingItem item = itemPanel.getFlippingItem();
-		item.setValidFlippingPanelItem(false);
 	}
 
 	public void resetPanel()

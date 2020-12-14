@@ -712,8 +712,8 @@ public class StatsPanel extends JPanel
 		}
 
 		FlippingItem item = itemPanel.getFlippingItem();
-
 		item.invalidateOffers(item.getIntervalHistory(startOfInterval));
+		rebuild(plugin.getTradesForCurrentView());
 	}
 
 	/**

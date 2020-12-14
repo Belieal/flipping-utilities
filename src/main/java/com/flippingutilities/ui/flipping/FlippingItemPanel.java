@@ -99,7 +99,7 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
 
-	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
+	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
 		this.flippingItem = flippingItem;
 		this.plugin = plugin;
@@ -112,7 +112,7 @@ public class FlippingItemPanel extends JPanel
 		setValueLabels();
 		updateTimerDisplays();
 
-		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(onDeleteCallback), createItemNameLabel(), createFavoriteIcon());
+		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(), createItemNameLabel(), createFavoriteIcon());
 		itemInfo = createItemInfoPanel();
 		timeInfoPanel = createTimeInfoPanel();
 		timeInfoPanel.setVisible(false);
@@ -460,10 +460,9 @@ public class FlippingItemPanel extends JPanel
 	/**
 	 * Creates the delete button located on the title panel which shows up when you hover over the image icon.
 	 *
-	 * @param onDeleteCallback the callback to be run when the delete button is pressed.
 	 * @return
 	 */
-	private JButton createDeleteButton(Runnable onDeleteCallback)
+	private JButton createDeleteButton()
 	{
 		JButton clearButton = new JButton(Icons.DELETE_ICON);
 		clearButton.setPreferredSize(Icons.ICON_SIZE);
@@ -481,7 +480,7 @@ public class FlippingItemPanel extends JPanel
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
 					flippingItem.setValidFlippingPanelItem(false);
-					onDeleteCallback.run();
+					plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
 				}
 			}
 		});
