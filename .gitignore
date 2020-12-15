@@ -3,8 +3,4 @@ build
 .idea/
 out/
 src/.idea/
-.classpath
-.project
-.settings
-.vscode/
-bin/
+

@@ -46,16 +46,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -180,6 +171,12 @@ public class FlippingPlugin extends Plugin
 
 	private GeHistoryTabPanel geHistoryTabPanel;
 
+	//when the user deletes an account wide view we need to know so that when the user logs out on an account we don't just
+	//save all of the user's accounts' trades instead of just the account that logged out, like we usually do.
+	boolean deletedAccountWide;
+
+	Set<String> accountsWithUnsavedChanges = new HashSet<>();
+
 	@Override
 	protected void startUp()
 	{
@@ -248,13 +245,11 @@ public class FlippingPlugin extends Plugin
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
 		generalRepeatingTasks.cancel(true);
-
 		cacheUpdater.stop();
-
-		if (currentlyLoggedInAccount != null)
-		{
-			log.info("Shutting down, saving trades!");
-			storeTrades(currentlyLoggedInAccount);
+		if (accountsWithUnsavedChanges.size() > 0) {
+			log.info("accounts with unsaved changes are {}. Saving them on client shutdown!", accountsWithUnsavedChanges);
+			accountsWithUnsavedChanges.forEach(accountName -> storeTrades(accountName));
+			accountsWithUnsavedChanges.clear();
 		}
 	}
 
@@ -372,7 +367,9 @@ public class FlippingPlugin extends Plugin
 	{
 		log.info("{} is logging out", currentlyLoggedInAccount);
 		accountCache.get(currentlyLoggedInAccount).setLastSessionTimeUpdate(null);
+
 		storeTrades(currentlyLoggedInAccount);
+		accountsWithUnsavedChanges.remove(currentlyLoggedInAccount);
 		if (slotTimersTask != null && !slotTimersTask.isCancelled())
 		{
 			log.info("cancelling slot timers task on logout");
@@ -538,6 +535,8 @@ public class FlippingPlugin extends Plugin
 		Optional<FlippingItem> flippingItem = currentlyLoggedInAccountsTrades.stream().filter(item -> item.getItemId() == finalizedOfferEvent.getItemId()).findFirst();
 
 		updateTradesList(currentlyLoggedInAccountsTrades, flippingItem, finalizedOfferEvent.clone());
+
+		accountsWithUnsavedChanges.add(currentlyLoggedInAccount);
 
 		updateSinceLastAccountWideBuild = true;
 
@@ -901,14 +900,10 @@ public class FlippingPlugin extends Plugin
 		List<FlippingItem> tradesListToDisplay;
 		if (selectedName.equals(ACCOUNT_WIDE))
 		{
-			flippingPanel.getResetIcon().setVisible(false);
-			statPanel.getResetIcon().setVisible(false);
 			tradesListToDisplay = createAccountWideList();
 		}
 		else
 		{
-			flippingPanel.getResetIcon().setVisible(true);
-			statPanel.getResetIcon().setVisible(true);
 			tradesListToDisplay = accountCache.get(selectedName).getTrades();
 		}
 
@@ -1142,6 +1137,7 @@ public class FlippingPlugin extends Plugin
 				item.setTotalGELimit(geLimit);
 			});
 		}
+		accountsWithUnsavedChanges.add(currentlyLoggedInAccount);
 	}
 
 	public List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
@@ -1161,16 +1157,32 @@ public class FlippingPlugin extends Plugin
 
 	public void invalidateOffers(Instant startOfInterval) {
 		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
-			for (AccountData account : accountCache.values()) {
-				for (FlippingItem item: account.getTrades()) {
-					item.invalidateOffers(item.getIntervalHistory(startOfInterval));
-				}
+			for (String accountName: accountCache.keySet()) {
+				accountCache.get(accountName).getTrades().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
+				accountsWithUnsavedChanges.add(accountName);
 			}
 		}
 		else {
 			getTradesForCurrentView().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
+			accountsWithUnsavedChanges.add(accountCurrentlyViewed);
 		}
 
+		updateSinceLastAccountWideBuild = true;
+		truncateTradeList();
+	}
+
+	public void setAllFlippingItemsAsHidden() {
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+			for (String accountName: accountCache.keySet()) {
+				accountCache.get(accountName).getTrades().forEach(item -> item.setValidFlippingPanelItem(false));
+				accountsWithUnsavedChanges.add(accountName);
+			}
+		}
+		else {
+			getTradesForCurrentView().forEach(flippingItem -> flippingItem.setValidFlippingPanelItem(false));
+			accountsWithUnsavedChanges.add(accountCurrentlyViewed);
+		}
+		updateSinceLastAccountWideBuild = true;
 		truncateTradeList();
 	}
 

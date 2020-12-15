@@ -192,7 +192,8 @@ public class FlippingPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						resetPanel();
+						plugin.setAllFlippingItemsAsHidden();
+						setItemHighlighted(false);
 						cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 						rebuild(plugin.getTradesForCurrentView());
 					}
@@ -433,15 +434,6 @@ public class FlippingPanel extends JPanel
 		{
 			activePanel.updateTimerDisplays();
 		}
-	}
-
-	public void resetPanel()
-	{
-		plugin.getTradesForCurrentView().forEach(item -> {
-			item.setValidFlippingPanelItem(false);
-		});
-		plugin.truncateTradeList();
-		setItemHighlighted(false);
 	}
 
 	/**
