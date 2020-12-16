@@ -118,4 +118,10 @@ public class TimeFormatters {
         timeFormatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.systemDefault());
         return timeFormatter.format(time);
     }
+
+    public static String formatInstantToDate(Instant time) {
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a").withZone(ZoneId.systemDefault());
+        return timeFormatter.format(time);
+    }
+
 }

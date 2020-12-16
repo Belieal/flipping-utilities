@@ -42,6 +42,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -53,16 +54,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -172,6 +164,8 @@ public class StatsPanel extends JPanel
 
 	private Paginator paginator;
 
+	JLabel downloadIcon;
+
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
 	 * This represents the front-end Statistics Tab.
@@ -209,9 +203,9 @@ public class StatsPanel extends JPanel
 		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
-		resetIcon = new JLabel(Icons.RESET_ICON);
+		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
+		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.setToolTipText("Reset Statistics");
-		resetIcon.setPreferredSize(ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -237,21 +231,51 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON_OFF);
 			}
 		});
+
+		downloadIcon = new JLabel(Icons.DONWLOAD_ICON_OFF);
+		downloadIcon.setPreferredSize(Icons.ICON_SIZE);
+		downloadIcon.setToolTipText("Export to CSV");
+		downloadIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				JFileChooser f = new JFileChooser();
+				f.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				f.showSaveDialog(resetIcon);
+				File selectedDirectory = f.getSelectedFile();
+				if (selectedDirectory == null) {
+					return;
+				}
+				log.info("exporting to csv in folder {}", f.getSelectedFile());
+				plugin.exportToCsv(f.getSelectedFile());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				downloadIcon.setIcon(Icons.DOWNLOAD_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				downloadIcon.setIcon(Icons.DONWLOAD_ICON_OFF);
+			}
+		});
+
 
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		topPanel.setBorder(TOP_PANEL_BORDER);
 		topPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
+		topPanel.add(downloadIcon, BorderLayout.WEST);
 
 		//Title text for the big total profit label.
 		final JLabel profitText = new JLabel("Total Profit: ", SwingConstants.CENTER);

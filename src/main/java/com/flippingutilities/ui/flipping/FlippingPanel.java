@@ -141,7 +141,6 @@ public class FlippingPanel extends JPanel
 		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
 		container.setLayout(new BorderLayout(0, 0));
-		container.setBorder(new EmptyBorder(0, 0, 5, 0));
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		//Search bar beneath the tab manager.
@@ -174,7 +173,8 @@ public class FlippingPanel extends JPanel
 			"Make offers for items to show up!");
 
 		//Clears the config and resets the items panel.
-		resetIcon = new JLabel(Icons.RESET_ICON);
+		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
+		resetIcon.setBorder(new EmptyBorder(0,0,8,0));
 		resetIcon.setToolTipText("Reset trade history");
 		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -203,13 +203,13 @@ public class FlippingPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON_OFF);
 			}
 		});
 

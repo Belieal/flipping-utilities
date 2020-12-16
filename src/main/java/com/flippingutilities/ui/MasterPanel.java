@@ -125,6 +125,8 @@ public class MasterPanel extends PluginPanel
 	 */
 	private JPanel Header(JComboBox accountSelector, JLabel settingsButton, MaterialTabGroup tabSelector)
 	{
+		settingsButton.setBorder(new EmptyBorder(0,0,5,0));
+
 		JPanel accountSelectorPanel = new JPanel(new BorderLayout());
 		accountSelectorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		accountSelectorPanel.add(accountSelector, BorderLayout.CENTER);
@@ -228,7 +230,7 @@ public class MasterPanel extends PluginPanel
 	 */
 	private JLabel settingsButton(Runnable callback)
 	{
-		JLabel button = new JLabel(Icons.SETTINGS_ICON);
+		JLabel button = new JLabel(Icons.SETTINGS_ICON_OFF);
 		button.setToolTipText("Open Settings Panel");
 		button.setPreferredSize(Icons.ICON_SIZE);
 		button.addMouseListener(new MouseAdapter()
@@ -236,6 +238,16 @@ public class MasterPanel extends PluginPanel
 			public void mouseClicked(MouseEvent e)
 			{
 				callback.run();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				button.setIcon(Icons.SETTINGS_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				button.setIcon(Icons.SETTINGS_ICON_OFF);
 			}
 		});
 		return button;

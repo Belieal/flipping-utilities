@@ -42,6 +42,7 @@ import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.awt.Font;
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -170,10 +171,6 @@ public class FlippingPlugin extends Plugin
 	private int loginTickCount;
 
 	private GeHistoryTabPanel geHistoryTabPanel;
-
-	//when the user deletes an account wide view we need to know so that when the user logs out on an account we don't just
-	//save all of the user's accounts' trades instead of just the account that logged out, like we usually do.
-	boolean deletedAccountWide;
 
 	Set<String> accountsWithUnsavedChanges = new HashSet<>();
 
@@ -803,7 +800,6 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			thisClientLastStored = displayName;
 			AccountData data = accountCache.get(displayName);
 			if (data == null)
 			{
@@ -813,6 +809,7 @@ public class FlippingPlugin extends Plugin
 			}
 			TradePersister.storeTrades(displayName, data);
 			log.info("successfully stored trades for {}", displayName);
+			thisClientLastStored = displayName;
 		}
 		catch (IOException e)
 		{
@@ -1184,6 +1181,15 @@ public class FlippingPlugin extends Plugin
 		}
 		updateSinceLastAccountWideBuild = true;
 		truncateTradeList();
+	}
+
+	public void exportToCsv(File parentDirectory) {
+		try {
+			TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), getTradesForCurrentView());
+		}
+		catch (Exception e) {
+			log.info("exception was {}", e);
+		}
 	}
 
 	@Subscribe
