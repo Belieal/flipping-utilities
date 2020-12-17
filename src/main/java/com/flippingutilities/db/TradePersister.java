@@ -241,21 +241,27 @@ public class TradePersister
 		}
 	}
 
-	public static void exportToCsv(File file, List<FlippingItem> trades) throws IOException {
+	public static void exportToCsv(File file, List<FlippingItem> trades, String startOfIntervalName) throws IOException {
 		FileWriter out = new FileWriter(file);
-		try (CSVPrinter csvWriter = new CSVPrinter(out, CSVFormat.DEFAULT.withHeader("name", "date", "quantity", "price", "state").withCommentMarker('#').withHeaderComments("Time interval"))) {
-			for (FlippingItem item : trades) {
-				for (OfferEvent offer : item.getHistory().getCompressedOfferEvents()) {
-					csvWriter.printRecord(
-							item.getItemName(),
-							TimeFormatters.formatInstantToDate(offer.getTime()),
-							offer.getCurrentQuantityInTrade(),
-							offer.getPrice(),
-							offer.getState()
-					);
-				}
-				csvWriter.println();
+		CSVPrinter csvWriter = new CSVPrinter(out,
+				CSVFormat.DEFAULT.
+						withHeader("name", "date", "quantity", "price", "state").
+						withCommentMarker('#').
+						withHeaderComments("Displaying trades for selected time interval: " + startOfIntervalName));
+
+		for (FlippingItem item : trades) {
+			for (OfferEvent offer : item.getHistory().getCompressedOfferEvents()) {
+				csvWriter.printRecord(
+						item.getItemName(),
+						TimeFormatters.formatInstantToDate(offer.getTime()),
+						offer.getCurrentQuantityInTrade(),
+						offer.getPrice(),
+						offer.getState()
+				);
 			}
+			csvWriter.printComment(String.format("Total profit: %d", item.currentProfit(item.getHistory().getCompressedOfferEvents())));
+			csvWriter.println();
 		}
+		csvWriter.close();
 	}
 }

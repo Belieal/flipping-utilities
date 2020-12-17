@@ -148,6 +148,8 @@ public class StatsPanel extends JPanel
 	//Contains the unix time of the start of the interval.
 	@Getter
 	private Instant startOfInterval = Instant.now();
+	@Getter
+	private String startOfIntervalName = "Session";
 
 	@Getter
 	private String selectedSort;
@@ -255,7 +257,7 @@ public class StatsPanel extends JPanel
 					return;
 				}
 				log.info("exporting to csv in folder {}", f.getSelectedFile());
-				plugin.exportToCsv(f.getSelectedFile());
+				plugin.exportToCsv(f.getSelectedFile(), startOfInterval, startOfIntervalName);
 			}
 
 			@Override
@@ -759,28 +761,36 @@ public class StatsPanel extends JPanel
 		{
 			case "Past Hour":
 				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
+				startOfIntervalName = "Past Hour";
 				break;
 			case "Past 4 Hours":
 				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
+				startOfIntervalName = "Past 4 Hours";
 				break;
 			case "Past 12 Hours":
 				startOfInterval = timeNow.minus(12, ChronoUnit.HOURS);
+				startOfIntervalName = "Past 12 Hours";
 				break;
 			case "Past Day":
 				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
+				startOfIntervalName = "Past Day";
 				break;
 			//Apparently Instant doesn't support weeks and months.
 			case "Past Week":
 				startOfInterval = timeNow.minus(7, ChronoUnit.DAYS);
+				startOfIntervalName = "Past Week";
 				break;
 			case "Past Month":
 				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
+				startOfIntervalName = "Past Month";
 				break;
 			case "Session":
 				startOfInterval = plugin.getStartOfSessionForCurrentView();
+				startOfIntervalName = "Session";
 				break;
 			case "All":
 				startOfInterval = Instant.EPOCH;
+				startOfIntervalName = "All";
 				break;
 			default:
 				break;

@@ -28,6 +28,7 @@ package com.flippingutilities;
 
 import com.flippingutilities.db.TradePersister;
 import com.flippingutilities.model.AccountData;
+import com.flippingutilities.model.Flip;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.MasterPanel;
@@ -1183,9 +1184,20 @@ public class FlippingPlugin extends Plugin
 		truncateTradeList();
 	}
 
-	public void exportToCsv(File parentDirectory) {
+	public void exportToCsv(File parentDirectory, Instant startOfInterval, String startOfIntervalName) {
+		//create new flipping item list with only history from that interval
+		List<FlippingItem> items = new ArrayList<>();
+		for (FlippingItem item: getTradesForCurrentView()) {
+			List<OfferEvent> offersInInterval = item.getIntervalHistory(startOfInterval);
+			if (offersInInterval.isEmpty()) {
+				continue;
+			}
+			FlippingItem itemWithOnlySelectedIntervalHistory = new FlippingItem(item.getItemId(),item.getItemName(),item.getTotalGELimit(), item.getFlippedBy());
+			itemWithOnlySelectedIntervalHistory.getHistory().setCompressedOfferEvents(offersInInterval);
+			items.add(itemWithOnlySelectedIntervalHistory);
+		}
 		try {
-			TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), getTradesForCurrentView());
+			TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 		}
 		catch (Exception e) {
 			log.info("exception was {}", e);
