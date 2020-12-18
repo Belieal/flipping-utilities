@@ -257,7 +257,22 @@ public class StatsPanel extends JPanel
 					return;
 				}
 				log.info("exporting to csv in folder {}", f.getSelectedFile());
-				plugin.exportToCsv(f.getSelectedFile(), startOfInterval, startOfIntervalName);
+				try {
+					plugin.exportToCsv(f.getSelectedFile(), startOfInterval, startOfIntervalName);
+					JOptionPane.showMessageDialog(
+							resetIcon,
+							String.format("Successfully saved csv file to %s/%s.csv", f.getSelectedFile().toString(), plugin.getAccountCurrentlyViewed()),
+							"Successfully saved CSV!",
+							JOptionPane.INFORMATION_MESSAGE
+					);
+				}
+				catch (Exception exc) {
+					JOptionPane.showMessageDialog(
+							resetIcon,
+							String.format("Could not save CSV file. Error: %s", exc.toString()),
+							"Could not save csv file",
+							JOptionPane.ERROR_MESSAGE);
+				}
 			}
 
 			@Override

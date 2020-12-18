@@ -1184,7 +1184,10 @@ public class FlippingPlugin extends Plugin
 		truncateTradeList();
 	}
 
-	public void exportToCsv(File parentDirectory, Instant startOfInterval, String startOfIntervalName) {
+	public void exportToCsv(File parentDirectory, Instant startOfInterval, String startOfIntervalName) throws IOException {
+		if (parentDirectory.equals(TradePersister.PARENT_DIRECTORY)) {
+			throw new RuntimeException("Cannot save csv file in the flipping directory, pick another directory");
+		}
 		//create new flipping item list with only history from that interval
 		List<FlippingItem> items = new ArrayList<>();
 		for (FlippingItem item: getTradesForCurrentView()) {
@@ -1196,12 +1199,8 @@ public class FlippingPlugin extends Plugin
 			itemWithOnlySelectedIntervalHistory.getHistory().setCompressedOfferEvents(offersInInterval);
 			items.add(itemWithOnlySelectedIntervalHistory);
 		}
-		try {
-			TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
-		}
-		catch (Exception e) {
-			log.info("exception was {}", e);
-		}
+
+		TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 	}
 
 	@Subscribe
