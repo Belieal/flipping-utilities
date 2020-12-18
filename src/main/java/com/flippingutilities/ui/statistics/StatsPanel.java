@@ -73,7 +73,7 @@ import net.runelite.client.util.QuantityFormatter;
 @Slf4j
 public class StatsPanel extends JPanel
 {
-	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past 12 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
+	private static final String[] TIME_INTERVAL_STRINGS = {"-1h (Past Hour)", "-4h (Past 4 Hours)", "-12h (Past 12 Hours)", "-1d (Past Day)", "-1w (Past Week)", "-1m (Past Month)", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
@@ -192,7 +192,8 @@ public class StatsPanel extends JPanel
 		constraints.gridy = 0;
 
 		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
-		timeIntervalDropdown.setFocusable(false);
+		timeIntervalDropdown.setEditable(true);
+		//timeIntervalDropdown.setFocusable(false);
 		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		timeIntervalDropdown.addItemListener(event ->
 		{
@@ -774,28 +775,29 @@ public class StatsPanel extends JPanel
 
 		switch (selectedInterval)
 		{
-			case "Past Hour":
+
+			case "-1h (Past Hour)":
 				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
 				startOfIntervalName = "Past Hour";
 				break;
-			case "Past 4 Hours":
+			case "-4h (Past 4 Hours)":
 				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
 				startOfIntervalName = "Past 4 Hours";
 				break;
-			case "Past 12 Hours":
+			case "-12h (Past 12 Hours)":
 				startOfInterval = timeNow.minus(12, ChronoUnit.HOURS);
 				startOfIntervalName = "Past 12 Hours";
 				break;
-			case "Past Day":
+			case "-1d (Past Day)":
 				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
 				startOfIntervalName = "Past Day";
 				break;
 			//Apparently Instant doesn't support weeks and months.
-			case "Past Week":
+			case "-1w (Past Week)":
 				startOfInterval = timeNow.minus(7, ChronoUnit.DAYS);
 				startOfIntervalName = "Past Week";
 				break;
-			case "Past Month":
+			case "-1m (Past Month)":
 				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
 				startOfIntervalName = "Past Month";
 				break;
@@ -808,6 +810,7 @@ public class StatsPanel extends JPanel
 				startOfIntervalName = "All";
 				break;
 			default:
+				log.info("not recognized interval");
 				break;
 		}
 		paginator.setPageNumber(1);
