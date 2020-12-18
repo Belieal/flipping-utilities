@@ -43,6 +43,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -61,6 +62,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -69,6 +71,7 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
+import org.apache.commons.lang3.math.NumberUtils;
 
 @Slf4j
 public class StatsPanel extends JPanel
@@ -775,7 +778,6 @@ public class StatsPanel extends JPanel
 
 		switch (selectedInterval)
 		{
-
 			case "-1h (Past Hour)":
 				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
 				startOfIntervalName = "Past Hour";
@@ -810,7 +812,31 @@ public class StatsPanel extends JPanel
 				startOfIntervalName = "All";
 				break;
 			default:
-				log.info("not recognized interval");
+				if (selectedInterval.length() < 3) {
+					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+
+				String timeUnitString = String.valueOf(selectedInterval.charAt(selectedInterval.length() - 1));
+				if (!TimeFormatters.stringToTimeUnit.containsKey(timeUnitString)) {
+					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+
+				try {
+					int amountToSubtract = Integer.parseInt(selectedInterval.substring(1, selectedInterval.length() - 1)) * (int) TimeFormatters.stringToTimeUnit.get(timeUnitString);
+					log.info("subtracting {} hours", amountToSubtract);
+					startOfInterval = timeNow.minus(amountToSubtract, ChronoUnit.HOURS);
+					startOfIntervalName = selectedInterval;
+
+				} catch (NumberFormatException e) {
+					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+
 				break;
 		}
 		paginator.setPageNumber(1);
