@@ -40,6 +40,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -196,14 +197,27 @@ public class StatsPanel extends JPanel
 
 		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
 		timeIntervalDropdown.setEditable(true);
-		//timeIntervalDropdown.setFocusable(false);
 		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		timeIntervalDropdown.addItemListener(event ->
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
 			{
 				String interval = (String) event.getItem();
-				setTimeInterval(interval);
+				if (interval == null) {
+					return;
+				}
+				//remove the helper text. so something like "1w (Past week)" becomes just "1w"
+				String justTheInterval = interval.split(" \\(")[0];
+				ItemListener[] itemListeners = timeIntervalDropdown.getItemListeners();
+				//have to remove item listeners so setSelectedItem doesn't cause another rebuild.
+				for (ItemListener listener : itemListeners) {
+					timeIntervalDropdown.removeItemListener(listener);
+				}
+				timeIntervalDropdown.setSelectedItem(justTheInterval);
+				for (ItemListener itemListener : itemListeners) {
+					timeIntervalDropdown.addItemListener(itemListener);
+				}
+				setTimeInterval(justTheInterval);
 			}
 		});
 		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
@@ -776,68 +790,38 @@ public class StatsPanel extends JPanel
 
 		Instant timeNow = Instant.now();
 
-		switch (selectedInterval)
-		{
-			case "-1h (Past Hour)":
-				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
-				startOfIntervalName = "Past Hour";
-				break;
-			case "-4h (Past 4 Hours)":
-				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
-				startOfIntervalName = "Past 4 Hours";
-				break;
-			case "-12h (Past 12 Hours)":
-				startOfInterval = timeNow.minus(12, ChronoUnit.HOURS);
-				startOfIntervalName = "Past 12 Hours";
-				break;
-			case "-1d (Past Day)":
-				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
-				startOfIntervalName = "Past Day";
-				break;
-			//Apparently Instant doesn't support weeks and months.
-			case "-1w (Past Week)":
-				startOfInterval = timeNow.minus(7, ChronoUnit.DAYS);
-				startOfIntervalName = "Past Week";
-				break;
-			case "-1m (Past Month)":
-				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
-				startOfIntervalName = "Past Month";
-				break;
-			case "Session":
-				startOfInterval = plugin.getStartOfSessionForCurrentView();
-				startOfIntervalName = "Session";
-				break;
-			case "All":
-				startOfInterval = Instant.EPOCH;
-				startOfIntervalName = "All";
-				break;
-			default:
-				if (selectedInterval.length() < 3) {
-					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
-							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
-					return;
-				}
+		if (selectedInterval.equals("Session")) {
+			startOfInterval = plugin.getStartOfSessionForCurrentView();
+			startOfIntervalName = "Session";
+		}
+		else if (selectedInterval.equals("All")) {
+			startOfInterval = Instant.EPOCH;
+			startOfIntervalName = "All";
+		}
+		else {
+			if (selectedInterval.length() < 3) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 
-				String timeUnitString = String.valueOf(selectedInterval.charAt(selectedInterval.length() - 1));
-				if (!TimeFormatters.stringToTimeUnit.containsKey(timeUnitString)) {
-					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
-							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
-					return;
-				}
+			String timeUnitString = String.valueOf(selectedInterval.charAt(selectedInterval.length() - 1));
+			if (!TimeFormatters.stringToTimeUnit.containsKey(timeUnitString)) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 
-				try {
-					int amountToSubtract = Integer.parseInt(selectedInterval.substring(1, selectedInterval.length() - 1)) * (int) TimeFormatters.stringToTimeUnit.get(timeUnitString);
-					log.info("subtracting {} hours", amountToSubtract);
-					startOfInterval = timeNow.minus(amountToSubtract, ChronoUnit.HOURS);
-					startOfIntervalName = selectedInterval;
+			try {
+				int amountToSubtract = Integer.parseInt(selectedInterval.substring(1, selectedInterval.length() - 1)) * (int) TimeFormatters.stringToTimeUnit.get(timeUnitString);
+				startOfInterval = timeNow.minus(amountToSubtract, ChronoUnit.HOURS);
+				startOfIntervalName = selectedInterval;
 
-				} catch (NumberFormatException e) {
-					JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
-							"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-
-				break;
+			} catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 		}
 		paginator.setPageNumber(1);
 		rebuild(plugin.getTradesForCurrentView());
