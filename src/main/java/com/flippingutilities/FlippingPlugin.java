@@ -206,8 +206,6 @@ public class FlippingPlugin extends Plugin
 			accountCache = setupCache();
 			setupAccSelectorDropdown();
 
-			statPanel.setSelectedTimeInterval("Session");
-
 			cacheUpdater = new CacheUpdater();
 			cacheUpdater.registerCallback(this::onDirectoryUpdate);
 			cacheUpdater.start();
@@ -347,6 +345,7 @@ public class FlippingPlugin extends Plugin
 		//this will cause changeView to be invoked which will cause a rebuild of
 		//flipping and stats panel
 		masterPanel.getAccountSelector().setSelectedItem(displayName);
+
 		if (slotTimersTask == null && config.slotTimersEnabled())
 		{
 			log.info("starting slot timers on login");
@@ -1322,7 +1321,6 @@ public class FlippingPlugin extends Plugin
 		{
 			flippingPanel.dehighlightItem();
 		}
-
 	}
 
 	public void deleteAccount(String displayName)

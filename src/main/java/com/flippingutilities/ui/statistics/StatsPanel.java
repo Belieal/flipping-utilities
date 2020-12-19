@@ -198,6 +198,11 @@ public class StatsPanel extends JPanel
 		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
 		timeIntervalDropdown.setEditable(true);
 		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		//setting the selection item as session before the item listener is attached so it doesn't fire a rebuild.
+		timeIntervalDropdown.setSelectedItem("Session");
+		startOfInterval = plugin.getStartOfSessionForCurrentView();
+		startOfIntervalName = "Session";
+		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 		timeIntervalDropdown.addItemListener(event ->
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
@@ -220,7 +225,6 @@ public class StatsPanel extends JPanel
 				setTimeInterval(justTheInterval);
 			}
 		});
-		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
 		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
