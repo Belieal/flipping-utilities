@@ -758,8 +758,8 @@ public class StatsPanel extends JPanel
 	}
 
 	/**
-	 * Designates the panel for deletion by changing its FlippingItem's stored offers stat validity state to false.
-	 * This means the panel will not be built upon the next rebuild calls of StatPanel.
+	 * Invalidates a FlippingItems offers for the currently picked time interval.
+	 * This means the panel will not be built upon the next rebuild calls of StatPanel for that time interval.
 	 *
 	 * @param itemPanel The panel which holds the FlippingItem to be terminated.
 	 */
@@ -772,6 +772,9 @@ public class StatsPanel extends JPanel
 
 		FlippingItem item = itemPanel.getFlippingItem();
 		item.invalidateOffers(item.getIntervalHistory(startOfInterval));
+		if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+			plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a StatItemPanel");
+		}
 		rebuild(plugin.getTradesForCurrentView());
 	}
 

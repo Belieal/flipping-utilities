@@ -480,6 +480,9 @@ public class FlippingItemPanel extends JPanel
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
 					flippingItem.setValidFlippingPanelItem(false);
+					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a FlippingItemPanel");
+					}
 					plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
 				}
 			}
@@ -553,24 +556,15 @@ public class FlippingItemPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				if (flippingItem.isFavorite())
+				if (plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE))
 				{
-					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE))
-					{
-						plugin.setFavoriteOnAllAccounts(flippingItem, false);
-					}
-					flippingItem.setFavorite(false);
-					favoriteIcon.setIcon(Icons.STAR_OFF_ICON);
+					plugin.setFavoriteOnAllAccounts(flippingItem, !flippingItem.isFavorite());
 				}
-				else
-				{
-					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE))
-					{
-						plugin.setFavoriteOnAllAccounts(flippingItem, true);
-					}
-					flippingItem.setFavorite(true);
-					favoriteIcon.setIcon(Icons.STAR_ON_ICON);
+				else {
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "setting favorite");
 				}
+				flippingItem.setFavorite(!flippingItem.isFavorite());
+				favoriteIcon.setIcon(flippingItem.isFavorite()? Icons.STAR_ON_ICON:Icons.STAR_OFF_ICON);
 			}
 
 			@Override

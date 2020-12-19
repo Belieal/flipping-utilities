@@ -173,7 +173,8 @@ public class FlippingPlugin extends Plugin
 
 	private GeHistoryTabPanel geHistoryTabPanel;
 
-	Set<String> accountsWithUnsavedChanges = new HashSet<>();
+	//allows for knowing what to save on client shutdown.
+	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
 
 	@Override
 	protected void startUp()
@@ -534,7 +535,7 @@ public class FlippingPlugin extends Plugin
 
 		updateTradesList(currentlyLoggedInAccountsTrades, flippingItem, finalizedOfferEvent.clone());
 
-		accountsWithUnsavedChanges.add(currentlyLoggedInAccount);
+		markAccountTradesAsHavingChanged(currentlyLoggedInAccount, "new offer");
 
 		updateSinceLastAccountWideBuild = true;
 
@@ -1075,14 +1076,18 @@ public class FlippingPlugin extends Plugin
 
 	public void setFavoriteOnAllAccounts(FlippingItem item, boolean favoriteStatus)
 	{
-		for (AccountData account : accountCache.values())
+		for (String accountName : accountCache.keySet())
 		{
+			AccountData account = accountCache.get(accountName);
 			account.
 				getTrades().
 				stream().
 				filter(accountItem -> accountItem.getItemId() == item.getItemId()).
 				findFirst().
-				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
+				ifPresent(accountItem -> {
+					accountItem.setFavorite(favoriteStatus);
+					markAccountTradesAsHavingChanged(accountName, "item was favorited in account wide view. This account had that item.");
+				});
 		}
 	}
 
@@ -1092,12 +1097,15 @@ public class FlippingPlugin extends Plugin
 		{
 			addSelectedGeTabOffer(offerEvent);
 		}
+
 		//have to add a delay before rebuilding as item limit and name may not have been set yet in addSelectedGeTabOffer due to
 		//clientThread being async and not offering a future to wait on when you submit a runnable...
 		executor.schedule(() -> {
 			flippingPanel.rebuild(getTradesForCurrentView());
 			statPanel.rebuild(getTradesForCurrentView());
 		}, 500, TimeUnit.MILLISECONDS);
+
+		markAccountTradesAsHavingChanged(currentlyLoggedInAccount, "Adding selected ge tab offers");
 	}
 
 	private void addSelectedGeTabOffer(OfferEvent selectedOffer)
@@ -1135,7 +1143,6 @@ public class FlippingPlugin extends Plugin
 				item.setTotalGELimit(geLimit);
 			});
 		}
-		accountsWithUnsavedChanges.add(currentlyLoggedInAccount);
 	}
 
 	public List<OfferEvent> findOfferMatches(OfferEvent offerEvent, int limit)
@@ -1153,35 +1160,53 @@ public class FlippingPlugin extends Plugin
 		return FontManager.getRunescapeSmallFont();
 	}
 
+	/**
+	 * Used by the stats panel to invalidate all offers for a certain interval when a user hits the reset button.
+	 * @param startOfInterval
+	 */
 	public void invalidateOffers(Instant startOfInterval) {
 		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
 			for (String accountName: accountCache.keySet()) {
 				accountCache.get(accountName).getTrades().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
-				accountsWithUnsavedChanges.add(accountName);
 			}
+			markAccountTradesAsHavingChanged(ACCOUNT_WIDE, "to invalidate offers for all accounts");
 		}
 		else {
 			getTradesForCurrentView().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
-			accountsWithUnsavedChanges.add(accountCurrentlyViewed);
+			markAccountTradesAsHavingChanged(accountCurrentlyViewed, "to invalidate offers for one account");
 		}
 
 		updateSinceLastAccountWideBuild = true;
 		truncateTradeList();
 	}
 
+	/**
+	 * Used by the flipping panel to hide all items (set the validfFippingItem property to false) when a user hits the
+	 * reset button
+	 */
 	public void setAllFlippingItemsAsHidden() {
 		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
 			for (String accountName: accountCache.keySet()) {
 				accountCache.get(accountName).getTrades().forEach(item -> item.setValidFlippingPanelItem(false));
-				accountsWithUnsavedChanges.add(accountName);
 			}
+			markAccountTradesAsHavingChanged(ACCOUNT_WIDE, "to set all flipping items to hidden for Account wide");
 		}
 		else {
 			getTradesForCurrentView().forEach(flippingItem -> flippingItem.setValidFlippingPanelItem(false));
-			accountsWithUnsavedChanges.add(accountCurrentlyViewed);
+			markAccountTradesAsHavingChanged(accountCurrentlyViewed, "to set all flipping items to hidden");
 		}
 		updateSinceLastAccountWideBuild = true;
 		truncateTradeList();
+	}
+
+	public void markAccountTradesAsHavingChanged(String accountName, String reason) {
+		if (accountName.equals(ACCOUNT_WIDE)) {
+			accountsWithUnsavedChanges.addAll(accountCache.keySet());
+		}
+		else {
+			accountsWithUnsavedChanges.add(accountName);
+		}
+		log.info("marking account: {} as having its trades changed for reason: {}", accountName, reason);
 	}
 
 	public void exportToCsv(File parentDirectory, Instant startOfInterval, String startOfIntervalName) throws IOException {
@@ -1248,17 +1273,6 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
-	{
-		Widget widget = event.getWidget();
-		// If the back button is no longer visible, we know we aren't in the offer setup.
-		if (flippingPanel.isItemHighlighted() && widget.isHidden() && widget.getId() == GE_BACK_BUTTON_WIDGET_ID)
-		{
-			flippingPanel.dehighlightItem();
-		}
-	}
-
-	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		//ge history widget loaded
@@ -1303,6 +1317,12 @@ public class FlippingPlugin extends Plugin
 		{
 			highlightOffer();
 		}
+		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
+				(client.getVar(CURRENT_GE_ITEM) == -1 || client.getVar(CURRENT_GE_ITEM) == 0) && flippingPanel.isItemHighlighted())
+		{
+			flippingPanel.dehighlightItem();
+		}
+
 	}
 
 	public void deleteAccount(String displayName)
