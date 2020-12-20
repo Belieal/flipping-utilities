@@ -808,9 +808,9 @@ public class FlippingPlugin extends Plugin
 					"an empty AccountData object instead.", displayName);
 				data = new AccountData();
 			}
+			thisClientLastStored = displayName;
 			TradePersister.storeTrades(displayName, data);
 			log.info("successfully stored trades for {}", displayName);
-			thisClientLastStored = displayName;
 		}
 		catch (IOException e)
 		{
