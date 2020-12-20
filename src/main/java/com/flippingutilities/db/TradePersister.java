@@ -29,18 +29,24 @@ package com.flippingutilities.db;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.model.AccountData;
 import com.flippingutilities.model.FlippingItem;
+import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 /**
  * This class is responsible for handling all the IO related tasks for persisting trades. This class should contain
@@ -233,5 +239,29 @@ public class TradePersister
 				log.info("unable to delete {}", fileName);
 			}
 		}
+	}
+
+	public static void exportToCsv(File file, List<FlippingItem> trades, String startOfIntervalName) throws IOException {
+		FileWriter out = new FileWriter(file);
+		CSVPrinter csvWriter = new CSVPrinter(out,
+				CSVFormat.DEFAULT.
+						withHeader("name", "date", "quantity", "price", "state").
+						withCommentMarker('#').
+						withHeaderComments("Displaying trades for selected time interval: " + startOfIntervalName));
+
+		for (FlippingItem item : trades) {
+			for (OfferEvent offer : item.getHistory().getCompressedOfferEvents()) {
+				csvWriter.printRecord(
+						item.getItemName(),
+						TimeFormatters.formatInstantToDate(offer.getTime()),
+						offer.getCurrentQuantityInTrade(),
+						offer.getPrice(),
+						offer.getState()
+				);
+			}
+			csvWriter.printComment(String.format("Total profit: %d", item.currentProfit(item.getHistory().getCompressedOfferEvents())));
+			csvWriter.println();
+		}
+		csvWriter.close();
 	}
 }

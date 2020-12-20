@@ -40,8 +40,11 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -53,22 +56,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -77,17 +72,16 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
+import org.apache.commons.lang3.math.NumberUtils;
 
 @Slf4j
 public class StatsPanel extends JPanel
 {
-	private static final String[] TIME_INTERVAL_STRINGS = {"Past Hour", "Past 4 Hours", "Past 12 Hours", "Past Day", "Past Week", "Past Month", "Session", "All"};
+	private static final String[] TIME_INTERVAL_STRINGS = {"-1h (Past Hour)", "-4h (Past 4 Hours)", "-12h (Past 12 Hours)", "-1d (Past Day)", "-1w (Past Week)", "-1m (Past Month)", "Session", "All"};
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
-	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
-		BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.BRAND_ORANGE),
-		BorderFactory.createEmptyBorder(5, 2, 1, 8));
+	private static final Border TOP_PANEL_BORDER = new EmptyBorder(5,0,0,0);
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -125,43 +119,32 @@ public class StatsPanel extends JPanel
 	/* Subinfo text labels */
 	private final JLabel hourlyProfitText = new JLabel("Hourly Profit: ");
 	private final JLabel roiText = new JLabel("ROI: ");
-	private final JLabel totalRevenueText = new JLabel("Total Revenue: ");
-	private final JLabel totalExpenseText = new JLabel("Total Expense: ");
-	private final JLabel totalQuantityText = new JLabel("Total Items Flipped: ");
 	private final JLabel totalFlipsText = new JLabel("Total Flips Made: ");
 	private final JLabel mostCommonFlipText = new JLabel("Most Common: ");
 	private final JLabel sessionTimeText = new JLabel("Session Time: ");
 
-	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalRevenueText, totalExpenseText, totalQuantityText, totalFlipsText, mostCommonFlipText, sessionTimeText};
+	private final JLabel[] textLabelArray = {hourlyProfitText, roiText, totalFlipsText, mostCommonFlipText, sessionTimeText};
 
 	/* Subinfo value labels */
 	private final JLabel hourlyProfitVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel roiVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalRevenueVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalExpenseVal = new JLabel("", SwingConstants.RIGHT);
-	private final JLabel totalQuantityVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel totalFlipsVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel mostCommonFlipVal = new JLabel("", SwingConstants.RIGHT);
 	private final JLabel sessionTimeVal = new JLabel("", SwingConstants.RIGHT);
 
-	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalRevenueVal, totalExpenseVal, totalQuantityVal, totalFlipsVal, mostCommonFlipVal, sessionTimeVal};
+	private final JLabel[] valLabelArray = {hourlyProfitVal, roiVal, totalFlipsVal, mostCommonFlipVal, sessionTimeVal};
 
 	private final JPanel hourlyProfitPanel = new JPanel(new BorderLayout());
 	private final JPanel roiPanel = new JPanel(new BorderLayout());
-	private final JPanel totalRevenuePanel = new JPanel(new BorderLayout());
-	private final JPanel totalExpensePanel = new JPanel(new BorderLayout());
-	private final JPanel totalQuantityPanel = new JPanel(new BorderLayout());
 	private final JPanel totalFlipsPanel = new JPanel(new BorderLayout());
 	private final JPanel mostCommonFlipPanel = new JPanel(new BorderLayout());
 	private final JPanel sessionTimePanel = new JPanel(new BorderLayout());
 
-	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel, totalRevenuePanel, totalExpensePanel, totalQuantityPanel, totalFlipsPanel, mostCommonFlipPanel, sessionTimePanel};
+	private final JPanel[] subInfoPanelArray = {hourlyProfitPanel, roiPanel,totalFlipsPanel, mostCommonFlipPanel, sessionTimePanel};
 
 	//Data acquired from history manager of all items
 	private long totalProfit;
 	private long totalExpenses;
-	private long totalRevenues;
-	private long totalQuantity;
 	private int totalFlips;
 	private String mostCommonItemName;
 	private int mostFlips;
@@ -169,6 +152,8 @@ public class StatsPanel extends JPanel
 	//Contains the unix time of the start of the interval.
 	@Getter
 	private Instant startOfInterval = Instant.now();
+	@Getter
+	private String startOfIntervalName = "Session";
 
 	@Getter
 	private String selectedSort;
@@ -184,6 +169,8 @@ public class StatsPanel extends JPanel
 	private Set<String> expandedTradeHistories = new HashSet<>();
 
 	private Paginator paginator;
+
+	JLabel downloadIcon;
 
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
@@ -209,22 +196,40 @@ public class StatsPanel extends JPanel
 		constraints.gridy = 0;
 
 		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
-		timeIntervalDropdown.setFocusable(false);
+		timeIntervalDropdown.setEditable(true);
 		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		//setting the selection item as session before the item listener is attached so it doesn't fire a rebuild.
+		timeIntervalDropdown.setSelectedItem("Session");
+		startOfInterval = plugin.getStartOfSessionForCurrentView();
+		startOfIntervalName = "Session";
+		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 		timeIntervalDropdown.addItemListener(event ->
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED)
 			{
 				String interval = (String) event.getItem();
-				setTimeInterval(interval);
+				if (interval == null) {
+					return;
+				}
+				//remove the helper text. so something like "1w (Past week)" becomes just "1w"
+				String justTheInterval = interval.split(" \\(")[0];
+				ItemListener[] itemListeners = timeIntervalDropdown.getItemListeners();
+				//have to remove item listeners so setSelectedItem doesn't cause another rebuild.
+				for (ItemListener listener : itemListeners) {
+					timeIntervalDropdown.removeItemListener(listener);
+				}
+				timeIntervalDropdown.setSelectedItem(justTheInterval);
+				for (ItemListener itemListener : itemListeners) {
+					timeIntervalDropdown.addItemListener(itemListener);
+				}
+				setTimeInterval(justTheInterval);
 			}
 		});
-		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 
 		//Icon that resets all the panels currently shown in the time span.
-		resetIcon = new JLabel(Icons.RESET_ICON);
+		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
+		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.setToolTipText("Reset Statistics");
-		resetIcon.setPreferredSize(ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -241,7 +246,7 @@ public class StatsPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						resetPanel();
+						plugin.invalidateOffers(startOfInterval);
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
@@ -250,44 +255,66 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON_OFF);
 			}
 		});
 
-		//Adds option to completely reset the trade history.
-		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
-		clearMenuOption.addActionListener(e ->
-		{
-			resetPanel();
-			plugin.getFlippingPanel().resetPanel();
-			rebuild(plugin.getTradesForCurrentView());
-			plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
+		downloadIcon = new JLabel(Icons.DONWLOAD_ICON_OFF);
+		downloadIcon.setPreferredSize(Icons.ICON_SIZE);
+		downloadIcon.setToolTipText("Export to CSV");
+		downloadIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				JFileChooser f = new JFileChooser();
+				f.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				f.showSaveDialog(resetIcon);
+				File selectedDirectory = f.getSelectedFile();
+				if (selectedDirectory == null) {
+					return;
+				}
+				log.info("exporting to csv in folder {}", f.getSelectedFile());
+				try {
+					plugin.exportToCsv(f.getSelectedFile(), startOfInterval, startOfIntervalName);
+					JOptionPane.showMessageDialog(
+							resetIcon,
+							String.format("Successfully saved csv file to %s/%s.csv", f.getSelectedFile().toString(), plugin.getAccountCurrentlyViewed()),
+							"Successfully saved CSV!",
+							JOptionPane.INFORMATION_MESSAGE
+					);
+				}
+				catch (Exception exc) {
+					JOptionPane.showMessageDialog(
+							resetIcon,
+							String.format("Could not save CSV file. Error: %s", exc.toString()),
+							"Could not save csv file",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				downloadIcon.setIcon(Icons.DOWNLOAD_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				downloadIcon.setIcon(Icons.DONWLOAD_ICON_OFF);
+			}
 		});
 
-		final JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-		popupMenu.add(clearMenuOption);
-
-		resetIcon.setComponentPopupMenu(popupMenu);
-
-		//Since the combobox can't be resized using setBorder, we have to use a wrapper.
-		JPanel wrapper = new JPanel(new BorderLayout());
-		wrapper.setBorder(new EmptyBorder(0, 2, 0, 11));
-		wrapper.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		wrapper.add(timeIntervalDropdown, BorderLayout.CENTER);
 
 		//Holds the time interval selector beneath the tab manager.
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		topPanel.setBorder(TOP_PANEL_BORDER);
-		topPanel.add(new JLabel("Time Span:"), BorderLayout.WEST);
-		topPanel.add(wrapper, BorderLayout.CENTER);
+		topPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
+		topPanel.add(downloadIcon, BorderLayout.WEST);
 
 		//Title text for the big total profit label.
 		final JLabel profitText = new JLabel("Total Profit: ", SwingConstants.CENTER);
@@ -307,16 +334,15 @@ public class StatsPanel extends JPanel
 
 		//Formats the profit text and value.
 		JPanel profitTextAndVal = new JPanel(new BorderLayout());
-		profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		profitTextAndVal.setBorder(new EmptyBorder(5,0,3,0));
 		profitTextAndVal.add(totalProfitVal, BorderLayout.CENTER);
 		profitTextAndVal.add(profitText, BorderLayout.NORTH);
 
 		//Contains the total profit information.
 		JPanel totalProfitContainer = new JPanel(new BorderLayout());
-		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		totalProfitContainer.setBorder(TOTAL_PROFIT_CONTAINER_BORDER);
-
-		//totalProfitContainer.add(, BorderLayout.NORTH);
 		totalProfitContainer.add(profitTextAndVal, BorderLayout.CENTER);
 		totalProfitContainer.add(arrowIcon, BorderLayout.EAST);
 		totalProfitContainer.add(padLabel, BorderLayout.WEST);
@@ -354,8 +380,8 @@ public class StatsPanel extends JPanel
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				totalProfitContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+				profitTextAndVal.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 			}
 		};
 
@@ -412,7 +438,7 @@ public class StatsPanel extends JPanel
 		JPanel totalProfitWrapper = new JPanel(new BorderLayout());
 		totalProfitWrapper.add(totalProfitContainer, BorderLayout.NORTH);
 		totalProfitWrapper.add(subInfoContainer, BorderLayout.SOUTH);
-		totalProfitWrapper.setBorder(new EmptyBorder(5, 5, 5, 5));
+		totalProfitWrapper.setBorder(new EmptyBorder(5, 6, 5, 5));
 
 		//Holds all the main content of the panel.
 		JPanel contentWrapper = new JPanel(new BorderLayout());
@@ -472,11 +498,11 @@ public class StatsPanel extends JPanel
 			repaint();
 			log.info("page change took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		}));
-		paginator.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		paginator.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		paginator.setBorder(new EmptyBorder(0, 0, 0, 10));
-		JPanel itemContainerGroup = new JPanel(new BorderLayout());
 
-		itemContainerGroup.setBorder(BorderFactory.createMatteBorder(10, 5, 15, 5, ColorScheme.DARK_GRAY_COLOR));
+		JPanel itemContainerGroup = new JPanel(new BorderLayout());
+		itemContainerGroup.setBorder(new EmptyBorder(5,6,5,5));
 		itemContainerGroup.add(itemContainer, BorderLayout.CENTER);
 		itemContainerGroup.add(paginator, BorderLayout.SOUTH);
 		contentWrapper.add(itemContainerGroup, BorderLayout.CENTER);
@@ -574,8 +600,6 @@ public class StatsPanel extends JPanel
 
 		totalProfit = 0;
 		totalExpenses = 0;
-		totalRevenues = 0;
-		totalQuantity = 0;
 		totalFlips = 0;
 		mostCommonItemName = null;
 		mostFlips = 0;
@@ -589,8 +613,6 @@ public class StatsPanel extends JPanel
 			}
 			totalProfit += item.currentProfit(intervalHistory);
 			totalExpenses += item.getFlippedCashFlow(startOfInterval, true);
-			totalRevenues += item.getFlippedCashFlow(startOfInterval, false);
-			totalQuantity += item.countItemsFlipped(intervalHistory);
 			int flips = item.getFlips(startOfInterval).size();
 			totalFlips += flips;
 			if (mostCommonItemName == null || mostFlips < flips)
@@ -609,8 +631,6 @@ public class StatsPanel extends JPanel
 			updateHourlyProfitDisplay(accumulatedTime);
 		}
 		updateRoiDisplay();
-		updateRevenueAndExpenseDisplay();
-		updateTotalQuantityDisplay();
 		updateTotalFlipsDisplay();
 		updateMostCommonFlip();
 	}
@@ -699,27 +719,6 @@ public class StatsPanel extends JPanel
 		roiPanel.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 	}
 
-	/**
-	 * Updates both the revenue and expense display along with setting their font colors.
-	 */
-	private void updateRevenueAndExpenseDisplay()
-	{
-		totalRevenueVal.setText(UIUtilities.quantityToRSDecimalStack(totalRevenues, true) + " gp");
-		totalRevenueVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		totalRevenueVal.setToolTipText("Total amount of gp collected");
-
-		totalExpenseVal.setText(UIUtilities.quantityToRSDecimalStack(totalExpenses, true) + " gp");
-		totalExpenseVal.setForeground(CustomColors.OUTDATED_COLOR);
-		totalExpensePanel.setToolTipText("Total amount of gp invested");
-	}
-
-	private void updateTotalQuantityDisplay()
-	{
-		totalQuantityVal.setText(QuantityFormatter.formatNumber(totalQuantity));
-		totalQuantityVal.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		totalQuantityPanel.setToolTipText("Total quantity of items flipped");
-	}
-
 	private void updateTotalFlipsDisplay()
 	{
 		totalFlipsVal.setText(QuantityFormatter.formatNumber(totalFlips));
@@ -763,13 +762,12 @@ public class StatsPanel extends JPanel
 	}
 
 	/**
-	 * Designates the panel for deletion by changing its FlippingItem's stored offers stat validity state to false.
-	 * This means the panel will not be built upon the next rebuild calls of StatPanel.
+	 * Invalidates a FlippingItems offers for the currently picked time interval.
+	 * This means the panel will not be built upon the next rebuild calls of StatPanel for that time interval.
 	 *
 	 * @param itemPanel The panel which holds the FlippingItem to be terminated.
-	 * @param reset     Determines if this was called by the resetPanel method so that the interval is set to all
 	 */
-	public void deletePanel(StatItemPanel itemPanel, boolean reset)
+	public void deletePanel(StatItemPanel itemPanel)
 	{
 		if (!activePanels.contains(itemPanel))
 		{
@@ -777,21 +775,11 @@ public class StatsPanel extends JPanel
 		}
 
 		FlippingItem item = itemPanel.getFlippingItem();
-
-		item.invalidateOffers(item.getIntervalHistory(reset ? Instant.EPOCH : startOfInterval));
-	}
-
-	/**
-	 * Designates every panel that is currently shown on the StatPanel to be terminated.
-	 * Read deletePanel method's doc for information on how this is done.
-	 */
-	public void resetPanel()
-	{
-		for (StatItemPanel itemPanel : activePanels)
-		{
-			deletePanel(itemPanel, true);
+		item.invalidateOffers(item.getIntervalHistory(startOfInterval));
+		if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+			plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a StatItemPanel");
 		}
-		plugin.truncateTradeList();
+		rebuild(plugin.getTradesForCurrentView());
 	}
 
 	/**
@@ -809,35 +797,38 @@ public class StatsPanel extends JPanel
 
 		Instant timeNow = Instant.now();
 
-		switch (selectedInterval)
-		{
-			case "Past Hour":
-				startOfInterval = timeNow.minus(1, ChronoUnit.HOURS);
-				break;
-			case "Past 4 Hours":
-				startOfInterval = timeNow.minus(4, ChronoUnit.HOURS);
-				break;
-			case "Past 12 Hours":
-				startOfInterval = timeNow.minus(12, ChronoUnit.HOURS);
-				break;
-			case "Past Day":
-				startOfInterval = timeNow.minus(1, ChronoUnit.DAYS);
-				break;
-			//Apparently Instant doesn't support weeks and months.
-			case "Past Week":
-				startOfInterval = timeNow.minus(7, ChronoUnit.DAYS);
-				break;
-			case "Past Month":
-				startOfInterval = timeNow.minus(30, ChronoUnit.DAYS);
-				break;
-			case "Session":
-				startOfInterval = plugin.getStartOfSessionForCurrentView();
-				break;
-			case "All":
-				startOfInterval = Instant.EPOCH;
-				break;
-			default:
-				break;
+		if (selectedInterval.equals("Session")) {
+			startOfInterval = plugin.getStartOfSessionForCurrentView();
+			startOfIntervalName = "Session";
+		}
+		else if (selectedInterval.equals("All")) {
+			startOfInterval = Instant.EPOCH;
+			startOfIntervalName = "All";
+		}
+		else {
+			if (selectedInterval.length() < 3) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			String timeUnitString = String.valueOf(selectedInterval.charAt(selectedInterval.length() - 1));
+			if (!TimeFormatters.stringToTimeUnit.containsKey(timeUnitString)) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			try {
+				int amountToSubtract = Integer.parseInt(selectedInterval.substring(1, selectedInterval.length() - 1)) * (int) TimeFormatters.stringToTimeUnit.get(timeUnitString);
+				startOfInterval = timeNow.minus(amountToSubtract, ChronoUnit.HOURS);
+				startOfIntervalName = selectedInterval;
+
+			} catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(timeIntervalDropdown, "Invalid input. Valid input is a negative whole number followed by an abbreviated unit of time. For example," +
+						"-123h or -2d or -55w or -2m or -1y are valid inputs.", "Invalid Input",  JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 		}
 		paginator.setPageNumber(1);
 		rebuild(plugin.getTradesForCurrentView());

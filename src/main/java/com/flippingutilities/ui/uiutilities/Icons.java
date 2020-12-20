@@ -20,6 +20,7 @@ public class Icons {
     public static final ImageIcon DELETE_ICON;
 
     public static final ImageIcon SETTINGS_ICON;
+    public static final ImageIcon SETTINGS_ICON_OFF;
 
     public static final ImageIcon ACCOUNT_ICON;
 
@@ -51,6 +52,12 @@ public class Icons {
 
     public static final ImageIcon HEART_ICON;
 
+    public static final ImageIcon TRASH_ICON;
+    public static final ImageIcon TRASH_ICON_OFF;
+
+    public static final ImageIcon DOWNLOAD_ICON;
+    public static final ImageIcon DONWLOAD_ICON_OFF;
+
     static
     {
         final BufferedImage openIcon = ImageUtil
@@ -69,6 +76,7 @@ public class Icons {
 
         final BufferedImage settingsIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/settings_icon.png");
         SETTINGS_ICON = new ImageIcon(settingsIcon);
+        SETTINGS_ICON_OFF = new ImageIcon(ImageUtil.alphaOffset(settingsIcon, 0.53f));
 
         final BufferedImage accountIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/gnome.png");
         ACCOUNT_ICON = new ImageIcon(accountIcon);
@@ -115,5 +123,13 @@ public class Icons {
 
         final BufferedImage heart = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/heart.png");
         HEART_ICON = new ImageIcon(heart);
+
+        final BufferedImage trashIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/trash.png");
+        TRASH_ICON = new ImageIcon(trashIcon);
+        TRASH_ICON_OFF = new ImageIcon(ImageUtil.alphaOffset(trashIcon, 0.53f));
+
+        final BufferedImage downloadIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/download.png");
+        DOWNLOAD_ICON = new ImageIcon(downloadIcon);
+        DONWLOAD_ICON_OFF = new ImageIcon(ImageUtil.alphaOffset(downloadIcon, 0.53f));
     }
 }

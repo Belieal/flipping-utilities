@@ -99,7 +99,7 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
 
-	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem, Runnable onDeleteCallback)
+	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
 		this.flippingItem = flippingItem;
 		this.plugin = plugin;
@@ -112,7 +112,7 @@ public class FlippingItemPanel extends JPanel
 		setValueLabels();
 		updateTimerDisplays();
 
-		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(onDeleteCallback), createItemNameLabel(), createFavoriteIcon());
+		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(), createItemNameLabel(), createFavoriteIcon());
 		itemInfo = createItemInfoPanel();
 		timeInfoPanel = createTimeInfoPanel();
 		timeInfoPanel.setVisible(false);
@@ -460,10 +460,9 @@ public class FlippingItemPanel extends JPanel
 	/**
 	 * Creates the delete button located on the title panel which shows up when you hover over the image icon.
 	 *
-	 * @param onDeleteCallback the callback to be run when the delete button is pressed.
 	 * @return
 	 */
-	private JButton createDeleteButton(Runnable onDeleteCallback)
+	private JButton createDeleteButton()
 	{
 		JButton clearButton = new JButton(Icons.DELETE_ICON);
 		clearButton.setPreferredSize(Icons.ICON_SIZE);
@@ -481,7 +480,10 @@ public class FlippingItemPanel extends JPanel
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
 					flippingItem.setValidFlippingPanelItem(false);
-					onDeleteCallback.run();
+					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a FlippingItemPanel");
+					}
+					plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
 				}
 			}
 		});
@@ -554,24 +556,15 @@ public class FlippingItemPanel extends JPanel
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				if (flippingItem.isFavorite())
+				if (plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE))
 				{
-					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE))
-					{
-						plugin.setFavoriteOnAllAccounts(flippingItem, false);
-					}
-					flippingItem.setFavorite(false);
-					favoriteIcon.setIcon(Icons.STAR_OFF_ICON);
+					plugin.setFavoriteOnAllAccounts(flippingItem, !flippingItem.isFavorite());
 				}
-				else
-				{
-					if (plugin.getAccountCurrentlyViewed().equals(plugin.ACCOUNT_WIDE))
-					{
-						plugin.setFavoriteOnAllAccounts(flippingItem, true);
-					}
-					flippingItem.setFavorite(true);
-					favoriteIcon.setIcon(Icons.STAR_ON_ICON);
+				else {
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "setting favorite");
 				}
+				flippingItem.setFavorite(!flippingItem.isFavorite());
+				favoriteIcon.setIcon(flippingItem.isFavorite()? Icons.STAR_ON_ICON:Icons.STAR_OFF_ICON);
 			}
 
 			@Override

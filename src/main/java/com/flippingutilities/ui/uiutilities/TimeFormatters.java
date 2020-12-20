@@ -1,11 +1,22 @@
 package com.flippingutilities.ui.uiutilities;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
 
 public class TimeFormatters {
+    public static ImmutableMap<Object, Object> stringToTimeUnit = ImmutableMap.builder()
+            .put("h", 1)
+            .put("d", 24)
+            .put("w", 24*7)
+            .put("m", 24*30)
+            .put("y", 365*24)
+            .build();
     /**
      * Formats a duration into HH:MM:SS
      *
@@ -118,4 +129,10 @@ public class TimeFormatters {
         timeFormatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.systemDefault());
         return timeFormatter.format(time);
     }
+
+    public static String formatInstantToDate(Instant time) {
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a").withZone(ZoneId.systemDefault());
+        return timeFormatter.format(time);
+    }
+
 }

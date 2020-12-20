@@ -141,7 +141,6 @@ public class FlippingPanel extends JPanel
 		//Contains the main content panel and top panel
 		JPanel container = new JPanel();
 		container.setLayout(new BorderLayout(0, 0));
-		container.setBorder(new EmptyBorder(0, 0, 5, 0));
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		//Search bar beneath the tab manager.
@@ -171,10 +170,11 @@ public class FlippingPanel extends JPanel
 		//The welcome panel instructs the user on how to use the plugin
 		//Shown whenever there are no items on the panel
 		welcomePanel.setContent("Flipping Utilities",
-			"For items to show up, margin check an item.");
+			"Make offers for items to show up!");
 
 		//Clears the config and resets the items panel.
-		resetIcon = new JLabel(Icons.RESET_ICON);
+		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
+		resetIcon.setBorder(new EmptyBorder(0,0,8,0));
 		resetIcon.setToolTipText("Reset trade history");
 		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -192,8 +192,9 @@ public class FlippingPanel extends JPanel
 					//If the user pressed "Yes"
 					if (result == JOptionPane.YES_OPTION)
 					{
-						resetPanel();
-						cardLayout.show(flippingItemContainer, FlippingPanel.getWELCOME_PANEL());
+						plugin.setAllFlippingItemsAsHidden();
+						setItemHighlighted(false);
+						cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 						rebuild(plugin.getTradesForCurrentView());
 					}
 				}
@@ -202,31 +203,15 @@ public class FlippingPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_HOVER_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				resetIcon.setIcon(Icons.RESET_ICON);
+				resetIcon.setIcon(Icons.TRASH_ICON_OFF);
 			}
 		});
-
-		//To easily remove all panels in one click.
-		final JMenuItem clearMenuOption = new JMenuItem("Reset all panels");
-		clearMenuOption.addActionListener(e ->
-		{
-			resetPanel();
-			plugin.getStatPanel().resetPanel();
-			rebuild(plugin.getTradesForCurrentView());
-			plugin.getStatPanel().rebuild(plugin.getTradesForCurrentView());
-		});
-
-		final JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-		popupMenu.add(clearMenuOption);
-
-		resetIcon.setComponentPopupMenu(popupMenu);
 
 		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
@@ -287,7 +272,7 @@ public class FlippingPanel extends JPanel
 			int index = 0;
 			for (FlippingItem item : itemsOnCurrentPage)
 			{
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item, () -> rebuild(plugin.getTradesForCurrentView()));
+				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item);
 
 				if (index++ > 0)
 				{
@@ -449,23 +434,6 @@ public class FlippingPanel extends JPanel
 		{
 			activePanel.updateTimerDisplays();
 		}
-	}
-
-	private void deleteItemPanel(FlippingItemPanel itemPanel)
-	{
-		FlippingItem item = itemPanel.getFlippingItem();
-		item.setValidFlippingPanelItem(false);
-	}
-
-	public void resetPanel()
-	{
-		for (FlippingItemPanel itemPanel : activePanels)
-		{
-			deleteItemPanel(itemPanel);
-		}
-
-		plugin.truncateTradeList();
-		setItemHighlighted(false);
 	}
 
 	/**
