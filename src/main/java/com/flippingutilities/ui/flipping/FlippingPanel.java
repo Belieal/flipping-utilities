@@ -41,6 +41,8 @@ import java.awt.event.MouseEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -385,21 +387,15 @@ public class FlippingPanel extends JPanel
 	}
 
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
-	public void highlightItem(int itemId)
+	public void highlightItem(FlippingItem item)
 	{
 		if (itemHighlighted)
 		{
 			return;
 		}
-
-		ArrayList<FlippingItem> itemToHighlight = new ArrayList<>(findItemPanel(itemId));
-
-		if (!itemToHighlight.isEmpty())
-		{
-			paginator.setPageNumber(1);
-			rebuild(itemToHighlight);
-			itemHighlighted = true;
-		}
+		paginator.setPageNumber(1);
+		rebuild(Collections.singletonList(item));
+		itemHighlighted = true;
 	}
 
 	//This is run whenever the PlayerVar containing the GE offer slot changes to its empty value (-1)

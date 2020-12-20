@@ -793,8 +793,13 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
-		prevHighlight = currentGEItemId;
-		flippingPanel.highlightItem(currentGEItemId);
+		getTradesForCurrentView()
+				.stream()
+				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
+				.findFirst().ifPresent(item -> {
+					prevHighlight = currentGEItemId;
+					flippingPanel.highlightItem(item);
+				});
 	}
 
 	public void storeTrades(String displayName)
