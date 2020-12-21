@@ -130,6 +130,7 @@ public class MasterPanel extends PluginPanel
 		JPanel accountSelectorPanel = new JPanel(new BorderLayout());
 		accountSelectorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		accountSelectorPanel.add(accountSelector, BorderLayout.CENTER);
+		accountSelectorPanel.setBorder(new EmptyBorder(0,0,4,0));
 
 		JPanel tabGroupArea = new JPanel(new BorderLayout());
 		tabGroupArea.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -139,7 +140,7 @@ public class MasterPanel extends PluginPanel
 
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		header.add(accountSelector, BorderLayout.NORTH);
+		header.add(accountSelectorPanel, BorderLayout.NORTH);
 		header.add(tabGroupArea, BorderLayout.CENTER);
 
 		return header;
@@ -319,7 +320,7 @@ public class MasterPanel extends PluginPanel
 		FastTabGroup tabGroup = new FastTabGroup(mainDisplay);
 		flippingTab = new MaterialTab(FLIPPING_TAB_NAME, tabGroup, flippingPanel);
 		statisticsTab = new MaterialTab(STATISTICS_TAB_NAME, tabGroup, statPanel);
-		tabGroup.setBorder(new EmptyBorder(7, 35, 5, 0));
+		tabGroup.setBorder(new EmptyBorder(0, 35, 5, 0));
 		tabGroup.addTab(flippingTab);
 		tabGroup.addTab(statisticsTab);
 		// Initialize with flipping tab open.
