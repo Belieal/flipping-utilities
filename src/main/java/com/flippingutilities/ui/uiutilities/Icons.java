@@ -58,6 +58,12 @@ public class Icons {
     public static final ImageIcon DOWNLOAD_ICON;
     public static final ImageIcon DONWLOAD_ICON_OFF;
 
+    public static final ImageIcon GITHUB_ICON;
+    public static final ImageIcon GITHUB_ICON_ON;
+
+    public static final ImageIcon DISCORD_ICON;
+    public static final ImageIcon DISCORD_ICON_ON;
+
     static
     {
         final BufferedImage openIcon = ImageUtil
@@ -131,5 +137,16 @@ public class Icons {
         final BufferedImage downloadIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/download.png");
         DOWNLOAD_ICON = new ImageIcon(downloadIcon);
         DONWLOAD_ICON_OFF = new ImageIcon(ImageUtil.alphaOffset(downloadIcon, 0.53f));
+
+        final BufferedImage githubIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/github.png");
+        final BufferedImage githubIconOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/githubon.png");
+        GITHUB_ICON = new ImageIcon(githubIcon);
+        GITHUB_ICON_ON = new ImageIcon(githubIconOn);
+
+        final BufferedImage discordIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/discord.png");
+        final BufferedImage discordIconOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/discordon.png");
+        DISCORD_ICON = new ImageIcon(discordIcon);
+        DISCORD_ICON_ON = new ImageIcon(discordIconOn);
+
     }
 }

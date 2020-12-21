@@ -135,7 +135,7 @@ public class MasterPanel extends PluginPanel
 		tabGroupArea.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		tabGroupArea.add(tabSelector, BorderLayout.CENTER);
 		tabGroupArea.add(settingsButton, BorderLayout.EAST);
-		//tabGroupArea.add(sponsorPanel(), BorderLayout.NORTH);
+		tabGroupArea.add(communityPanel(), BorderLayout.NORTH);
 
 		JPanel header = new JPanel(new BorderLayout());
 		header.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -143,6 +143,59 @@ public class MasterPanel extends PluginPanel
 		header.add(tabGroupArea, BorderLayout.CENTER);
 
 		return header;
+	}
+
+	private JPanel communityPanel() {
+		JLabel text = new JLabel("Contact us at -> ");
+		text.setFont(FontManager.getRunescapeSmallFont());
+		text.setToolTipText("click on the icons");
+
+		JLabel githubIcon = new JLabel(Icons.GITHUB_ICON);
+		githubIcon.setToolTipText("Click to go to Flipping Utilities github");
+		githubIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				LinkBrowser.browse("https://github.com/Belieal/flipping-utilities");
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				githubIcon.setIcon(Icons.GITHUB_ICON_ON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				githubIcon.setIcon(Icons.GITHUB_ICON);
+			}
+		});
+
+		JLabel discordIcon = new JLabel(Icons.DISCORD_ICON);
+		discordIcon.setToolTipText("Click to go to Flipping Utilities discord");
+		discordIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				LinkBrowser.browse("https://discord.gg/GDqVgMH26s");
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				discordIcon.setIcon(Icons.DISCORD_ICON_ON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				discordIcon.setIcon(Icons.DISCORD_ICON);
+			}
+		});
+
+		JPanel communityPanel = new JPanel();
+		communityPanel.setBorder(new EmptyBorder(0,6,0,0));
+		communityPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		communityPanel.add(text);
+		communityPanel.add(discordIcon);
+		communityPanel.add(githubIcon);
+
+		return communityPanel;
 	}
 
 	private JPanel sponsorPanel() {
