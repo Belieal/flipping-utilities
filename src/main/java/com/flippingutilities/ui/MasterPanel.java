@@ -147,7 +147,7 @@ public class MasterPanel extends PluginPanel
 	}
 
 	private JPanel communityPanel() {
-		JLabel text = new JLabel("Contact us at -> ");
+		JLabel text = new JLabel("Join the community -> ");
 		text.setFont(FontManager.getRunescapeSmallFont());
 		text.setToolTipText("click on the icons");
 
