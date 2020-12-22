@@ -4,8 +4,8 @@ Flipping Utilities is a Runelite plugin that aids over 10000 players in making f
 **Disclaimer: This is not an OSBuddy Exchange replacement, as it does not send or receive price data from other users.**
 
 
-## Support
-If you notice any bugs or have any suggestions, let us know by making an [issue](https://github.com/Belieal/flipping-utilities/issues) or contact us on Discord at (gaymersriseup#4026) or (#Belieal6600)! I'm also happy to answer any questions that you may have. :)
+## Community
+Join the community on discord at https://discord.gg/e22YKtP! You can suggest features you want, bugs you run into, and more!
  
 # Table of Contents
 - [Features](#features)
