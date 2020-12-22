@@ -5,7 +5,7 @@ Flipping Utilities is a Runelite plugin that aids over 10000 players in making f
 
 
 ## Community
-Join the community on discord at https://discord.gg/e22YKtP! You can suggest features you want, bugs you run into, and more!
+Join the community on discord at https://discord.gg/GDqVgMH26s! You can suggest features you want, bugs you run into, and more!
  
 # Table of Contents
 - [Features](#features)
