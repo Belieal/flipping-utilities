@@ -121,30 +121,21 @@ public class UIUtilities
 	//make this take a supplier to supply it with the desired margin wrapper.
 	public static void stackPanelsVertically(List<JPanel> panels, JPanel mainPanel, int vGap)
 	{
-		GridBagConstraints constraints = new GridBagConstraints();
-		mainPanel.setLayout(new GridBagLayout());
-
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
+		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
 		int index = 0;
 		for (JPanel panel : panels)
 		{
-			if (index++ > 0)
+			if (index == 0)
 			{
-				JPanel marginWrapper = new JPanel(new BorderLayout());
-				marginWrapper.add(panel, BorderLayout.NORTH);
-				marginWrapper.setBorder(new EmptyBorder(vGap,0,0,0));
-				mainPanel.add(marginWrapper, constraints);
+				mainPanel.add(panel);
+				index++;
 			}
 			else
 			{
-				mainPanel.add(panel, constraints);
+				mainPanel.add(Box.createVerticalStrut(vGap));
+				mainPanel.add(panel);
 			}
-
-			constraints.gridy++;
 		}
 	}
 }

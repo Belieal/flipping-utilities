@@ -30,6 +30,7 @@ import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -48,14 +49,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -86,8 +80,6 @@ public class FlippingPanel extends JPanel
 	private final IconTextField searchBar = new IconTextField();
 	private Future<?> runningRequest = null;
 
-	//Constraints for items in the item panel.
-	private final GridBagConstraints constraints = new GridBagConstraints();
 	public final CardLayout cardLayout = new CardLayout();
 
 	private final JPanel flippingItemsPanel = new JPanel();
@@ -120,14 +112,8 @@ public class FlippingPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-		//Constraints for item list
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-
 		//Holds all the item panels
-		flippingItemsPanel.setLayout(new GridBagLayout());
+		flippingItemsPanel.setLayout(new BoxLayout(flippingItemsPanel, BoxLayout.Y_AXIS));
 		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
 		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -254,7 +240,6 @@ public class FlippingPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
-
 			Instant rebuildStart = Instant.now();
 			flippingItemsPanel.removeAll();
 
@@ -270,27 +255,9 @@ public class FlippingPanel extends JPanel
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-
-			int index = 0;
-			for (FlippingItem item : itemsOnCurrentPage)
-			{
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item);
-
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					flippingItemsPanel.add(marginWrapper, constraints);
-				}
-				else
-				{
-					flippingItemsPanel.add(newPanel, constraints);
-				}
-				constraints.gridy++;
-				activePanels.add(newPanel);
-			}
+			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, 4);
+			activePanels.addAll(newPanels);
 
 			if (activePanels.isEmpty())
 			{

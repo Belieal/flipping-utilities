@@ -38,13 +38,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -63,7 +61,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.text.StyleContext;
 
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -72,7 +69,6 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
-import org.apache.commons.lang3.math.NumberUtils;
 
 @Slf4j
 public class StatsPanel extends JPanel
@@ -99,10 +95,7 @@ public class StatsPanel extends JPanel
 	//Holds the sub info labels.
 	private JPanel subInfoContainer = new JPanel();
 
-	private JPanel statItemContainer = new JPanel(new GridBagLayout());
-
-	//Constraints for statItemContainer.
-	private final GridBagConstraints constraints = new GridBagConstraints();
+	private JPanel statItemContainer = new JPanel();
 
 	//Combo box that selects the time interval that startOfInterval contains.
 	private JComboBox<String> timeIntervalDropdown = new JComboBox<>(TIME_INTERVAL_STRINGS);
@@ -188,12 +181,6 @@ public class StatsPanel extends JPanel
 		this.itemManager = itemManager;
 
 		setLayout(new BorderLayout());
-
-		//Constraints for statItems later on.
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
 
 		timeIntervalDropdown.setRenderer(new ComboBoxListRenderer());
 		timeIntervalDropdown.setEditable(true);
@@ -474,6 +461,7 @@ public class StatsPanel extends JPanel
 		sortPanel.add(sortLabel, BorderLayout.WEST);
 		sortPanel.add(sortBox, BorderLayout.CENTER);
 
+		statItemContainer.setLayout(new BoxLayout(statItemContainer, BoxLayout.Y_AXIS));
 		statItemContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		JPanel statItemWrapper = new JPanel(new BorderLayout());
 		statItemWrapper.add(statItemContainer, BorderLayout.NORTH);
@@ -536,42 +524,15 @@ public class StatsPanel extends JPanel
 	public void rebuildStatItemContainer(List<FlippingItem> flippingItems)
 	{
 		activePanels.clear();
+		statItemContainer.removeAll();
 		List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 		List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getIntervalHistory(startOfInterval).stream().anyMatch(OfferEvent::isValidOfferEvent)).collect(Collectors.toList());
 		paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 		List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-		statItemContainer.removeAll();
-		int index = 0;
-		for (FlippingItem item : itemsOnCurrentPage)
-		{
-			ArrayList<OfferEvent> itemTradeHistory = new ArrayList<>(item.getIntervalHistory(startOfInterval));
-
-			//Make sure the item has stats we can use
-			if (itemTradeHistory.isEmpty())
-			{
-				continue;
-			}
-
-			StatItemPanel newPanel = new StatItemPanel(plugin, itemManager, item);
-
-			if (index++ > 0)
-			{
-				JPanel marginWrapper = new JPanel(new BorderLayout());
-				marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-				marginWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
-				marginWrapper.add(newPanel, BorderLayout.NORTH);
-				statItemContainer.add(marginWrapper, constraints);
-			}
-			else
-			{
-				//First item in the wrapper
-				statItemContainer.add(newPanel, constraints);
-			}
-			activePanels.add(newPanel);
-			constraints.gridy++;
-		}
+		List<StatItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new StatItemPanel(plugin, itemManager, item)).collect(Collectors.toList());
+		UIUtilities.stackPanelsVertically((List) newPanels, statItemContainer, 5);
+		activePanels.addAll(newPanels);
 	}
-
 
 	/**
 	 * Updates the display of the total profit value along with the display of sub panels
