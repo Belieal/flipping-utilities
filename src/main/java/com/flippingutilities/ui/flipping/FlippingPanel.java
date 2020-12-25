@@ -28,6 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
@@ -251,18 +252,19 @@ public class FlippingPanel extends JPanel
 			}
 
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
-			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
-			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
-			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
-			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
-			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, 4);
-			activePanels.addAll(newPanels);
-
-			if (activePanels.isEmpty())
-			{
-				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-			}
+			flippingItemsPanel.add(new OfferEditorPanel());
+//			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
+//			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
+//			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+//			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
+//			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+//			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, 4);
+//			activePanels.addAll(newPanels);
+//
+//			if (activePanels.isEmpty())
+//			{
+//				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
+//			}
 
 			revalidate();
 			repaint();
