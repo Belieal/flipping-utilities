@@ -1,5 +1,11 @@
 package com.flippingutilities.ui.offereditor;
 
+import com.flippingutilities.model.FlippingItem;
+import com.flippingutilities.model.Option;
+import com.flippingutilities.ui.uiutilities.CustomColors;
+import net.runelite.client.input.KeyListener;
+import net.runelite.client.input.KeyManager;
+import net.runelite.client.plugins.grandexchange.GrandExchangeInputListener;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -12,35 +18,22 @@ public class OfferEditorPanel extends JPanel {
     public OfferEditorPanel() {
         setLayout(new BorderLayout());
         add(new JLabel("Offer Editor"));
+        setBackground(CustomColors.DARK_GRAY);
 
         JPanel optionsContainer = new JPanel();
         optionsContainer.setLayout(new BoxLayout(optionsContainer, BoxLayout.Y_AXIS));
+        optionsContainer.setBackground(CustomColors.DARK_GRAY);
 
-        JPanel optionPanel1 = new JPanel();
-        optionPanel1.setPreferredSize(new Dimension(240, 70));
+        FlippingItem dummyItem = new FlippingItem(0,"",0,"");
+        optionsContainer.add(new OptionPanel(Option.emptyOption(),1,dummyItem));
 
-        JComboBox keySelector =  new JComboBox(new String[]{"a","b","c"});
-        keySelector.setPreferredSize(new Dimension(45,25));
-        //have a decription at the top, like press key below to set to blah blah, that way i wont have as much text on the option panel itself
-        JComboBox propertiesSelector = new JComboBox(new String[]{"rem limit", "ge limit"});
-        propertiesSelector.setPreferredSize(new Dimension(85, 25));
-
-        JComboBox keySelector2 =  new JComboBox(new String[]{"a","b","c"});
-        keySelector2.setPreferredSize(new Dimension(45,25));
-
-        JComboBox keySelector3 =  new JComboBox(new String[]{"a","b","c"});
-        //keySelector3.setPreferredSize(new Dimension(45,25));
-
-
-        optionPanel1.add(keySelector);
-        optionPanel1.add(propertiesSelector);
-        optionPanel1.add(keySelector2);
-        optionPanel1.add(keySelector3);
-
-        optionsContainer.add(optionPanel1);
-
+//        JPanel header = new JPanel();
+//        header.setBackground(CustomColors.DARK_GRAY);
+//        JLabel headerText = new JLabel("Press       to set to        with change");
+//        headerText.setFont(FontManager.getRunescapeSmallFont());
+//        header.add(headerText);
+//
+//        add(header, BorderLayout.NORTH);
         add(optionsContainer, BorderLayout.CENTER);
-
-
     }
 }

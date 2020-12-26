@@ -43,6 +43,7 @@ import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.awt.Font;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -71,6 +72,8 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.input.KeyListener;
+import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -116,6 +119,9 @@ public class FlippingPlugin extends Plugin
 
 	@Inject
 	private ItemManager itemManager;
+
+	@Inject
+	private KeyManager keyManager;
 
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
@@ -193,6 +199,23 @@ public class FlippingPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
+
+//		keyManager.registerKeyListener(new KeyListener() {
+//			@Override
+//			public void keyTyped(KeyEvent e) {
+//
+//			}
+//
+//			@Override
+//			public void keyPressed(KeyEvent e) {
+//
+//			}
+//
+//			@Override
+//			public void keyReleased(KeyEvent e) {
+//
+//			}
+//		});
 
 		clientThread.invokeLater(() ->
 		{
