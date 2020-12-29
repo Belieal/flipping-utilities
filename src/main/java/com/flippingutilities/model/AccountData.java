@@ -48,6 +48,7 @@ public class AccountData
 	private Duration accumulatedSessionTime = Duration.ZERO;
 	private Instant lastSessionTimeUpdate;
 	private List<TradeActivityTimer> slotTimers;
+	private List<Option> options = new ArrayList<>();
 
 	/**
 	 * Resets all session related data associated with an account. This is called when the plugin first starts

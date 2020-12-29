@@ -27,10 +27,7 @@
 package com.flippingutilities;
 
 import com.flippingutilities.db.TradePersister;
-import com.flippingutilities.model.AccountData;
-import com.flippingutilities.model.Flip;
-import com.flippingutilities.model.FlippingItem;
-import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.model.*;
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
@@ -40,6 +37,7 @@ import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.flippingutilities.utilities.CacheUpdater;
 import com.flippingutilities.utilities.GeHistoryTabExtractor;
+import com.flippingutilities.utilities.InvalidOptionException;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.awt.Font;
@@ -55,6 +53,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.swing.*;
+
+import com.sun.tools.javac.jvm.Items;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +82,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.item.ItemStats;
+import org.graalvm.compiler.nodes.calc.IntegerDivRemNode;
 
 @Slf4j
 @PluginDescriptor(
@@ -182,9 +184,14 @@ public class FlippingPlugin extends Plugin
 	//allows for knowing what to save on client shutdown.
 	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
 
+	private boolean quantityOrPriceChatboxOpen = false;
+
+	private Optional<FlippingItem> highlightedItem = Optional.empty();
+
 	@Override
 	protected void startUp()
 	{
+		log.info("is event thread {}",SwingUtilities.isEventDispatchThread());
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
@@ -200,22 +207,37 @@ public class FlippingPlugin extends Plugin
 
 		clientToolbar.addNavigation(navButton);
 
-//		keyManager.registerKeyListener(new KeyListener() {
-//			@Override
-//			public void keyTyped(KeyEvent e) {
-//
-//			}
-//
-//			@Override
-//			public void keyPressed(KeyEvent e) {
-//
-//			}
-//
-//			@Override
-//			public void keyReleased(KeyEvent e) {
-//
-//			}
-//		});
+		keyManager.registerKeyListener(new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
+					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
+					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.getKey().equals(keyPressed)).findFirst();
+					if (optionExercised.isPresent() && highlightedItem.isPresent()) {
+						try {
+							int optionValue = calculateOptionValue(optionExercised.get(), highlightedItem.get());
+							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+							flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
+							e.consume();
+						}
+						catch (InvalidOptionException ex) {
+							//ignore
+						}
+					}
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+
+			}
+		});
 
 		clientThread.invokeLater(() ->
 		{
@@ -382,6 +404,7 @@ public class FlippingPlugin extends Plugin
 					}
 				})), 1000, 1000, TimeUnit.MILLISECONDS);
 		}
+		getCashStackInInv();
 	}
 
 	public void handleLogout()
@@ -779,6 +802,15 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	public List<Option> getOptionsForCurrentView() {
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+			return new ArrayList<>();
+		}
+		else {
+			return accountCache.get(accountCurrentlyViewed).getOptions();
+		}
+	}
+
 	public Instant getStartOfSessionForCurrentView()
 	{
 		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
@@ -820,6 +852,7 @@ public class FlippingPlugin extends Plugin
 				.stream()
 				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
 				.findFirst().ifPresent(item -> {
+					highlightedItem = Optional.of(item);
 					prevHighlight = currentGEItemId;
 					flippingPanel.highlightItem(item);
 				});
@@ -1255,6 +1288,82 @@ public class FlippingPlugin extends Plugin
 		TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 	}
 
+	public int getCashStackInInv() {
+		ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
+		Item[] inventoryItems = inventory.getItems();
+		for (Item item:inventoryItems) {
+			if (item.getId() == 995) {
+				return item.getQuantity();
+			}
+		}
+		return 0;
+	}
+
+	public void validateOption(Option option, FlippingItem item) throws InvalidOptionException {
+		if (item.getTotalGELimit() <= 0 && (option.getProperty().equals(Option.REMAINING_LIMIT) || option.getProperty().equals(Option.GE_LIMIT))) {
+			throw new InvalidOptionException("Item does not have known limit. Cannot calculate resulting value");
+		}
+		if (!item.getLatestBuy().isPresent() && option.getProperty().equals(Option.CASHSTACK)) {
+			throw new InvalidOptionException("Item does not have a buy. Cannot calculate amount for cashstack");
+		}
+		if (option.getProperty().equals(Option.CASHSTACK) && getCashStackInInv() == 0) {
+			throw new InvalidOptionException("Player has no cash in inventory");
+		}
+
+		Set<String> acceptableOperators = new HashSet<>(Arrays.asList("+", "-", "*"));
+		String change = option.getChange();
+		if (change.length() < 2) {
+			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+		if (!acceptableOperators.contains(String.valueOf(change.charAt(0)))) {
+			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+
+		try {
+			int num = Integer.parseInt(change.substring(1));
+			if (num < 0) {
+				throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+			}
+		}
+
+		catch (NumberFormatException e) {
+			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+	}
+
+	public int calculateOptionValue(Option option, FlippingItem item) throws InvalidOptionException {
+		validateOption(option, item);
+		int val = 0;
+        String propertyString = option.getProperty();
+        if (propertyString.equals(Option.GE_LIMIT)) {
+            val = item.getTotalGELimit();
+        }
+        if (propertyString.equals(Option.REMAINING_LIMIT)) {
+            val = item.getRemainingGeLimit();
+        }
+        if (propertyString.equals(Option.CASHSTACK)) {
+			val = getCashStackInInv()/item.getLatestBuy().get().getPrice();
+        }
+
+        String operator = String.valueOf(option.getChange().charAt(0));
+        int num = Integer.parseInt(option.getChange().substring(1));
+        if (operator.equals("-")) {
+        	val -= num;
+		}
+        if (operator.equals("+")) {
+        	val += num;
+		}
+        if (operator.equals("*")) {
+        	val *= num;
+		}
+
+        if (val < 0) {
+			throw new InvalidOptionException("resulting value was negative, which isn't allowed");
+		}
+
+        return val;
+	}
+
 	@Subscribe
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
@@ -1332,6 +1441,7 @@ public class FlippingPlugin extends Plugin
 		//as then the highlight won't linger in that case.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
+			highlightedItem = Optional.empty();
 			flippingPanel.dehighlightItem();
 		}
 	}
@@ -1347,6 +1457,7 @@ public class FlippingPlugin extends Plugin
 		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
 				(client.getVar(CURRENT_GE_ITEM) == -1 || client.getVar(CURRENT_GE_ITEM) == 0) && flippingPanel.isItemHighlighted())
 		{
+			highlightedItem = Optional.empty();
 			flippingPanel.dehighlightItem();
 		}
 	}
@@ -1399,6 +1510,14 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onVarClientIntChanged(VarClientIntChanged event)
 	{
+		if (quantityOrPriceChatboxOpen
+				&& event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
+				&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 0
+		) {
+			quantityOrPriceChatboxOpen = false;
+			return;
+		}
+
 		//Check that it was the chat input that got enabled.
 		if (event.getIndex() != VarClientInt.INPUT_TYPE.getIndex()
 			|| client.getWidget(WidgetInfo.CHATBOX_TITLE) == null
@@ -1408,64 +1527,66 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
-		clientThread.invokeLater(() ->
-		{
-			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+		quantityOrPriceChatboxOpen = true;
 
-			FlippingItem selectedItem = null;
-			//Check that if we've recorded any data for the item.
-			for (FlippingItem item : getTradesForCurrentView())
-			{
-				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
-				{
-					selectedItem = item;
-					break;
-				}
-			}
-
-			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
-			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
-			if (chatInputText.equals("How many do you wish to buy?"))
-			{
-				//No recorded data; default to total GE limit
-				if (selectedItem == null)
-				{
-					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
-					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-					flippingWidget.update("setCurrentQuantityInTrade", itemGELimit);
-				}
-				else
-				{
-					flippingWidget.update("setCurrentQuantityInTrade", selectedItem.getRemainingGeLimit());
-				}
-			}
-			else if (chatInputText.equals("Set a price for each item:"))
-			{
-				if (offerText.equals("Buy offer"))
-				{
-					//No recorded data; hide the widget
-					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
-					{
-						flippingWidget.update("reset", 0);
-					}
-					else
-					{
-						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckSell().get().getPrice());
-					}
-				}
-				else if (offerText.equals("Sell offer"))
-				{
-					//No recorded data; hide the widget
-					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
-					{
-						flippingWidget.update("reset", 0);
-					}
-					else
-					{
-						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckBuy().get().getPrice());
-					}
-				}
-			}
-		});
+//		clientThread.invokeLater(() ->
+//		{
+//			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+//
+//			FlippingItem selectedItem = null;
+//			//Check that if we've recorded any data for the item.
+//			for (FlippingItem item : getTradesForCurrentView())
+//			{
+//				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
+//				{
+//					selectedItem = item;
+//					break;
+//				}
+//			}
+//
+//			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
+//			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+//			if (chatInputText.equals("How many do you wish to buy?"))
+//			{
+//				//No recorded data; default to total GE limit
+//				if (selectedItem == null)
+//				{
+//					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
+//					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
+//					flippingWidget.update("setCurrentQuantityInTrade", itemGELimit);
+//				}
+//				else
+//				{
+//					flippingWidget.update("setCurrentQuantityInTrade", selectedItem.getRemainingGeLimit());
+//				}
+//			}
+//			else if (chatInputText.equals("Set a price for each item:"))
+//			{
+//				if (offerText.equals("Buy offer"))
+//				{
+//					//No recorded data; hide the widget
+//					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
+//					{
+//						flippingWidget.update("reset", 0);
+//					}
+//					else
+//					{
+//						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckSell().get().getPrice());
+//					}
+//				}
+//				else if (offerText.equals("Sell offer"))
+//				{
+//					//No recorded data; hide the widget
+//					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
+//					{
+//						flippingWidget.update("reset", 0);
+//					}
+//					else
+//					{
+//						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckBuy().get().getPrice());
+//					}
+//				}
+//			}
+//		});
 	}
 }

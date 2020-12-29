@@ -8,11 +8,14 @@ import java.util.Optional;
 @Data
 @AllArgsConstructor
 public class Option {
-    Optional<String> key;
-    Optional<String> property;
-    Optional<String> change;
+    public static final String GE_LIMIT = "ge limit";
+    public static final String REMAINING_LIMIT = "rem limit";
+    public static final String CASHSTACK = "cashstack";
+    String key;
+    String property;
+    String change;
 
-    public static Option emptyOption() {
-        return new Option(Optional.empty(), Optional.empty(), Optional.empty());
+    public static Option defaultOption() {
+        return new Option("", Option.GE_LIMIT, "+0");
     }
 }

@@ -10,6 +10,8 @@ import java.awt.image.BufferedImage;
 public class Icons {
     public static final Dimension ICON_SIZE = new Dimension(32, 32);
     public static final int TOOLBAR_BUTTON_SIZE = 20;
+    private static final int OPTION_DOT_WIDTH = 6;
+    private static final int OPTION_DOT_HEIGHT = 6;
 
     public static final ImageIcon OPEN_ICON;
     public static final ImageIcon CLOSE_ICON;
@@ -63,6 +65,14 @@ public class Icons {
 
     public static final ImageIcon DISCORD_ICON;
     public static final ImageIcon DISCORD_ICON_ON;
+
+    public static final ImageIcon PLUS_ICON;
+    public static final ImageIcon PLUS_ICON_OFF;
+
+    public static final ImageIcon GREEN_DOT;
+    public static final ImageIcon GRAY_DOT;
+    public static final ImageIcon RED_DOT;
+
 
     static
     {
@@ -148,5 +158,17 @@ public class Icons {
         DISCORD_ICON = new ImageIcon(discordIcon);
         DISCORD_ICON_ON = new ImageIcon(discordIconOn);
 
+        final BufferedImage plusIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/plus.png");
+        PLUS_ICON = new ImageIcon(plusIcon.getScaledInstance(24,24,Image.SCALE_SMOOTH));
+        PLUS_ICON_OFF = new ImageIcon(ImageUtil.alphaOffset(plusIcon, 0.53f).getScaledInstance(24,24,Image.SCALE_SMOOTH));
+
+        final BufferedImage greenDot = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/greendot.png");
+        GREEN_DOT = new ImageIcon(greenDot.getScaledInstance(OPTION_DOT_WIDTH,OPTION_DOT_HEIGHT,Image.SCALE_SMOOTH));
+
+        final BufferedImage grayDot = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/graydot.png");
+        GRAY_DOT = new ImageIcon(grayDot.getScaledInstance(OPTION_DOT_WIDTH,OPTION_DOT_HEIGHT,Image.SCALE_SMOOTH));
+
+        final BufferedImage redDot = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reddot.png");
+        RED_DOT = new ImageIcon(redDot.getScaledInstance(OPTION_DOT_WIDTH,OPTION_DOT_HEIGHT,Image.SCALE_SMOOTH));
     }
 }

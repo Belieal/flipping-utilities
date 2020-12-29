@@ -28,6 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
@@ -102,6 +103,9 @@ public class FlippingPanel extends JPanel
 
 	@Getter
 	private Paginator paginator;
+
+	@Getter
+	private OfferEditorPanel offerEditorPanel;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
@@ -250,21 +254,26 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
-
+			int vgap = 4;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
-			flippingItemsPanel.add(new OfferEditorPanel());
-//			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
-//			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
-//			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
-//			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-//			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
-//			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, 4);
-//			activePanels.addAll(newPanels);
-//
-//			if (activePanels.isEmpty())
-//			{
-//				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-//			}
+			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
+			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
+			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
+			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vgap);
+			activePanels.addAll(newPanels);
+
+			if (isItemHighlighted() && activePanels.size() > 0 && flippingItems.size()==1 && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+				offerEditorPanel = new OfferEditorPanel(plugin, flippingItems.get(0));
+				flippingItemsPanel.add(Box.createVerticalStrut(vgap));
+				flippingItemsPanel.add(offerEditorPanel);
+			}
+
+			if (activePanels.isEmpty())
+			{
+				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
+			}
 
 			revalidate();
 			repaint();
@@ -362,9 +371,11 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
-		paginator.setPageNumber(1);
-		rebuild(Collections.singletonList(item));
-		itemHighlighted = true;
+		SwingUtilities.invokeLater(() -> {
+			paginator.setPageNumber(1);
+			itemHighlighted = true;
+			rebuild(Collections.singletonList(item));
+		});
 	}
 
 	//This is run whenever the PlayerVar containing the GE offer slot changes to its empty value (-1)
@@ -376,17 +387,9 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		rebuild(plugin.getTradesForCurrentView());
 		itemHighlighted = false;
+		rebuild(plugin.getTradesForCurrentView());
 		plugin.setPrevHighlight(0);
-	}
-
-	public ArrayList<FlippingItem> findItemPanel(int itemId)
-	{
-		//We only expect one item.
-		return plugin.getTradesForCurrentView().stream()
-			.filter(item -> item.getItemId() == itemId && item.getValidFlippingPanelItem())
-			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	/**
