@@ -39,76 +39,67 @@ import net.runelite.api.widgets.WidgetType;
 
 public class OfferEditor
 {
-	private final Widget parent;
-	private final Client client;
-	private Widget text;
+    private final Widget parent;
+    private final Client client;
+    private Widget text;
 
-	public OfferEditor(Widget parent, Client client)
-	{
-		this.parent = parent;
-		this.client = client;
+    public OfferEditor(Widget parent, Client client)
+    {
+        this.parent = parent;
+        this.client = client;
 
-		initialize();
-	}
+        initialize();
+    }
 
-	private void initialize()
-	{
-		if (parent == null)
-		{
-			return;
-		}
+    private void initialize()
+    {
+        if (parent == null)
+        {
+            return;
+        }
 
-		text = parent.createChild(-1, WidgetType.TEXT);
+        text = parent.createChild(-1, WidgetType.TEXT);
 
-		text.setTextColor(0x800000);
-		text.setFontId(FontID.QUILL_8);
-		text.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
-		text.setOriginalX(0);
-		text.setYPositionMode(WidgetPositionMode.ABSOLUTE_TOP);
-		text.setOriginalY(5);
-		text.setOriginalHeight(20);
-		text.setXTextAlignment(WidgetTextAlignment.CENTER);
-		text.setYTextAlignment(WidgetTextAlignment.CENTER);
-		text.setWidthMode(WidgetSizeMode.MINUS);
-		text.revalidate();
-		text.setHasListener(true);
-		text.setOnMouseRepeatListener((JavaScriptCallback) ev -> text.setTextColor(0xFFFFFF));
-		text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
-	}
+        text.setTextColor(0x800000);
+        text.setFontId(FontID.QUILL_8);
+        text.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+        text.setOriginalX(0);
+        text.setYPositionMode(WidgetPositionMode.ABSOLUTE_TOP);
+        text.setOriginalY(5);
+        text.setOriginalHeight(20);
+        text.setXTextAlignment(WidgetTextAlignment.CENTER);
+        text.setYTextAlignment(WidgetTextAlignment.CENTER);
+        text.setWidthMode(WidgetSizeMode.MINUS);
+        text.revalidate();
+        text.setHasListener(true);
+        text.setOnMouseRepeatListener((JavaScriptCallback) ev -> text.setTextColor(0xFFFFFF));
+        text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
+    }
 
-	public void update(String mode, int value)
-	{
-		switch (mode)
-		{
-			case ("setCurrentQuantityInTrade"):
-				text.setText("Set to remaining GE limit: " + value);
-				text.setAction(1, "Set currentQuantityInTrade");
-				text.setOnOpListener((JavaScriptCallback) ev ->
-				{
-					client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-					client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-				});
-				break;
-			case ("setSellPrice"):
-				text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
-				text.setAction(1, "Set price");
-				text.setOnOpListener((JavaScriptCallback) ev ->
-				{
-					client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-					client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-				});
-				break;
-			case ("setBuyPrice"):
-				text.setText("Set to latest price check buy price: " + String.format("%,d", value) + " gp");
-				text.setAction(1, "Set price");
-				text.setOnOpListener((JavaScriptCallback) ev ->
-				{
-					client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-					client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-				});
-				break;
-			case ("reset"):
-				text.setText("");
-		}
-	}
+    public void update(String mode, int value)
+    {
+        switch (mode)
+        {
+            case ("setSellPrice"):
+                text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
+                text.setAction(1, "Set price");
+                text.setOnOpListener((JavaScriptCallback) ev ->
+                {
+                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
+                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
+                });
+                break;
+            case ("setBuyPrice"):
+                text.setText("Set to latest price check buy price: " + String.format("%,d", value) + " gp");
+                text.setAction(1, "Set price");
+                text.setOnOpListener((JavaScriptCallback) ev ->
+                {
+                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
+                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
+                });
+                break;
+            case ("reset"):
+                text.setText("");
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import com.flippingutilities.utilities.InvalidOptionException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import net.runelite.client.ui.FontManager;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Optional;
 
 @Slf4j
@@ -28,6 +31,7 @@ public class OptionPanel extends JPanel {
     private JLabel dotIcon;
     private JLabel keyLabel;
     private boolean isHighlighted;
+    private Icon lastIcon;
 
     public OptionPanel(Option option, FlippingItem item, FlippingPlugin plugin) {
         this.option = option;
@@ -44,8 +48,8 @@ public class OptionPanel extends JPanel {
         errorTextPanel.setBackground(CustomColors.DARK_GRAY);
         dotIcon = createDotIcon();
 
-        add(createBodyPanel(), BorderLayout.CENTER);
         add(resultingValuePanel, BorderLayout.SOUTH);
+        add(createBodyPanel(), BorderLayout.CENTER);
         add(dotIcon, BorderLayout.WEST);
     }
 
@@ -60,6 +64,7 @@ public class OptionPanel extends JPanel {
             option.setKey(keyInputField.getText());
             keyLabel.setText(keyInputField.getText());
         });
+        keyInputField.setToolTipText("Press enter after inputting a key to save your changes");
 
 
         JComboBox propertiesSelector = new JComboBox(new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT,Option.CASHSTACK});
@@ -79,6 +84,7 @@ public class OptionPanel extends JPanel {
             option.setChange(optionalEditor.getText());
             setResultingValue();
         });
+        optionalEditor.setToolTipText("press enter after inputting something to save your changes");
 
         body.add(keyInputField);
         body.add(propertiesSelector);
@@ -113,7 +119,27 @@ public class OptionPanel extends JPanel {
 
     private JLabel createDotIcon() {
         dotIcon = new JLabel(Icons.GRAY_DOT);
+        lastIcon = dotIcon.getIcon();
         dotIcon.setBorder(new EmptyBorder(8,15,0,0));
+        dotIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (dotIcon.getIcon().equals(Icons.DELETE_ICON)) {
+                    plugin.getFlippingPanel().getOfferEditorPanel().deleteOption(option);
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                lastIcon = dotIcon.getIcon();
+                dotIcon.setIcon(Icons.DELETE_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                dotIcon.setIcon(lastIcon);
+            }
+        });
         return dotIcon;
     }
 
@@ -135,7 +161,7 @@ public class OptionPanel extends JPanel {
 
     private void showError(String msg) {
         remove(resultingValuePanel);
-        String labelText = String.format("<html><div style=\"width:%dpx;\"'text-align: center;>%s</div></html>", 150, msg);
+        String labelText = UIUtilities.wrappedText(msg, 150);
         JLabel errorTextLabel = new JLabel(labelText,JLabel.CENTER);
         errorTextPanel.removeAll();
         errorTextLabel.setFont(FontManager.getRunescapeSmallFont());

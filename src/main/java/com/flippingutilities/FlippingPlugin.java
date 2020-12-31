@@ -55,7 +55,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.*;
 
-import com.sun.tools.javac.jvm.Items;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +81,6 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.item.ItemStats;
-import org.graalvm.compiler.nodes.calc.IntegerDivRemNode;
 
 @Slf4j
 @PluginDescriptor(
@@ -133,10 +131,9 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
-
-	private OfferEditor flippingWidget;
 	private SettingsPanel settingsPanel;
 	private MasterPanel masterPanel;
+	private OfferEditor flippingWidget;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -1526,67 +1523,53 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
-
 		quantityOrPriceChatboxOpen = true;
 
-//		clientThread.invokeLater(() ->
-//		{
-//			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
-//
-//			FlippingItem selectedItem = null;
-//			//Check that if we've recorded any data for the item.
-//			for (FlippingItem item : getTradesForCurrentView())
-//			{
-//				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
-//				{
-//					selectedItem = item;
-//					break;
-//				}
-//			}
-//
-//			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
-//			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
-//			if (chatInputText.equals("How many do you wish to buy?"))
-//			{
-//				//No recorded data; default to total GE limit
-//				if (selectedItem == null)
-//				{
-//					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
-//					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-//					flippingWidget.update("setCurrentQuantityInTrade", itemGELimit);
-//				}
-//				else
-//				{
-//					flippingWidget.update("setCurrentQuantityInTrade", selectedItem.getRemainingGeLimit());
-//				}
-//			}
-//			else if (chatInputText.equals("Set a price for each item:"))
-//			{
-//				if (offerText.equals("Buy offer"))
-//				{
-//					//No recorded data; hide the widget
-//					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
-//					{
-//						flippingWidget.update("reset", 0);
-//					}
-//					else
-//					{
-//						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckSell().get().getPrice());
-//					}
-//				}
-//				else if (offerText.equals("Sell offer"))
-//				{
-//					//No recorded data; hide the widget
-//					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
-//					{
-//						flippingWidget.update("reset", 0);
-//					}
-//					else
-//					{
-//						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckBuy().get().getPrice());
-//					}
-//				}
-//			}
-//		});
+		clientThread.invokeLater(() ->
+		{
+			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+
+			FlippingItem selectedItem = null;
+			//Check that if we've recorded any data for the item.
+			for (FlippingItem item : getTradesForCurrentView())
+			{
+				if (item.getItemId() == client.getVar(CURRENT_GE_ITEM))
+				{
+					selectedItem = item;
+					break;
+				}
+			}
+
+			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
+			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+
+			if (chatInputText.equals("Set a price for each item:"))
+			{
+				if (offerText.equals("Buy offer"))
+				{
+					//No recorded data; hide the widget
+					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
+					{
+						flippingWidget.update("reset", 0);
+					}
+					else
+					{
+						flippingWidget.update("setBuyPrice", selectedItem.getLatestMarginCheckSell().get().getPrice());
+					}
+				}
+				else if (offerText.equals("Sell offer"))
+				{
+					//No recorded data; hide the widget
+					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
+					{
+						flippingWidget.update("reset", 0);
+					}
+					else
+					{
+						flippingWidget.update("setSellPrice", selectedItem.getLatestMarginCheckBuy().get().getPrice());
+					}
+				}
+			}
+		});
 	}
 }

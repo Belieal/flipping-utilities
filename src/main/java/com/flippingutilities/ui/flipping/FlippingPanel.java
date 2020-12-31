@@ -247,33 +247,33 @@ public class FlippingPanel extends JPanel
 		{
 			Instant rebuildStart = Instant.now();
 			flippingItemsPanel.removeAll();
-
-			if (flippingItems == null || flippingItems.size() == 0)
-			{
-				//Show the welcome panel if there are no valid flipping items in the list
-				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-				return;
-			}
-			int vgap = 4;
+			flippingItemsPanel.add(new OfferEditorPanel(plugin,plugin.getTradesForCurrentView().get(0)));
+//			if (flippingItems == null || flippingItems.size() == 0)
+//			{
+//				//Show the welcome panel if there are no valid flipping items in the list
+//				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
+//				return;
+//			}
+//			int vGap = 4;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
-			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
-			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
-			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
-			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
-			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
-			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vgap);
-			activePanels.addAll(newPanels);
-
-			if (isItemHighlighted() && activePanels.size() > 0 && flippingItems.size()==1 && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-				offerEditorPanel = new OfferEditorPanel(plugin, flippingItems.get(0));
-				flippingItemsPanel.add(Box.createVerticalStrut(vgap));
-				flippingItemsPanel.add(offerEditorPanel);
-			}
-
-			if (activePanels.isEmpty())
-			{
-				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-			}
+//			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
+//			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
+//			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
+//			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
+//			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+//			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vGap);
+//			activePanels.addAll(newPanels);
+//
+//			if (isItemHighlighted() && activePanels.size() > 0 && flippingItems.size()==1 && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+//				offerEditorPanel = new OfferEditorPanel(plugin, flippingItems.get(0));
+//				flippingItemsPanel.add(Box.createVerticalStrut(vGap));
+//				flippingItemsPanel.add(offerEditorPanel);
+//			}
+//
+//			if (activePanels.isEmpty())
+//			{
+//				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
+//			}
 
 			revalidate();
 			repaint();

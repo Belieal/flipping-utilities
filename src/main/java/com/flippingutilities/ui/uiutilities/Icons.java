@@ -73,6 +73,12 @@ public class Icons {
     public static final ImageIcon GRAY_DOT;
     public static final ImageIcon RED_DOT;
 
+    public static final ImageIcon HELP;
+    public static final ImageIcon HELP_HOVER;
+
+    public static final BufferedImage optionPic;
+
+
 
     static
     {
@@ -170,5 +176,12 @@ public class Icons {
 
         final BufferedImage redDot = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/reddot.png");
         RED_DOT = new ImageIcon(redDot.getScaledInstance(OPTION_DOT_WIDTH,OPTION_DOT_HEIGHT,Image.SCALE_SMOOTH));
+
+        final BufferedImage help = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/help.png");
+        HELP = new ImageIcon(help);
+        HELP_HOVER = new ImageIcon(ImageUtil.alphaOffset(help, 0.53f));
+
+        optionPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/options.png");
+
     }
 }
