@@ -76,7 +76,9 @@ public class Icons {
     public static final ImageIcon HELP;
     public static final ImageIcon HELP_HOVER;
 
-    public static final BufferedImage optionPic;
+    public static final ImageIcon TEMPLATE;
+    public static final ImageIcon TEMPLATE_HOVER;
+
 
 
 
@@ -181,7 +183,10 @@ public class Icons {
         HELP = new ImageIcon(help);
         HELP_HOVER = new ImageIcon(ImageUtil.alphaOffset(help, 0.53f));
 
-        optionPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/options.png");
+        final BufferedImage template = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/template.png");
+        TEMPLATE = new ImageIcon(template);
+        TEMPLATE_HOVER = new ImageIcon(ImageUtil.alphaOffset(template, 0.53f));
+
 
     }
 }

@@ -5,7 +5,9 @@ import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
 import javax.swing.*;
@@ -89,7 +91,7 @@ public class OfferEditorPanel extends JPanel {
             }
         });
         descriptionPanel = new JPanel();
-        descriptionPanel.setBorder(new EmptyBorder(10,37,0,27));
+        descriptionPanel.setBorder(new EmptyBorder(10,35,0,22));
         descriptionPanel.setBackground(CustomColors.DARK_GRAY);
         JLabel keyDescriptionLabel = new JLabel("Key", JLabel.CENTER);
         keyDescriptionLabel.setFont(FontManager.getRunescapeSmallFont());
@@ -137,11 +139,14 @@ public class OfferEditorPanel extends JPanel {
 
     public void rebuild(List<Option> options) {
         SwingUtilities.invokeLater(() -> {
+            optionsContainer.removeAll();
             if (options.isEmpty()) {
                 descriptionPanel.setVisible(false);
+                optionsContainer.add(createWelcomePanel());
             }
-            descriptionPanel.setVisible(true);
-            optionsContainer.removeAll();
+            else {
+                descriptionPanel.setVisible(true);
+            }
             optionPanels.clear();
             for (Option option:options) {
                 OptionPanel newPanel = new OptionPanel(option, item, plugin);
@@ -152,9 +157,49 @@ public class OfferEditorPanel extends JPanel {
             repaint();
         });
     }
-//
-//            create default panel that shows maybe card layout?
-//    test what happens in edge cases like unknown limits
+
+    private JPanel createWelcomePanel() {
+        JPanel welcomePanel = new JPanel(new BorderLayout());
+        welcomePanel.setBackground(CustomColors.DARK_GRAY);
+        welcomePanel.setBorder(new EmptyBorder(20,0,0,0));
+
+        String text = "<html><div style=width:200;text-align: center;>" +
+                "Click the plus icon above to create an option<br><br>" +
+                "or<br><br>" +
+                "get started quickly with multiple default options by pressing the button below!" +
+                "</div></html>";
+
+        JLabel descriptionText = new JLabel(text, JLabel.CENTER);
+        descriptionText.setFont(FontManager.getRunescapeSmallFont());
+
+        JLabel templateButton = new JLabel(Icons.TEMPLATE);
+        templateButton.setBorder(new EmptyBorder(10,0,0,0));
+        templateButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                plugin.getOptionsForCurrentView().add(new Option("p", Option.GE_LIMIT, "+0"));
+                plugin.getOptionsForCurrentView().add(new Option("l", Option.REMAINING_LIMIT, "+0"));
+                plugin.getOptionsForCurrentView().add(new Option("o", Option.CASHSTACK, "+0"));
+                rebuild(plugin.getOptionsForCurrentView());
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                templateButton.setIcon(Icons.TEMPLATE_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                templateButton.setIcon(Icons.TEMPLATE);
+            }
+        });
+
+        welcomePanel.add(descriptionText, BorderLayout.NORTH);
+
+        welcomePanel.add(templateButton, BorderLayout.CENTER);
+        return welcomePanel;
+    }
+
 
     private String createHelpText() {
         return "<html><body width='500'>"
