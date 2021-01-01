@@ -91,7 +91,7 @@ public class OfferEditorPanel extends JPanel {
             }
         });
         descriptionPanel = new JPanel();
-        descriptionPanel.setBorder(new EmptyBorder(10,35,0,22));
+        descriptionPanel.setBorder(new EmptyBorder(10,32,0,19));
         descriptionPanel.setBackground(CustomColors.DARK_GRAY);
         JLabel keyDescriptionLabel = new JLabel("<html><u>Key</u></html>", JLabel.CENTER);
         keyDescriptionLabel.setToolTipText("<html>The key you can press to trigger the option.<br> Make sure to hit enter after editing a key so that your changes are saved</html>");
@@ -150,6 +150,7 @@ public class OfferEditorPanel extends JPanel {
             else {
                 descriptionPanel.setVisible(true);
             }
+
             optionPanels.clear();
             for (Option option:options) {
                 OptionPanel newPanel = new OptionPanel(option, item, plugin);
