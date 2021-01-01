@@ -226,6 +226,9 @@ public class FlippingPlugin extends Plugin
 						catch (InvalidOptionException ex) {
 							//ignore
 						}
+						catch (Exception ex) {
+							log.info("exception during key press for offer editor", ex);
+						}
 					}
 				}
 			}
