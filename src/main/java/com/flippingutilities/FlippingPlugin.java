@@ -188,7 +188,6 @@ public class FlippingPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-		log.info("is event thread {}",SwingUtilities.isEventDispatchThread());
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
@@ -404,7 +403,6 @@ public class FlippingPlugin extends Plugin
 					}
 				})), 1000, 1000, TimeUnit.MILLISECONDS);
 		}
-		getCashStackInInv();
 	}
 
 	public void handleLogout()
