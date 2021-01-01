@@ -368,6 +368,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			AccountData accountData = new AccountData();
+			accountData.setOptions(Arrays.asList(new Option("p", Option.GE_LIMIT, "+0"),new Option("l", Option.REMAINING_LIMIT, "+0"),new Option("o", Option.CASHSTACK, "+0")));
 			accountData.setSlotTimers(setupSlotTimers());
 			accountCache.put(displayName, accountData);
 			masterPanel.getAccountSelector().addItem(displayName);
