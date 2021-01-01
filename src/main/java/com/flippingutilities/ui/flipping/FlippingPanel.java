@@ -28,8 +28,11 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.model.Option;
+import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
+import com.flippingutilities.ui.uiutilities.UIUtilities;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -48,14 +51,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -86,8 +82,6 @@ public class FlippingPanel extends JPanel
 	private final IconTextField searchBar = new IconTextField();
 	private Future<?> runningRequest = null;
 
-	//Constraints for items in the item panel.
-	private final GridBagConstraints constraints = new GridBagConstraints();
 	public final CardLayout cardLayout = new CardLayout();
 
 	private final JPanel flippingItemsPanel = new JPanel();
@@ -110,6 +104,9 @@ public class FlippingPanel extends JPanel
 	@Getter
 	private Paginator paginator;
 
+	@Getter
+	private OfferEditorPanel offerEditorPanel;
+
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
@@ -120,14 +117,8 @@ public class FlippingPanel extends JPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-		//Constraints for item list
-		constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.weightx = 1;
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-
 		//Holds all the item panels
-		flippingItemsPanel.setLayout(new GridBagLayout());
+		flippingItemsPanel.setLayout(new BoxLayout(flippingItemsPanel, BoxLayout.Y_AXIS));
 		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
 		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -254,42 +245,29 @@ public class FlippingPanel extends JPanel
 
 		SwingUtilities.invokeLater(() ->
 		{
-
 			Instant rebuildStart = Instant.now();
 			flippingItemsPanel.removeAll();
-
+//			flippingItemsPanel.add(new OfferEditorPanel(plugin,plugin.getTradesForCurrentView().get(0)));
 			if (flippingItems == null || flippingItems.size() == 0)
 			{
 				//Show the welcome panel if there are no valid flipping items in the list
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
-
+			int vGap = 4;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
+			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vGap);
+			activePanels.addAll(newPanels);
 
-			int index = 0;
-			for (FlippingItem item : itemsOnCurrentPage)
-			{
-				FlippingItemPanel newPanel = new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item);
-
-				if (index++ > 0)
-				{
-					JPanel marginWrapper = new JPanel(new BorderLayout());
-					marginWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-					marginWrapper.setBorder(new EmptyBorder(4, 0, 0, 0));
-					marginWrapper.add(newPanel, BorderLayout.NORTH);
-					flippingItemsPanel.add(marginWrapper, constraints);
-				}
-				else
-				{
-					flippingItemsPanel.add(newPanel, constraints);
-				}
-				constraints.gridy++;
-				activePanels.add(newPanel);
+			if (isItemHighlighted() && activePanels.size() > 0 && flippingItems.size()==1 && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+				offerEditorPanel = new OfferEditorPanel(plugin, flippingItems.get(0));
+				flippingItemsPanel.add(Box.createVerticalStrut(vGap));
+				flippingItemsPanel.add(offerEditorPanel);
 			}
 
 			if (activePanels.isEmpty())
@@ -302,6 +280,7 @@ public class FlippingPanel extends JPanel
 
 			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
+
 	}
 
 	public List<FlippingItem> sortTradeList(List<FlippingItem> tradeList)
@@ -393,9 +372,11 @@ public class FlippingPanel extends JPanel
 		{
 			return;
 		}
-		paginator.setPageNumber(1);
-		rebuild(Collections.singletonList(item));
-		itemHighlighted = true;
+		SwingUtilities.invokeLater(() -> {
+			paginator.setPageNumber(1);
+			itemHighlighted = true;
+			rebuild(Collections.singletonList(item));
+		});
 	}
 
 	//This is run whenever the PlayerVar containing the GE offer slot changes to its empty value (-1)
@@ -407,17 +388,9 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		rebuild(plugin.getTradesForCurrentView());
 		itemHighlighted = false;
+		rebuild(plugin.getTradesForCurrentView());
 		plugin.setPrevHighlight(0);
-	}
-
-	public ArrayList<FlippingItem> findItemPanel(int itemId)
-	{
-		//We only expect one item.
-		return plugin.getTradesForCurrentView().stream()
-			.filter(item -> item.getItemId() == itemId && item.getValidFlippingPanelItem())
-			.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	/**

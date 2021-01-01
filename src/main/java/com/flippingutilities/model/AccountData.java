@@ -48,6 +48,7 @@ public class AccountData
 	private Duration accumulatedSessionTime = Duration.ZERO;
 	private Instant lastSessionTimeUpdate;
 	private List<TradeActivityTimer> slotTimers;
+	private List<Option> options = new ArrayList<>();
 
 	/**
 	 * Resets all session related data associated with an account. This is called when the plugin first starts
@@ -67,6 +68,12 @@ public class AccountData
 	 */
 	public void prepareForUse(ItemManager itemManager)
 	{
+		if (options.isEmpty()) {
+			options.add(new Option("p", Option.GE_LIMIT, "+0"));
+			options.add(new Option("l", Option.REMAINING_LIMIT, "+0"));
+			options.add(new Option("o", Option.CASHSTACK, "+0"));
+		}
+
 		for (FlippingItem item : trades)
 		{
 			//in case ge limits have been updated

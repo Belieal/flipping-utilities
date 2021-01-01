@@ -8,4 +8,5 @@ public class CustomColors {
     public static final Color DARK_GRAY_ALT_ROW_COLOR = new Color(35, 35, 35);
     public static final Color DARK_GRAY = new Color(27, 27, 27);
     public static final Color VIBRANT_YELLOW = new Color(230, 220, 6);
+    public static final Color TOMATO = new Color(255,99,71);
 }

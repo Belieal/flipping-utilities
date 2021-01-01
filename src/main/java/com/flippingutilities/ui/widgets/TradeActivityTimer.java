@@ -41,6 +41,7 @@ import net.runelite.api.Client;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ColorUtil;
 
 @Slf4j
@@ -156,23 +157,26 @@ public class TradeActivityTimer
 	private void setText(String timeString)
 	{
 		String spacer;
+		Color stateTextColor;
 		if (currentOffer.isBuy())
 		{
 			slotStateString = "Buy";
 			spacer = BUY_SPACER;
+			stateTextColor = ColorScheme.GRAND_EXCHANGE_LIMIT;
 		}
 		else
 		{
 			slotStateString = "Sell";
 			spacer = SELL_SPACER;
+			stateTextColor = CustomColors.VIBRANT_YELLOW;
 		}
 
-		Color color = isSlotStagnant() ? CustomColors.OUTDATED_COLOR : Color.WHITE;
+		Color timeColor = isSlotStagnant() ? CustomColors.OUTDATED_COLOR : Color.WHITE;
 
 		if (currentOffer.isComplete())
 		{
 			//Override to completion color
-			color = new Color(0, 180, 0);
+			timeColor = new Color(0, 180, 0);
 		}
 
 		if (timeString.length() > 9)
@@ -181,7 +185,7 @@ public class TradeActivityTimer
 			timeString = "   --:--:--";
 		}
 
-		slotStateWidget.setText("  <html>" + slotStateString + spacer + ColorUtil.wrapWithColorTag(timeString, color) + "</html>");
+		slotStateWidget.setText("  <html>" + ColorUtil.wrapWithColorTag(slotStateString, stateTextColor) + spacer + ColorUtil.wrapWithColorTag(timeString, timeColor) + "</html>");
 	}
 
 	/**

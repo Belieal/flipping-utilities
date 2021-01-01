@@ -27,10 +27,7 @@
 package com.flippingutilities;
 
 import com.flippingutilities.db.TradePersister;
-import com.flippingutilities.model.AccountData;
-import com.flippingutilities.model.Flip;
-import com.flippingutilities.model.FlippingItem;
-import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.model.*;
 import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
@@ -40,9 +37,11 @@ import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import com.flippingutilities.utilities.CacheUpdater;
 import com.flippingutilities.utilities.GeHistoryTabExtractor;
+import com.flippingutilities.utilities.InvalidOptionException;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import java.awt.Font;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -54,6 +53,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.swing.*;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,8 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.input.KeyListener;
+import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -117,6 +120,9 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private ItemManager itemManager;
 
+	@Inject
+	private KeyManager keyManager;
+
 	//Ensures we don't rebuild constantly when highlighting
 	@Setter
 	private int prevHighlight;
@@ -125,10 +131,9 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
-
-	private OfferEditor flippingWidget;
 	private SettingsPanel settingsPanel;
 	private MasterPanel masterPanel;
+	private OfferEditor flippingWidget;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -176,6 +181,10 @@ public class FlippingPlugin extends Plugin
 	//allows for knowing what to save on client shutdown.
 	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
 
+	private boolean quantityOrPriceChatboxOpen = false;
+
+	private Optional<FlippingItem> highlightedItem = Optional.empty();
+
 	@Override
 	protected void startUp()
 	{
@@ -193,6 +202,41 @@ public class FlippingPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
+
+		keyManager.registerKeyListener(new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
+					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
+					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.getKey().equals(keyPressed)).findFirst();
+					if (optionExercised.isPresent() && highlightedItem.isPresent()) {
+						try {
+							int optionValue = calculateOptionValue(optionExercised.get(), highlightedItem.get());
+							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+							flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
+							e.consume();
+						}
+						catch (InvalidOptionException ex) {
+							//ignore
+						}
+						catch (Exception ex) {
+							log.info("exception during key press for offer editor", ex);
+						}
+					}
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+
+			}
+		});
 
 		clientThread.invokeLater(() ->
 		{
@@ -756,6 +800,15 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	public List<Option> getOptionsForCurrentView() {
+		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
+			return new ArrayList<>();
+		}
+		else {
+			return accountCache.get(accountCurrentlyViewed).getOptions();
+		}
+	}
+
 	public Instant getStartOfSessionForCurrentView()
 	{
 		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE))
@@ -797,6 +850,7 @@ public class FlippingPlugin extends Plugin
 				.stream()
 				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
 				.findFirst().ifPresent(item -> {
+					highlightedItem = Optional.of(item);
 					prevHighlight = currentGEItemId;
 					flippingPanel.highlightItem(item);
 				});
@@ -1232,6 +1286,82 @@ public class FlippingPlugin extends Plugin
 		TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 	}
 
+	public int getCashStackInInv() {
+		ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
+		Item[] inventoryItems = inventory.getItems();
+		for (Item item:inventoryItems) {
+			if (item.getId() == 995) {
+				return item.getQuantity();
+			}
+		}
+		return 0;
+	}
+
+	public void validateOption(Option option, FlippingItem item) throws InvalidOptionException {
+		if (item.getTotalGELimit() <= 0 && (option.getProperty().equals(Option.REMAINING_LIMIT) || option.getProperty().equals(Option.GE_LIMIT))) {
+			throw new InvalidOptionException("Item does not have known limit. Cannot calculate resulting value");
+		}
+		if (!item.getLatestBuy().isPresent() && option.getProperty().equals(Option.CASHSTACK)) {
+			throw new InvalidOptionException("Item does not have a buy. Cannot calculate amount for cashstack");
+		}
+		if (option.getProperty().equals(Option.CASHSTACK) && getCashStackInInv() == 0) {
+			throw new InvalidOptionException("Player has no cash in inventory");
+		}
+
+		Set<String> acceptableOperators = new HashSet<>(Arrays.asList("+", "-", "*"));
+		String change = option.getChange();
+		if (change.length() < 2) {
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+		if (!acceptableOperators.contains(String.valueOf(change.charAt(0)))) {
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+
+		try {
+			int num = Integer.parseInt(change.substring(1));
+			if (num < 0) {
+				throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+			}
+		}
+
+		catch (NumberFormatException e) {
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+		}
+	}
+
+	public int calculateOptionValue(Option option, FlippingItem item) throws InvalidOptionException {
+		validateOption(option, item);
+		int val = 0;
+        String propertyString = option.getProperty();
+        if (propertyString.equals(Option.GE_LIMIT)) {
+            val = item.getTotalGELimit();
+        }
+        if (propertyString.equals(Option.REMAINING_LIMIT)) {
+            val = item.getRemainingGeLimit();
+        }
+        if (propertyString.equals(Option.CASHSTACK)) {
+			val = getCashStackInInv()/item.getLatestBuy().get().getPrice();
+        }
+
+        String operator = String.valueOf(option.getChange().charAt(0));
+        int num = Integer.parseInt(option.getChange().substring(1));
+        if (operator.equals("-")) {
+        	val -= num;
+		}
+        if (operator.equals("+")) {
+        	val += num;
+		}
+        if (operator.equals("*")) {
+        	val *= num;
+		}
+
+        if (val < 0) {
+			throw new InvalidOptionException("resulting value was negative, which isn't allowed");
+		}
+
+        return val;
+	}
+
 	@Subscribe
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
@@ -1309,6 +1439,7 @@ public class FlippingPlugin extends Plugin
 		//as then the highlight won't linger in that case.
 		if (event.getGroupId() == GE_HISTORY_TAB_WIDGET_ID && flippingPanel.isItemHighlighted())
 		{
+			highlightedItem = Optional.empty();
 			flippingPanel.dehighlightItem();
 		}
 	}
@@ -1324,6 +1455,7 @@ public class FlippingPlugin extends Plugin
 		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
 				(client.getVar(CURRENT_GE_ITEM) == -1 || client.getVar(CURRENT_GE_ITEM) == 0) && flippingPanel.isItemHighlighted())
 		{
+			highlightedItem = Optional.empty();
 			flippingPanel.dehighlightItem();
 		}
 	}
@@ -1376,6 +1508,14 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onVarClientIntChanged(VarClientIntChanged event)
 	{
+		if (quantityOrPriceChatboxOpen
+				&& event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
+				&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 0
+		) {
+			quantityOrPriceChatboxOpen = false;
+			return;
+		}
+
 		//Check that it was the chat input that got enabled.
 		if (event.getIndex() != VarClientInt.INPUT_TYPE.getIndex()
 			|| client.getWidget(WidgetInfo.CHATBOX_TITLE) == null
@@ -1384,6 +1524,7 @@ public class FlippingPlugin extends Plugin
 		{
 			return;
 		}
+		quantityOrPriceChatboxOpen = true;
 
 		clientThread.invokeLater(() ->
 		{
@@ -1402,20 +1543,12 @@ public class FlippingPlugin extends Plugin
 
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
 			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
+
 			if (chatInputText.equals("How many do you wish to buy?"))
 			{
-				//No recorded data; default to total GE limit
-				if (selectedItem == null)
-				{
-					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
-					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
-					flippingWidget.update("setCurrentQuantityInTrade", itemGELimit);
-				}
-				else
-				{
-					flippingWidget.update("setCurrentQuantityInTrade", selectedItem.getRemainingGeLimit());
-				}
+				flippingWidget.update("quantity", 0);
 			}
+
 			else if (chatInputText.equals("Set a price for each item:"))
 			{
 				if (offerText.equals("Buy offer"))
