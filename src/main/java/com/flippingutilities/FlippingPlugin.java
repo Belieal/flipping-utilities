@@ -1310,21 +1310,21 @@ public class FlippingPlugin extends Plugin
 		Set<String> acceptableOperators = new HashSet<>(Arrays.asList("+", "-", "*"));
 		String change = option.getChange();
 		if (change.length() < 2) {
-			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
 		}
 		if (!acceptableOperators.contains(String.valueOf(change.charAt(0)))) {
-			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
 		}
 
 		try {
 			int num = Integer.parseInt(change.substring(1));
 			if (num < 0) {
-				throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+				throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
 			}
 		}
 
 		catch (NumberFormatException e) {
-			throw new InvalidOptionException("change field has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
+			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
 		}
 	}
 
@@ -1543,7 +1543,12 @@ public class FlippingPlugin extends Plugin
 			String chatInputText = client.getWidget(WidgetInfo.CHATBOX_TITLE).getText();
 			String offerText = client.getWidget(WidgetInfo.GRAND_EXCHANGE_OFFER_CONTAINER).getChild(GE_OFFER_INIT_STATE_CHILD_ID).getText();
 
-			if (chatInputText.equals("Set a price for each item:"))
+			if (chatInputText.equals("How many do you wish to buy?"))
+			{
+				flippingWidget.update("quantity", 0);
+			}
+
+			else if (chatInputText.equals("Set a price for each item:"))
 			{
 				if (offerText.equals("Buy offer"))
 				{

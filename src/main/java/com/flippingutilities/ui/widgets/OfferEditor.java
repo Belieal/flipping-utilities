@@ -36,6 +36,7 @@ import net.runelite.api.widgets.WidgetPositionMode;
 import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
+import net.runelite.client.ui.ColorScheme;
 
 public class OfferEditor
 {
@@ -80,6 +81,10 @@ public class OfferEditor
     {
         switch (mode)
         {
+            case ("quantity"):
+                text.setFontId(FontID.BOLD_12);
+                text.setText("Use the new quantity editor feature to set quantities with just a key press!");
+                break;
             case ("setSellPrice"):
                 text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
                 text.setAction(1, "Set price");

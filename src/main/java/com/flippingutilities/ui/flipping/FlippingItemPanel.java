@@ -377,6 +377,8 @@ public class FlippingItemPanel extends JPanel
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
 			limitLabelVal.setText("Unknown");
+			//can't have potential profit if the limit is unknown
+			potentialProfitVal.setText("N/A");
 		}
 	}
 

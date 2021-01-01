@@ -93,12 +93,15 @@ public class OfferEditorPanel extends JPanel {
         descriptionPanel = new JPanel();
         descriptionPanel.setBorder(new EmptyBorder(10,35,0,22));
         descriptionPanel.setBackground(CustomColors.DARK_GRAY);
-        JLabel keyDescriptionLabel = new JLabel("Key", JLabel.CENTER);
+        JLabel keyDescriptionLabel = new JLabel("<html><u>Key</u></html>", JLabel.CENTER);
+        keyDescriptionLabel.setToolTipText("<html>The key you can press to trigger the option.<br> Make sure to hit enter after editing a key so that your changes are saved</html>");
         keyDescriptionLabel.setFont(FontManager.getRunescapeSmallFont());
-        JLabel propertyDescriptionLabel = new JLabel("Property",  JLabel.CENTER);
+        JLabel propertyDescriptionLabel = new JLabel("<html><u>Property</u></html>",  JLabel.CENTER);
+        propertyDescriptionLabel.setToolTipText("The property an option's value is dependent on");
         propertyDescriptionLabel.setFont(FontManager.getRunescapeSmallFont());
         propertyDescriptionLabel.setBorder(new EmptyBorder(0,25,0,27));
-        JLabel modifierDescriptionLabel = new JLabel("Modifier", JLabel.CENTER);
+        JLabel modifierDescriptionLabel = new JLabel("<html><u>Modifier</u></html>", JLabel.CENTER);
+        modifierDescriptionLabel.setToolTipText("<html>Any of these symbols +,-,*, followed by a positive whole number.<br> Examples: +0, +10, -5, *2. Make sure to hit enter after editing a modifier to save your changes</html>");
         modifierDescriptionLabel.setFont(FontManager.getRunescapeSmallFont());
 
         descriptionPanel.add(keyDescriptionLabel);
@@ -161,7 +164,7 @@ public class OfferEditorPanel extends JPanel {
     private JPanel createWelcomePanel() {
         JPanel welcomePanel = new JPanel(new BorderLayout());
         welcomePanel.setBackground(CustomColors.DARK_GRAY);
-        welcomePanel.setBorder(new EmptyBorder(20,0,0,0));
+        welcomePanel.setBorder(new EmptyBorder(20,0,20,0));
 
         String text = "<html><div style=width:200;text-align: center;>" +
                 "Click the plus icon above to create an option<br><br>" +
@@ -173,7 +176,7 @@ public class OfferEditorPanel extends JPanel {
         descriptionText.setFont(FontManager.getRunescapeSmallFont());
 
         JLabel templateButton = new JLabel(Icons.TEMPLATE);
-        templateButton.setBorder(new EmptyBorder(10,0,0,0));
+        templateButton.setBorder(new EmptyBorder(15,0,0,0));
         templateButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {

@@ -68,6 +68,12 @@ public class AccountData
 	 */
 	public void prepareForUse(ItemManager itemManager)
 	{
+		if (options.isEmpty()) {
+			options.add(new Option("p", Option.GE_LIMIT, "+0"));
+			options.add(new Option("l", Option.REMAINING_LIMIT, "+0"));
+			options.add(new Option("o", Option.CASHSTACK, "+0"));
+		}
+
 		for (FlippingItem item : trades)
 		{
 			//in case ge limits have been updated
