@@ -162,13 +162,13 @@ public class TradeActivityTimer
 		{
 			slotStateString = "Buy";
 			spacer = BUY_SPACER;
-			stateTextColor = ColorScheme.GRAND_EXCHANGE_LIMIT;
+			stateTextColor = plugin.getConfig().slotTimerBuyColor();
 		}
 		else
 		{
 			slotStateString = "Sell";
 			spacer = SELL_SPACER;
-			stateTextColor = CustomColors.VIBRANT_YELLOW;
+			stateTextColor = plugin.getConfig().slotTimerSellColor();
 		}
 
 		Color timeColor = isSlotStagnant() ? CustomColors.OUTDATED_COLOR : Color.WHITE;
