@@ -368,10 +368,6 @@ public class FlippingPanel extends JPanel
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
 	public void highlightItem(FlippingItem item)
 	{
-		if (itemHighlighted)
-		{
-			return;
-		}
 		SwingUtilities.invokeLater(() -> {
 			paginator.setPageNumber(1);
 			itemHighlighted = true;
@@ -380,17 +376,16 @@ public class FlippingPanel extends JPanel
 	}
 
 	//This is run whenever the PlayerVar containing the GE offer slot changes to its empty value (-1)
-	// or if the GE is closed.
+	// or if the GE is closed/history tab opened
 	public void dehighlightItem()
 	{
 		if (!itemHighlighted)
 		{
 			return;
 		}
-
+		log.info("dehighlighting item");
 		itemHighlighted = false;
 		rebuild(plugin.getTradesForCurrentView());
-		plugin.setPrevHighlight(0);
 	}
 
 	/**

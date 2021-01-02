@@ -123,10 +123,6 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private KeyManager keyManager;
 
-	//Ensures we don't rebuild constantly when highlighting
-	@Setter
-	private int prevHighlight;
-
 	@Getter
 	private FlippingPanel flippingPanel;
 	@Getter
@@ -839,20 +835,15 @@ public class FlippingPlugin extends Plugin
 		return configManager.getConfig(FlippingConfig.class);
 	}
 
-	//TODO: Refactor this with a search on the search bar
 	private void highlightOffer()
 	{
 		int currentGEItemId = client.getVar(CURRENT_GE_ITEM);
-		if (currentGEItemId == prevHighlight || flippingPanel.isItemHighlighted())
-		{
-			return;
-		}
+		log.info("highlighting offer");
 		getTradesForCurrentView()
 				.stream()
 				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
 				.findFirst().ifPresent(item -> {
 					highlightedItem = Optional.of(item);
-					prevHighlight = currentGEItemId;
 					flippingPanel.highlightItem(item);
 				});
 	}
@@ -1453,6 +1444,9 @@ public class FlippingPlugin extends Plugin
 		{
 			highlightOffer();
 		}
+
+		//need to check if panel is highlighted in this case because curr ge item is changed if you come back to ge interface after exiting out
+		//and curr ge item would be -1 or 0 in that case and would trigger a dehighlight erroneously.
 		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
 				(client.getVar(CURRENT_GE_ITEM) == -1 || client.getVar(CURRENT_GE_ITEM) == 0) && flippingPanel.isItemHighlighted())
 		{
