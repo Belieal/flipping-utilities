@@ -29,6 +29,7 @@ package com.flippingutilities;
 import com.flippingutilities.db.TradePersister;
 import com.flippingutilities.model.*;
 import com.flippingutilities.ui.MasterPanel;
+import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.*;
+import javax.swing.Timer;
 
 import lombok.Getter;
 import lombok.Setter;

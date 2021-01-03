@@ -79,6 +79,8 @@ public class Icons {
     public static final ImageIcon TEMPLATE;
     public static final ImageIcon TEMPLATE_HOVER;
 
+    public static final ImageIcon OFFER_EDITOR_PIC;
+
 
 
 
@@ -187,6 +189,7 @@ public class Icons {
         TEMPLATE = new ImageIcon(template);
         TEMPLATE_HOVER = new ImageIcon(ImageUtil.alphaOffset(template, 0.53f));
 
-
+        final BufferedImage offerEditorPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/offereditorpic.png");
+        OFFER_EDITOR_PIC = new ImageIcon(offerEditorPic);
     }
 }

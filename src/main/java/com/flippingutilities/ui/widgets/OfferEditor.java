@@ -26,6 +26,7 @@
 
 package com.flippingutilities.ui.widgets;
 
+import com.flippingutilities.ui.uiutilities.Icons;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientStr;
@@ -36,13 +37,15 @@ import net.runelite.api.widgets.WidgetPositionMode;
 import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
-import net.runelite.client.ui.ColorScheme;
+
+import javax.swing.*;
 
 public class OfferEditor
 {
     private final Widget parent;
     private final Client client;
     private Widget text;
+    private Widget bottomText;
 
     public OfferEditor(Widget parent, Client client)
     {
@@ -60,6 +63,8 @@ public class OfferEditor
         }
 
         text = parent.createChild(-1, WidgetType.TEXT);
+        bottomText = parent.createChild(-1, WidgetType.TEXT);
+
 
         text.setTextColor(0x800000);
         text.setFontId(FontID.QUILL_8);
@@ -75,6 +80,24 @@ public class OfferEditor
         text.setHasListener(true);
         text.setOnMouseRepeatListener((JavaScriptCallback) ev -> text.setTextColor(0xFFFFFF));
         text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
+
+        //going to be removing this stuff anyway so i'm leaving in the duplication
+        bottomText.setTextColor(0x800000);
+        bottomText.setFontId(FontID.QUILL_8);
+        bottomText.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+        bottomText.setOriginalX(0);
+        bottomText.setYPositionMode(WidgetPositionMode.ABSOLUTE_BOTTOM);
+        bottomText.setOriginalY(5);
+        bottomText.setOriginalHeight(20);
+        bottomText.setXTextAlignment(WidgetTextAlignment.CENTER);
+        bottomText.setYTextAlignment(WidgetTextAlignment.CENTER);
+        bottomText.setWidthMode(WidgetSizeMode.MINUS);
+        bottomText.revalidate();
+        bottomText.setHasListener(true);
+        bottomText.setOnMouseRepeatListener((JavaScriptCallback) ev -> bottomText.setTextColor(0xFFFFFF));
+        bottomText.setOnMouseLeaveListener((JavaScriptCallback) ev -> bottomText.setTextColor(0x800000));
+
+
     }
 
     public void update(String mode, int value)
@@ -82,8 +105,17 @@ public class OfferEditor
         switch (mode)
         {
             case ("quantity"):
-                text.setFontId(FontID.BOLD_12);
-                text.setText("Use the new quantity editor feature to set quantities with just a key press!");
+                text.setFontId(FontID.VERDANA_11_BOLD);
+                text.setText("Use the quantity editor to set quantities with just a key press!");
+                text.setHasListener(false);
+                bottomText.setText("Click to see a pic of where the quantity editor is!");
+                bottomText.setFontId(FontID.VERDANA_11_BOLD);
+                bottomText.setAction(1, "pic");
+                bottomText.setOnOpListener((JavaScriptCallback) ev -> {
+                    SwingUtilities.invokeLater(()-> {
+                        JOptionPane.showMessageDialog(null, Icons.OFFER_EDITOR_PIC);
+                    });
+                });
                 break;
             case ("setSellPrice"):
                 text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
