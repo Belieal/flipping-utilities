@@ -26,6 +26,7 @@
 
 package com.flippingutilities;
 
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;

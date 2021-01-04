@@ -26,7 +26,7 @@
 
 package com.flippingutilities.db;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.AccountData;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
@@ -38,7 +38,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

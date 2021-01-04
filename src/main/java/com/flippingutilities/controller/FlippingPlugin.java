@@ -24,12 +24,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.controller;
 
+import com.flippingutilities.FlippingConfig;
 import com.flippingutilities.db.TradePersister;
 import com.flippingutilities.model.*;
 import com.flippingutilities.ui.MasterPanel;
-import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
@@ -54,8 +54,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.swing.*;
-import javax.swing.Timer;
+
 
 import lombok.Getter;
 import lombok.Setter;
@@ -104,6 +103,7 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private Client client;
 	@Inject
+	@Getter
 	private ClientThread clientThread;
 	@Inject
 	private ScheduledExecutorService executor;
@@ -182,10 +182,15 @@ public class FlippingPlugin extends Plugin
 	private boolean quantityOrPriceChatboxOpen = false;
 
 	private Optional<FlippingItem> highlightedItem = Optional.empty();
+	private int highlightedItemId;
+
+	private OptionHandler optionHandler;
 
 	@Override
 	protected void startUp()
 	{
+		optionHandler = new OptionHandler(itemManager, client);
+
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
@@ -212,20 +217,20 @@ public class FlippingPlugin extends Plugin
 				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
 					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
 					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.getKey().equals(keyPressed)).findFirst();
-					if (optionExercised.isPresent() && highlightedItem.isPresent()) {
-						try {
-							int optionValue = calculateOptionValue(optionExercised.get(), highlightedItem.get());
-							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
-							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
-							flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
-							e.consume();
-						}
-						catch (InvalidOptionException ex) {
-							//ignore
-						}
-						catch (Exception ex) {
-							log.info("exception during key press for offer editor", ex);
-						}
+					if (optionExercised.isPresent()) {
+						clientThread.invoke(() -> {
+							try {
+								int optionValue = calculateOptionValue(optionExercised.get());
+								client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+								client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+								flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
+								e.consume();
+							} catch (InvalidOptionException ex) {
+								//ignore
+							} catch (Exception ex) {
+								log.info("exception during key press for offer editor", ex);
+							}
+						});
 					}
 				}
 			}
@@ -839,15 +844,9 @@ public class FlippingPlugin extends Plugin
 
 	private void highlightOffer()
 	{
-		int currentGEItemId = client.getVar(CURRENT_GE_ITEM);
-		log.info("highlighting offer");
-		getTradesForCurrentView()
-				.stream()
-				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
-				.findFirst().ifPresent(item -> {
-					highlightedItem = Optional.of(item);
-					flippingPanel.highlightItem(item);
-				});
+		highlightedItemId = client.getVar(CURRENT_GE_ITEM);
+		highlightedItem = getTradesForCurrentView().stream().filter(item -> item.getItemId() == highlightedItemId && item.getValidFlippingPanelItem()).findFirst();
+		flippingPanel.highlightItem(highlightedItem);
 	}
 
 	public void storeTrades(String displayName)
@@ -1280,80 +1279,8 @@ public class FlippingPlugin extends Plugin
 		TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 	}
 
-	public int getCashStackInInv() {
-		ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
-		Item[] inventoryItems = inventory.getItems();
-		for (Item item:inventoryItems) {
-			if (item.getId() == 995) {
-				return item.getQuantity();
-			}
-		}
-		return 0;
-	}
-
-	public void validateOption(Option option, FlippingItem item) throws InvalidOptionException {
-		if (item.getTotalGELimit() <= 0 && (option.getProperty().equals(Option.REMAINING_LIMIT) || option.getProperty().equals(Option.GE_LIMIT))) {
-			throw new InvalidOptionException("Item does not have known limit. Cannot calculate resulting value");
-		}
-		if (!item.getLatestBuy().isPresent() && option.getProperty().equals(Option.CASHSTACK)) {
-			throw new InvalidOptionException("Item does not have a buy. Cannot calculate amount for cashstack");
-		}
-		if (option.getProperty().equals(Option.CASHSTACK) && getCashStackInInv() == 0) {
-			throw new InvalidOptionException("Player has no cash in inventory");
-		}
-
-		Set<String> acceptableOperators = new HashSet<>(Arrays.asList("+", "-", "*"));
-		String change = option.getChange();
-		if (change.length() < 2) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-		if (!acceptableOperators.contains(String.valueOf(change.charAt(0)))) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-
-		try {
-			int num = Integer.parseInt(change.substring(1));
-			if (num < 0) {
-				throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-			}
-		}
-
-		catch (NumberFormatException e) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-	}
-
-	public int calculateOptionValue(Option option, FlippingItem item) throws InvalidOptionException {
-		validateOption(option, item);
-		int val = 0;
-        String propertyString = option.getProperty();
-        if (propertyString.equals(Option.GE_LIMIT)) {
-            val = item.getTotalGELimit();
-        }
-        if (propertyString.equals(Option.REMAINING_LIMIT)) {
-            val = item.getRemainingGeLimit();
-        }
-        if (propertyString.equals(Option.CASHSTACK)) {
-			val = getCashStackInInv()/item.getLatestBuy().get().getPrice();
-        }
-
-        String operator = String.valueOf(option.getChange().charAt(0));
-        int num = Integer.parseInt(option.getChange().substring(1));
-        if (operator.equals("-")) {
-        	val -= num;
-		}
-        if (operator.equals("+")) {
-        	val += num;
-		}
-        if (operator.equals("*")) {
-        	val *= num;
-		}
-
-        if (val < 0) {
-			throw new InvalidOptionException("resulting value was negative, which isn't allowed");
-		}
-
-        return val;
+	public int calculateOptionValue(Option option) throws InvalidOptionException {
+		return optionHandler.calculateOptionValue(option, highlightedItem, highlightedItemId);
 	}
 
 	@Subscribe

@@ -1,7 +1,6 @@
 package com.flippingutilities.ui.offereditor;
 
-import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.model.FlippingItem;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
@@ -17,12 +16,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Optional;
 
 @Slf4j
 public class OptionPanel extends JPanel {
     private FlippingPlugin plugin;
-    private FlippingItem item;
     @Getter
     private Option option;
     private JLabel resultingValueLabel;
@@ -33,14 +30,13 @@ public class OptionPanel extends JPanel {
     private boolean isHighlighted;
     private Icon lastIcon;
 
-    public OptionPanel(Option option, FlippingItem item, FlippingPlugin plugin) {
+    public OptionPanel(Option option, FlippingPlugin plugin) {
         this.option = option;
-        this.item = item;
         this.plugin = plugin;
 
         setLayout(new BorderLayout());
         setBackground(CustomColors.DARK_GRAY);
-        setBorder(new EmptyBorder(5,0,5,5));
+        setBorder(new EmptyBorder(5, 0, 5, 5));
 
         setResultingValuePanel();
 
@@ -57,23 +53,24 @@ public class OptionPanel extends JPanel {
         JPanel body = new JPanel();
         body.setBackground(CustomColors.DARK_GRAY);
 
-        JTextField keyInputField =  new JTextField(2);
+        JTextField keyInputField = new JTextField(2);
         keyInputField.setPreferredSize(new Dimension(30, 25));
         keyInputField.setText(option.getKey());
-        keyInputField.addActionListener(e-> {
+        keyInputField.addActionListener(e -> {
             option.setKey(keyInputField.getText());
             keyLabel.setText(keyInputField.getText());
         });
         keyInputField.setToolTipText("Press enter after inputting a key to save your changes");
 
 
-        JComboBox propertiesSelector = new JComboBox(new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT,Option.CASHSTACK});
-        propertiesSelector.setPreferredSize(new Dimension(85,25));
-        propertiesSelector.addActionListener(e ->{
+        JComboBox propertiesSelector = new JComboBox(new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT, Option.CASHSTACK});
+        propertiesSelector.setPreferredSize(new Dimension(85, 25));
+        propertiesSelector.addActionListener(e -> {
             if (propertiesSelector.getSelectedItem() != null) {
-                option.setProperty((String)propertiesSelector.getSelectedItem());
+                option.setProperty((String) propertiesSelector.getSelectedItem());
                 setResultingValue();
-            }});
+            }
+        });
         propertiesSelector.setSelectedItem(option.getProperty());
 
 
@@ -120,7 +117,7 @@ public class OptionPanel extends JPanel {
     private JLabel createDotIcon() {
         dotIcon = new JLabel(Icons.GRAY_DOT);
         lastIcon = dotIcon.getIcon();
-        dotIcon.setBorder(new EmptyBorder(8,15,0,0));
+        dotIcon.setBorder(new EmptyBorder(8, 15, 0, 0));
         dotIcon.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -144,25 +141,35 @@ public class OptionPanel extends JPanel {
     }
 
     private void setResultingValue() {
-        //incase the error panel is currently there
-        remove(errorTextPanel);
-        add(resultingValuePanel, BorderLayout.SOUTH);
-
-        dotIcon.setIcon(Icons.GRAY_DOT);
-        try {
-            resultingValueLabel.setText(String.valueOf(plugin.calculateOptionValue(option, item)));
-        }
-        catch (InvalidOptionException e) {
-            showError(e.getMessage());
-        }
-        revalidate();
-        repaint();
+        plugin.getClientThread().invokeLater(() -> {
+            String errorMessage = null;
+            int val = 0;
+            try {
+                val = plugin.calculateOptionValue(option);
+            } catch (InvalidOptionException e) {
+                errorMessage = e.getMessage();
+            }
+            String finalErrorMessage = errorMessage;
+            int finalVal = val;
+            SwingUtilities.invokeLater(() -> {
+                remove(errorTextPanel);
+                add(resultingValuePanel, BorderLayout.SOUTH);
+                dotIcon.setIcon(Icons.GRAY_DOT);
+                if (finalErrorMessage != null) {
+                    showError(finalErrorMessage);
+                } else {
+                    resultingValueLabel.setText(String.valueOf(finalVal));
+                }
+                revalidate();
+                repaint();
+            });
+        });
     }
 
     private void showError(String msg) {
         remove(resultingValuePanel);
         String labelText = UIUtilities.wrappedText(msg, 150);
-        JLabel errorTextLabel = new JLabel(labelText,JLabel.CENTER);
+        JLabel errorTextLabel = new JLabel(labelText, JLabel.CENTER);
         errorTextPanel.removeAll();
         errorTextLabel.setFont(FontManager.getRunescapeSmallFont());
         errorTextLabel.setForeground(CustomColors.TOMATO);

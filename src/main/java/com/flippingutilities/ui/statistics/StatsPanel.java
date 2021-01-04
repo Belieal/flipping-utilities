@@ -27,7 +27,7 @@
 package com.flippingutilities.ui.statistics;
 
 import com.flippingutilities.model.FlippingItem;
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
@@ -37,7 +37,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;

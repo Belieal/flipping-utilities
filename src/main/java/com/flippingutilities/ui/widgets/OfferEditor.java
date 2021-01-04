@@ -96,8 +96,6 @@ public class OfferEditor
         bottomText.setHasListener(true);
         bottomText.setOnMouseRepeatListener((JavaScriptCallback) ev -> bottomText.setTextColor(0xFFFFFF));
         bottomText.setOnMouseLeaveListener((JavaScriptCallback) ev -> bottomText.setTextColor(0x800000));
-
-
     }
 
     public void update(String mode, int value)

@@ -1,13 +1,10 @@
 package com.flippingutilities.ui.offereditor;
 
-import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.model.FlippingItem;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
-import com.flippingutilities.ui.uiutilities.UIUtilities;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
 import javax.swing.*;
@@ -20,14 +17,12 @@ import java.util.List;
 
 @Slf4j
 public class OfferEditorPanel extends JPanel {
-    FlippingItem item;
     JPanel optionsContainer;
     FlippingPlugin plugin;
     List<OptionPanel> optionPanels = new ArrayList<>();
     JPanel descriptionPanel;
 
-    public OfferEditorPanel(FlippingPlugin plugin, FlippingItem item) {
-        this.item = item;
+    public OfferEditorPanel(FlippingPlugin plugin) {
         this.plugin = plugin;
         setLayout(new BorderLayout());
         setBackground(CustomColors.DARK_GRAY);
@@ -49,7 +44,6 @@ public class OfferEditorPanel extends JPanel {
 
         JLabel titleText = new JLabel("Quantity Editor", JLabel.CENTER);
         titleText.setFont(FontManager.getRunescapeBoldFont());
-        //titleText.setBorder(new EmptyBorder(0,15,0,0));
 
         JLabel plusIconLabel = new JLabel(Icons.PLUS_ICON);
         plusIconLabel.setBorder(new EmptyBorder(0,0,0,8));
@@ -153,7 +147,7 @@ public class OfferEditorPanel extends JPanel {
 
             optionPanels.clear();
             for (Option option:options) {
-                OptionPanel newPanel = new OptionPanel(option, item, plugin);
+                OptionPanel newPanel = new OptionPanel(option, plugin);
                 optionPanels.add(newPanel);
                 optionsContainer.add(newPanel);
             }

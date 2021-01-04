@@ -1,6 +1,6 @@
 package com.flippingutilities.ui.uiutilities;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import net.runelite.client.util.ImageUtil;
 
 import javax.swing.*;

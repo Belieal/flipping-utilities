@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.AccountData;
 import com.flippingutilities.model.OfferEvent;
 import net.runelite.api.GrandExchangeOfferState;

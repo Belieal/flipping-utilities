@@ -26,7 +26,7 @@
 
 package com.flippingutilities.ui;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;

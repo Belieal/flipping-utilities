@@ -26,7 +26,7 @@
 
 package com.flippingutilities.ui.widgets;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import java.awt.Color;
@@ -41,7 +41,6 @@ import net.runelite.api.Client;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ColorUtil;
 
 @Slf4j
