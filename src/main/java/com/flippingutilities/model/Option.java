@@ -24,7 +24,7 @@ public class Option {
     public static final String MARGIN_SELL = "margin sell";
     String key;
     String property;
-    String change;
+    String modifier;
     boolean isQuantityOption = true;
 
     public static Option defaultQuantityOption() {

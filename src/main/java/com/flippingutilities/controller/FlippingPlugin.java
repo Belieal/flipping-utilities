@@ -206,41 +206,7 @@ public class FlippingPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
-
-		keyManager.registerKeyListener(new KeyListener() {
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
-					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
-					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
-					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option->option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
-					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
-						try {
-							int optionValue = calculateOptionValue(option);
-							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
-							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
-							flippingPanel.getOfferEditorContainerPanel().highlightPressedOption(keyPressed);
-							e.consume();
-						} catch (InvalidOptionException ex) {
-							//ignore
-						} catch (Exception ex) {
-							log.info("exception during key press for offer editor", ex);
-						}
-					}));
-				}
-			}
-
-			@Override
-			public void keyReleased(KeyEvent e) {
-
-			}
-		});
-
+		keyManager.registerKeyListener(offerEditorKeyListener());
 		clientThread.invokeLater(() ->
 		{
 			switch (client.getGameState())
@@ -265,7 +231,6 @@ public class FlippingPlugin extends Plugin
 				log.info("user is already logged in when they downloaded/enabled the plugin");
 				onLoggedInGameState();
 			}
-
 			//stops scheduling this task
 			return true;
 		});
@@ -1281,6 +1246,42 @@ public class FlippingPlugin extends Plugin
 
 	public int calculateOptionValue(Option option) throws InvalidOptionException {
 		return optionHandler.calculateOptionValue(option, highlightedItem, highlightedItemId);
+	}
+
+	private KeyListener offerEditorKeyListener() {
+		return new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
+					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
+					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
+					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
+					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
+						try {
+							int optionValue = calculateOptionValue(option);
+							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+							flippingPanel.getOfferEditorContainerPanel().highlightPressedOption(keyPressed);
+							e.consume();
+						} catch (InvalidOptionException ex) {
+							//ignore
+						} catch (Exception ex) {
+							log.info("exception during key press for offer editor", ex);
+						}
+					}));
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+
+			}
+		};
 	}
 
 	@Subscribe
