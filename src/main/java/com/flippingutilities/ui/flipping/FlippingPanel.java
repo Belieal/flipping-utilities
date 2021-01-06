@@ -29,7 +29,6 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.offereditor.OfferEditorContainerPanel;
-import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
