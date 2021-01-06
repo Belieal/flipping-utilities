@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -69,9 +71,9 @@ public class AccountData
 	public void prepareForUse(ItemManager itemManager)
 	{
 		if (options.isEmpty()) {
-			options.add(new Option("p", Option.GE_LIMIT, "+0"));
-			options.add(new Option("l", Option.REMAINING_LIMIT, "+0"));
-			options.add(new Option("o", Option.CASHSTACK, "+0"));
+			options.add(new Option("p", Option.GE_LIMIT, "+0", true));
+			options.add(new Option("l", Option.REMAINING_LIMIT, "+0", true));
+			options.add(new Option("o", Option.CASHSTACK, "+0", true));
 		}
 
 		for (FlippingItem item : trades)

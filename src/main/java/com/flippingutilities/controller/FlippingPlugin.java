@@ -143,6 +143,7 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private Map<String, AccountData> accountCache = new HashMap<>();
 
+
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
 	@Getter
@@ -216,22 +217,21 @@ public class FlippingPlugin extends Plugin
 			public void keyPressed(KeyEvent e) {
 				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
 					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
-					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.getKey().equals(keyPressed)).findFirst();
-					if (optionExercised.isPresent()) {
-						clientThread.invoke(() -> {
-							try {
-								int optionValue = calculateOptionValue(optionExercised.get());
-								client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
-								client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
-								flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
-								e.consume();
-							} catch (InvalidOptionException ex) {
-								//ignore
-							} catch (Exception ex) {
-								log.info("exception during key press for offer editor", ex);
-							}
-						});
-					}
+					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
+					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option->option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
+					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
+						try {
+							int optionValue = calculateOptionValue(option);
+							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+							flippingPanel.getOfferEditorContainerPanel().highlightPressedOption(keyPressed);
+							e.consume();
+						} catch (InvalidOptionException ex) {
+							//ignore
+						} catch (Exception ex) {
+							log.info("exception during key press for offer editor", ex);
+						}
+					}));
 				}
 			}
 
@@ -371,7 +371,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			AccountData accountData = new AccountData();
-			accountData.setOptions(Arrays.asList(new Option("p", Option.GE_LIMIT, "+0"),new Option("l", Option.REMAINING_LIMIT, "+0"),new Option("o", Option.CASHSTACK, "+0")));
+			accountData.setOptions(Arrays.asList(new Option("p", Option.GE_LIMIT, "+0", true),new Option("l", Option.REMAINING_LIMIT, "+0", true),new Option("o", Option.CASHSTACK, "+0", true)));
 			accountData.setSlotTimers(setupSlotTimers());
 			accountCache.put(displayName, accountData);
 			masterPanel.getAccountSelector().addItem(displayName);

@@ -122,7 +122,7 @@ public class OptionPanel extends JPanel {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (dotIcon.getIcon().equals(Icons.DELETE_ICON)) {
-                    plugin.getFlippingPanel().getOfferEditorPanel().deleteOption(option);
+                    plugin.getFlippingPanel().getOfferEditorContainerPanel().deleteOption(option);
                 }
             }
 

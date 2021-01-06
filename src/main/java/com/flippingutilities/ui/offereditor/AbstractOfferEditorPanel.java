@@ -3,28 +3,30 @@ package com.flippingutilities.ui.offereditor;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
-import com.flippingutilities.ui.uiutilities.FastTabGroup;
 import com.flippingutilities.ui.uiutilities.Icons;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.components.materialtabs.MaterialTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
-public class OfferEditorPanel extends JPanel {
+public abstract class AbstractOfferEditorPanel extends JPanel {
     JPanel optionsContainer;
     FlippingPlugin plugin;
     List<OptionPanel> optionPanels = new ArrayList<>();
     JPanel descriptionPanel;
 
-    public OfferEditorPanel(FlippingPlugin plugin) {
+    public abstract List<Option> getOptions();
+
+    public abstract void addOptionPanel();
+
+    public abstract void onTemplateClicked();
+
+    public AbstractOfferEditorPanel(FlippingPlugin plugin) {
         this.plugin = plugin;
         setLayout(new BorderLayout());
         setBackground(CustomColors.DARK_GRAY);
@@ -34,58 +36,20 @@ public class OfferEditorPanel extends JPanel {
         optionsContainer.setLayout(new BoxLayout(optionsContainer, BoxLayout.Y_AXIS));
         optionsContainer.setBackground(CustomColors.DARK_GRAY);
 
-        add(createTitlePanel(), BorderLayout.NORTH);
-        add(optionsContainer, BorderLayout.CENTER);
-        rebuild(plugin.getOptionsForCurrentView());
+        //i need thsi wrapper because when using the tab group and if one tab is larger than the other,
+        // having the optionsContainer be in BorderLayout.CENTER causes the optionpanel to take up all the space. This is because
+        //when the tabs are diff lenghts the shorter tab is forced to be the same size as teh larger tab and so the option
+        //panel is stretched to fill in when its in BorderLayout.CENTER
+        //the option panels to take up
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(createTitlePanel(), BorderLayout.NORTH);
+        wrapper.add(optionsContainer, BorderLayout.CENTER);
+
+        add(wrapper, BorderLayout.NORTH);
+        rebuild(getOptions());
     }
 
     private JPanel createTitlePanel() {
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBorder(new EmptyBorder(5,0,5,0));
-        titlePanel.setBackground(CustomColors.DARK_GRAY);
-
-        JLabel titleText = new JLabel("Quantity Editor", JLabel.CENTER);
-        titleText.setFont(FontManager.getRunescapeBoldFont());
-
-        JLabel plusIconLabel = new JLabel(Icons.PLUS_ICON);
-        plusIconLabel.setBorder(new EmptyBorder(0,0,0,8));
-        plusIconLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                addOptionPanel();
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                plusIconLabel.setIcon(Icons.PLUS_ICON_OFF);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                plusIconLabel.setIcon(Icons.PLUS_ICON);
-            }
-        });
-
-        JLabel helpIconLabel = new JLabel(Icons.HELP);
-        helpIconLabel.setBorder(new EmptyBorder(0,8,0,0));
-        helpIconLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                JOptionPane.showMessageDialog(helpIconLabel, createHelpText());
-
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                helpIconLabel.setIcon(Icons.HELP_HOVER);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                helpIconLabel.setIcon(Icons.HELP);
-
-            }
-        });
         descriptionPanel = new JPanel();
         descriptionPanel.setBorder(new EmptyBorder(10,32,0,19));
         descriptionPanel.setBackground(CustomColors.DARK_GRAY);
@@ -103,17 +67,7 @@ public class OfferEditorPanel extends JPanel {
         descriptionPanel.add(keyDescriptionLabel);
         descriptionPanel.add(propertyDescriptionLabel);
         descriptionPanel.add(modifierDescriptionLabel);
-
-        titlePanel.add(titleText, BorderLayout.CENTER);
-        titlePanel.add(plusIconLabel, BorderLayout.EAST);
-        titlePanel.add(helpIconLabel, BorderLayout.WEST);
-        titlePanel.add(descriptionPanel, BorderLayout.SOUTH);
-        return titlePanel;
-    }
-
-    private void addOptionPanel() {
-        plugin.getOptionsForCurrentView().add(0, Option.defaultQuantityOption());
-        rebuild(plugin.getOptionsForCurrentView());
+        return descriptionPanel;
     }
 
     public void highlightPressedOption(String key) {
@@ -133,7 +87,7 @@ public class OfferEditorPanel extends JPanel {
 
     public void deleteOption(Option option) {
         plugin.getOptionsForCurrentView().remove(option);
-        rebuild(plugin.getOptionsForCurrentView());
+        rebuild(getOptions());
     }
 
     public void rebuild(List<Option> options) {
@@ -177,10 +131,8 @@ public class OfferEditorPanel extends JPanel {
         templateButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                plugin.getOptionsForCurrentView().add(new Option("p", Option.GE_LIMIT, "+0", true));
-                plugin.getOptionsForCurrentView().add(new Option("l", Option.REMAINING_LIMIT, "+0", true));
-                plugin.getOptionsForCurrentView().add(new Option("o", Option.CASHSTACK, "+0", true));
-                rebuild(plugin.getOptionsForCurrentView());
+                onTemplateClicked();
+                rebuild(getOptions());
             }
 
             @Override
@@ -198,32 +150,5 @@ public class OfferEditorPanel extends JPanel {
 
         welcomePanel.add(templateButton, BorderLayout.CENTER);
         return welcomePanel;
-    }
-
-
-    private String createHelpText() {
-        return "<html><body width='500'>"
-                + "<h1> What is the quantity editor?</h1>"
-                + "The quantity editor helps you input quantities much faster when buying items. It does so by allowing you to map a key to a certain value. This mapping is referred to as an Option."
-                + "<h1> Options </h1>"
-                + "As stated above, options are the term for this key to value mapping.<br><br>"
-                + "Options have three inputs: The key you press to trigger the option, the property the option's value is based on, and an optional" +
-                  " modifier that will change the value however you want."
-                + "<h2> Properties</h2>"
-                + "Properties refer to the text in the dropdown box of an option<br>"
-                + "<ul> <li> ge limit: selecting this will make the option's value dependent on the ge limit of the item</li>"
-                + "<li> rem limit: selecting this will make the option's value dependent on the remaining ge limit of the item </li>"
-                + "<li> cashstack: selecting this will make the option's value the max amount of items you can buy with the cash in your inventory </li></ul>"
-                + "<h2> Modifers </h2>"
-                + "Modifers are the text in the third box (last box) of an option."
-                + " Modifiers are any of these symbols +,-,* followed by a positive whole number. For example, all of these are valid: +0, +10, *2, -15, etc<br><br>"
-                + "Once you input a modifier, press enter to save it"
-                + "<h1> Getting Started! </h1>"
-                + "Press the plus button to create an option<br><br>"
-                + "Input a key into the first box and press enter to save the key<br><br>"
-                + "Change the default property in the dropdown box if you want to<br><br>"
-                + "Add an additional modifier if you are not satisfied with the option's value<br><br>"
-                + "Now, instead of typing a quantity for an item when you are buying it, just press the key associated with the option!<br><br>"
-                + "You can create as many options as you want and you can also edit existing options by changing their keys, properties, or modifiers";
     }
 }

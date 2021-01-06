@@ -31,7 +31,8 @@ import java.awt.CardLayout;
 import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JPanel;
+import javax.swing.*;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -49,6 +50,8 @@ public class FastTabGroup extends MaterialTabGroup
 	private final List<MaterialTab> tabs = new ArrayList<>();
 	@Getter
 	private String lastSelectedTab;
+	@Getter
+	private JComponent currentlySelectedTab;
 	private boolean currentlyShowingView = false;
 
 	public FastTabGroup(JPanel display)
@@ -86,6 +89,7 @@ public class FastTabGroup extends MaterialTabGroup
 		}
 		currentlyShowingView = false;
 		lastSelectedTab = selectedTab.getText();
+		currentlySelectedTab = selectedTab.getContent();
 		CardLayout cardLayout = (CardLayout) display.getLayout();
 		cardLayout.show(display, selectedTab.getText());
 

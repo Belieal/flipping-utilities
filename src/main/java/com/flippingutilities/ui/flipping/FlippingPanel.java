@@ -28,6 +28,7 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.ui.offereditor.OfferEditorContainerPanel;
 import com.flippingutilities.ui.offereditor.OfferEditorPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
@@ -99,7 +100,7 @@ public class FlippingPanel extends JPanel
 	private Paginator paginator;
 
 	@Getter
-	private OfferEditorPanel offerEditorPanel;
+	private OfferEditorContainerPanel offerEditorContainerPanel;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
@@ -258,11 +259,13 @@ public class FlippingPanel extends JPanel
 			activePanels.addAll(newPanels);
 
 			if (isItemHighlighted() && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-				offerEditorPanel = new OfferEditorPanel(plugin);
+				offerEditorContainerPanel = new OfferEditorContainerPanel(plugin);
+				offerEditorContainerPanel.selectQuantityEditor();
 				if (!activePanels.isEmpty()) {
 					flippingItemsPanel.add(Box.createVerticalStrut(vGap));
 				}
-				flippingItemsPanel.add(offerEditorPanel);
+				flippingItemsPanel.add(offerEditorContainerPanel);
+				flippingItemsPanel.add(Box.createVerticalStrut(vGap));
 			}
 
 			if (activePanels.isEmpty() && !itemHighlighted)
