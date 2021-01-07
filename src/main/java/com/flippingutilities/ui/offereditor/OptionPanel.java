@@ -4,18 +4,20 @@ import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.Icons;
-import com.flippingutilities.ui.uiutilities.UIUtilities;
 import com.flippingutilities.utilities.InvalidOptionException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.ColorUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Slf4j
 public class OptionPanel extends JPanel {
@@ -23,10 +25,7 @@ public class OptionPanel extends JPanel {
     @Getter
     private Option option;
     private JLabel resultingValueLabel;
-    private JPanel errorTextPanel;
-    private JPanel resultingValuePanel;
     private JLabel dotIcon;
-    private JLabel keyLabel;
     private boolean isHighlighted;
     private Icon lastIcon;
 
@@ -38,13 +37,14 @@ public class OptionPanel extends JPanel {
         setBackground(CustomColors.DARK_GRAY);
         setBorder(new EmptyBorder(5, 0, 5, 5));
 
-        setResultingValuePanel();
+        //setResultingValuePanel();
 
-        errorTextPanel = new JPanel();
-        errorTextPanel.setBackground(CustomColors.DARK_GRAY);
+        resultingValueLabel = new JLabel("", JLabel.CENTER);
+        resultingValueLabel.setFont(FontManager.getRunescapeSmallFont());
+
         dotIcon = createDotIcon();
 
-        add(resultingValuePanel, BorderLayout.SOUTH);
+        add(resultingValueLabel, BorderLayout.SOUTH);
         add(createBodyPanel(), BorderLayout.CENTER);
         add(dotIcon, BorderLayout.WEST);
     }
@@ -58,7 +58,7 @@ public class OptionPanel extends JPanel {
         keyInputField.setText(option.getKey());
         keyInputField.addActionListener(e -> {
             option.setKey(keyInputField.getText());
-            keyLabel.setText(keyInputField.getText());
+            setResultingValue();
         });
         keyInputField.setToolTipText("Press enter after inputting a key to save your changes");
 
@@ -72,7 +72,6 @@ public class OptionPanel extends JPanel {
             }
         });
         propertiesSelector.setSelectedItem(option.getProperty());
-
 
         JTextField optionalEditor = new JTextField(5);
         optionalEditor.setPreferredSize(new Dimension(30, 25));
@@ -90,28 +89,12 @@ public class OptionPanel extends JPanel {
         return body;
     }
 
-    private void setResultingValuePanel() {
-        resultingValuePanel = new JPanel();
-        resultingValuePanel.setBackground(CustomColors.DARK_GRAY);
-
-        JLabel pressText = new JLabel("press", JLabel.CENTER);
-        pressText.setFont(FontManager.getRunescapeSmallFont());
-
-        keyLabel = new JLabel(option.getKey(), JLabel.CENTER);
-        keyLabel.setFont(FontManager.getRunescapeSmallFont());
-        keyLabel.setForeground(CustomColors.VIBRANT_YELLOW);
-
-        JLabel descLabel = new JLabel("to set quantity to", JLabel.CENTER);
-        descLabel.setFont(FontManager.getRunescapeSmallFont());
-
-        resultingValueLabel = new JLabel("", JLabel.CENTER);
-        resultingValueLabel.setFont(FontManager.getRunescapeSmallFont());
-        resultingValueLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-
-        resultingValuePanel.add(pressText);
-        resultingValuePanel.add(keyLabel);
-        resultingValuePanel.add(descLabel);
-        resultingValuePanel.add(resultingValueLabel);
+    private String createResultingValueText(int resultingValue) {
+        String keyText = String.format("<span style='color:%s;'>%s</span>",ColorUtil.colorToHexCode(CustomColors.VIBRANT_YELLOW), option.getKey());
+        String typeText = option.isQuantityOption()? "quantity":"price";
+        String value = NumberFormat.getInstance(Locale.getDefault()).format(resultingValue);
+        String valueText = String.format("<span style='color:%s;'>%s</span>", ColorUtil.colorToHexCode(ColorScheme.GRAND_EXCHANGE_PRICE), value);
+        return String.format("<html><body width='170' style='text-align:center;'>Press %s to set %s to %s</body></html>",keyText,typeText,valueText);
     }
 
     private JLabel createDotIcon() {
@@ -152,13 +135,11 @@ public class OptionPanel extends JPanel {
             String finalErrorMessage = errorMessage;
             int finalVal = val;
             SwingUtilities.invokeLater(() -> {
-                remove(errorTextPanel);
-                add(resultingValuePanel, BorderLayout.SOUTH);
                 dotIcon.setIcon(Icons.GRAY_DOT);
                 if (finalErrorMessage != null) {
                     showError(finalErrorMessage);
                 } else {
-                    resultingValueLabel.setText(String.valueOf(finalVal));
+                    resultingValueLabel.setText(createResultingValueText(finalVal));
                 }
                 revalidate();
                 repaint();
@@ -167,14 +148,8 @@ public class OptionPanel extends JPanel {
     }
 
     private void showError(String msg) {
-        remove(resultingValuePanel);
-        String labelText = UIUtilities.wrappedText(msg, 150);
-        JLabel errorTextLabel = new JLabel(labelText, JLabel.CENTER);
-        errorTextPanel.removeAll();
-        errorTextLabel.setFont(FontManager.getRunescapeSmallFont());
-        errorTextLabel.setForeground(CustomColors.TOMATO);
-        errorTextPanel.add(errorTextLabel);
-        add(errorTextPanel, BorderLayout.SOUTH);
+        String color = ColorUtil.colorToHexCode(CustomColors.TOMATO);
+        resultingValueLabel.setText(String.format("<html><body width='170'style='text-align:center;color:%s'>%s</body></html>", color,msg));
         dotIcon.setIcon(Icons.RED_DOT);
     }
 
