@@ -1471,11 +1471,23 @@ public class FlippingPlugin extends Plugin
 
 			if (chatInputText.equals("How many do you wish to buy?"))
 			{
-				flippingWidget.update("quantity", 0);
+				flippingPanel.getOfferEditorContainerPanel().selectQuantityEditor();
+				//No recorded data; default to total GE limit
+				if (selectedItem == null)
+				{
+					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
+					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
+					flippingWidget.update("quantity", itemGELimit);
+				}
+				else
+				{
+					flippingWidget.update("quantity", selectedItem.getRemainingGeLimit());
+				}
 			}
 
 			else if (chatInputText.equals("Set a price for each item:"))
 			{
+				flippingPanel.getOfferEditorContainerPanel().selectPriceEditor();
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget

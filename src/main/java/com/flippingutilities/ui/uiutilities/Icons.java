@@ -79,7 +79,9 @@ public class Icons {
     public static final ImageIcon TEMPLATE;
     public static final ImageIcon TEMPLATE_HOVER;
 
-    public static final ImageIcon OFFER_EDITOR_PIC;
+    public static final ImageIcon QUANTITY_EDITOR_PIC;
+    public static final ImageIcon PRICE_EDITOR_PIC;
+
 
 
 
@@ -189,7 +191,10 @@ public class Icons {
         TEMPLATE = new ImageIcon(template);
         TEMPLATE_HOVER = new ImageIcon(ImageUtil.alphaOffset(template, 0.53f));
 
-        final BufferedImage offerEditorPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/offereditorpic.png");
-        OFFER_EDITOR_PIC = new ImageIcon(offerEditorPic);
+        final BufferedImage quantityEditorPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/quantityeditorpic.png");
+        QUANTITY_EDITOR_PIC = new ImageIcon(quantityEditorPic);
+
+        final BufferedImage priceEditorPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/priceeditorpic.png");
+        PRICE_EDITOR_PIC = new ImageIcon(priceEditorPic);
     }
 }
