@@ -64,7 +64,7 @@ public class OptionPanel extends JPanel {
 
 
         JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT, Option.CASHSTACK}:new String[]{Option.MARGIN_BUY, Option.MARGIN_SELL, Option.LAST_BUY, Option.LAST_SELL});
-        propertiesSelector.setPreferredSize(new Dimension(85, 25));
+        propertiesSelector.setPreferredSize(new Dimension(88, 25));
         propertiesSelector.addActionListener(e -> {
             if (propertiesSelector.getSelectedItem() != null) {
                 option.setProperty((String) propertiesSelector.getSelectedItem());

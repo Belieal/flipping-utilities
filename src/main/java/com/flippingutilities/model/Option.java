@@ -20,8 +20,8 @@ public class Option {
     public static final String CASHSTACK = "cashstack";
     public static final String LAST_BUY = "last buy";
     public static final String LAST_SELL = "last sell";
-    public static final String MARGIN_BUY = "margin buy";
-    public static final String MARGIN_SELL = "margin sell";
+    public static final String MARGIN_BUY = "marg buy";
+    public static final String MARGIN_SELL = "marg sell";
     String key;
     String property;
     String modifier;

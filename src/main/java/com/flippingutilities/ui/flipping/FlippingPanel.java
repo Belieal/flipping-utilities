@@ -217,6 +217,7 @@ public class FlippingPanel extends JPanel
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
+		paginator.setPageSize(10);
 
 		//To switch between greeting and items panels
 		cardLayout.show(flippingItemContainer, WELCOME_PANEL);
@@ -257,7 +258,7 @@ public class FlippingPanel extends JPanel
 			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vGap);
 			activePanels.addAll(newPanels);
 
-			if (isItemHighlighted() && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+			if (isItemHighlighted()) {
 				offerEditorContainerPanel = new OfferEditorContainerPanel(plugin);
 				offerEditorContainerPanel.selectPriceEditor();
 				if (!activePanels.isEmpty()) {
