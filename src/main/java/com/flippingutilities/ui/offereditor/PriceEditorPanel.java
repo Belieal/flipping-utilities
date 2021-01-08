@@ -13,20 +13,20 @@ public class PriceEditorPanel extends AbstractOfferEditorPanel{
 
     @Override
     public List<Option> getOptions() {
-        return plugin.getOptionsForCurrentView().stream().filter(option -> !option.isQuantityOption()).collect(Collectors.toList());
+        return plugin.getOptions().stream().filter(option -> !option.isQuantityOption()).collect(Collectors.toList());
     }
 
     @Override
     public void addOptionPanel() {
-        plugin.getOptionsForCurrentView().add(0, Option.defaultPriceOption());
+        plugin.addOption(Option.defaultPriceOption());
         rebuild(getOptions());
     }
 
     @Override
     public void onTemplateClicked() {
-        plugin.getOptionsForCurrentView().add(new Option("p", Option.MARGIN_SELL, "+0", false));
-        plugin.getOptionsForCurrentView().add(new Option("l", Option.MARGIN_BUY, "+0", false));
-        plugin.getOptionsForCurrentView().add(new Option("o", Option.LAST_BUY, "+0", false));
-        plugin.getOptionsForCurrentView().add(new Option("u", Option.LAST_SELL, "+0", false));
+        plugin.addOption(new Option("p", Option.MARGIN_SELL, "+0", false));
+        plugin.addOption(new Option("l", Option.MARGIN_BUY, "+0", false));
+        plugin.addOption(new Option("o", Option.LAST_BUY, "+0", false));
+        plugin.addOption(new Option("u", Option.LAST_SELL, "+0", false));
     }
 }

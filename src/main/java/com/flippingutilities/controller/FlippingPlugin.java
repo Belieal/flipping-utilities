@@ -143,6 +143,8 @@ public class FlippingPlugin extends Plugin
 	@Setter
 	private Map<String, AccountData> accountCache = new HashMap<>();
 
+	@Getter
+	private AccountWideData accountWideData;
 
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
@@ -179,6 +181,7 @@ public class FlippingPlugin extends Plugin
 
 	//allows for knowing what to save on client shutdown.
 	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
+	private boolean accountWideDataChanged = false;
 
 	private boolean quantityOrPriceChatboxOpen = false;
 
@@ -217,6 +220,8 @@ public class FlippingPlugin extends Plugin
 			}
 
 			accountCache = setupCache();
+			accountWideData = loadAccountWideData();
+
 			setupAccSelectorDropdown();
 
 			cacheUpdater = new CacheUpdater();
@@ -259,6 +264,10 @@ public class FlippingPlugin extends Plugin
 			log.info("accounts with unsaved changes are {}. Saving them on client shutdown!", accountsWithUnsavedChanges);
 			accountsWithUnsavedChanges.forEach(accountName -> storeTrades(accountName));
 			accountsWithUnsavedChanges.clear();
+		}
+
+		if (accountWideDataChanged) {
+			storeAccountWideData();
 		}
 	}
 
@@ -336,7 +345,6 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			AccountData accountData = new AccountData();
-			accountData.setOptions(Arrays.asList(new Option("p", Option.GE_LIMIT, "+0", true),new Option("l", Option.REMAINING_LIMIT, "+0", true),new Option("o", Option.CASHSTACK, "+0", true)));
 			accountData.setSlotTimers(setupSlotTimers());
 			accountCache.put(displayName, accountData);
 			masterPanel.getAccountSelector().addItem(displayName);
@@ -381,6 +389,12 @@ public class FlippingPlugin extends Plugin
 
 		storeTrades(currentlyLoggedInAccount);
 		accountsWithUnsavedChanges.remove(currentlyLoggedInAccount);
+
+		if (accountWideDataChanged) {
+			storeAccountWideData();
+			accountWideDataChanged = false;
+		}
+
 		if (slotTimersTask != null && !slotTimersTask.isCancelled())
 		{
 			log.info("cancelling slot timers task on logout");
@@ -404,7 +418,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			Map<String, AccountData> accountsData = loadAllTrades();
+			Map<String, AccountData> accountsData = loadAllAccounts();
 			accountsData.values().forEach(accountData -> {
 				accountData.startNewSession();
 				accountData.prepareForUse(itemManager);
@@ -769,13 +783,19 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public List<Option> getOptionsForCurrentView() {
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
-			return new ArrayList<>();
-		}
-		else {
-			return accountCache.get(accountCurrentlyViewed).getOptions();
-		}
+	public List<Option> getOptions() {
+		return accountWideData.getOptions();
+	}
+
+	public void addOption(Option option) {
+		//want it in the front of the list so that rebuilds have the newest option at the top
+		accountWideData.getOptions().add(0, option);
+		accountWideDataChanged = true;
+	}
+
+	public void deleteOption(Option option) {
+		accountWideData.getOptions().remove(option);
+		accountWideDataChanged = true;
 	}
 
 	public Instant getStartOfSessionForCurrentView()
@@ -835,11 +855,21 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public Map<String, AccountData> loadAllTrades()
+	public void storeAccountWideData() {
+		try {
+			TradePersister.storeTrades("accountwide", accountWideData);
+			log.info("successfully stored account wide data");
+		}
+		catch (IOException e) {
+			log.info("couldn't store trades", e);
+		}
+	}
+
+	public Map<String, AccountData> loadAllAccounts()
 	{
 		try
 		{
-			Map<String, AccountData> trades = TradePersister.loadAllTrades();
+			Map<String, AccountData> trades = TradePersister.loadAllAccounts();
 			log.info("successfully loaded trades");
 			return trades;
 		}
@@ -850,11 +880,11 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public AccountData loadTrades(String displayName)
+	public AccountData loadAccount(String displayName)
 	{
 		try
 		{
-			AccountData accountData = TradePersister.loadTrades(displayName);
+			AccountData accountData = TradePersister.loadAccount(displayName);
 			accountData.prepareForUse(itemManager);
 			if (accountData.getSlotTimers() == null)
 			{
@@ -873,6 +903,26 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("couldn't load trades for {}, e = " + e, displayName);
 			return new AccountData();
+		}
+	}
+
+	private AccountWideData loadAccountWideData() {
+		try {
+			log.info("loading account wide data");
+			AccountWideData accountWideData = TradePersister.loadAccountWideData();
+			if (accountWideData.getOptions().isEmpty()) {
+				accountWideData.prepare();
+				accountWideDataChanged = true;
+			}
+			log.info("successfully loaded account wide data");
+			return accountWideData;
+		}
+		catch (IOException e) {
+			log.info("couldn't load accountwide data", e);
+			AccountWideData accountWideData = new AccountWideData();
+			accountWideData.prepare();
+			accountWideDataChanged = true;
+			return accountWideData;
 		}
 	}
 
@@ -946,13 +996,21 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
+		if (fileName.equals("accountwide.json")) {
+			log.info("updating account wide data");
+			executor.schedule(() -> {
+				accountWideData = loadAccountWideData();
+			}, 1000, TimeUnit.MILLISECONDS);
+			return;
+		}
+
 		executor.schedule(() ->
 		{
-			//have to run on client thread cause loadTrades calls accountData.prepareForUse which uses the itemmanager
+			//have to run on client thread cause loadAccount calls accountData.prepareForUse which uses the itemmanager
 			clientThread.invokeLater(() -> {
 				log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
 
-				accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+				accountCache.put(displayNameOfChangedAcc, loadAccount(displayNameOfChangedAcc));
 				if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
 				{
 					masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
@@ -1260,7 +1318,7 @@ public class FlippingPlugin extends Plugin
 				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
 					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
 					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
-					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
+					Optional<Option> optionExercised = getOptions().stream().filter(option -> option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
 					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
 						try {
 							int optionValue = calculateOptionValue(option);
