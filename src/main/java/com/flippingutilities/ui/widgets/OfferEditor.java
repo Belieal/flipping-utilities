@@ -44,7 +44,7 @@ public class OfferEditor
 {
     private final Client client;
     private Widget text;
-    private Widget bottomText;
+    private Widget buttonText;
     private Widget picText;
 
     public OfferEditor(Widget parent, Client client)
@@ -57,14 +57,14 @@ public class OfferEditor
         }
 
         text = parent.createChild(-1, WidgetType.TEXT);
-        bottomText = parent.createChild(-1, WidgetType.TEXT);
+        buttonText = parent.createChild(-1, WidgetType.TEXT);
         picText = parent.createChild(-1, WidgetType.TEXT);
 
-        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_TOP, 1);
-        prepareTextWidget(bottomText, WidgetPositionMode.ABSOLUTE_BOTTOM, 5);
-        prepareTextWidget(picText, WidgetPositionMode.ABSOLUTE_TOP, 20);
+        prepareTextWidget(buttonText, WidgetPositionMode.ABSOLUTE_TOP, 5);
+        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_BOTTOM, 18);
+        prepareTextWidget(picText, WidgetPositionMode.ABSOLUTE_BOTTOM, 2);
 
-        bottomText.setFontId(FontID.QUILL_8);
+        buttonText.setFontId(FontID.QUILL_8);
     }
 
 
@@ -90,7 +90,7 @@ public class OfferEditor
         switch (mode)
         {
             case ("quantity"):
-                text.setText("Use the quantity editor to set custom quantities quickly with just a key press!");
+                text.setText("OR use the quantity editor to set custom quantities quickly with just a key press!");
                 text.setHasListener(false);
 
                 picText.setText("Click this text to see where the quantity editor is!");
@@ -101,16 +101,16 @@ public class OfferEditor
                     });
                 });
 
-                bottomText.setText("or, click this to set to remaining GE limit: " + value);
-                bottomText.setAction(1, "Set quantity");
-                bottomText.setOnOpListener((JavaScriptCallback) ev ->
+                buttonText.setText("click this to set to remaining GE limit: " + value);
+                buttonText.setAction(1, "Set quantity");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
                 {
                     client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
                     client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
                 });
                 break;
             case ("setSellPrice"):
-                text.setText("Use the price editor to set custom prices quickly with just a key press!");
+                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
                 text.setHasListener(false);
 
                 picText.setText("Click this text to see where the price editor is!");
@@ -121,16 +121,16 @@ public class OfferEditor
                     });
                 });
 
-                bottomText.setText("Or, click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
-                bottomText.setAction(1, "Set price");
-                bottomText.setOnOpListener((JavaScriptCallback) ev ->
+                buttonText.setText("click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
+                buttonText.setAction(1, "Set price");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
                 {
                     client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
                     client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
                 });
                 break;
             case ("setBuyPrice"):
-                text.setText("Use the price editor to set custom prices quickly with just a key press!");
+                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
                 text.setHasListener(false);
 
                 picText.setText("Click this text to see where the price editor is!");
@@ -141,9 +141,9 @@ public class OfferEditor
                     });
                 });
 
-                bottomText.setText("Or, click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
-                bottomText.setAction(1, "Set price");
-                bottomText.setOnOpListener((JavaScriptCallback) ev ->
+                buttonText.setText("click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
+                buttonText.setAction(1, "Set price");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
                 {
                     client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
                     client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
