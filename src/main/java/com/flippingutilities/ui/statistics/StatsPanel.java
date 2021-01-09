@@ -26,40 +26,10 @@
 
 package com.flippingutilities.ui.statistics;
 
-import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
-import com.flippingutilities.ui.uiutilities.CustomColors;
-import com.flippingutilities.ui.uiutilities.Icons;
-import com.flippingutilities.ui.uiutilities.Paginator;
-import com.flippingutilities.ui.uiutilities.UIUtilities;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.File;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.text.StyleContext;
-
-import com.flippingutilities.ui.uiutilities.TimeFormatters;
+import com.flippingutilities.ui.uiutilities.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -68,6 +38,24 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
 import net.runelite.client.util.QuantityFormatter;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.StyleContext;
+import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StatsPanel extends JPanel

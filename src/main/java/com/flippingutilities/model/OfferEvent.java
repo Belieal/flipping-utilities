@@ -28,13 +28,14 @@ package com.flippingutilities.model;
 
 
 import com.google.gson.annotations.SerializedName;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * This class stores information from a {@link GrandExchangeOfferChanged} event and is populated with

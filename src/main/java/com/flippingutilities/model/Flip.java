@@ -26,9 +26,10 @@
 
 package com.flippingutilities.model;
 
-import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.time.Instant;
 
 /**
  * This class represents a flip to be made in the history panel.

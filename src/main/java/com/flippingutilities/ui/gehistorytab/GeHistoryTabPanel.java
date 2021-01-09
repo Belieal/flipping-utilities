@@ -3,9 +3,14 @@ package com.flippingutilities.ui.gehistorytab;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.widgets.Widget;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
@@ -15,17 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.widgets.Widget;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 
 /**
  * The panel that holds a view of the items in the trade history tab in the ge. This is so that users can manually add

@@ -2,19 +2,15 @@ package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.Icons;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.ColorScheme;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.ui.ColorScheme;
 
 @Slf4j
 public class FlippingPanelToolbar extends JPanel

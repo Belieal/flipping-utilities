@@ -28,27 +28,18 @@ package com.flippingutilities.ui.settings;
 
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.Icons;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 
 /**
  * This class is a panel which allows a user to select which account to modify. Currently, a user can only delete their

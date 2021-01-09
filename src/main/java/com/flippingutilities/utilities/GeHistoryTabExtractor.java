@@ -1,17 +1,17 @@
 package com.flippingutilities.utilities;
 
+import com.flippingutilities.model.OfferEvent;
+import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GrandExchangeOfferState;
+import net.runelite.api.widgets.Widget;
+
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.flippingutilities.model.OfferEvent;
-import com.google.common.collect.Lists;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.GrandExchangeOfferState;
-import net.runelite.api.widgets.Widget;
 
 /**
  * Extracts data from the widgets in the trade history tab so that the TradeHistoryTabPanel can display them. I wanted

@@ -1,5 +1,12 @@
 package com.flippingutilities;
 
+import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.model.AccountData;
+import com.flippingutilities.model.OfferEvent;
+import net.runelite.api.GrandExchangeOfferState;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,12 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.flippingutilities.controller.FlippingPlugin;
-import com.flippingutilities.model.AccountData;
-import com.flippingutilities.model.OfferEvent;
-import net.runelite.api.GrandExchangeOfferState;
-import org.junit.Before;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 

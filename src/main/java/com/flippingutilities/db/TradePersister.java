@@ -34,6 +34,11 @@ import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.RuneLite;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -43,10 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.RuneLite;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 
 /**
  * This class is responsible for handling all the IO related tasks for persisting trades. This class should contain

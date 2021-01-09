@@ -29,10 +29,6 @@ package com.flippingutilities.ui.widgets;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.CustomColors;
-import java.awt.Color;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +39,10 @@ import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.util.ColorUtil;
+
+import java.awt.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 public class TradeActivityTimer

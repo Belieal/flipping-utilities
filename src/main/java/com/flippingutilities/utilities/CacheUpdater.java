@@ -26,13 +26,11 @@
 
 package com.flippingutilities.utilities;
 
+import com.flippingutilities.db.TradePersister;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,9 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import com.flippingutilities.db.TradePersister;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Updates the cache in real time as files are changed in the directory being monitored. It monitors the directory
