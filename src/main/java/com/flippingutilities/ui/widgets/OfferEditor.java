@@ -121,13 +121,16 @@ public class OfferEditor
                     });
                 });
 
-                buttonText.setText("click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
-                buttonText.setAction(1, "Set price");
-                buttonText.setOnOpListener((JavaScriptCallback) ev ->
-                {
-                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-                });
+                if (value != 0) {
+                    buttonText.setText("click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
+                    buttonText.setAction(1, "Set price");
+                    buttonText.setOnOpListener((JavaScriptCallback) ev ->
+                    {
+                        client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
+                        client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
+                    });
+                }
+
                 break;
             case ("setBuyPrice"):
                 text.setText("OR use the price editor to set custom prices quickly with just a key press!");
@@ -140,14 +143,16 @@ public class OfferEditor
                         JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
                     });
                 });
+                if (value != 0) {
+                    buttonText.setText("click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
+                    buttonText.setAction(1, "Set price");
+                    buttonText.setOnOpListener((JavaScriptCallback) ev ->
+                    {
+                        client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
+                        client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
+                    });
+                }
 
-                buttonText.setText("click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
-                buttonText.setAction(1, "Set price");
-                buttonText.setOnOpListener((JavaScriptCallback) ev ->
-                {
-                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-                });
                 break;
             case ("reset"):
                 text.setText("");

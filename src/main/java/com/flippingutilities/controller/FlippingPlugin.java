@@ -1503,7 +1503,7 @@ public class FlippingPlugin extends Plugin
 				child.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
 				child.setOriginalX(0);
 				child.setYPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
-				child.setOriginalY(-40);
+				child.setOriginalY(-15);
 				child.setOriginalHeight(20);
 				child.setXTextAlignment(WidgetTextAlignment.CENTER);
 				child.setYTextAlignment(WidgetTextAlignment.CENTER);
@@ -1573,7 +1573,7 @@ public class FlippingPlugin extends Plugin
 					//No recorded data; hide the widget
 					if (selectedItem == null || !selectedItem.getLatestMarginCheckSell().isPresent())
 					{
-						flippingWidget.update("reset", 0);
+						flippingWidget.update("setBuyPrice", 0);
 					}
 					else
 					{
@@ -1585,7 +1585,7 @@ public class FlippingPlugin extends Plugin
 					//No recorded data; hide the widget
 					if (selectedItem == null || !selectedItem.getLatestMarginCheckBuy().isPresent())
 					{
-						flippingWidget.update("reset", 0);
+						flippingWidget.update("setSellPrice", 0);
 					}
 					else
 					{
