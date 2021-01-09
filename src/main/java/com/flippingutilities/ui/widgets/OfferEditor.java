@@ -39,7 +39,6 @@ public class OfferEditor
     private final Client client;
     private Widget text;
     private Widget buttonText;
-    private Widget picText;
 
     public OfferEditor(Widget parent, Client client)
     {
@@ -52,11 +51,9 @@ public class OfferEditor
 
         text = parent.createChild(-1, WidgetType.TEXT);
         buttonText = parent.createChild(-1, WidgetType.TEXT);
-        picText = parent.createChild(-1, WidgetType.TEXT);
 
         prepareTextWidget(buttonText, WidgetPositionMode.ABSOLUTE_TOP, 5);
-        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_BOTTOM, 18);
-        prepareTextWidget(picText, WidgetPositionMode.ABSOLUTE_BOTTOM, 2);
+        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_BOTTOM, 15);
 
         buttonText.setFontId(FontID.QUILL_8);
     }
@@ -84,12 +81,9 @@ public class OfferEditor
         switch (mode)
         {
             case ("quantity"):
-                text.setText("OR use the quantity editor to set custom quantities quickly with just a key press!");
-                text.setHasListener(false);
-
-                picText.setText("Click this text to see where the quantity editor is!");
-                picText.setAction(1, "pic");
-                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                text.setText("OR click this to use the quantity editor hotkeys!");
+                text.setAction(1, "pic");
+                text.setOnOpListener((JavaScriptCallback) ev -> {
                     SwingUtilities.invokeLater(()-> {
                         JOptionPane.showMessageDialog(null, Icons.QUANTITY_EDITOR_PIC);
                     });
@@ -104,12 +98,9 @@ public class OfferEditor
                 });
                 break;
             case ("setSellPrice"):
-                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
-                text.setHasListener(false);
-
-                picText.setText("Click this text to see where the price editor is!");
-                picText.setAction(1, "pic");
-                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                text.setText("OR click this to use the price editor hotkeys!");
+                text.setAction(1, "pic");
+                text.setOnOpListener((JavaScriptCallback) ev -> {
                     SwingUtilities.invokeLater(()-> {
                         JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
                     });
@@ -127,12 +118,9 @@ public class OfferEditor
 
                 break;
             case ("setBuyPrice"):
-                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
-                text.setHasListener(false);
-
-                picText.setText("Click this text to see where the price editor is!");
-                picText.setAction(1, "pic");
-                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                text.setText("OR click this to use the price editor hotkeys!");
+                text.setAction(1, "pic");
+                text.setOnOpListener((JavaScriptCallback) ev -> {
                     SwingUtilities.invokeLater(()-> {
                         JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
                     });

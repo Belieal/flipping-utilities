@@ -415,23 +415,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			Map<String, AccountData> accountsData = loadAllAccounts();
-			accountsData.values().forEach(accountData -> {
-				accountData.startNewSession();
-				accountData.prepareForUse(itemManager);
-				if (accountData.getSlotTimers() == null)
-				{
-					accountData.setSlotTimers(setupSlotTimers());
-				}
-				else
-				{
-					accountData.getSlotTimers().forEach(timer -> {
-						timer.setClient(client);
-						timer.setPlugin(this);
-					});
-				}
-			});
-			return accountsData;
+			return loadAllAccounts();
 		}
 
 		catch (IOException e)
@@ -867,6 +851,21 @@ public class FlippingPlugin extends Plugin
 		try
 		{
 			Map<String, AccountData> trades = TradePersister.loadAllAccounts();
+			trades.values().forEach(accountData -> {
+				accountData.startNewSession();
+				accountData.prepareForUse(itemManager);
+				if (accountData.getSlotTimers() == null)
+				{
+					accountData.setSlotTimers(setupSlotTimers());
+				}
+				else
+				{
+					accountData.getSlotTimers().forEach(timer -> {
+						timer.setClient(client);
+						timer.setPlugin(this);
+					});
+				}
+			});
 			log.info("successfully loaded trades");
 			return trades;
 		}
