@@ -26,17 +26,15 @@
 
 package com.flippingutilities.ui.uiutilities;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.FlowLayout;
-import java.util.ArrayList;
-import java.util.List;
-import javax.swing.*;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 //have to extend MaterialTabGroup just to make it compatible with MaterialTab...not actually using any functionality
 //from the parent. The difference between this TabGroup and MaterialTabGroup is just that this uses a card layout

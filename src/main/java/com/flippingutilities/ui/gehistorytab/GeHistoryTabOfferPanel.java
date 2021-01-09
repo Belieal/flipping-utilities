@@ -1,21 +1,17 @@
 package com.flippingutilities.ui.gehistorytab;
 
 import com.flippingutilities.model.OfferEvent;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.util.List;
-import java.util.function.BiConsumer;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.util.List;
+import java.util.function.BiConsumer;
 
 public class GeHistoryTabOfferPanel extends JPanel
 {

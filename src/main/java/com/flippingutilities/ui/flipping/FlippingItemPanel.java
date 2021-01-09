@@ -26,26 +26,10 @@
 
 package com.flippingutilities.ui.flipping;
 
-import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Optional;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
@@ -53,6 +37,16 @@ import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as

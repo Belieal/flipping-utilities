@@ -27,19 +27,20 @@
 package com.flippingutilities;
 
 
+import com.flippingutilities.model.Flip;
+import com.flippingutilities.model.HistoryManager;
+import com.flippingutilities.model.OfferEvent;
+import net.runelite.api.GrandExchangeOfferState;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.flippingutilities.model.Flip;
-import com.flippingutilities.model.HistoryManager;
-import com.flippingutilities.model.OfferEvent;
-import net.runelite.api.GrandExchangeOfferState;
 import static org.junit.Assert.assertEquals;
-import org.junit.Before;
-import org.junit.Test;
 
 public class HistoryManagerTest
 {

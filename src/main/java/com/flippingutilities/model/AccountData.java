@@ -27,18 +27,17 @@
 package com.flippingutilities.model;
 
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.game.ItemManager;
+import net.runelite.http.api.item.ItemStats;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.game.ItemManager;
-import net.runelite.http.api.item.ItemStats;
 
 @Slf4j
 @Data

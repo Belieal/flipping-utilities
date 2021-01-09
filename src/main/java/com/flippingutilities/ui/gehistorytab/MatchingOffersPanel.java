@@ -4,17 +4,16 @@ import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
-import java.awt.BorderLayout;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.FontManager;
 
 public class MatchingOffersPanel extends JPanel
 {
