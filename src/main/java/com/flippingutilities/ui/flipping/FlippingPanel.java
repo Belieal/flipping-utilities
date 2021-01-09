@@ -27,9 +27,8 @@
 package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
-import com.flippingutilities.FlippingPlugin;
-import com.flippingutilities.model.Option;
-import com.flippingutilities.ui.offereditor.OfferEditorPanel;
+import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.ui.offereditor.OfferEditorContainerPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
@@ -37,16 +36,11 @@ import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -105,7 +99,7 @@ public class FlippingPanel extends JPanel
 	private Paginator paginator;
 
 	@Getter
-	private OfferEditorPanel offerEditorPanel;
+	private OfferEditorContainerPanel offerEditorContainerPanel;
 
 	public FlippingPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
@@ -223,6 +217,7 @@ public class FlippingPanel extends JPanel
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
 		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
+		paginator.setPageSize(10);
 
 		//To switch between greeting and items panels
 		cardLayout.show(flippingItemContainer, WELCOME_PANEL);
@@ -247,8 +242,7 @@ public class FlippingPanel extends JPanel
 		{
 			Instant rebuildStart = Instant.now();
 			flippingItemsPanel.removeAll();
-//			flippingItemsPanel.add(new OfferEditorPanel(plugin,plugin.getTradesForCurrentView().get(0)));
-			if (flippingItems == null || flippingItems.size() == 0)
+			if (flippingItems == null)
 			{
 				//Show the welcome panel if there are no valid flipping items in the list
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
@@ -264,13 +258,17 @@ public class FlippingPanel extends JPanel
 			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vGap);
 			activePanels.addAll(newPanels);
 
-			if (isItemHighlighted() && activePanels.size() > 0 && flippingItems.size()==1 && !plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-				offerEditorPanel = new OfferEditorPanel(plugin, flippingItems.get(0));
+			if (isItemHighlighted()) {
+				offerEditorContainerPanel = new OfferEditorContainerPanel(plugin);
+				offerEditorContainerPanel.selectPriceEditor();
+				if (!activePanels.isEmpty()) {
+					flippingItemsPanel.add(Box.createVerticalStrut(vGap));
+				}
+				flippingItemsPanel.add(offerEditorContainerPanel);
 				flippingItemsPanel.add(Box.createVerticalStrut(vGap));
-				flippingItemsPanel.add(offerEditorPanel);
 			}
 
-			if (activePanels.isEmpty())
+			if (activePanels.isEmpty() && !itemHighlighted)
 			{
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 			}
@@ -366,31 +364,30 @@ public class FlippingPanel extends JPanel
 	}
 
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
-	public void highlightItem(FlippingItem item)
+	public void highlightItem(Optional<FlippingItem> item)
 	{
-		if (itemHighlighted)
-		{
-			return;
-		}
 		SwingUtilities.invokeLater(() -> {
 			paginator.setPageNumber(1);
 			itemHighlighted = true;
-			rebuild(Collections.singletonList(item));
+			if (item.isPresent()) {
+				rebuild(Collections.singletonList(item.get()));
+			}
+			else {
+				rebuild(new ArrayList<>());
+			}
 		});
 	}
 
 	//This is run whenever the PlayerVar containing the GE offer slot changes to its empty value (-1)
-	// or if the GE is closed.
+	// or if the GE is closed/history tab opened
 	public void dehighlightItem()
 	{
 		if (!itemHighlighted)
 		{
 			return;
 		}
-
 		itemHighlighted = false;
 		rebuild(plugin.getTradesForCurrentView());
-		plugin.setPrevHighlight(0);
 	}
 
 	/**

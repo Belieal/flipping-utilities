@@ -28,7 +28,7 @@ public class CustomFonts {
             ge.registerFont(boldFont);
 
             RUNESCAPE_BOLD_FONT = StyleContext.getDefaultStyleContext()
-                    .getFont(boldFont.getName(), Font.BOLD, 13);
+                    .getFont(boldFont.getName(), Font.BOLD, 14);
             ge.registerFont(RUNESCAPE_BOLD_FONT);
         }
         catch (FontFormatException ex)

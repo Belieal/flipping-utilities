@@ -1,6 +1,6 @@
 package com.flippingutilities.ui.flipping;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.Icons;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;

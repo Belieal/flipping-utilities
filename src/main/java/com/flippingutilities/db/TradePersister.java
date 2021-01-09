@@ -26,8 +26,9 @@
 
 package com.flippingutilities.db;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.AccountData;
+import com.flippingutilities.model.AccountWideData;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.TimeFormatters;
@@ -38,7 +39,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -160,11 +160,14 @@ public class TradePersister
 	 * @return a map of display name to that account's data
 	 * @throws IOException handled in FlippingPlugin
 	 */
-	public static Map<String, AccountData> loadAllTrades() throws IOException
+	public static Map<String, AccountData> loadAllAccounts() throws IOException
 	{
 		Map<String, AccountData> accountsData = new HashMap<>();
 		for (File f : PARENT_DIRECTORY.listFiles())
 		{
+			if (f.getName().equals("accountwide.json")) {
+				continue;
+			}
 			String displayName = f.getName().split("\\.")[0];
 			log.info("loading data for {}", displayName);
 			AccountData accountData = loadFromFile(f);
@@ -180,7 +183,7 @@ public class TradePersister
 		return accountsData;
 	}
 
-	public static AccountData loadTrades(String displayName) throws IOException
+	public static AccountData loadAccount(String displayName) throws IOException
 	{
 		log.info("loading data for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");
@@ -204,6 +207,19 @@ public class TradePersister
 		return accountData;
 	}
 
+	public static AccountWideData loadAccountWideData() throws IOException {
+		File accountFile = new File(PARENT_DIRECTORY, "accountwide.json");
+		if (accountFile.exists()){
+			String accountWideDataJson = new String(Files.readAllBytes(accountFile.toPath()));
+			final Gson gson = new Gson();
+			Type type = new TypeToken<AccountWideData>(){}.getType();
+			return gson.fromJson(accountWideDataJson, type);
+		}
+		else {
+			return new AccountWideData();
+		}
+	}
+
 	/**
 	 * stores trades for an account in {user's home directory}/.runelite/flipping/{account's display name}.json
 	 *
@@ -211,7 +227,7 @@ public class TradePersister
 	 * @param data        the trades and last offers of that account
 	 * @throws IOException
 	 */
-	public static void storeTrades(String displayName, AccountData data) throws IOException
+	public static void storeTrades(String displayName, Object data) throws IOException
 	{
 		log.info("storing trades for {}", displayName);
 		File accountFile = new File(PARENT_DIRECTORY, displayName + ".json");

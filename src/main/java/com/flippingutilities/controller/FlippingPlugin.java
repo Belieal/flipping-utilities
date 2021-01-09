@@ -24,8 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities;
+package com.flippingutilities.controller;
 
+import com.flippingutilities.FlippingConfig;
 import com.flippingutilities.db.TradePersister;
 import com.flippingutilities.model.*;
 import com.flippingutilities.ui.MasterPanel;
@@ -40,7 +41,8 @@ import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.flippingutilities.utilities.InvalidOptionException;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
-import java.awt.Font;
+
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
@@ -48,12 +50,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.swing.*;
+
 
 import lombok.Getter;
 import lombok.Setter;
@@ -63,9 +66,7 @@ import net.runelite.api.*;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 
 import net.runelite.api.events.*;
-import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetID;
-import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.api.widgets.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -77,6 +78,7 @@ import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
@@ -102,6 +104,7 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private Client client;
 	@Inject
+	@Getter
 	private ClientThread clientThread;
 	@Inject
 	private ScheduledExecutorService executor;
@@ -123,10 +126,6 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private KeyManager keyManager;
 
-	//Ensures we don't rebuild constantly when highlighting
-	@Setter
-	private int prevHighlight;
-
 	@Getter
 	private FlippingPanel flippingPanel;
 	@Getter
@@ -144,6 +143,9 @@ public class FlippingPlugin extends Plugin
 	@Getter
 	@Setter
 	private Map<String, AccountData> accountCache = new HashMap<>();
+
+	@Getter
+	private AccountWideData accountWideData;
 
 	//the display name of the account whose trade list the user is currently looking at as selected
 	//through the dropdown menu
@@ -180,14 +182,20 @@ public class FlippingPlugin extends Plugin
 
 	//allows for knowing what to save on client shutdown.
 	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
+	private boolean accountWideDataChanged = false;
 
 	private boolean quantityOrPriceChatboxOpen = false;
 
 	private Optional<FlippingItem> highlightedItem = Optional.empty();
+	private int highlightedItemId;
+
+	private OptionHandler optionHandler;
 
 	@Override
 	protected void startUp()
 	{
+		optionHandler = new OptionHandler(itemManager, client);
+
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
 		settingsPanel = new SettingsPanel(this);
@@ -202,42 +210,7 @@ public class FlippingPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
-
-		keyManager.registerKeyListener(new KeyListener() {
-			@Override
-			public void keyTyped(KeyEvent e) {
-
-			}
-
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
-					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
-					Optional<Option> optionExercised = getOptionsForCurrentView().stream().filter(option -> option.getKey().equals(keyPressed)).findFirst();
-					if (optionExercised.isPresent() && highlightedItem.isPresent()) {
-						try {
-							int optionValue = calculateOptionValue(optionExercised.get(), highlightedItem.get());
-							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
-							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
-							flippingPanel.getOfferEditorPanel().highlightPressedOption(keyPressed);
-							e.consume();
-						}
-						catch (InvalidOptionException ex) {
-							//ignore
-						}
-						catch (Exception ex) {
-							log.info("exception during key press for offer editor", ex);
-						}
-					}
-				}
-			}
-
-			@Override
-			public void keyReleased(KeyEvent e) {
-
-			}
-		});
-
+		keyManager.registerKeyListener(offerEditorKeyListener());
 		clientThread.invokeLater(() ->
 		{
 			switch (client.getGameState())
@@ -248,6 +221,8 @@ public class FlippingPlugin extends Plugin
 			}
 
 			accountCache = setupCache();
+			accountWideData = loadAccountWideData();
+
 			setupAccSelectorDropdown();
 
 			cacheUpdater = new CacheUpdater();
@@ -262,7 +237,6 @@ public class FlippingPlugin extends Plugin
 				log.info("user is already logged in when they downloaded/enabled the plugin");
 				onLoggedInGameState();
 			}
-
 			//stops scheduling this task
 			return true;
 		});
@@ -291,6 +265,10 @@ public class FlippingPlugin extends Plugin
 			log.info("accounts with unsaved changes are {}. Saving them on client shutdown!", accountsWithUnsavedChanges);
 			accountsWithUnsavedChanges.forEach(accountName -> storeTrades(accountName));
 			accountsWithUnsavedChanges.clear();
+		}
+
+		if (accountWideDataChanged) {
+			storeAccountWideData();
 		}
 	}
 
@@ -368,7 +346,6 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("cache does not contain data for {}", displayName);
 			AccountData accountData = new AccountData();
-			accountData.setOptions(Arrays.asList(new Option("p", Option.GE_LIMIT, "+0"),new Option("l", Option.REMAINING_LIMIT, "+0"),new Option("o", Option.CASHSTACK, "+0")));
 			accountData.setSlotTimers(setupSlotTimers());
 			accountCache.put(displayName, accountData);
 			masterPanel.getAccountSelector().addItem(displayName);
@@ -413,6 +390,12 @@ public class FlippingPlugin extends Plugin
 
 		storeTrades(currentlyLoggedInAccount);
 		accountsWithUnsavedChanges.remove(currentlyLoggedInAccount);
+
+		if (accountWideDataChanged) {
+			storeAccountWideData();
+			accountWideDataChanged = false;
+		}
+
 		if (slotTimersTask != null && !slotTimersTask.isCancelled())
 		{
 			log.info("cancelling slot timers task on logout");
@@ -436,7 +419,7 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("initiating load on startup");
 			TradePersister.setup();
-			Map<String, AccountData> accountsData = loadAllTrades();
+			Map<String, AccountData> accountsData = loadAllAccounts();
 			accountsData.values().forEach(accountData -> {
 				accountData.startNewSession();
 				accountData.prepareForUse(itemManager);
@@ -801,13 +784,19 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public List<Option> getOptionsForCurrentView() {
-		if (accountCurrentlyViewed.equals(ACCOUNT_WIDE)) {
-			return new ArrayList<>();
-		}
-		else {
-			return accountCache.get(accountCurrentlyViewed).getOptions();
-		}
+	public List<Option> getOptions() {
+		return accountWideData.getOptions();
+	}
+
+	public void addOption(Option option) {
+		//want it in the front of the list so that rebuilds have the newest option at the top
+		accountWideData.getOptions().add(0, option);
+		accountWideDataChanged = true;
+	}
+
+	public void deleteOption(Option option) {
+		accountWideData.getOptions().remove(option);
+		accountWideDataChanged = true;
 	}
 
 	public Instant getStartOfSessionForCurrentView()
@@ -839,22 +828,11 @@ public class FlippingPlugin extends Plugin
 		return configManager.getConfig(FlippingConfig.class);
 	}
 
-	//TODO: Refactor this with a search on the search bar
 	private void highlightOffer()
 	{
-		int currentGEItemId = client.getVar(CURRENT_GE_ITEM);
-		if (currentGEItemId == prevHighlight || flippingPanel.isItemHighlighted())
-		{
-			return;
-		}
-		getTradesForCurrentView()
-				.stream()
-				.filter(item -> item.getItemId() == currentGEItemId && item.getValidFlippingPanelItem())
-				.findFirst().ifPresent(item -> {
-					highlightedItem = Optional.of(item);
-					prevHighlight = currentGEItemId;
-					flippingPanel.highlightItem(item);
-				});
+		highlightedItemId = client.getVar(CURRENT_GE_ITEM);
+		highlightedItem = getTradesForCurrentView().stream().filter(item -> item.getItemId() == highlightedItemId && item.getValidFlippingPanelItem()).findFirst();
+		flippingPanel.highlightItem(highlightedItem);
 	}
 
 	public void storeTrades(String displayName)
@@ -878,11 +856,21 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public Map<String, AccountData> loadAllTrades()
+	public void storeAccountWideData() {
+		try {
+			TradePersister.storeTrades("accountwide", accountWideData);
+			log.info("successfully stored account wide data");
+		}
+		catch (IOException e) {
+			log.info("couldn't store trades", e);
+		}
+	}
+
+	public Map<String, AccountData> loadAllAccounts()
 	{
 		try
 		{
-			Map<String, AccountData> trades = TradePersister.loadAllTrades();
+			Map<String, AccountData> trades = TradePersister.loadAllAccounts();
 			log.info("successfully loaded trades");
 			return trades;
 		}
@@ -893,11 +881,11 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
-	public AccountData loadTrades(String displayName)
+	public AccountData loadAccount(String displayName)
 	{
 		try
 		{
-			AccountData accountData = TradePersister.loadTrades(displayName);
+			AccountData accountData = TradePersister.loadAccount(displayName);
 			accountData.prepareForUse(itemManager);
 			if (accountData.getSlotTimers() == null)
 			{
@@ -916,6 +904,26 @@ public class FlippingPlugin extends Plugin
 		{
 			log.info("couldn't load trades for {}, e = " + e, displayName);
 			return new AccountData();
+		}
+	}
+
+	private AccountWideData loadAccountWideData() {
+		try {
+			log.info("loading account wide data");
+			AccountWideData accountWideData = TradePersister.loadAccountWideData();
+			if (accountWideData.getOptions().isEmpty()) {
+				accountWideData.prepare();
+				accountWideDataChanged = true;
+			}
+			log.info("successfully loaded account wide data");
+			return accountWideData;
+		}
+		catch (IOException e) {
+			log.info("couldn't load accountwide data", e);
+			AccountWideData accountWideData = new AccountWideData();
+			accountWideData.prepare();
+			accountWideDataChanged = true;
+			return accountWideData;
 		}
 	}
 
@@ -989,13 +997,21 @@ public class FlippingPlugin extends Plugin
 			return;
 		}
 
+		if (fileName.equals("accountwide.json")) {
+			log.info("updating account wide data");
+			executor.schedule(() -> {
+				accountWideData = loadAccountWideData();
+			}, 1000, TimeUnit.MILLISECONDS);
+			return;
+		}
+
 		executor.schedule(() ->
 		{
-			//have to run on client thread cause loadTrades calls accountData.prepareForUse which uses the itemmanager
+			//have to run on client thread cause loadAccount calls accountData.prepareForUse which uses the itemmanager
 			clientThread.invokeLater(() -> {
 				log.info("second has passed, updating cache for {}", displayNameOfChangedAcc);
 
-				accountCache.put(displayNameOfChangedAcc, loadTrades(displayNameOfChangedAcc));
+				accountCache.put(displayNameOfChangedAcc, loadAccount(displayNameOfChangedAcc));
 				if (!masterPanel.getViewSelectorItems().contains(displayNameOfChangedAcc))
 				{
 					masterPanel.getAccountSelector().addItem(displayNameOfChangedAcc);
@@ -1287,80 +1303,44 @@ public class FlippingPlugin extends Plugin
 		TradePersister.exportToCsv(new File(parentDirectory, accountCurrentlyViewed +".csv"), items, startOfIntervalName);
 	}
 
-	public int getCashStackInInv() {
-		ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
-		Item[] inventoryItems = inventory.getItems();
-		for (Item item:inventoryItems) {
-			if (item.getId() == 995) {
-				return item.getQuantity();
-			}
-		}
-		return 0;
+	public int calculateOptionValue(Option option) throws InvalidOptionException {
+		return optionHandler.calculateOptionValue(option, highlightedItem, highlightedItemId);
 	}
 
-	public void validateOption(Option option, FlippingItem item) throws InvalidOptionException {
-		if (item.getTotalGELimit() <= 0 && (option.getProperty().equals(Option.REMAINING_LIMIT) || option.getProperty().equals(Option.GE_LIMIT))) {
-			throw new InvalidOptionException("Item does not have known limit. Cannot calculate resulting value");
-		}
-		if (!item.getLatestBuy().isPresent() && option.getProperty().equals(Option.CASHSTACK)) {
-			throw new InvalidOptionException("Item does not have a buy. Cannot calculate amount for cashstack");
-		}
-		if (option.getProperty().equals(Option.CASHSTACK) && getCashStackInInv() == 0) {
-			throw new InvalidOptionException("Player has no cash in inventory");
-		}
+	private KeyListener offerEditorKeyListener() {
+		return new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
 
-		Set<String> acceptableOperators = new HashSet<>(Arrays.asList("+", "-", "*"));
-		String change = option.getChange();
-		if (change.length() < 2) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-		if (!acceptableOperators.contains(String.valueOf(change.charAt(0)))) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-
-		try {
-			int num = Integer.parseInt(change.substring(1));
-			if (num < 0) {
-				throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
 			}
-		}
 
-		catch (NumberFormatException e) {
-			throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
-		}
-	}
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
+					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
+					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
+					Optional<Option> optionExercised = getOptions().stream().filter(option -> option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
+					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
+						try {
+							int optionValue = calculateOptionValue(option);
+							client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(optionValue + "*");
+							client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(optionValue));
+							flippingPanel.getOfferEditorContainerPanel().highlightPressedOption(keyPressed);
+							e.consume();
+						} catch (InvalidOptionException ex) {
+							//ignore
+						} catch (Exception ex) {
+							log.info("exception during key press for offer editor", ex);
+						}
+					}));
+				}
+			}
 
-	public int calculateOptionValue(Option option, FlippingItem item) throws InvalidOptionException {
-		validateOption(option, item);
-		int val = 0;
-        String propertyString = option.getProperty();
-        if (propertyString.equals(Option.GE_LIMIT)) {
-            val = item.getTotalGELimit();
-        }
-        if (propertyString.equals(Option.REMAINING_LIMIT)) {
-            val = item.getRemainingGeLimit();
-        }
-        if (propertyString.equals(Option.CASHSTACK)) {
-			val = getCashStackInInv()/item.getLatestBuy().get().getPrice();
-        }
+			@Override
+			public void keyReleased(KeyEvent e) {
 
-        String operator = String.valueOf(option.getChange().charAt(0));
-        int num = Integer.parseInt(option.getChange().substring(1));
-        if (operator.equals("-")) {
-        	val -= num;
-		}
-        if (operator.equals("+")) {
-        	val += num;
-		}
-        if (operator.equals("*")) {
-        	val *= num;
-		}
-
-        if (val < 0) {
-			throw new InvalidOptionException("resulting value was negative, which isn't allowed");
-		}
-
-        return val;
+			}
+		};
 	}
 
 	@Subscribe
@@ -1453,6 +1433,9 @@ public class FlippingPlugin extends Plugin
 		{
 			highlightOffer();
 		}
+
+		//need to check if panel is highlighted in this case because curr ge item is changed if you come back to ge interface after exiting out
+		//and curr ge item would be -1 or 0 in that case and would trigger a dehighlight erroneously.
 		if (event.getIndex() == CURRENT_GE_ITEM.getId() &&
 				(client.getVar(CURRENT_GE_ITEM) == -1 || client.getVar(CURRENT_GE_ITEM) == 0) && flippingPanel.isItemHighlighted())
 		{
@@ -1509,6 +1492,27 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onVarClientIntChanged(VarClientIntChanged event)
 	{
+		if (event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
+		&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 14
+		&& client.getWidget(WidgetInfo.CHATBOX_GE_SEARCH_RESULTS) != null) {
+			clientThread.invokeLater(()-> {
+				Widget geSearchResultBox = client.getWidget(WidgetInfo.CHATBOX_GE_SEARCH_RESULTS);
+				Widget child = geSearchResultBox.createChild(-1, WidgetType.TEXT);
+				child.setTextColor(0x800000);
+				child.setFontId(FontID.VERDANA_13_BOLD);
+				child.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+				child.setOriginalX(0);
+				child.setYPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+				child.setOriginalY(-40);
+				child.setOriginalHeight(20);
+				child.setXTextAlignment(WidgetTextAlignment.CENTER);
+				child.setYTextAlignment(WidgetTextAlignment.CENTER);
+				child.setWidthMode(WidgetSizeMode.MINUS);
+				child.setText(String.format("Type %s to fill search results with items you favorited in flipping utilities!", config.favoriteSearchCode()));
+				child.revalidate();
+			});
+		}
+
 		if (quantityOrPriceChatboxOpen
 				&& event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
 				&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 0
@@ -1547,11 +1551,23 @@ public class FlippingPlugin extends Plugin
 
 			if (chatInputText.equals("How many do you wish to buy?"))
 			{
-				flippingWidget.update("quantity", 0);
+				flippingPanel.getOfferEditorContainerPanel().selectQuantityEditor();
+				//No recorded data; default to total GE limit
+				if (selectedItem == null)
+				{
+					ItemStats itemStats = itemManager.getItemStats(client.getVar(CURRENT_GE_ITEM), false);
+					int itemGELimit = itemStats != null ? itemStats.getGeLimit() : 0;
+					flippingWidget.update("quantity", itemGELimit);
+				}
+				else
+				{
+					flippingWidget.update("quantity", selectedItem.getRemainingGeLimit());
+				}
 			}
 
 			else if (chatInputText.equals("Set a price for each item:"))
 			{
+				flippingPanel.getOfferEditorContainerPanel().selectPriceEditor();
 				if (offerText.equals("Buy offer"))
 				{
 					//No recorded data; hide the widget

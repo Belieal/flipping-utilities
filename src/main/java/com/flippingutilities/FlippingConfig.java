@@ -26,10 +26,15 @@
 
 package com.flippingutilities;
 
+import com.flippingutilities.controller.FlippingPlugin;
+import com.flippingutilities.ui.uiutilities.CustomColors;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.Units;
+import net.runelite.client.ui.ColorScheme;
+
+import java.awt.*;
 
 @ConfigGroup(FlippingPlugin.CONFIG_GROUP)
 public interface FlippingConfig extends Config
@@ -111,4 +116,22 @@ public interface FlippingConfig extends Config
 		description = "What you can type in the ge search bar to automatically populate it with your favorite items"
 	)
 	default String favoriteSearchCode() { return "1"; }
+
+	@ConfigItem(
+			keyName = "slotTimerBuyTextColor",
+			name = "slot timer buy text color",
+			description = "the color of the buy text on the slot timers"
+	)
+	default Color slotTimerBuyColor() {
+		return ColorScheme.GRAND_EXCHANGE_LIMIT;
+	}
+
+	@ConfigItem(
+			keyName = "slotTimerSellTextColor",
+			name = "slot timer sell text color",
+			description = "the color of the sell text on the slot timers"
+	)
+	default Color slotTimerSellColor() {
+		return CustomColors.VIBRANT_YELLOW;
+	}
 }

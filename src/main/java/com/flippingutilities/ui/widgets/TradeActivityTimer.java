@@ -26,7 +26,7 @@
 
 package com.flippingutilities.ui.widgets;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import java.awt.Color;
@@ -39,9 +39,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GrandExchangeOffer;
+import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ColorUtil;
 
 @Slf4j
@@ -158,22 +158,26 @@ public class TradeActivityTimer
 	{
 		String spacer;
 		Color stateTextColor;
-		if (currentOffer.isBuy())
-		{
+
+		//switching comps, going on mobile, etc can leave a stale offer in there, so we have to verify using the actual
+		//offer from the client.
+		GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
+		GrandExchangeOffer clientOffer = offers[slotIndex];
+		if (clientOffer.getState() == GrandExchangeOfferState.BOUGHT || clientOffer.getState() == GrandExchangeOfferState.BUYING || clientOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY) {
 			slotStateString = "Buy";
 			spacer = BUY_SPACER;
-			stateTextColor = ColorScheme.GRAND_EXCHANGE_LIMIT;
+			stateTextColor = plugin.getConfig().slotTimerBuyColor();
 		}
 		else
 		{
 			slotStateString = "Sell";
 			spacer = SELL_SPACER;
-			stateTextColor = CustomColors.VIBRANT_YELLOW;
+			stateTextColor = plugin.getConfig().slotTimerSellColor();
 		}
 
 		Color timeColor = isSlotStagnant() ? CustomColors.OUTDATED_COLOR : Color.WHITE;
 
-		if (currentOffer.isComplete())
+		if (clientOffer.getState() == GrandExchangeOfferState.CANCELLED_BUY || clientOffer.getState() == GrandExchangeOfferState.CANCELLED_SELL || clientOffer.getState() == GrandExchangeOfferState.BOUGHT || clientOffer.getState() == GrandExchangeOfferState.SOLD)
 		{
 			//Override to completion color
 			timeColor = new Color(0, 180, 0);

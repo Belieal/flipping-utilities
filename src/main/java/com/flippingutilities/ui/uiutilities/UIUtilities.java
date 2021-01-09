@@ -138,8 +138,4 @@ public class UIUtilities
 			}
 		}
 	}
-
-	public static String wrappedText(String msg, int width) {
-		return String.format("<html><div style=\"width:%dpx;\"'text-align: center;>%s</div></html>", width, msg);
-	}
 }

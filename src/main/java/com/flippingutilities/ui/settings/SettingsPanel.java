@@ -26,7 +26,7 @@
 
 package com.flippingutilities.ui.settings;
 
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.uiutilities.Icons;
 
 import java.awt.BorderLayout;

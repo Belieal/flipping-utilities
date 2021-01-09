@@ -1,5 +1,6 @@
 package com.flippingutilities;
 
+import com.flippingutilities.controller.FlippingPlugin;
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 

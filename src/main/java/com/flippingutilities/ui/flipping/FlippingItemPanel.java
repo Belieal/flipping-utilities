@@ -27,7 +27,7 @@
 package com.flippingutilities.ui.flipping;
 
 import com.flippingutilities.model.FlippingItem;
-import com.flippingutilities.FlippingPlugin;
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
 

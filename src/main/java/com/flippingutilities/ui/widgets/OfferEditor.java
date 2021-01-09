@@ -26,6 +26,7 @@
 
 package com.flippingutilities.ui.widgets;
 
+import com.flippingutilities.ui.uiutilities.Icons;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientStr;
@@ -36,45 +37,52 @@ import net.runelite.api.widgets.WidgetPositionMode;
 import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
-import net.runelite.client.ui.ColorScheme;
+
+import javax.swing.*;
 
 public class OfferEditor
 {
-    private final Widget parent;
     private final Client client;
     private Widget text;
+    private Widget buttonText;
+    private Widget picText;
 
     public OfferEditor(Widget parent, Client client)
     {
-        this.parent = parent;
         this.client = client;
 
-        initialize();
-    }
-
-    private void initialize()
-    {
         if (parent == null)
         {
             return;
         }
 
         text = parent.createChild(-1, WidgetType.TEXT);
+        buttonText = parent.createChild(-1, WidgetType.TEXT);
+        picText = parent.createChild(-1, WidgetType.TEXT);
 
-        text.setTextColor(0x800000);
-        text.setFontId(FontID.QUILL_8);
-        text.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
-        text.setOriginalX(0);
-        text.setYPositionMode(WidgetPositionMode.ABSOLUTE_TOP);
-        text.setOriginalY(5);
-        text.setOriginalHeight(20);
-        text.setXTextAlignment(WidgetTextAlignment.CENTER);
-        text.setYTextAlignment(WidgetTextAlignment.CENTER);
-        text.setWidthMode(WidgetSizeMode.MINUS);
-        text.revalidate();
-        text.setHasListener(true);
-        text.setOnMouseRepeatListener((JavaScriptCallback) ev -> text.setTextColor(0xFFFFFF));
-        text.setOnMouseLeaveListener((JavaScriptCallback) ev -> text.setTextColor(0x800000));
+        prepareTextWidget(buttonText, WidgetPositionMode.ABSOLUTE_TOP, 5);
+        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_BOTTOM, 18);
+        prepareTextWidget(picText, WidgetPositionMode.ABSOLUTE_BOTTOM, 2);
+
+        buttonText.setFontId(FontID.QUILL_8);
+    }
+
+
+    private void prepareTextWidget(Widget widget, int yMode, int originalY) {
+        widget.setTextColor(0x800000);
+        widget.setFontId(FontID.VERDANA_11_BOLD);
+        widget.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+        widget.setOriginalX(0);
+        widget.setYPositionMode(yMode);
+        widget.setOriginalY(originalY);
+        widget.setOriginalHeight(20);
+        widget.setXTextAlignment(WidgetTextAlignment.CENTER);
+        widget.setYTextAlignment(WidgetTextAlignment.CENTER);
+        widget.setWidthMode(WidgetSizeMode.MINUS);
+        widget.setHasListener(true);
+        widget.setOnMouseRepeatListener((JavaScriptCallback) ev -> widget.setTextColor(0xFFFFFF));
+        widget.setOnMouseLeaveListener((JavaScriptCallback) ev -> widget.setTextColor(0x800000));
+        widget.revalidate();
     }
 
     public void update(String mode, int value)
@@ -82,22 +90,60 @@ public class OfferEditor
         switch (mode)
         {
             case ("quantity"):
-                text.setFontId(FontID.BOLD_12);
-                text.setText("Use the new quantity editor feature to set quantities with just a key press!");
+                text.setText("OR use the quantity editor to set custom quantities quickly with just a key press!");
+                text.setHasListener(false);
+
+                picText.setText("Click this text to see where the quantity editor is!");
+                picText.setAction(1, "pic");
+                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                    SwingUtilities.invokeLater(()-> {
+                        JOptionPane.showMessageDialog(null, Icons.QUANTITY_EDITOR_PIC);
+                    });
+                });
+
+                buttonText.setText("click this to set to remaining GE limit: " + value);
+                buttonText.setAction(1, "Set quantity");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
+                {
+                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
+                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
+                });
                 break;
             case ("setSellPrice"):
-                text.setText("Set to latest price check sell price: " + String.format("%,d", value) + " gp");
-                text.setAction(1, "Set price");
-                text.setOnOpListener((JavaScriptCallback) ev ->
+                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
+                text.setHasListener(false);
+
+                picText.setText("Click this text to see where the price editor is!");
+                picText.setAction(1, "pic");
+                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                    SwingUtilities.invokeLater(()-> {
+                        JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
+                    });
+                });
+
+                buttonText.setText("click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
+                buttonText.setAction(1, "Set price");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
                 {
                     client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
                     client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
                 });
                 break;
             case ("setBuyPrice"):
-                text.setText("Set to latest price check buy price: " + String.format("%,d", value) + " gp");
-                text.setAction(1, "Set price");
-                text.setOnOpListener((JavaScriptCallback) ev ->
+                text.setText("OR use the price editor to set custom prices quickly with just a key press!");
+                text.setHasListener(false);
+
+                picText.setText("Click this text to see where the price editor is!");
+                picText.setAction(1, "pic");
+                picText.setOnOpListener((JavaScriptCallback) ev -> {
+                    SwingUtilities.invokeLater(()-> {
+                        JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
+                    });
+                });
+
+                buttonText.setText("click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
+                buttonText.setAction(1, "Set price");
+                buttonText.setOnOpListener((JavaScriptCallback) ev ->
                 {
                     client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
                     client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
