@@ -41,7 +41,8 @@ import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.flippingutilities.utilities.InvalidOptionException;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
-import java.awt.Font;
+
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +50,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -64,9 +66,7 @@ import net.runelite.api.*;
 import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 
 import net.runelite.api.events.*;
-import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetID;
-import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.api.widgets.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -78,6 +78,7 @@ import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
@@ -1491,6 +1492,27 @@ public class FlippingPlugin extends Plugin
 	@Subscribe
 	public void onVarClientIntChanged(VarClientIntChanged event)
 	{
+		if (event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
+		&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 14
+		&& client.getWidget(WidgetInfo.CHATBOX_GE_SEARCH_RESULTS) != null) {
+			clientThread.invokeLater(()-> {
+				Widget geSearchResultBox = client.getWidget(WidgetInfo.CHATBOX_GE_SEARCH_RESULTS);
+				Widget child = geSearchResultBox.createChild(-1, WidgetType.TEXT);
+				child.setTextColor(0x800000);
+				child.setFontId(FontID.VERDANA_13_BOLD);
+				child.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+				child.setOriginalX(0);
+				child.setYPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
+				child.setOriginalY(-40);
+				child.setOriginalHeight(20);
+				child.setXTextAlignment(WidgetTextAlignment.CENTER);
+				child.setYTextAlignment(WidgetTextAlignment.CENTER);
+				child.setWidthMode(WidgetSizeMode.MINUS);
+				child.setText(String.format("Type %s to fill search results with items you favorited in flipping utilities!", config.favoriteSearchCode()));
+				child.revalidate();
+			});
+		}
+
 		if (quantityOrPriceChatboxOpen
 				&& event.getIndex() == VarClientInt.INPUT_TYPE.getIndex()
 				&& client.getVarcIntValue(VarClientInt.INPUT_TYPE.getIndex()) == 0
