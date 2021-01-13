@@ -174,7 +174,7 @@ public class StatsPanel extends JPanel
 		timeIntervalDropdown.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		//setting the selection item as session before the item listener is attached so it doesn't fire a rebuild.
 		timeIntervalDropdown.setSelectedItem("Session");
-		startOfInterval = plugin.getStartOfSessionForCurrentView();
+		startOfInterval = plugin.viewStartOfSessionForCurrentView();
 		startOfIntervalName = "Session";
 		timeIntervalDropdown.setToolTipText("Specify the time span you would like to see the statistics of");
 		timeIntervalDropdown.addItemListener(event ->
@@ -221,7 +221,7 @@ public class StatsPanel extends JPanel
 					if (result == JOptionPane.YES_OPTION)
 					{
 						plugin.invalidateOffers(startOfInterval);
-						rebuild(plugin.getTradesForCurrentView());
+						rebuild(plugin.viewTradesForCurrentView());
 					}
 				}
 			}
@@ -397,13 +397,13 @@ public class StatsPanel extends JPanel
 					if (result == JOptionPane.YES_OPTION)
 					{
 						plugin.handleSessionTimeReset();
-						rebuild(plugin.getTradesForCurrentView());
+						rebuild(plugin.viewTradesForCurrentView());
 					}
 				}
 			}
 		});
 
-		sessionTimeVal.setText(TimeFormatters.formatDuration(plugin.getAccumulatedTimeForCurrentView()));
+		sessionTimeVal.setText(TimeFormatters.formatDuration(plugin.viewAccumulatedTimeForCurrentView()));
 		sessionTimeVal.setPreferredSize(new Dimension(200, 0));
 		sessionTimeVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		sessionTimePanel.setToolTipText("Right-click to reset session timer");
@@ -439,7 +439,7 @@ public class StatsPanel extends JPanel
 			{
 				return;
 			}
-			rebuild(plugin.getTradesForCurrentView());
+			rebuild(plugin.viewTradesForCurrentView());
 		});
 
 		sortPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -468,7 +468,7 @@ public class StatsPanel extends JPanel
 
 		paginator = new Paginator(() -> SwingUtilities.invokeLater(() -> {
 			Instant rebuildStart = Instant.now();
-			rebuildStatItemContainer(plugin.getTradesForCurrentView());
+			rebuildStatItemContainer(plugin.viewTradesForCurrentView());
 			revalidate();
 			repaint();
 			log.info("page change took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
@@ -574,7 +574,7 @@ public class StatsPanel extends JPanel
 		updateSubInfoFont();
 		if (Objects.equals(timeIntervalDropdown.getSelectedItem(), "Session"))
 		{
-			Duration accumulatedTime = plugin.getAccumulatedTimeForCurrentView();
+			Duration accumulatedTime = plugin.viewAccumulatedTimeForCurrentView();
 			updateSessionTimeDisplay(accumulatedTime);
 			updateHourlyProfitDisplay(accumulatedTime);
 		}
@@ -589,7 +589,7 @@ public class StatsPanel extends JPanel
 	 */
 	private void updateTotalProfitDisplay()
 	{
-		if (plugin.getTradesForCurrentView() == null)
+		if (plugin.viewTradesForCurrentView() == null)
 		{
 			totalProfitVal.setText("0");
 			totalProfitVal.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -727,7 +727,7 @@ public class StatsPanel extends JPanel
 		if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
 			plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a StatItemPanel");
 		}
-		rebuild(plugin.getTradesForCurrentView());
+		rebuild(plugin.viewTradesForCurrentView());
 	}
 
 	/**
@@ -746,7 +746,7 @@ public class StatsPanel extends JPanel
 		Instant timeNow = Instant.now();
 
 		if (selectedInterval.equals("Session")) {
-			startOfInterval = plugin.getStartOfSessionForCurrentView();
+			startOfInterval = plugin.viewStartOfSessionForCurrentView();
 			startOfIntervalName = "Session";
 		}
 		else if (selectedInterval.equals("All")) {
@@ -779,7 +779,7 @@ public class StatsPanel extends JPanel
 			}
 		}
 		paginator.setPageNumber(1);
-		rebuild(plugin.getTradesForCurrentView());
+		rebuild(plugin.viewTradesForCurrentView());
 	}
 
 	/**

@@ -479,7 +479,7 @@ public class FlippingItemPanel extends JPanel
 					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
 						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a FlippingItemPanel");
 					}
-					plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
+					plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
 				}
 			}
 		});
