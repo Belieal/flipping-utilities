@@ -1313,7 +1313,11 @@ public class FlippingPlugin extends Plugin
 			public void keyPressed(KeyEvent e) {
 				if (quantityOrPriceChatboxOpen && flippingPanel.isItemHighlighted()) {
 					String keyPressed = KeyEvent.getKeyText(e.getKeyCode()).toLowerCase();
+					if (flippingPanel.getOfferEditorContainerPanel() == null) {
+						return;
+					}
 					boolean currentlyViewingQuantityEditor = flippingPanel.getOfferEditorContainerPanel().currentlyViewingQuantityEditor();
+
 					Optional<Option> optionExercised = getOptions().stream().filter(option -> option.isQuantityOption() == currentlyViewingQuantityEditor && option.getKey().equals(keyPressed)).findFirst();
 					optionExercised.ifPresent(option -> clientThread.invoke(() -> {
 						try {
