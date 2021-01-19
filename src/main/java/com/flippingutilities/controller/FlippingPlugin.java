@@ -89,7 +89,6 @@ import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
 public class FlippingPlugin extends Plugin
 {
 	private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
-	private static final int GE_BACK_BUTTON_WIDGET_ID = 30474244;
 	private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
 
 	public static final String CONFIG_GROUP = "flipping";
@@ -128,9 +127,9 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
-	private SettingsPanel settingsPanel;
 	private MasterPanel masterPanel;
-	private OfferEditor flippingWidget;
+	private GeHistoryTabPanel geHistoryTabPanel;
+	private SettingsPanel settingsPanel;
 
 	//this flag is to know that when we see the login screen an account has actually logged out and its not just that the
 	//client has started.
@@ -162,16 +161,7 @@ public class FlippingPlugin extends Plugin
 	private ScheduledFuture slotTimersTask;
 	private Instant startUpTime = Instant.now();
 
-	//name of the account this client last stored trades for.
-	private String thisClientLastStored;
-
 	private int loginTickCount;
-
-	private GeHistoryTabPanel geHistoryTabPanel;
-
-	//allows for knowing what to save on client shutdown.
-	private Set<String> accountsWithUnsavedChanges = new HashSet<>();
-	private boolean accountWideDataChanged = false;
 
 	private boolean quantityOrPriceChatboxOpen = false;
 
@@ -179,13 +169,14 @@ public class FlippingPlugin extends Plugin
 	private int highlightedItemId;
 
 	private OptionHandler optionHandler;
-
+	@Getter
 	private DataHandler dataHandler;
 
 	@Override
 	protected void startUp()
 	{
 		optionHandler = new OptionHandler(itemManager, client);
+		dataHandler = new DataHandler(this);
 
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager);
@@ -211,7 +202,6 @@ public class FlippingPlugin extends Plugin
 					return false;
 			}
 
-			dataHandler = new DataHandler(this);
 			dataHandler.loadData();
 
 			setupAccSelectorDropdown();
@@ -487,8 +477,6 @@ public class FlippingPlugin extends Plugin
 		Optional<FlippingItem> flippingItem = currentlyLoggedInAccountsTrades.stream().filter(item -> item.getItemId() == finalizedOfferEvent.getItemId()).findFirst();
 
 		updateTradesList(currentlyLoggedInAccountsTrades, flippingItem, finalizedOfferEvent.clone());
-
-		markAccountTradesAsHavingChanged(currentlyLoggedInAccount, "new offer");
 
 		updateSinceLastAccountWideBuild = true;
 
@@ -813,10 +801,10 @@ public class FlippingPlugin extends Plugin
 	{
 		String displayNameOfChangedAcc = fileName.split("\\.")[0];
 
-		if (displayNameOfChangedAcc.equals(thisClientLastStored))
+		if (displayNameOfChangedAcc.equals(dataHandler.thisClientLastStored))
 		{
 			log.info("not reloading data for {} into the cache as this client was the last one to store it", displayNameOfChangedAcc);
-			thisClientLastStored = null;
+			dataHandler.thisClientLastStored = null;
 			return;
 		}
 
@@ -980,10 +968,7 @@ public class FlippingPlugin extends Plugin
 				stream().
 				filter(accountItem -> accountItem.getItemId() == item.getItemId()).
 				findFirst().
-				ifPresent(accountItem -> {
-					accountItem.setFavorite(favoriteStatus);
-					markAccountTradesAsHavingChanged(accountName, "item was favorited in account wide view. This account had that item.");
-				});
+				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
 		}
 	}
 
@@ -1000,8 +985,6 @@ public class FlippingPlugin extends Plugin
 			flippingPanel.rebuild(viewTradesForCurrentView());
 			statPanel.rebuild(viewTradesForCurrentView());
 		}, 500, TimeUnit.MILLISECONDS);
-
-		markAccountTradesAsHavingChanged(currentlyLoggedInAccount, "Adding selected ge tab offers");
 	}
 
 	private void addSelectedGeTabOffer(OfferEvent selectedOffer)
@@ -1065,11 +1048,9 @@ public class FlippingPlugin extends Plugin
 			for (AccountData accountData: dataHandler.getAllAccountData()) {
 				accountData.getTrades().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
 			}
-			markAccountTradesAsHavingChanged(ACCOUNT_WIDE, "to invalidate offers for all accounts");
 		}
 		else {
 			getTradesForCurrentView().forEach(item -> item.invalidateOffers(item.getIntervalHistory(startOfInterval)));
-			markAccountTradesAsHavingChanged(accountCurrentlyViewed, "to invalidate offers for one account");
 		}
 
 		updateSinceLastAccountWideBuild = true;
@@ -1085,11 +1066,9 @@ public class FlippingPlugin extends Plugin
 			for (AccountData accountData: dataHandler.getAllAccountData()) {
 				accountData.getTrades().forEach(item -> item.setValidFlippingPanelItem(false));
 			}
-			markAccountTradesAsHavingChanged(ACCOUNT_WIDE, "to set all flipping items to hidden for Account wide");
 		}
 		else {
 			getTradesForCurrentView().forEach(flippingItem -> flippingItem.setValidFlippingPanelItem(false));
-			markAccountTradesAsHavingChanged(accountCurrentlyViewed, "to set all flipping items to hidden");
 		}
 		updateSinceLastAccountWideBuild = true;
 		truncateTradeList();
@@ -1116,6 +1095,14 @@ public class FlippingPlugin extends Plugin
 
 	public int calculateOptionValue(Option option) throws InvalidOptionException {
 		return optionHandler.calculateOptionValue(option, highlightedItem, highlightedItemId);
+	}
+
+	public void markAccountTradesAsHavingChanged(String displayName) {
+		dataHandler.markDataAsHavingChanged(displayName);
+	}
+
+	public Set<String> getCurrentDisplayNames() {
+		return dataHandler.currentAccounts();
 	}
 
 	private KeyListener offerEditorKeyListener() {
@@ -1257,6 +1244,7 @@ public class FlippingPlugin extends Plugin
 
 	public void deleteAccount(String displayName)
 	{
+		dataHandler.deleteAccount(displayName);
 		if (accountCurrentlyViewed.equals(displayName))
 		{
 			masterPanel.getAccountSelector().setSelectedItem(dataHandler.currentAccounts().toArray()[0]);
@@ -1341,7 +1329,7 @@ public class FlippingPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
+			OfferEditor flippingWidget = new OfferEditor(client.getWidget(WidgetInfo.CHATBOX_CONTAINER), client);
 
 			FlippingItem selectedItem = null;
 			//Check if we've recorded any data for the item.

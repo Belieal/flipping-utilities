@@ -29,7 +29,6 @@ package com.flippingutilities.controller;
 import com.flippingutilities.db.TradePersister;
 import com.flippingutilities.model.AccountData;
 import com.flippingutilities.model.AccountWideData;
-import com.flippingutilities.model.Option;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -43,31 +42,21 @@ import java.util.*;
 public class DataHandler {
     FlippingPlugin plugin;
     private AccountWideData accountWideData;
-    private Map<String, AccountData> accountSpecificData;
+    private Map<String, AccountData> accountSpecificData = new HashMap<>();
     private boolean accountWideDataChanged = false;
     private Set<String> accountsWithUnsavedChanges = new HashSet<>();
-    private String thisClientLastStored = "";
+    public String thisClientLastStored;
 
     public DataHandler(FlippingPlugin plugin) {
         this.plugin = plugin;
     }
 
-    public List<Option> getOptions() {
-        return accountWideData.getOptions();
-    }
-
-    public void addOption(Option option) {
-        //want it in the front of the list so that rebuilds have the newest option at the top
-        accountWideData.getOptions().add(0, option);
-        accountWideDataChanged = true;
-    }
-
-    public void deleteOption(Option option) {
-        accountWideData.getOptions().remove(option);
-        accountWideDataChanged = true;
-    }
-
     public AccountWideData viewAccountWideData() {
+        return accountWideData;
+    }
+
+    public AccountWideData getAccountWideData() {
+        accountWideDataChanged = true;
         return accountWideData;
     }
 
@@ -93,7 +82,6 @@ public class DataHandler {
         return accountSpecificData.values();
     }
 
-
     //calls it if data is going to be updated,
     public AccountData getAccountData(String displayName) {
         accountsWithUnsavedChanges.add(displayName);
@@ -102,11 +90,20 @@ public class DataHandler {
 
     //is called if account data just needs to be viewed, not updated
     public AccountData viewAccountData(String displayName) {
-
+        return accountSpecificData.get(displayName);
     }
 
     public Set<String> currentAccounts() {
         return accountSpecificData.keySet();
+    }
+
+    public void markDataAsHavingChanged(String displayName) {
+        if (displayName.equals(FlippingPlugin.ACCOUNT_WIDE)) {
+            accountWideDataChanged = true;
+        }
+        else {
+            accountsWithUnsavedChanges.add(displayName);
+        }
     }
 
     public void storeData() {
@@ -208,7 +205,7 @@ public class DataHandler {
     {
         try
         {
-            AccountData data = accountCache.get(displayName);
+            AccountData data = accountSpecificData.get(displayName);
             if (data == null)
             {
                 log.info("for an unknown reason the data associated with {} has been set to null. Storing" +

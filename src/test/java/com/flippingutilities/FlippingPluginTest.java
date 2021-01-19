@@ -26,8 +26,10 @@ public class FlippingPluginTest
 	{
 		plugin = new FlippingPlugin();
 		plugin.setCurrentlyLoggedInAccount("testacc");
-		plugin.setAccountCache(Collections.singletonMap("testacc", new AccountData()));
-		plugin.getAccountCache().get("testacc").setSlotTimers(plugin.setupSlotTimers());
+		//TODO better testing process for this
+//		plugin.getDataHandler().getacc
+//		plugin.setAccountCache(Collections.singletonMap("testacc", new AccountData()));
+//		plugin.getAccountCache().get("testacc").setSlotTimers(plugin.setupSlotTimers());
 	}
 
 	/**

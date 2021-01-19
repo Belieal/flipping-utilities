@@ -28,6 +28,7 @@
 package com.flippingutilities.model;
 
 import com.flippingutilities.utilities.ListUtils;
+import com.google.common.collect.Lists;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -96,6 +97,10 @@ public class HistoryManager
 	 */
 	private void updateGeProperties(OfferEvent newOfferEvent)
 	{
+
+		//there is a small bug in this method. Basically, when we get non-complete offers from different slots it will
+		//only take one of the slots buys into account. When the offer completes or is cancelled things are fine.
+
 		if (!newOfferEvent.isBuy())
 		{
 			return;
@@ -114,6 +119,12 @@ public class HistoryManager
 
 		if (nextGeLimitRefresh == null || newOfferEvent.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
+			//this isn't always the correct things to do, but more often than not, its better to assume the offer came in
+			//during a previous window.
+			if (newOfferEvent.isBeforeLogin()) {
+				return;
+			}
+
 			nextGeLimitRefresh = newOfferEvent.getTime().plus(4, ChronoUnit.HOURS);
 			if (newOfferEvent.isComplete())
 			{
@@ -282,7 +293,7 @@ public class HistoryManager
 
 		itemLimit = itemLimit == -1 ? Long.MAX_VALUE : itemLimit;
 
-		for (OfferEvent offer : tradeList)
+		for (OfferEvent offer : Lists.reverse(tradeList))
 		{
 			if (!offer.isValidOfferEvent())
 			{

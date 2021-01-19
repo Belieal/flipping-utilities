@@ -477,7 +477,7 @@ public class FlippingItemPanel extends JPanel
 				{
 					flippingItem.setValidFlippingPanelItem(false);
 					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a FlippingItemPanel");
+						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 					}
 					plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
 				}
@@ -557,7 +557,7 @@ public class FlippingItemPanel extends JPanel
 					plugin.setFavoriteOnAllAccounts(flippingItem, !flippingItem.isFavorite());
 				}
 				else {
-					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "setting favorite");
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 				}
 				flippingItem.setFavorite(!flippingItem.isFavorite());
 				favoriteIcon.setIcon(flippingItem.isFavorite()? Icons.STAR_ON_ICON:Icons.STAR_OFF_ICON);

@@ -725,7 +725,7 @@ public class StatsPanel extends JPanel
 		FlippingItem item = itemPanel.getFlippingItem();
 		item.invalidateOffers(item.getIntervalHistory(startOfInterval));
 		if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-			plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a StatItemPanel");
+			plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 		}
 		rebuild(plugin.viewTradesForCurrentView());
 	}
