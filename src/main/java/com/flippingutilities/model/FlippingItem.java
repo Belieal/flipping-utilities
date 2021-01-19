@@ -234,8 +234,13 @@ public class FlippingItem
 	}
 
 	public int getRemainingGeLimit()
-		{
+	{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
+	}
+
+	public int getItemsBoughtThisLimitWindow()
+	{
+		return history.getItemsBoughtThisLimitWindow();
 	}
 
 	public Instant getGeLimitResetTime()

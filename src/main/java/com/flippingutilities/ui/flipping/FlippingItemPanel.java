@@ -155,8 +155,6 @@ public class FlippingItemPanel extends JPanel
 		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
 		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal,profitEachVal, potentialProfitVal};
 
-
-
 		boolean isFirstInPair = true;
 
 		for (int i=0;i<panels.length;i++) {
@@ -370,7 +368,7 @@ public class FlippingItemPanel extends JPanel
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText("Unknown");
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 			//can't have potential profit if the limit is unknown
 			potentialProfitVal.setText("N/A");
 		}
@@ -390,6 +388,12 @@ public class FlippingItemPanel extends JPanel
 		latestSellPriceText.setToolTipText("The last price you sold this item for");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
 		profitTotalText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
+		geLimitText.setToolTipText("Remaining ge limit");
+
+		if (flippingItem.getTotalGELimit() <= 0) {
+			geLimitText.setText("Bought:");
+			geLimitText.setToolTipText("Item has unknown limit, so this just displays how many you have bought in a 4 hour window");
+		}
 	}
 
 	/**
@@ -623,7 +627,7 @@ public class FlippingItemPanel extends JPanel
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText("Unknown");
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 		}
 	}
 
@@ -639,7 +643,7 @@ public class FlippingItemPanel extends JPanel
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText("Unknown");
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 		}
 
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
