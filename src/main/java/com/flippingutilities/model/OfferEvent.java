@@ -238,5 +238,10 @@ public class OfferEvent
 		int tickDiffFromLastOffer = Math.abs(tickArrivedAt - lastOfferForSlot.getTickArrivedAt());
 		ticksSinceFirstOffer = tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
 	}
+
+	public static OfferEvent dummyOffer(boolean buyState, int price) {
+		return new OfferEvent()
+
+	}
 }
 

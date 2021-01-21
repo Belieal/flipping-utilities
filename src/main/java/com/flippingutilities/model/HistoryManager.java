@@ -82,7 +82,7 @@ public class HistoryManager
 		//there is no point in updating ge properties or trying to delete previous offers for the trade.
 		if (newOffer.getSlot() != -1)
 		{
-			updateGeProperties(newOffer);
+			updateGeLimitProperties(newOffer);
 			deletePreviousOffersForTrade(newOffer);
 		}
 
@@ -95,7 +95,7 @@ public class HistoryManager
 	 *
 	 * @param newOfferEvent offer event just received
 	 */
-	private void updateGeProperties(OfferEvent newOfferEvent)
+	private void updateGeLimitProperties(OfferEvent newOfferEvent)
 	{
 
 		//there is a small bug in this method. Basically, when we get non-complete offers from different slots it will
@@ -293,7 +293,7 @@ public class HistoryManager
 
 		itemLimit = itemLimit == -1 ? Long.MAX_VALUE : itemLimit;
 
-		for (OfferEvent offer : Lists.reverse(tradeList))
+		for (OfferEvent offer : tradeList)
 		{
 			if (!offer.isValidOfferEvent())
 			{
@@ -618,5 +618,11 @@ public class HistoryManager
 			}
 		}
 		return Optional.empty();
+	}
+
+	public void resetGeLimit() {
+		itemsBoughtThroughCompleteOffers = 0;
+		itemsBoughtThisLimitWindow = 0;
+		nextGeLimitRefresh = Instant.now();
 	}
 }

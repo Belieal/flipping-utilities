@@ -330,4 +330,8 @@ public class FlippingItem
 		history.getCompressedOfferEvents().forEach(o -> o.setMadeBy(flippedBy));
 	}
 
+	public void resetGeLimit() {
+		history.resetGeLimit();
+	}
+
 }

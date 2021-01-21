@@ -30,6 +30,7 @@ import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
+import jdk.nashorn.internal.scripts.JO;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
@@ -46,7 +47,9 @@ import java.awt.event.MouseEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -92,6 +95,8 @@ public class FlippingItemPanel extends JPanel
 
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
+
+	private Set<Integer> highlightedPropertyPanels = new HashSet<>();
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -173,6 +178,64 @@ public class FlippingItemPanel extends JPanel
 			if (i == panels.length-1) {
 				panels[i].setBorder(new EmptyBorder(2,8,3,8));
 			}
+
+			int finalI = i;
+
+			TextField textField = new TextField(10);
+			textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
+			String currentText = valueLabels[i].getText();
+			String textWithoutGp = currentText.substring(0, currentText.length()-3);
+			textField.setText(textWithoutGp);
+			textField.addActionListener((e1 -> {
+				highlightedPropertyPanels.remove(finalI);
+				try {
+					int num = Integer.parseInt(textField.getText());
+					if (num <= 0) {
+						JOptionPane.showMessageDialog(this,"You cannot input zero or a negative number");
+						return;
+					}
+					valueLabels[finalI].setText(String.format(NUM_FORMAT, num) + " gp");
+					OfferEvent dummyOffer = OfferEvent.dummyOffer()
+					flippingItem.updateLatestProperties();
+					flippingItem.updateHistory();
+				}
+				catch (NumberFormatException e) {
+					JOptionPane.showMessageDialog(this, "You need to input a number");
+					return;
+				}
+				panels[finalI].remove(textField);
+				panels[finalI].add(valueLabels[finalI], BorderLayout.EAST);
+				revalidate();
+				repaint();
+			}));
+
+			panels[i].addMouseListener(new MouseAdapter() {
+				@Override
+				public void mousePressed(MouseEvent e) {
+					if (highlightedPropertyPanels.contains(finalI)) {
+						highlightedPropertyPanels.remove(finalI);
+						panels[finalI].remove(textField);
+						panels[finalI].add(valueLabels[finalI], BorderLayout.EAST);
+					}
+					else {
+						highlightedPropertyPanels.add(finalI);
+						panels[finalI].remove(valueLabels[finalI]);
+						panels[finalI].add(textField, BorderLayout.EAST);
+					}
+					revalidate();
+					repaint();
+				}
+
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					panels[finalI].setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+				}
+
+				@Override
+				public void mouseExited(MouseEvent e) {
+					panels[finalI].setBackground(CustomColors.DARK_GRAY);
+				}
+			});
 		}
 
 		//last grid contains the panel that contains the ge limit, the ge refresh timer, and the roi.
@@ -191,6 +254,26 @@ public class FlippingItemPanel extends JPanel
 		geLimitPanel.setBackground(CustomColors.DARK_GRAY);
 		geLimitPanel.add(geLimitText);
 		geLimitPanel.add(limitLabelVal);
+
+		geLimitPanel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				int result = JOptionPane.showConfirmDialog(FlippingItemPanel.this, "Reset ge limit?");
+				if (result == 0) {
+					flippingItem.resetGeLimit();
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				geLimitPanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				geLimitPanel.setBackground(CustomColors.DARK_GRAY);
+			}
+		});
 
 		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
 		roiPanel.setBackground(CustomColors.DARK_GRAY);
