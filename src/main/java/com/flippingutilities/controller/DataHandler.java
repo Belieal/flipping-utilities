@@ -133,8 +133,8 @@ public class DataHandler {
             accountWideData = new AccountWideData();
             accountWideData.prepare();
             accountSpecificData = new HashMap<>();
+            accountWideDataChanged = true;
         }
-        accountWideDataChanged = true;
     }
 
     public void loadAccountWideData() {

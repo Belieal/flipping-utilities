@@ -82,8 +82,9 @@ public class Icons {
     public static final ImageIcon QUANTITY_EDITOR_PIC;
     public static final ImageIcon PRICE_EDITOR_PIC;
 
+    public static final ImageIcon SEARCH;
 
-
+    public static final ImageIcon TRASH2;
 
 
     static
@@ -196,5 +197,11 @@ public class Icons {
 
         final BufferedImage priceEditorPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/priceeditorpic.png");
         PRICE_EDITOR_PIC = new ImageIcon(priceEditorPic);
+
+        final BufferedImage searchIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/search.png");
+        SEARCH = new ImageIcon(searchIcon.getScaledInstance(10,10,Image.SCALE_SMOOTH));
+
+        final BufferedImage trashIcon2 = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/trashicon.png");
+        TRASH2 = new ImageIcon(trashIcon2.getScaledInstance(10,10,Image.SCALE_SMOOTH));
     }
 }

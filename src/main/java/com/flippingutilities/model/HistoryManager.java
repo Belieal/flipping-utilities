@@ -78,8 +78,9 @@ public class HistoryManager
 
 	public void updateHistory(OfferEvent newOffer)
 	{
-		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came or its slot,
-		//there is no point in updating ge properties or trying to delete previous offers for the trade.
+		//if slot is -1 than the offer was added manually from GE history or because of an edit to the FlippingItemPanel.
+		//Since we don't know when it came or its slot/it doesn't have a time or slot, there is no point in updating ge
+		//properties or trying to delete previous offers for the trade.
 		if (newOffer.getSlot() != -1)
 		{
 			updateGeLimitProperties(newOffer);
@@ -121,9 +122,9 @@ public class HistoryManager
 		{
 			//this isn't always the correct things to do, but more often than not, its better to assume the offer came in
 			//during a previous window.
-			if (newOfferEvent.isBeforeLogin()) {
-				return;
-			}
+//			if (newOfferEvent.isBeforeLogin()) {
+//				return;
+//			}
 
 			nextGeLimitRefresh = newOfferEvent.getTime().plus(4, ChronoUnit.HOURS);
 			if (newOfferEvent.isComplete())

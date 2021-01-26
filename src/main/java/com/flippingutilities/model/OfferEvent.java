@@ -239,9 +239,22 @@ public class OfferEvent
 		ticksSinceFirstOffer = tickDiffFromLastOffer + lastOfferForSlot.getTicksSinceFirstOffer();
 	}
 
-	public static OfferEvent dummyOffer(boolean buyState, int price) {
-		return new OfferEvent()
-
+	public static OfferEvent dummyOffer(boolean buyState, boolean marginCheck, int price, int id, String itemName) {
+		return new OfferEvent(
+				buyState,
+				id,
+				0,
+				price,
+				Instant.now(),
+				-1,
+				buyState ? GrandExchangeOfferState.BOUGHT : GrandExchangeOfferState.SOLD,
+				1,
+				marginCheck? 1 : 10,
+				1,
+				false,
+				"",
+				false,
+				itemName);
 	}
 }
 

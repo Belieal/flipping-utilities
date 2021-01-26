@@ -866,7 +866,7 @@ public class FlippingPlugin extends Plugin
 		}
 
 		//take all flipping items from the account cache, regardless of account, and segregate them based on item name.
-		Map<String, List<FlippingItem>> groupedItems = dataHandler.getAllAccountData().stream().
+		Map<String, List<FlippingItem>> groupedItems = dataHandler.viewAllAccountData().stream().
 			flatMap(accountData -> accountData.getTrades().stream()).
 			map(FlippingItem::clone).
 			collect(Collectors.groupingBy(FlippingItem::getItemName));
@@ -962,13 +962,16 @@ public class FlippingPlugin extends Plugin
 	{
 		for (String accountName : dataHandler.currentAccounts())
 		{
-			AccountData account = dataHandler.getAccountData(accountName);
+			AccountData account = dataHandler.viewAccountData(accountName);
 			account.
 				getTrades().
 				stream().
 				filter(accountItem -> accountItem.getItemId() == item.getItemId()).
 				findFirst().
-				ifPresent(accountItem -> accountItem.setFavorite(favoriteStatus));
+				ifPresent(accountItem -> {
+					accountItem.setFavorite(favoriteStatus);
+					markAccountTradesAsHavingChanged(accountName);
+				});
 		}
 	}
 

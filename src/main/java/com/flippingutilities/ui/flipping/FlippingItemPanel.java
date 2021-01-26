@@ -146,7 +146,7 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JPanel createItemInfoPanel()
 	{
-		JPanel itemInfo = new JPanel(new DynamicGridLayout(8, 1));
+		JPanel itemInfo = new JPanel(new DynamicGridLayout(9, 1));
 		itemInfo.setBackground(getBackground());
 
 		JPanel priceCheckBuyPanel = new JPanel(new BorderLayout());
@@ -156,9 +156,9 @@ public class FlippingItemPanel extends JPanel
 		JPanel profitEachPanel = new JPanel(new BorderLayout());
 		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
 
-		JPanel[] panels = {priceCheckBuyPanel, priceCheckSellPanel, latestBuyPanel, latestSellPanel, profitEachPanel, potentialProfitPanel};
+		JPanel[] panels = {latestBuyPanel, latestSellPanel, priceCheckBuyPanel, priceCheckSellPanel, profitEachPanel, potentialProfitPanel};
 		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
-		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal,profitEachVal, potentialProfitVal};
+		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal};
 
 		boolean isFirstInPair = true;
 
@@ -189,15 +189,29 @@ public class FlippingItemPanel extends JPanel
 			textField.addActionListener((e1 -> {
 				highlightedPropertyPanels.remove(finalI);
 				try {
-					int num = Integer.parseInt(textField.getText());
+					int num = Integer.parseInt(textField.getText().replace(",", ""));
 					if (num <= 0) {
 						JOptionPane.showMessageDialog(this,"You cannot input zero or a negative number");
 						return;
 					}
 					valueLabels[finalI].setText(String.format(NUM_FORMAT, num) + " gp");
-					OfferEvent dummyOffer = OfferEvent.dummyOffer()
-					flippingItem.updateLatestProperties();
-					flippingItem.updateHistory();
+					OfferEvent dummyOffer;
+					if (valueLabels[finalI] == priceCheckBuyVal) {
+						dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					}
+					else if (valueLabels[finalI] == priceCheckSellVal){
+						dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					}
+					else if (valueLabels[finalI] == latestBuyPriceVal){
+						dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					}
+					else {
+						dummyOffer = OfferEvent.dummyOffer(false, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					}
+
+					flippingItem.updateLatestProperties(dummyOffer);
+					flippingItem.updateHistory(dummyOffer);
+					refreshProperties();
 				}
 				catch (NumberFormatException e) {
 					JOptionPane.showMessageDialog(this, "You need to input a number");
@@ -240,6 +254,25 @@ public class FlippingItemPanel extends JPanel
 
 		//last grid contains the panel that contains the ge limit, the ge refresh timer, and the roi.
 		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
+
+		JPanel searchIconPanel = new JPanel(new BorderLayout());
+		searchIconPanel.setBorder(new EmptyBorder(0,10,5,10));
+		searchIconPanel.setBackground(CustomColors.DARK_GRAY);
+
+		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
+		JLabel trashIconLabel = new JLabel(Icons.TRASH2);
+		JLabel searchCode = new JLabel("quick search code: 10m", JLabel.CENTER);
+		searchCode.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
+				"searching for items in the ge to populate your ge results with any item with this code");
+		searchCode.setFont(FontManager.getRunescapeSmallFont());
+		searchCode.setPreferredSize(new Dimension(0,0));
+
+		searchIconPanel.add(searchIconLabel, BorderLayout.WEST);
+		searchIconPanel.add(trashIconLabel, BorderLayout.EAST);
+		searchIconPanel.add(searchCode, BorderLayout.CENTER);
+
+
+		itemInfo.add(searchIconPanel);
 
 		return itemInfo;
 	}
@@ -419,42 +452,7 @@ public class FlippingItemPanel extends JPanel
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
-		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
-		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
-
-		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
-		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
-
-		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
-		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-
-		Optional<Float> roi =  flippingItem.getCurrentRoi();
-
-		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
-		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
-
-		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
-		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
-
-		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
-		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
-
-		roiLabelVal.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
-		//Color gradient red-yellow-green depending on ROI.
-		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
-
-		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
-		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
-		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
-		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
-
-		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
-		} else {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
-			//can't have potential profit if the limit is unknown
-			potentialProfitVal.setText("N/A");
-		}
+		refreshProperties();
 	}
 
 	private void setDescriptionLabels() {
@@ -693,29 +691,46 @@ public class FlippingItemPanel extends JPanel
 		return !itemInfo.isVisible();
 	}
 
-	/**
-	 * Refresh properties that could be stale due to a new offer event. Other properties like the
-	 * price check buy and sell price don't have to be refreshed like this cause offers that would cause
-	 * them to change already trigger rebuilds of the flipping panel which will reconstruct this panel anyway.
-	 */
 	public void refreshProperties() {
-		latestBuyPriceVal.setText(flippingItem.getLatestBuy().isPresent() ?
-				String.format(NUM_FORMAT, flippingItem.getLatestBuy().get().getPrice()) + " gp" : "N/A");
-		latestSellPriceVal.setText(flippingItem.getLatestSell().isPresent() ?
-				String.format(NUM_FORMAT, flippingItem.getLatestSell().get().getPrice()) + " gp" : "N/A");
+		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
+		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
 
+		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
+		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
+
+		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
 		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp" : "N/A");
+
+		Optional<Float> roi =  flippingItem.getCurrentRoi();
+
+		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
+		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
+
+		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
+		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
+
+		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
+		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
+
+		roiLabelVal.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
+		//Color gradient red-yellow-green depending on ROI.
+		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
+
+		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
+		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
+		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
+		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
+			//can't have potential profit if the limit is unknown
+			potentialProfitVal.setText("N/A");
 		}
 	}
 
 	public void updateTimerDisplays() {
-
 		flippingItem.validateGeProperties();
 
 		geRefreshLabel.setText(flippingItem.getGeLimitResetTime() == null?

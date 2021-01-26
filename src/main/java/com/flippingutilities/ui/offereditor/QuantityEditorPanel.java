@@ -13,7 +13,7 @@ public class QuantityEditorPanel extends AbstractOfferEditorPanel{
 
     @Override
     public List<Option> getOptions() {
-        return plugin.getDataHandler().getAccountWideData().getOptions().stream().filter(option -> option.isQuantityOption()).collect(Collectors.toList());
+        return plugin.getDataHandler().viewAccountWideData().getOptions().stream().filter(option -> option.isQuantityOption()).collect(Collectors.toList());
     }
 
     @Override
