@@ -37,6 +37,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
@@ -256,19 +257,25 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
 
 		JPanel searchIconPanel = new JPanel(new BorderLayout());
-		searchIconPanel.setBorder(new EmptyBorder(0,10,5,10));
+		searchIconPanel.setBorder(new EmptyBorder(0,23,5,10));
 		searchIconPanel.setBackground(CustomColors.DARK_GRAY);
 
 		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
 		JLabel trashIconLabel = new JLabel(Icons.TRASH2);
-		JLabel searchCode = new JLabel("quick search code: 10m", JLabel.CENTER);
+		JLabel searchCode = new JLabel("<html> quick search code: " + UIUtilities.colorText("medlevelitems", CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
 		searchCode.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
 				"searching for items in the ge to populate your ge results with any item with this code");
 		searchCode.setFont(FontManager.getRunescapeSmallFont());
 		searchCode.setPreferredSize(new Dimension(0,0));
 
-		searchIconPanel.add(searchIconLabel, BorderLayout.WEST);
-		searchIconPanel.add(trashIconLabel, BorderLayout.EAST);
+		JPanel searchPanel = new JPanel();
+		searchPanel.add(searchIconLabel);
+
+		JPanel trashPanel = new JPanel();
+		trashPanel.add(trashIconLabel);
+
+		searchIconPanel.add(searchPanel, BorderLayout.EAST);
+		//searchIconPanel.add(trashPanel, BorderLayout.EAST);
 		searchIconPanel.add(searchCode, BorderLayout.CENTER);
 
 
