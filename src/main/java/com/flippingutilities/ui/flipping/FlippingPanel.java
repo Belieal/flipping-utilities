@@ -250,7 +250,7 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
-			int vGap = 4;
+			int vGap = 6;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());

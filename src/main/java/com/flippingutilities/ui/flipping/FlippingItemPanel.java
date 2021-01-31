@@ -30,14 +30,12 @@ import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
-import jdk.nashorn.internal.scripts.JO;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
-import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
@@ -45,12 +43,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -97,7 +94,7 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
 
-	private Set<Integer> highlightedPropertyPanels = new HashSet<>();
+
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -157,6 +154,11 @@ public class FlippingItemPanel extends JPanel
 		JPanel profitEachPanel = new JPanel(new BorderLayout());
 		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
 
+		makePropertyPanelEditable(priceCheckBuyPanel, priceCheckBuyVal);
+		makePropertyPanelEditable(priceCheckSellPanel, priceCheckSellVal);
+		makePropertyPanelEditable(latestBuyPanel, latestBuyPriceVal);
+		makePropertyPanelEditable(latestSellPanel, latestSellPriceVal);
+
 		JPanel[] panels = {latestBuyPanel, latestSellPanel, priceCheckBuyPanel, priceCheckSellPanel, profitEachPanel, potentialProfitPanel};
 		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
 		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal};
@@ -179,110 +181,174 @@ public class FlippingItemPanel extends JPanel
 			if (i == panels.length-1) {
 				panels[i].setBorder(new EmptyBorder(2,8,3,8));
 			}
-
-			int finalI = i;
-
-			TextField textField = new TextField(10);
-			textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			String currentText = valueLabels[i].getText();
-			String textWithoutGp = currentText.substring(0, currentText.length()-3);
-			textField.setText(textWithoutGp);
-			textField.addActionListener((e1 -> {
-				highlightedPropertyPanels.remove(finalI);
-				try {
-					int num = Integer.parseInt(textField.getText().replace(",", ""));
-					if (num <= 0) {
-						JOptionPane.showMessageDialog(this,"You cannot input zero or a negative number");
-						return;
-					}
-					valueLabels[finalI].setText(String.format(NUM_FORMAT, num) + " gp");
-					OfferEvent dummyOffer;
-					if (valueLabels[finalI] == priceCheckBuyVal) {
-						dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					}
-					else if (valueLabels[finalI] == priceCheckSellVal){
-						dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					}
-					else if (valueLabels[finalI] == latestBuyPriceVal){
-						dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
-					}
-					else {
-						dummyOffer = OfferEvent.dummyOffer(false, false, num, flippingItem.getItemId(), flippingItem.getItemName());
-					}
-
-					flippingItem.updateLatestProperties(dummyOffer);
-					flippingItem.updateHistory(dummyOffer);
-					refreshProperties();
-				}
-				catch (NumberFormatException e) {
-					JOptionPane.showMessageDialog(this, "You need to input a number");
-					return;
-				}
-				panels[finalI].remove(textField);
-				panels[finalI].add(valueLabels[finalI], BorderLayout.EAST);
-				revalidate();
-				repaint();
-			}));
-
-			panels[i].addMouseListener(new MouseAdapter() {
-				@Override
-				public void mousePressed(MouseEvent e) {
-					if (highlightedPropertyPanels.contains(finalI)) {
-						highlightedPropertyPanels.remove(finalI);
-						panels[finalI].remove(textField);
-						panels[finalI].add(valueLabels[finalI], BorderLayout.EAST);
-					}
-					else {
-						highlightedPropertyPanels.add(finalI);
-						panels[finalI].remove(valueLabels[finalI]);
-						panels[finalI].add(textField, BorderLayout.EAST);
-					}
-					revalidate();
-					repaint();
-				}
-
-				@Override
-				public void mouseEntered(MouseEvent e) {
-					panels[finalI].setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-				}
-
-				@Override
-				public void mouseExited(MouseEvent e) {
-					panels[finalI].setBackground(CustomColors.DARK_GRAY);
-				}
-			});
 		}
 
-		//last grid contains the panel that contains the ge limit, the ge refresh timer, and the roi.
 		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
-
-		JPanel searchIconPanel = new JPanel(new BorderLayout());
-		searchIconPanel.setBorder(new EmptyBorder(0,23,5,10));
-		searchIconPanel.setBackground(CustomColors.DARK_GRAY);
-
-		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
-		JLabel trashIconLabel = new JLabel(Icons.TRASH2);
-		JLabel searchCode = new JLabel("<html> quick search code: " + UIUtilities.colorText("medlevelitems", CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
-		searchCode.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
-				"searching for items in the ge to populate your ge results with any item with this code");
-		searchCode.setFont(FontManager.getRunescapeSmallFont());
-		searchCode.setPreferredSize(new Dimension(0,0));
-
-		JPanel searchPanel = new JPanel();
-		searchPanel.add(searchIconLabel);
-
-		JPanel trashPanel = new JPanel();
-		trashPanel.add(trashIconLabel);
-
-		searchIconPanel.add(searchPanel, BorderLayout.EAST);
-		//searchIconPanel.add(trashPanel, BorderLayout.EAST);
-		searchIconPanel.add(searchCode, BorderLayout.CENTER);
-
-
-		itemInfo.add(searchIconPanel);
+		itemInfo.add(createBottomPanel());
 
 		return itemInfo;
 	}
+
+	private JPanel createBottomPanel() {
+		JPanel bottomPanel = new JPanel(new BorderLayout());
+		bottomPanel.setBorder(new EmptyBorder(3,21,3,8));
+		bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
+		searchIconLabel.setToolTipText("Click to search item on platinumtokens or osrs ge!");
+		JPopupMenu popupMenu = ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem);
+		searchIconLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				popupMenu.show(searchIconLabel, e.getX(), e.getY());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				searchIconLabel.setIcon(Icons.SEARCH_HOVER);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				searchIconLabel.setIcon(Icons.SEARCH);
+			}
+		});
+
+		TextField searchCodeTextField = new TextField(10);
+
+		JPanel searchCodePanel = new JPanel();
+		searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
+		searchCodeLabel.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
+				"searching for items in the ge to populate your ge results with any item with this code");
+		searchCodeLabel.setFont(FontManager.getRunescapeSmallFont());
+
+		searchCodePanel.add(searchCodeLabel);
+
+		final boolean[] isHighlighted = {false};
+		MouseListener l = new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (isHighlighted[0]) {
+					searchCodePanel.remove(searchCodeTextField);
+					searchCodePanel.add(searchCodeLabel);
+					isHighlighted[0] = false;
+				}
+				else {
+					searchCodePanel.remove(searchCodeLabel);
+					searchCodePanel.add(searchCodeTextField);
+					isHighlighted[0] = true;
+				}
+				repaint();
+				revalidate();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				searchCodePanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			}
+		};
+		searchCodePanel.addMouseListener(l);
+		searchCodeLabel.addMouseListener(l);
+
+		searchCodeTextField.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		searchCodeTextField.setText(flippingItem.getFavoriteCode());
+		searchCodeTextField.addActionListener(e -> {
+			isHighlighted[0] = false;
+			flippingItem.setFavoriteCode(searchCodeTextField.getText());
+			searchCodePanel.remove(searchCodeTextField);
+			searchCodePanel.add(searchCodeLabel);
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>");
+			repaint();
+			revalidate();
+		});
+
+		bottomPanel.add(searchIconLabel, BorderLayout.EAST);
+		bottomPanel.add(searchCodePanel, BorderLayout.CENTER);
+		return bottomPanel;
+	}
+
+	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel) {
+		final boolean[] isHighlighted = {false};
+		TextField textField = new TextField(10);
+		textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		String currentText = valueLabel.getText();
+		String textWithoutGp = currentText.substring(0, currentText.length()-3);
+		textField.setText(textWithoutGp);
+		textField.addActionListener((e1 -> {
+			isHighlighted[0] = false;
+			try {
+				int num = Integer.parseInt(textField.getText().replace(",", ""));
+				if (num <= 0) {
+					JOptionPane.showMessageDialog(this,"You cannot input zero or a negative number");
+					return;
+				}
+				valueLabel.setText(String.format(NUM_FORMAT, num) + " gp");
+				OfferEvent dummyOffer;
+				if (valueLabel == priceCheckBuyVal) {
+					dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestMarginCheckSell(Optional.of(dummyOffer));
+				}
+				else if (valueLabel == priceCheckSellVal){
+					dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestMarginCheckBuy(Optional.of(dummyOffer));
+				}
+				else if (valueLabel == latestBuyPriceVal){
+					dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestBuy(Optional.of(dummyOffer));
+				}
+				else {
+					dummyOffer = OfferEvent.dummyOffer(false, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestSell(Optional.of(dummyOffer));
+				}
+
+				refreshProperties();
+			}
+			catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(this, "You need to input a number");
+				return;
+			}
+			propertyPanel.remove(textField);
+			propertyPanel.add(valueLabel, BorderLayout.EAST);
+			revalidate();
+			repaint();
+		}));
+
+		propertyPanel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (isHighlighted[0]) {
+					isHighlighted[0] = false;
+					propertyPanel.remove(textField);
+					propertyPanel.add(valueLabel, BorderLayout.EAST);
+				}
+				else {
+					isHighlighted[0] = true;
+					propertyPanel.remove(valueLabel);
+					propertyPanel.add(textField, BorderLayout.EAST);
+				}
+				revalidate();
+				repaint();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				propertyPanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				propertyPanel.setBackground(CustomColors.DARK_GRAY);
+			}
+		});
+	}
+
 
 	/**
 	 * holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
@@ -327,7 +393,6 @@ public class FlippingItemPanel extends JPanel
 		geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		geRefreshTimePanel.add(geRefreshLabel);
 		geRefreshTimePanel.add(geRefreshAtLabel);
-
 
 		//holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
 		JPanel geLimitRefreshTimeAndRoiPanel = new JPanel(new BorderLayout());
@@ -502,7 +567,6 @@ public class FlippingItemPanel extends JPanel
 		itemClearPanel.add(deleteButton, BorderLayout.EAST);
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setComponentPopupMenu(ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(getBackground());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
