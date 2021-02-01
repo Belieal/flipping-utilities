@@ -111,13 +111,6 @@ public interface FlippingConfig extends Config
 	default boolean verboseViewEnabled() { return true; }
 
 	@ConfigItem(
-		keyName = "favoriteSearchCode",
-		name = "favorite items quick search",
-		description = "What you can type in the ge search bar to automatically populate it with your favorite items"
-	)
-	default String favoriteSearchCode() { return "1"; }
-
-	@ConfigItem(
 			keyName = "slotTimerBuyTextColor",
 			name = "slot timer buy text color",
 			description = "the color of the buy text on the slot timers"

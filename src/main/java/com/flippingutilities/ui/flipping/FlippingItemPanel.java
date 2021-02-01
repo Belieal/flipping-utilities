@@ -47,7 +47,6 @@ import java.awt.event.MouseListener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -94,7 +93,7 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
 
-
+	JLabel searchCodeLabel;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -219,9 +218,15 @@ public class FlippingItemPanel extends JPanel
 		JPanel searchCodePanel = new JPanel();
 		searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		JLabel searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
+		searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
+		if (flippingItem.isFavorite()) {
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
+		}
+		else {
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText("N/A", CustomColors.VIBRANT_YELLOW) + "</html>");
+		}
 		searchCodeLabel.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
-				"searching for items in the ge to populate your ge results with any item with this code");
+				"searching for items in the ge to populate your ge results with any item with this code</html>");
 		searchCodeLabel.setFont(FontManager.getRunescapeSmallFont());
 
 		searchCodePanel.add(searchCodeLabel);
@@ -230,6 +235,11 @@ public class FlippingItemPanel extends JPanel
 		MouseListener l = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
+				if (!flippingItem.isFavorite()) {
+					JOptionPane.showMessageDialog(searchCodeLabel, "<html>Item is not favorited.<br> Favorite the item to be able to use/edit the quick search code</html>");
+					return;
+				}
+
 				if (isHighlighted[0]) {
 					searchCodePanel.remove(searchCodeTextField);
 					searchCodePanel.add(searchCodeLabel);
@@ -261,10 +271,19 @@ public class FlippingItemPanel extends JPanel
 		searchCodeTextField.setText(flippingItem.getFavoriteCode());
 		searchCodeTextField.addActionListener(e -> {
 			isHighlighted[0] = false;
+			if (plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+				plugin.setFavoriteCodeOnAllAccounts(flippingItem, searchCodeTextField.getText());
+			}
+			else {
+				plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
+			}
+
 			flippingItem.setFavoriteCode(searchCodeTextField.getText());
+
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>");
+
 			searchCodePanel.remove(searchCodeTextField);
 			searchCodePanel.add(searchCodeLabel);
-			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>");
 			repaint();
 			revalidate();
 		});
@@ -717,6 +736,13 @@ public class FlippingItemPanel extends JPanel
 				}
 				flippingItem.setFavorite(!flippingItem.isFavorite());
 				favoriteIcon.setIcon(flippingItem.isFavorite()? Icons.STAR_ON_ICON:Icons.STAR_OFF_ICON);
+
+				if (flippingItem.isFavorite()) {
+					searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
+				}
+				else {
+					searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText("N/A", CustomColors.VIBRANT_YELLOW) + "</html>");
+				}
 			}
 
 			@Override

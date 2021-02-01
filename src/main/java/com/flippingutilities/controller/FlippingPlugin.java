@@ -975,6 +975,22 @@ public class FlippingPlugin extends Plugin
 		}
 	}
 
+	public void setFavoriteCodeOnAllAccounts(FlippingItem item, String favoriteCode) {
+		for (String accountName : dataHandler.currentAccounts())
+		{
+			AccountData account = dataHandler.viewAccountData(accountName);
+			account.
+					getTrades().
+					stream().
+					filter(accountItem -> accountItem.getItemId() == item.getItemId()).
+					findFirst().
+					ifPresent(accountItem -> {
+						accountItem.setFavoriteCode(favoriteCode);
+						markAccountTradesAsHavingChanged(accountName);
+					});
+		}
+	}
+
 	public void addSelectedGeTabOffers(List<OfferEvent> selectedOffers)
 	{
 		for (OfferEvent offerEvent : selectedOffers)
@@ -1148,22 +1164,20 @@ public class FlippingPlugin extends Plugin
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
 		final String input = client.getVar(VarClientStr.INPUT_TEXT);
-		if (!input.equals(config.favoriteSearchCode()))
-		{
-			return;
-		}
-
 		Set<Integer> ids = dataHandler.viewAccountData(currentlyLoggedInAccount).
 			getTrades()
 			.stream()
-			.filter(FlippingItem::isFavorite)
+			.filter(item -> item.isFavorite() && input.equals(item.getFavoriteCode()))
 			.map(FlippingItem::getItemId)
 			.collect(Collectors.toSet());
+
+		if (ids.isEmpty()) {
+			return;
+		}
 
 		client.setGeSearchResultIndex(0);
 		client.setGeSearchResultCount(ids.size());
 		client.setGeSearchResultIds(Shorts.toArray(ids));
-
 		event.consume();
 	}
 
@@ -1307,7 +1321,7 @@ public class FlippingPlugin extends Plugin
 				child.setXTextAlignment(WidgetTextAlignment.CENTER);
 				child.setYTextAlignment(WidgetTextAlignment.CENTER);
 				child.setWidthMode(WidgetSizeMode.MINUS);
-				child.setText(String.format("Type %s to fill search results with items you favorited in flipping utilities!", config.favoriteSearchCode()));
+				child.setText("Type a quick search code to see all favorited items with that code!");
 				child.revalidate();
 			});
 		}
