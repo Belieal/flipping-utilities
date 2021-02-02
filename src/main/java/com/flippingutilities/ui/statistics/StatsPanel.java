@@ -504,7 +504,7 @@ public class StatsPanel extends JPanel
 			updateDisplays(flippingItems);
 			revalidate();
 			repaint();
-			log.info("stats panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+			//log.info("stats panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 

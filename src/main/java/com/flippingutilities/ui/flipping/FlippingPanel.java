@@ -278,7 +278,7 @@ public class FlippingPanel extends JPanel
 			revalidate();
 			repaint();
 
-			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+			//log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 
 	}
