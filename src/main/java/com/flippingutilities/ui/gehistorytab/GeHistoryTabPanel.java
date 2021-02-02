@@ -163,7 +163,7 @@ public class GeHistoryTabPanel extends JPanel
 			highlightedPanels.forEach(idx -> offerPanels.get(idx).setAdded());
 			revalidate();
 			repaint();
-			log.info("GeHistoryTabPanel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+			//log.info("GeHistoryTabPanel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 	}
 }

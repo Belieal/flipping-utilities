@@ -28,6 +28,7 @@
 package com.flippingutilities.model;
 
 import com.flippingutilities.utilities.ListUtils;
+import com.google.common.collect.Lists;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -77,11 +78,12 @@ public class HistoryManager
 
 	public void updateHistory(OfferEvent newOffer)
 	{
-		//if slot is -1 than the offer was added manually from GE history. Since we don't know when it came or its slot,
-		//there is no point in updating ge properties or trying to delete previous offers for the trade.
+		//if slot is -1 than the offer was added manually from GE history.
+		//Since we don't know when it came or its slot/it doesn't have a time or slot, there is no point in updating ge
+		//properties or trying to delete previous offers for the trade.
 		if (newOffer.getSlot() != -1)
 		{
-			updateGeProperties(newOffer);
+			updateGeLimitProperties(newOffer);
 			deletePreviousOffersForTrade(newOffer);
 		}
 
@@ -94,8 +96,12 @@ public class HistoryManager
 	 *
 	 * @param newOfferEvent offer event just received
 	 */
-	private void updateGeProperties(OfferEvent newOfferEvent)
+	private void updateGeLimitProperties(OfferEvent newOfferEvent)
 	{
+
+		//there is a small bug in this method. Basically, when we get non-complete offers from different slots it will
+		//only take one of the slots buys into account. When the offer completes or is cancelled things are fine.
+
 		if (!newOfferEvent.isBuy())
 		{
 			return;
@@ -114,6 +120,12 @@ public class HistoryManager
 
 		if (nextGeLimitRefresh == null || newOfferEvent.getTime().compareTo(nextGeLimitRefresh) > 0)
 		{
+			//this isn't always the correct things to do, but more often than not, its better to assume the offer came in
+			//during a previous window.
+//			if (newOfferEvent.isBeforeLogin()) {
+//				return;
+//			}
+
 			nextGeLimitRefresh = newOfferEvent.getTime().plus(4, ChronoUnit.HOURS);
 			if (newOfferEvent.isComplete())
 			{
@@ -607,5 +619,11 @@ public class HistoryManager
 			}
 		}
 		return Optional.empty();
+	}
+
+	public void resetGeLimit() {
+		itemsBoughtThroughCompleteOffers = 0;
+		itemsBoughtThisLimitWindow = 0;
+		nextGeLimitRefresh = Instant.now();
 	}
 }

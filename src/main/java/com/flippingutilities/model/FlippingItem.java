@@ -29,6 +29,7 @@ package com.flippingutilities.model;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,13 +49,14 @@ import java.util.Optional;
  * of a panel which is then displayed.
  */
 @AllArgsConstructor
+@NoArgsConstructor
 @Slf4j
 public class FlippingItem
 {
 
 	@SerializedName("id")
 	@Getter
-	private final int itemId;
+	private int itemId;
 
 	@SerializedName("name")
 	@Getter
@@ -85,16 +87,24 @@ public class FlippingItem
 	@Setter
 	private boolean favorite;
 
+	@Getter
+	@Setter
+	private String favoriteCode = "1";
+
 	//non persisted fields start here.
+	@Setter
 	@Getter
 	private transient Optional<OfferEvent> latestMarginCheckBuy;
 
+	@Setter
 	@Getter
 	private transient Optional<OfferEvent> latestMarginCheckSell;
 
+	@Setter
 	@Getter
 	private transient Optional<OfferEvent> latestBuy;
 
+	@Setter
 	@Getter
 	private transient Optional<OfferEvent> latestSell;
 
@@ -129,6 +139,7 @@ public class FlippingItem
 				flippedBy,
 				validFlippingPanelItem,
 				favorite,
+				favoriteCode,
 				latestMarginCheckBuy,
 				latestMarginCheckSell,
 				latestBuy,
@@ -234,8 +245,13 @@ public class FlippingItem
 	}
 
 	public int getRemainingGeLimit()
-		{
+	{
 		return totalGELimit - history.getItemsBoughtThisLimitWindow();
+	}
+
+	public int getItemsBoughtThisLimitWindow()
+	{
+		return history.getItemsBoughtThisLimitWindow();
 	}
 
 	public Instant getGeLimitResetTime()
@@ -323,6 +339,10 @@ public class FlippingItem
 
 	public void setOfferMadeBy() {
 		history.getCompressedOfferEvents().forEach(o -> o.setMadeBy(flippedBy));
+	}
+
+	public void resetGeLimit() {
+		history.resetGeLimit();
 	}
 
 }

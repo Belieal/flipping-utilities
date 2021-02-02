@@ -148,7 +148,7 @@ public class SettingsPanel extends JPanel
 			accountSelectionPanel.removeAll();
 			settingsBasePanel.removeAll();
 			accountLabels.clear();
-			Set<String> accountsWithHistory = new HashSet<>(plugin.getAccountCache().keySet());
+			Set<String> accountsWithHistory = new HashSet<>(plugin.getCurrentDisplayNames());
 			for (String name : accountsWithHistory)
 			{
 				JLabel accountLabel = accountLabel(name);

@@ -137,4 +137,8 @@ public class UIUtilities
 			}
 		}
 	}
+
+	public static String colorText(String s, Color color) {
+		return String.format("<span style='color:%s;'>%s</span>",ColorUtil.colorToHexCode(color), s);
+	}
 }

@@ -184,7 +184,7 @@ public class FlippingPanel extends JPanel
 						plugin.setAllFlippingItemsAsHidden();
 						setItemHighlighted(false);
 						cardLayout.show(flippingItemContainer, WELCOME_PANEL);
-						rebuild(plugin.getTradesForCurrentView());
+						rebuild(plugin.viewTradesForCurrentView());
 					}
 				}
 			}
@@ -218,7 +218,7 @@ public class FlippingPanel extends JPanel
 		contentPanel.add(new FlippingPanelToolbar(this, plugin), BorderLayout.NORTH);
 		contentPanel.add(flippingItemContainer, BorderLayout.CENTER);
 
-		paginator = new Paginator(() -> rebuild(plugin.getTradesForCurrentView()));
+		paginator = new Paginator(() -> rebuild(plugin.viewTradesForCurrentView()));
 		paginator.setPageSize(10);
 
 		//To switch between greeting and items panels
@@ -250,7 +250,7 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
-			int vGap = 4;
+			int vGap = 6;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
@@ -278,7 +278,7 @@ public class FlippingPanel extends JPanel
 			revalidate();
 			repaint();
 
-			log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
+			//log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 
 	}
@@ -389,7 +389,7 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 		itemHighlighted = false;
-		rebuild(plugin.getTradesForCurrentView());
+		rebuild(plugin.viewTradesForCurrentView());
 	}
 
 	/**
@@ -421,12 +421,12 @@ public class FlippingPanel extends JPanel
 		//When the clear button is pressed, this is run.
 		if (Strings.isNullOrEmpty(lookup))
 		{
-			rebuild(plugin.getTradesForCurrentView());
+			rebuild(plugin.viewTradesForCurrentView());
 			return;
 		}
 
 		ArrayList<FlippingItem> result = new ArrayList<>();
-		for (FlippingItem item : plugin.getTradesForCurrentView())
+		for (FlippingItem item : plugin.viewTradesForCurrentView())
 		{
 			//Contains makes it a little more forgiving when searching.
 			if (item.getItemName().toLowerCase().contains(lookup))
@@ -439,7 +439,7 @@ public class FlippingPanel extends JPanel
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			searchBar.setEditable(true);
-			rebuild(plugin.getTradesForCurrentView());
+			rebuild(plugin.viewTradesForCurrentView());
 			return;
 		}
 
