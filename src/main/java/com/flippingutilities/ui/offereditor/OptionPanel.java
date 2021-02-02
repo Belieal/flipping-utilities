@@ -47,6 +47,7 @@ public class OptionPanel extends JPanel {
         add(resultingValueLabel, BorderLayout.SOUTH);
         add(createBodyPanel(), BorderLayout.CENTER);
         add(dotIcon, BorderLayout.WEST);
+        setResultingValue();
     }
 
     public JPanel createBodyPanel() {
@@ -57,6 +58,7 @@ public class OptionPanel extends JPanel {
         keyInputField.setPreferredSize(new Dimension(30, 25));
         keyInputField.setText(option.getKey());
         keyInputField.addActionListener(e -> {
+            plugin.markAccountTradesAsHavingChanged(FlippingPlugin.ACCOUNT_WIDE);
             option.setKey(keyInputField.getText());
             setResultingValue();
         });
@@ -65,18 +67,20 @@ public class OptionPanel extends JPanel {
 
         JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT, Option.CASHSTACK}:new String[]{Option.MARGIN_BUY, Option.MARGIN_SELL, Option.LAST_BUY, Option.LAST_SELL});
         propertiesSelector.setPreferredSize(new Dimension(88, 25));
+        propertiesSelector.setSelectedItem(option.getProperty());
         propertiesSelector.addActionListener(e -> {
             if (propertiesSelector.getSelectedItem() != null) {
+                plugin.markAccountTradesAsHavingChanged(FlippingPlugin.ACCOUNT_WIDE);
                 option.setProperty((String) propertiesSelector.getSelectedItem());
                 setResultingValue();
             }
         });
-        propertiesSelector.setSelectedItem(option.getProperty());
 
         JTextField optionalEditor = new JTextField(5);
         optionalEditor.setPreferredSize(new Dimension(30, 25));
         optionalEditor.setText(option.getModifier());
         optionalEditor.addActionListener(e -> {
+            plugin.markAccountTradesAsHavingChanged(FlippingPlugin.ACCOUNT_WIDE);
             option.setModifier(optionalEditor.getText());
             setResultingValue();
         });

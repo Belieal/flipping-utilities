@@ -86,7 +86,7 @@ public abstract class AbstractOfferEditorPanel extends JPanel {
     }
 
     public void deleteOption(Option option) {
-        plugin.deleteOption(option);
+        plugin.getDataHandler().getAccountWideData().getOptions().remove(option);
         rebuild(getOptions());
     }
 

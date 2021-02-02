@@ -26,6 +26,7 @@
 
 package com.flippingutilities.model;
 
+import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -66,13 +67,13 @@ public class AccountData
 	 * loads their trades after the new update. This method serves as a way to sanitize the data. It also ensures
 	 * that the FlippingItems have their non persisted fields set from history.
 	 */
-	public void prepareForUse(ItemManager itemManager)
+	public void prepareForUse(FlippingPlugin plugin)
 	{
 		for (FlippingItem item : trades)
 		{
 			//in case ge limits have been updated
 			int tradeItemId = item.getItemId();
-			ItemStats itemStats = itemManager.getItemStats(tradeItemId, false);
+			ItemStats itemStats = plugin.getItemManager().getItemStats(tradeItemId, false);
 			int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
 
 			item.setOfferMadeBy();
@@ -84,5 +85,27 @@ public class AccountData
 				item.setValidFlippingPanelItem(true);
 			}
 		}
+
+		if (slotTimers == null)
+		{
+			setSlotTimers(setupSlotTimers(plugin));
+		}
+		else
+		{
+			slotTimers.forEach(timer -> {
+				timer.setClient(plugin.getClient());
+				timer.setPlugin(plugin);
+			});
+		}
+	}
+
+	private List<TradeActivityTimer> setupSlotTimers(FlippingPlugin plugin)
+	{
+		ArrayList<TradeActivityTimer> slotTimers = new ArrayList<>();
+		for (int slotIndex = 0; slotIndex < 8; slotIndex++)
+		{
+			slotTimers.add(new TradeActivityTimer(plugin, plugin.getClient(), slotIndex));
+		}
+		return slotTimers;
 	}
 }

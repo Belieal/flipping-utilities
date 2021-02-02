@@ -13,19 +13,20 @@ public class QuantityEditorPanel extends AbstractOfferEditorPanel{
 
     @Override
     public List<Option> getOptions() {
-        return plugin.getOptions().stream().filter(option -> option.isQuantityOption()).collect(Collectors.toList());
+        return plugin.getDataHandler().viewAccountWideData().getOptions().stream().filter(option -> option.isQuantityOption()).collect(Collectors.toList());
     }
 
     @Override
     public void addOptionPanel() {
-        plugin.addOption(Option.defaultQuantityOption());
+        plugin.getDataHandler().getAccountWideData().getOptions().add(0,Option.defaultQuantityOption());
         rebuild(getOptions());
     }
 
     @Override
     public void onTemplateClicked() {
-        plugin.addOption(new Option("o", Option.CASHSTACK, "+0", true));
-        plugin.addOption(new Option("l", Option.REMAINING_LIMIT, "+0", true));
-        plugin.addOption(new Option("p", Option.GE_LIMIT, "+0", true));
+        List<Option> options = plugin.getDataHandler().getAccountWideData().getOptions();
+        options.add(new Option("p", Option.GE_LIMIT, "+0", true));
+        options.add(new Option("l", Option.REMAINING_LIMIT, "+0", true));
+        options.add(new Option("o", Option.CASHSTACK, "+0", true));
     }
 }

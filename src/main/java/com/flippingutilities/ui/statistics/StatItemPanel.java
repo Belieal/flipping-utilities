@@ -420,7 +420,7 @@ public class StatItemPanel extends JPanel
 				if (result == JOptionPane.YES_OPTION)
 				{
 					deletePanel();
-					statsPanel.rebuild(plugin.getTradesForCurrentView());
+					statsPanel.rebuild(plugin.viewTradesForCurrentView());
 				}
 			}
 

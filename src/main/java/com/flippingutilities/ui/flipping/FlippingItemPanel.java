@@ -43,10 +43,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -92,6 +92,8 @@ public class FlippingItemPanel extends JPanel
 
 	JPanel itemInfo;
 	JPanel timeInfoPanel;
+
+	JLabel searchCodeLabel;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -141,7 +143,7 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JPanel createItemInfoPanel()
 	{
-		JPanel itemInfo = new JPanel(new DynamicGridLayout(8, 1));
+		JPanel itemInfo = new JPanel(new DynamicGridLayout(9, 1));
 		itemInfo.setBackground(getBackground());
 
 		JPanel priceCheckBuyPanel = new JPanel(new BorderLayout());
@@ -151,11 +153,14 @@ public class FlippingItemPanel extends JPanel
 		JPanel profitEachPanel = new JPanel(new BorderLayout());
 		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
 
-		JPanel[] panels = {priceCheckBuyPanel, priceCheckSellPanel, latestBuyPanel, latestSellPanel, profitEachPanel, potentialProfitPanel};
+		makePropertyPanelEditable(priceCheckBuyPanel, priceCheckBuyVal);
+		makePropertyPanelEditable(priceCheckSellPanel, priceCheckSellVal);
+		makePropertyPanelEditable(latestBuyPanel, latestBuyPriceVal);
+		makePropertyPanelEditable(latestSellPanel, latestSellPriceVal);
+
+		JPanel[] panels = {latestBuyPanel, latestSellPanel, priceCheckBuyPanel, priceCheckSellPanel, profitEachPanel, potentialProfitPanel};
 		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
-		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal,profitEachVal, potentialProfitVal};
-
-
+		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal};
 
 		boolean isFirstInPair = true;
 
@@ -177,11 +182,192 @@ public class FlippingItemPanel extends JPanel
 			}
 		}
 
-		//last grid contains the panel that contains the ge limit, the ge refresh timer, and the roi.
 		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
+		itemInfo.add(createBottomPanel());
 
 		return itemInfo;
 	}
+
+	private JPanel createBottomPanel() {
+		JPanel bottomPanel = new JPanel(new BorderLayout());
+		bottomPanel.setBorder(new EmptyBorder(3,21,3,8));
+		bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
+		searchIconLabel.setToolTipText("Click to search item on platinumtokens or osrs ge!");
+		JPopupMenu popupMenu = ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem);
+		searchIconLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				popupMenu.show(searchIconLabel, e.getX(), e.getY());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				searchIconLabel.setIcon(Icons.SEARCH_HOVER);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				searchIconLabel.setIcon(Icons.SEARCH);
+			}
+		});
+
+		TextField searchCodeTextField = new TextField(10);
+
+		JPanel searchCodePanel = new JPanel();
+		searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
+		if (flippingItem.isFavorite()) {
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
+		}
+		else {
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText("N/A", CustomColors.VIBRANT_YELLOW) + "</html>");
+		}
+		searchCodeLabel.setToolTipText("<html>If you have favorited this item, you can type the search code when you are <br>" +
+				"searching for items in the ge to populate your ge results with any item with this code</html>");
+		searchCodeLabel.setFont(FontManager.getRunescapeSmallFont());
+
+		searchCodePanel.add(searchCodeLabel);
+
+		final boolean[] isHighlighted = {false};
+		MouseListener l = new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (!flippingItem.isFavorite()) {
+					JOptionPane.showMessageDialog(searchCodeLabel, "<html>Item is not favorited.<br> Favorite the item to be able to use/edit the quick search code</html>");
+					return;
+				}
+
+				if (isHighlighted[0]) {
+					searchCodePanel.remove(searchCodeTextField);
+					searchCodePanel.add(searchCodeLabel);
+					isHighlighted[0] = false;
+				}
+				else {
+					searchCodePanel.remove(searchCodeLabel);
+					searchCodePanel.add(searchCodeTextField);
+					isHighlighted[0] = true;
+				}
+				repaint();
+				revalidate();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				searchCodePanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+			}
+		};
+		searchCodePanel.addMouseListener(l);
+		searchCodeLabel.addMouseListener(l);
+
+		searchCodeTextField.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		searchCodeTextField.setText(flippingItem.getFavoriteCode());
+		searchCodeTextField.addActionListener(e -> {
+			isHighlighted[0] = false;
+			if (plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+				plugin.setFavoriteCodeOnAllAccounts(flippingItem, searchCodeTextField.getText());
+			}
+			else {
+				plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
+			}
+
+			flippingItem.setFavoriteCode(searchCodeTextField.getText());
+
+			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>");
+
+			searchCodePanel.remove(searchCodeTextField);
+			searchCodePanel.add(searchCodeLabel);
+			repaint();
+			revalidate();
+		});
+
+		bottomPanel.add(searchIconLabel, BorderLayout.EAST);
+		bottomPanel.add(searchCodePanel, BorderLayout.CENTER);
+		return bottomPanel;
+	}
+
+	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel) {
+		final boolean[] isHighlighted = {false};
+		TextField textField = new TextField(10);
+		textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		String currentText = valueLabel.getText();
+		String textWithoutGp = currentText.substring(0, currentText.length()-3);
+		textField.setText(textWithoutGp);
+		textField.addActionListener((e1 -> {
+			isHighlighted[0] = false;
+			try {
+				int num = Integer.parseInt(textField.getText().replace(",", ""));
+				if (num <= 0) {
+					JOptionPane.showMessageDialog(this,"You cannot input zero or a negative number");
+					return;
+				}
+				valueLabel.setText(String.format(NUM_FORMAT, num) + " gp");
+				OfferEvent dummyOffer;
+				if (valueLabel == priceCheckBuyVal) {
+					dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestMarginCheckSell(Optional.of(dummyOffer));
+				}
+				else if (valueLabel == priceCheckSellVal){
+					dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestMarginCheckBuy(Optional.of(dummyOffer));
+				}
+				else if (valueLabel == latestBuyPriceVal){
+					dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestBuy(Optional.of(dummyOffer));
+				}
+				else {
+					dummyOffer = OfferEvent.dummyOffer(false, false, num, flippingItem.getItemId(), flippingItem.getItemName());
+					flippingItem.setLatestSell(Optional.of(dummyOffer));
+				}
+
+				refreshProperties();
+			}
+			catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(this, "You need to input a number");
+				return;
+			}
+			propertyPanel.remove(textField);
+			propertyPanel.add(valueLabel, BorderLayout.EAST);
+			revalidate();
+			repaint();
+		}));
+
+		propertyPanel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (isHighlighted[0]) {
+					isHighlighted[0] = false;
+					propertyPanel.remove(textField);
+					propertyPanel.add(valueLabel, BorderLayout.EAST);
+				}
+				else {
+					isHighlighted[0] = true;
+					propertyPanel.remove(valueLabel);
+					propertyPanel.add(textField, BorderLayout.EAST);
+				}
+				revalidate();
+				repaint();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				propertyPanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				propertyPanel.setBackground(CustomColors.DARK_GRAY);
+			}
+		});
+	}
+
 
 	/**
 	 * holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
@@ -193,6 +379,26 @@ public class FlippingItemPanel extends JPanel
 		geLimitPanel.setBackground(CustomColors.DARK_GRAY);
 		geLimitPanel.add(geLimitText);
 		geLimitPanel.add(limitLabelVal);
+
+		geLimitPanel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				int result = JOptionPane.showConfirmDialog(FlippingItemPanel.this, "Reset ge limit?");
+				if (result == 0) {
+					flippingItem.resetGeLimit();
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				geLimitPanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				geLimitPanel.setBackground(CustomColors.DARK_GRAY);
+			}
+		});
 
 		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
 		roiPanel.setBackground(CustomColors.DARK_GRAY);
@@ -206,7 +412,6 @@ public class FlippingItemPanel extends JPanel
 		geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		geRefreshTimePanel.add(geRefreshLabel);
 		geRefreshTimePanel.add(geRefreshAtLabel);
-
 
 		//holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
 		JPanel geLimitRefreshTimeAndRoiPanel = new JPanel(new BorderLayout());
@@ -338,42 +543,7 @@ public class FlippingItemPanel extends JPanel
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
-		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
-		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
-
-		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
-		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
-
-		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
-		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-
-		Optional<Float> roi =  flippingItem.getCurrentRoi();
-
-		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
-		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
-
-		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
-		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
-
-		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
-		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
-
-		roiLabelVal.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
-		//Color gradient red-yellow-green depending on ROI.
-		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
-
-		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
-		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
-		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
-		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
-
-		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
-		} else {
-			limitLabelVal.setText("Unknown");
-			//can't have potential profit if the limit is unknown
-			potentialProfitVal.setText("N/A");
-		}
+		refreshProperties();
 	}
 
 	private void setDescriptionLabels() {
@@ -390,6 +560,12 @@ public class FlippingItemPanel extends JPanel
 		latestSellPriceText.setToolTipText("The last price you sold this item for");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
 		profitTotalText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
+		geLimitText.setToolTipText("Remaining ge limit");
+
+		if (flippingItem.getTotalGELimit() <= 0) {
+			geLimitText.setText("Bought:");
+			geLimitText.setToolTipText("Item has unknown limit, so this just displays how many you have bought in a 4 hour window");
+		}
 	}
 
 	/**
@@ -410,7 +586,6 @@ public class FlippingItemPanel extends JPanel
 		itemClearPanel.add(deleteButton, BorderLayout.EAST);
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setComponentPopupMenu(ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(getBackground());
 		titlePanel.add(itemClearPanel, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
@@ -477,9 +652,9 @@ public class FlippingItemPanel extends JPanel
 				{
 					flippingItem.setValidFlippingPanelItem(false);
 					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "deleting a FlippingItemPanel");
+						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 					}
-					plugin.getFlippingPanel().rebuild(plugin.getTradesForCurrentView());
+					plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
 				}
 			}
 		});
@@ -557,10 +732,17 @@ public class FlippingItemPanel extends JPanel
 					plugin.setFavoriteOnAllAccounts(flippingItem, !flippingItem.isFavorite());
 				}
 				else {
-					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed(), "setting favorite");
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 				}
 				flippingItem.setFavorite(!flippingItem.isFavorite());
 				favoriteIcon.setIcon(flippingItem.isFavorite()? Icons.STAR_ON_ICON:Icons.STAR_OFF_ICON);
+
+				if (flippingItem.isFavorite()) {
+					searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
+				}
+				else {
+					searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText("N/A", CustomColors.VIBRANT_YELLOW) + "</html>");
+				}
 			}
 
 			@Override
@@ -606,29 +788,46 @@ public class FlippingItemPanel extends JPanel
 		return !itemInfo.isVisible();
 	}
 
-	/**
-	 * Refresh properties that could be stale due to a new offer event. Other properties like the
-	 * price check buy and sell price don't have to be refreshed like this cause offers that would cause
-	 * them to change already trigger rebuilds of the flipping panel which will reconstruct this panel anyway.
-	 */
 	public void refreshProperties() {
-		latestBuyPriceVal.setText(flippingItem.getLatestBuy().isPresent() ?
-				String.format(NUM_FORMAT, flippingItem.getLatestBuy().get().getPrice()) + " gp" : "N/A");
-		latestSellPriceVal.setText(flippingItem.getLatestSell().isPresent() ?
-				String.format(NUM_FORMAT, flippingItem.getLatestSell().get().getPrice()) + " gp" : "N/A");
+		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
+		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
 
+		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
+		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
+
+		Optional<Integer> profitEach = flippingItem.getCurrentProfitEach();
 		Optional<Integer> potentialProfit = flippingItem.getPotentialProfit(plugin.getConfig().marginCheckLoss(), plugin.getConfig().geLimitProfit());
-		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp" : "N/A");
+
+		Optional<Float> roi =  flippingItem.getCurrentRoi();
+
+		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
+		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
+
+		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
+		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
+
+		profitEachVal.setText(profitEach.isPresent()? QuantityFormatter.quantityToRSDecimalStack(profitEach.get()) + " gp": "N/A");
+		potentialProfitVal.setText(potentialProfit.isPresent() ? QuantityFormatter.quantityToRSDecimalStack(potentialProfit.get()) + " gp": "N/A");
+
+		roiLabelVal.setText(roi.isPresent()? String.format("%.2f", roi.get()) + "%" : "N/A");
+		//Color gradient red-yellow-green depending on ROI.
+		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
+
+		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
+		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
+		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
+		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
 
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText("Unknown");
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
+			//can't have potential profit if the limit is unknown
+			potentialProfitVal.setText("N/A");
 		}
 	}
 
 	public void updateTimerDisplays() {
-
 		flippingItem.validateGeProperties();
 
 		geRefreshLabel.setText(flippingItem.getGeLimitResetTime() == null?
@@ -639,7 +838,7 @@ public class FlippingItemPanel extends JPanel
 		if (flippingItem.getTotalGELimit() > 0) {
 			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText("Unknown");
+			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 		}
 
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
