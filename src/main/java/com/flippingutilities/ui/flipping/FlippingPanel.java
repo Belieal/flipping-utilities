@@ -47,6 +47,8 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
@@ -141,15 +143,16 @@ public class FlippingPanel extends JPanel
 		searchBar.setMinimumSize(new Dimension(0, 35));
 		searchBar.addActionListener(e -> executor.execute(this::updateSearch));
 		searchBar.addClearListener(this::updateSearch);
-		searchBar.addKeyListener(key ->
-		{
-			if (runningRequest != null)
-			{
-				runningRequest.cancel(false);
+		searchBar.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (runningRequest != null)
+				{
+					runningRequest.cancel(false);
+				}
+				runningRequest = executor.schedule(FlippingPanel.this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
 			}
-			runningRequest = executor.schedule(this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
 		});
-
 		//Contains a greeting message when the items panel is empty.
 		JPanel welcomeWrapper = new JPanel(new BorderLayout());
 		welcomeWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
