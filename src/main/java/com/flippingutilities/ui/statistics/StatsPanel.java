@@ -207,7 +207,6 @@ public class StatsPanel extends JPanel
 
 		//Icon that resets all the panels currently shown in the time span.
 		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
-		resetIcon.setBorder(new EmptyBorder(0,0,8,0));
 		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.setToolTipText("Reset Statistics");
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -296,15 +295,16 @@ public class StatsPanel extends JPanel
 		timeIntervalDropdownPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		timeIntervalDropdownPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
 
-		JPanel intervalAndDownloadIcon = new JPanel(new BorderLayout());
-		intervalAndDownloadIcon.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		intervalAndDownloadIcon.add(timeIntervalDropdownPanel, BorderLayout.CENTER);
-		intervalAndDownloadIcon.add(downloadIcon, BorderLayout.EAST);
+		JPanel searchAndDownloadIcon = new JPanel(new BorderLayout());
+		searchAndDownloadIcon.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		searchAndDownloadIcon.add(searchBar, BorderLayout.CENTER);
+		searchAndDownloadIcon.add(downloadIcon, BorderLayout.EAST);
+		searchAndDownloadIcon.setBorder(new EmptyBorder(5,0,0,0));
 
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topPanel.setBorder(new EmptyBorder(4,0,7,0));
-		topPanel.add(intervalAndDownloadIcon, BorderLayout.SOUTH);
-		topPanel.add(searchBar, BorderLayout.CENTER);
+		topPanel.setBorder(new EmptyBorder(4,0,0,0));
+		topPanel.add(searchAndDownloadIcon, BorderLayout.SOUTH);
+		topPanel.add(timeIntervalDropdownPanel, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
 
 		//Title text for the big total profit label.
