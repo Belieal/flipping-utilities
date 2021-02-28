@@ -30,13 +30,16 @@ import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ComboBoxListRenderer;
+import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
@@ -55,6 +58,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,7 +68,6 @@ public class StatsPanel extends JPanel
 	private static final String[] SORT_BY_STRINGS = {"Most Recent", "Most Total Profit", "Most Profit Each", "Highest ROI", "Highest Quantity"};
 	private static final Dimension ICON_SIZE = new Dimension(16, 16);
 
-	private static final Border TOP_PANEL_BORDER = new EmptyBorder(5,0,0,0);
 
 	private static final Border TOTAL_PROFIT_CONTAINER_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 2, 0, ColorScheme.LIGHT_GRAY_COLOR),
@@ -152,6 +155,8 @@ public class StatsPanel extends JPanel
 
 	JLabel downloadIcon;
 
+	private final IconTextField searchBar;
+
 	/**
 	 * The statistics panel shows various stats about trades the user has made over a selectable time interval.
 	 * This represents the front-end Statistics Tab.
@@ -160,7 +165,7 @@ public class StatsPanel extends JPanel
 	 * @param plugin      Used to access the config and list of trades.
 	 * @param itemManager Accesses the RuneLite item cache.
 	 */
-	public StatsPanel(final FlippingPlugin plugin, final ItemManager itemManager)
+	public StatsPanel(final FlippingPlugin plugin, final ItemManager itemManager, ScheduledExecutorService executor)
 	{
 		super(false);
 
@@ -202,6 +207,7 @@ public class StatsPanel extends JPanel
 
 		//Icon that resets all the panels currently shown in the time span.
 		resetIcon = new JLabel(Icons.TRASH_ICON_OFF);
+		resetIcon.setBorder(new EmptyBorder(0,0,8,0));
 		resetIcon.setPreferredSize(Icons.ICON_SIZE);
 		resetIcon.setToolTipText("Reset Statistics");
 		resetIcon.addMouseListener(new MouseAdapter()
@@ -283,12 +289,23 @@ public class StatsPanel extends JPanel
 		});
 
 
-		//Holds the time interval selector beneath the tab manager.
+		searchBar = UIUtilities.createSearchBar(executor, this::updateSearch);
+
+		JPanel timeIntervalDropdownPanel = new JPanel(new BorderLayout());
+		timeIntervalDropdownPanel.setBorder(new EmptyBorder(0,5,0,5));
+		timeIntervalDropdownPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		timeIntervalDropdownPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
+
+		JPanel intervalAndDownloadIcon = new JPanel(new BorderLayout());
+		intervalAndDownloadIcon.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		intervalAndDownloadIcon.add(timeIntervalDropdownPanel, BorderLayout.CENTER);
+		intervalAndDownloadIcon.add(downloadIcon, BorderLayout.EAST);
+
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		topPanel.setBorder(TOP_PANEL_BORDER);
-		topPanel.add(timeIntervalDropdown, BorderLayout.CENTER);
+		topPanel.setBorder(new EmptyBorder(4,0,7,0));
+		topPanel.add(intervalAndDownloadIcon, BorderLayout.SOUTH);
+		topPanel.add(searchBar, BorderLayout.CENTER);
 		topPanel.add(resetIcon, BorderLayout.EAST);
-		topPanel.add(downloadIcon, BorderLayout.WEST);
 
 		//Title text for the big total profit label.
 		final JLabel profitText = new JLabel("Total Profit: ", SwingConstants.CENTER);
@@ -519,6 +536,40 @@ public class StatsPanel extends JPanel
 		List<StatItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new StatItemPanel(plugin, itemManager, item)).collect(Collectors.toList());
 		UIUtilities.stackPanelsVertically((List) newPanels, statItemContainer, 5);
 		activePanels.addAll(newPanels);
+	}
+
+	private void updateSearch()
+	{
+		String lookup = searchBar.getText().toLowerCase();
+
+		//Just so we don't mess with the highlight.
+
+		//When the clear button is pressed, this is run.
+		if (Strings.isNullOrEmpty(lookup))
+		{
+			rebuild(plugin.viewTradesForCurrentView());
+			return;
+		}
+
+		ArrayList<FlippingItem> result = new ArrayList<>();
+		for (FlippingItem item : plugin.viewTradesForCurrentView())
+		{
+			//Contains makes it a little more forgiving when searching.
+			if (item.getItemName().toLowerCase().contains(lookup))
+			{
+				result.add(item);
+			}
+		}
+
+		if (result.isEmpty())
+		{
+			searchBar.setIcon(IconTextField.Icon.ERROR);
+			rebuild(plugin.viewTradesForCurrentView());
+			return;
+		}
+
+		searchBar.setIcon(IconTextField.Icon.SEARCH);
+		rebuild(result);
 	}
 
 	/**
