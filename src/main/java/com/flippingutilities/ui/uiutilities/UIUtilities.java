@@ -26,18 +26,26 @@
 
 package com.flippingutilities.ui.uiutilities;
 
+import com.flippingutilities.ui.flipping.FlippingPanel;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class contains various methods that the UI uses to format their visuals.
@@ -140,5 +148,29 @@ public class UIUtilities
 
 	public static String colorText(String s, Color color) {
 		return String.format("<span style='color:%s;'>%s</span>",ColorUtil.colorToHexCode(color), s);
+	}
+
+	public static IconTextField createSearchBar(ScheduledExecutorService executor, Runnable onSearch) {
+		final Future<?>[] runningRequest = {null};
+		IconTextField searchBar = new IconTextField();
+		searchBar.setIcon(IconTextField.Icon.SEARCH);
+		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 32));
+		searchBar.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 7, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
+		searchBar.setHoverBackgroundColor(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+		searchBar.setMinimumSize(new Dimension(0, 35));
+		searchBar.addActionListener(e -> executor.execute(onSearch));
+		searchBar.addClearListener(onSearch);
+		searchBar.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (runningRequest[0] != null)
+				{
+					runningRequest[0].cancel(false);
+				}
+				runningRequest[0] = executor.schedule(onSearch, 250, TimeUnit.MILLISECONDS);
+			}
+		});
+		return searchBar;
 	}
 }

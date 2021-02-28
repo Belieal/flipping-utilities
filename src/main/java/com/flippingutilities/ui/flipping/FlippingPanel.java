@@ -51,7 +51,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,7 +68,6 @@ public class FlippingPanel extends JPanel
 	@Getter
 	private static final String WELCOME_PANEL = "WELCOME_PANEL";
 	private static final String ITEMS_PANEL = "ITEMS_PANEL";
-	private static final int DEBOUNCE_DELAY_MS = 250;
 	private static final Border TOP_PANEL_BORDER = new CompoundBorder(
 		BorderFactory.createMatteBorder(0, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR.darker()),
 		BorderFactory.createEmptyBorder(4, 0, 0, 0));
@@ -77,8 +75,7 @@ public class FlippingPanel extends JPanel
 	private final FlippingPlugin plugin;
 	private final ItemManager itemManager;
 
-	private final IconTextField searchBar = new IconTextField();
-	private Future<?> runningRequest = null;
+	private final IconTextField searchBar;
 
 	public final CardLayout cardLayout = new CardLayout();
 
@@ -135,24 +132,8 @@ public class FlippingPanel extends JPanel
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		//Search bar beneath the tab manager.
-		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 32));
-		searchBar.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		searchBar.setBorder(BorderFactory.createMatteBorder(0, 5, 7, 5, ColorScheme.DARKER_GRAY_COLOR.darker()));
-		searchBar.setHoverBackgroundColor(ColorScheme.DARKER_GRAY_HOVER_COLOR);
-		searchBar.setMinimumSize(new Dimension(0, 35));
-		searchBar.addActionListener(e -> executor.execute(this::updateSearch));
-		searchBar.addClearListener(this::updateSearch);
-		searchBar.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (runningRequest != null)
-				{
-					runningRequest.cancel(false);
-				}
-				runningRequest = executor.schedule(FlippingPanel.this::updateSearch, DEBOUNCE_DELAY_MS, TimeUnit.MILLISECONDS);
-			}
-		});
+		searchBar = UIUtilities.createSearchBar(executor, this::updateSearch);
+
 		//Contains a greeting message when the items panel is empty.
 		JPanel welcomeWrapper = new JPanel(new BorderLayout());
 		welcomeWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -209,7 +190,6 @@ public class FlippingPanel extends JPanel
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
 		flippingItemContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
 
-		//Top panel that holds the plugin title and reset button.
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		topPanel.add(resetIcon, BorderLayout.EAST);
@@ -417,7 +397,6 @@ public class FlippingPanel extends JPanel
 		//Just so we don't mess with the highlight.
 		if (isItemHighlighted())
 		{
-			searchBar.setEditable(true);
 			return;
 		}
 
@@ -441,7 +420,6 @@ public class FlippingPanel extends JPanel
 		if (result.isEmpty())
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
-			searchBar.setEditable(true);
 			rebuild(plugin.viewTradesForCurrentView());
 			return;
 		}

@@ -179,7 +179,7 @@ public class FlippingPlugin extends Plugin
 		dataHandler = new DataHandler(this);
 
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
-		statPanel = new StatsPanel(this, itemManager);
+		statPanel = new StatsPanel(this, itemManager, executor);
 		settingsPanel = new SettingsPanel(this);
 		geHistoryTabPanel = new GeHistoryTabPanel(this);
 		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
