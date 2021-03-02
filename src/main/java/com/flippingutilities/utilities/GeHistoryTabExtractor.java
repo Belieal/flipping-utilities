@@ -18,71 +18,56 @@ import java.util.stream.Collectors;
  * the TradeHistoryTabPanel, and all UI components, to pretty much only draw stuff and not do much else, hence the separation.
  */
 @Slf4j
-public class GeHistoryTabExtractor
-{
-	private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
+public class GeHistoryTabExtractor {
+    private static Pattern PRICE_PATTERN = Pattern.compile(">= (.*) each");
 
-	public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets)
-	{
-		//a group of 6 widgets makes up an offer in the trade history tab
-		List<List<Widget>> groupsOfWidgets = Lists.partition(Arrays.asList(widgets), 6);
-		return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
-	}
+    public static List<OfferEvent> convertWidgetsToOfferEvents(Widget[] widgets) {
+        //a group of 6 widgets makes up an offer in the trade history tab
+        List<List<Widget>> groupsOfWidgets = Lists.partition(Arrays.asList(widgets), 6);
+        return groupsOfWidgets.stream().map(w -> createOfferEventFromWidgetGroup(w)).collect(Collectors.toList());
+    }
 
-	public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets)
-	{
-		//set slot to -1 so we can handle it appropriately in the history manager when the offer is added.
-		int slot = -1;
-		GrandExchangeOfferState offerState = getState(widgets.get(2));
-		int quantity = widgets.get(4).getItemQuantity();
-		int itemId = widgets.get(4).getItemId();
-		int price = getPrice(widgets.get(5));
-		boolean isBuy = offerState == GrandExchangeOfferState.BOUGHT;
-		Instant time = Instant.now();
-		int totalQuantity = quantity;
-		int tickArrivedAt = -1;
-		//just making ticksSinceFirst offer something > 2 so it doesn't count as a margin check
-		int ticksSinceFirstOffer = 10;
+    public static OfferEvent createOfferEventFromWidgetGroup(List<Widget> widgets) {
+        //set slot to -1 so we can handle it appropriately in the history manager when the offer is added.
+        int slot = -1;
+        GrandExchangeOfferState offerState = getState(widgets.get(2));
+        int quantity = widgets.get(4).getItemQuantity();
+        int itemId = widgets.get(4).getItemId();
+        int price = getPrice(widgets.get(5));
+        boolean isBuy = offerState == GrandExchangeOfferState.BOUGHT;
+        Instant time = Instant.now();
+        int totalQuantity = quantity;
+        int tickArrivedAt = -1;
+        //just making ticksSinceFirst offer something > 2 so it doesn't count as a margin check
+        int ticksSinceFirstOffer = 10;
 
-		OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, null, false, null);
-		return offerEvent;
-	}
+        OfferEvent offerEvent = new OfferEvent(isBuy, itemId, quantity, price, time, slot, offerState, tickArrivedAt, ticksSinceFirstOffer, totalQuantity, true, null, false, null);
+        return offerEvent;
+    }
 
-	private static int getPrice(Widget w)
-	{
-		String text = w.getText();
-		String numString;
-		if (text.contains("each"))
-		{
-			Matcher m = PRICE_PATTERN.matcher(text);
-			m.find();
-			numString = m.group(1);
-		}
-		else
-		{
-			numString = text.split(" coins")[0];
-		}
-		StringBuilder s = new StringBuilder();
-		for (char c : numString.toCharArray())
-		{
-			if (c != ',')
-			{
-				s.append(c);
-			}
-		}
-		return Integer.parseInt(s.toString());
-	}
+    private static int getPrice(Widget w) {
+        String text = w.getText();
+        String numString = text;
+        if (text.contains("each")) {
+            Matcher m = PRICE_PATTERN.matcher(text);
+            m.find();
+            numString = m.group(1);
+        }
+        StringBuilder s = new StringBuilder();
+        for (char c : numString.toCharArray()) {
+            if (Character.isDigit(c)) {
+                s.append(c);
+            }
+        }
+        return Integer.parseInt(s.toString());
+    }
 
-	private static GrandExchangeOfferState getState(Widget w)
-	{
-		String text = w.getText();
-		if (text.startsWith("Bought"))
-		{
-			return GrandExchangeOfferState.BOUGHT;
-		}
-		else
-		{
-			return GrandExchangeOfferState.SOLD;
-		}
-	}
+    private static GrandExchangeOfferState getState(Widget w) {
+        String text = w.getText();
+        if (text.startsWith("Bought")) {
+            return GrandExchangeOfferState.BOUGHT;
+        } else {
+            return GrandExchangeOfferState.SOLD;
+        }
+    }
 }
