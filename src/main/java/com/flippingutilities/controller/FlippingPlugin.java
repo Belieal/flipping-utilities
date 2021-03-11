@@ -240,7 +240,9 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		generalRepeatingTasks.cancel(true);
+		if (generalRepeatingTasks != null) {
+			generalRepeatingTasks.cancel(true);
+		}
 		cacheUpdater.stop();
 		dataHandler.storeData();
 	}
