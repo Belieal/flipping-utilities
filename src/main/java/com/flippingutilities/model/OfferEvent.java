@@ -83,6 +83,8 @@ public class OfferEvent
 	private transient boolean beforeLogin;
 	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far just to resolve item name from an id.
 	private transient String itemName;
+	//used in the live slot view to show what price something was listed at
+	private transient int listedPrice;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
@@ -98,6 +100,11 @@ public class OfferEvent
 				state == GrandExchangeOfferState.SOLD ||
 				state == GrandExchangeOfferState.CANCELLED_BUY ||
 				state == GrandExchangeOfferState.CANCELLED_SELL;
+	}
+
+	public boolean isCancelled()
+	{
+		return state == GrandExchangeOfferState.CANCELLED_BUY || state == GrandExchangeOfferState.CANCELLED_SELL;
 	}
 
 	/**
@@ -160,7 +167,8 @@ public class OfferEvent
 			validOfferEvent,
 			madeBy,
 			beforeLogin,
-			itemName);
+			itemName,
+				listedPrice);
 	}
 
 	public boolean equals(Object other)
@@ -206,6 +214,7 @@ public class OfferEvent
 	{
 		GrandExchangeOffer offer = event.getOffer();
 
+
 		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
 			|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY
 			|| offer.getState() == GrandExchangeOfferState.BUYING;
@@ -224,7 +233,8 @@ public class OfferEvent
 			true,
 			null,
 			false,
-			null);
+			null,
+				offer.getPrice());
 	}
 
 	/**
@@ -254,7 +264,8 @@ public class OfferEvent
 				false,
 				"",
 				false,
-				itemName);
+				itemName,
+				0);
 	}
 }
 

@@ -33,6 +33,7 @@ import com.flippingutilities.ui.MasterPanel;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.gehistorytab.GeHistoryTabPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
+import com.flippingutilities.ui.slots.SlotsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
@@ -127,6 +128,7 @@ public class FlippingPlugin extends Plugin
 	private FlippingPanel flippingPanel;
 	@Getter
 	private StatsPanel statPanel;
+	private SlotsPanel slotsPanel;
 	private MasterPanel masterPanel;
 	private GeHistoryTabPanel geHistoryTabPanel;
 	private SettingsPanel settingsPanel;
@@ -182,7 +184,8 @@ public class FlippingPlugin extends Plugin
 		statPanel = new StatsPanel(this, itemManager, executor);
 		settingsPanel = new SettingsPanel(this);
 		geHistoryTabPanel = new GeHistoryTabPanel(this);
-		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel);
+		slotsPanel = new SlotsPanel(itemManager);
+		masterPanel = new MasterPanel(this, flippingPanel, statPanel, settingsPanel, slotsPanel);
 		masterPanel.addView(geHistoryTabPanel, "ge history");
 		navButton = NavigationButton.builder()
 			.tooltip("Flipping Utilities")
@@ -228,10 +231,12 @@ public class FlippingPlugin extends Plugin
 	{
 		if (generalRepeatingTasks != null)
 		{
-			//Stop all slotTimers
 			generalRepeatingTasks.cancel(true);
-			slotTimersTask.cancel(true);
 			generalRepeatingTasks = null;
+		}
+		if (slotTimersTask != null) {
+			slotTimersTask.cancel(true);
+			slotTimersTask = null;
 		}
 
 		clientToolbar.removeNavigation(navButton);
@@ -240,7 +245,13 @@ public class FlippingPlugin extends Plugin
 	@Subscribe(priority = 101)
 	public void onClientShutdown(ClientShutdown clientShutdownEvent)
 	{
-		generalRepeatingTasks.cancel(true);
+		if (generalRepeatingTasks != null) {
+			generalRepeatingTasks.cancel(true);
+		}
+		if (slotTimersTask != null) {
+			slotTimersTask.cancel(true);
+			slotTimersTask = null;
+		}
 		cacheUpdater.stop();
 		dataHandler.storeData();
 	}
@@ -342,10 +353,12 @@ public class FlippingPlugin extends Plugin
 		if (slotTimersTask == null && config.slotTimersEnabled())
 		{
 			log.info("starting slot timers on login");
-			slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(timer ->
+			slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(slotWidgetTimer ->
 				clientThread.invokeLater(() -> {
 					try {
-						timer.updateTimer();
+
+						slotsPanel.updateTimerDisplays(slotWidgetTimer.getSlotIndex(), slotWidgetTimer.createFormattedTimeString());
+						slotWidgetTimer.updateTimerDisplay();
 					}
 					catch (Exception e) {
 						log.info("exception when trying to update timer. e: {}", e);
@@ -524,13 +537,15 @@ public class FlippingPlugin extends Plugin
 	 * Runelite has some wonky events. For example, every empty/buy/sell/cancelled buy/cancelled sell
 	 * spawns two identical events. And when you fully buy/sell item, it spawns two events (a
 	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
-	 * events and sets the ticksSinceFirstOffer field correctly on new OfferEvents.
+	 * events and sets the ticksSinceFirstOffer field correctly on new OfferEvents. This method is also responsible
+	 * for broadcasting the event to any components that need it, such as the slot panel, the slot timer widgets, etc.
 	 *
 	 * @param newOfferEvent event that just occurred
 	 * @return an optional containing an OfferEvent.
 	 */
 	public Optional<OfferEvent> screenOfferEvent(OfferEvent newOfferEvent)
 	{
+		slotsPanel.update(newOfferEvent);
 		Map<Integer, OfferEvent> lastOfferEventForEachSlot = dataHandler.getAccountData(currentlyLoggedInAccount).getLastOffers();
 
 		if (newOfferEvent.isCausedByEmptySlot())
@@ -954,7 +969,7 @@ public class FlippingPlugin extends Plugin
 				timer.setWidget(offerSlot);
 			}
 
-			clientThread.invokeLater(timer::updateTimer);
+			clientThread.invokeLater(timer::updateTimerDisplay);
 		}
 	}
 
@@ -1165,6 +1180,8 @@ public class FlippingPlugin extends Plugin
 		};
 	}
 
+
+
 	@Subscribe
 	public void onGrandExchangeSearched(GrandExchangeSearched event)
 	{
@@ -1293,11 +1310,13 @@ public class FlippingPlugin extends Plugin
 			{
 				if (config.slotTimersEnabled())
 				{
-					slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(timer -> clientThread.invokeLater(() -> timer.updateTimer())), 1000, 1000, TimeUnit.MILLISECONDS);
+					slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(timer -> clientThread.invokeLater(() -> timer.updateTimerDisplay())), 1000, 1000, TimeUnit.MILLISECONDS);
 				}
 				else
 				{
-					slotTimersTask.cancel(true);
+					if (slotTimersTask != null) {
+						slotTimersTask.cancel(true);
+					}
 					dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(TradeActivityTimer::resetToDefault);
 				}
 			}
