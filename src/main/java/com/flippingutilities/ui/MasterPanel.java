@@ -29,6 +29,7 @@ package com.flippingutilities.ui;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
+import com.flippingutilities.ui.slots.SlotsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.uiutilities.FastTabGroup;
 import com.flippingutilities.ui.uiutilities.Icons;
@@ -67,12 +68,6 @@ public class MasterPanel extends PluginPanel
 
 	private FastTabGroup tabGroup;
 
-	private static String FLIPPING_TAB_NAME = "Flipping";
-	private static String STATISTICS_TAB_NAME = "Statistics";
-
-	private MaterialTab flippingTab;
-	private MaterialTab statisticsTab;
-
 	/**
 	 * THe master panel is always present. The components added to it are components that should always be visible
 	 * regardless of whether you are looking at the flipping panel or the statistics panel. The tab group to switch
@@ -82,7 +77,11 @@ public class MasterPanel extends PluginPanel
 	 * @param flippingPanel FlippingPanel represents the main tool of the plugin.
 	 * @param statPanel     StatPanel represents useful performance statistics to the user.
 	 */
-	public MasterPanel(FlippingPlugin plugin, FlippingPanel flippingPanel, StatsPanel statPanel, SettingsPanel settingsPanel)
+	public MasterPanel(FlippingPlugin plugin,
+					   FlippingPanel flippingPanel,
+					   StatsPanel statPanel,
+					   SettingsPanel settingsPanel,
+					   SlotsPanel slotsPanel)
 	{
 		super(false);
 
@@ -101,7 +100,7 @@ public class MasterPanel extends PluginPanel
 			settingsPanel.rebuild();
 		});
 
-		tabGroup = tabSelector(mainDisplay, flippingPanel, statPanel);
+		tabGroup = tabSelector(mainDisplay, flippingPanel, statPanel, slotsPanel);
 		JPanel header = Header(accountSelector, settingsButton, tabGroup);
 		add(header, BorderLayout.NORTH);
 		add(mainDisplay, BorderLayout.CENTER);
@@ -193,56 +192,6 @@ public class MasterPanel extends PluginPanel
 		return communityPanel;
 	}
 
-	private JPanel sponsorPanel() {
-		JLabel sponsorText = new JLabel("Help fund plugin development", JLabel.CENTER);
-		sponsorText.setFont(FontManager.getRunescapeSmallFont());
-		sponsorText.setToolTipText("Click me");
-		Font font = sponsorText.getFont();
-		Map attributes = font.getAttributes();
-		attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
-		sponsorText.setFont(font.deriveFont(attributes));
-		Color defaultColor = sponsorText.getForeground();
-
-		JPanel sponsorPanel = new JPanel();
-		sponsorPanel.setBorder(new EmptyBorder(0,10,0,0));
-		sponsorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		sponsorPanel.add(sponsorText);
-		sponsorPanel.add(new JLabel(Icons.HEART_ICON));
-
-		final JMenuItem patreonLink = new JMenuItem("Patreon Link");
-		patreonLink.addActionListener(e -> LinkBrowser.browse("https://www.patreon.com/FlippingUtilities"));
-		final JMenuItem paypalLink = new JMenuItem("Paypal Link");
-		paypalLink.addActionListener(e -> LinkBrowser.browse("http://paypal.com/donate?hosted_button_id=BPCG76L7B7ZAY"));
-
-		final JPopupMenu popupMenu = new JPopupMenu();
-		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
-		popupMenu.add(patreonLink);
-		popupMenu.add(paypalLink);
-		sponsorPanel.setComponentPopupMenu(popupMenu);
-
-		sponsorText.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				popupMenu.show(e.getComponent(), e.getX(), e.getY());
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				sponsorText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				sponsorText.setForeground(defaultColor);
-			}
-		});
-
-		return sponsorPanel;
-	}
-
 	/**
 	 * This is the dropdown at the top of the header which allows the user to select which account they want to view.
 	 * Its only set to visible if the user has more than once account with a trading history.
@@ -309,15 +258,18 @@ public class MasterPanel extends PluginPanel
 	 *                      rendered
 	 * @return
 	 */
-	private FastTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statPanel)
+	private FastTabGroup tabSelector(JPanel mainDisplay, JPanel flippingPanel, JPanel statPanel, JPanel slotsPanel)
 	{
 		FastTabGroup tabGroup = new FastTabGroup(mainDisplay);
-		flippingTab = new MaterialTab(FLIPPING_TAB_NAME, tabGroup, flippingPanel);
-		statisticsTab = new MaterialTab(STATISTICS_TAB_NAME, tabGroup, statPanel);
-		tabGroup.setBorder(new EmptyBorder(0, 35, 5, 0));
+		MaterialTab flippingTab = new MaterialTab("flipping", tabGroup, flippingPanel);
+		MaterialTab statisticsTab = new MaterialTab("stats", tabGroup, statPanel);
+		MaterialTab slotsTab = new MaterialTab("slots", tabGroup, slotsPanel);
+
+		tabGroup.setBorder(new EmptyBorder(0, 20, 5, 0));
+		tabGroup.addTab(slotsTab);
 		tabGroup.addTab(flippingTab);
 		tabGroup.addTab(statisticsTab);
-		// Initialize with flipping tab open.
+
 		tabGroup.select(flippingTab);
 		return tabGroup;
 	}

@@ -66,6 +66,7 @@ public class TradeActivityTimer
 	private transient Client client;
 
 	//Index of the slot widget from left to right, top to bottom. (0-7)
+	@Getter
 	private int slotIndex;
 	private Instant lastUpdate;
 	private Instant tradeStartTime;
@@ -108,7 +109,7 @@ public class TradeActivityTimer
 	 * Updates the slot trade activity timer. It reassigns all widget field variables,
 	 * as they sometimes get unloaded and therefore won't point to the right widget objects.
 	 */
-	public void updateTimer()
+	public void updateTimerDisplay()
 	{
 		if (slotWidget == null)
 		{
@@ -241,6 +242,10 @@ public class TradeActivityTimer
 
 	public String createFormattedTimeString()
 	{
+		if (currentOffer == null || tradeStartTime == null || lastUpdate == null) {
+			return null;
+		}
+
 		if (currentOffer.isComplete())
 		{
 			return TimeFormatters.formatDuration(tradeStartTime, lastUpdate);
