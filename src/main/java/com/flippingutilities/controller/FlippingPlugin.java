@@ -353,12 +353,12 @@ public class FlippingPlugin extends Plugin
 		if (slotTimersTask == null && config.slotTimersEnabled())
 		{
 			log.info("starting slot timers on login");
-			slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(timer ->
+			slotTimersTask = executor.scheduleAtFixedRate(() -> dataHandler.viewAccountData(currentlyLoggedInAccount).getSlotTimers().forEach(slotWidgetTimer ->
 				clientThread.invokeLater(() -> {
 					try {
 
-						slotsPanel.updateTimerDisplays(timer.getSlotIndex(), timer.createFormattedTimeString());
-						timer.updateTimerDisplay();
+						slotsPanel.updateTimerDisplays(slotWidgetTimer.getSlotIndex(), slotWidgetTimer.createFormattedTimeString());
+						slotWidgetTimer.updateTimerDisplay();
 					}
 					catch (Exception e) {
 						log.info("exception when trying to update timer. e: {}", e);
@@ -472,7 +472,6 @@ public class FlippingPlugin extends Plugin
 
 	public void onNewOfferEvent(OfferEvent newOfferEvent)
 	{
-		slotsPanel.update(newOfferEvent);
 		if (currentlyLoggedInAccount != null)
 		{
 			newOfferEvent.setMadeBy(currentlyLoggedInAccount);
@@ -538,13 +537,15 @@ public class FlippingPlugin extends Plugin
 	 * Runelite has some wonky events. For example, every empty/buy/sell/cancelled buy/cancelled sell
 	 * spawns two identical events. And when you fully buy/sell item, it spawns two events (a
 	 * buying/selling event and a bought/sold event). This method screens out the unwanted events/duplicate
-	 * events and sets the ticksSinceFirstOffer field correctly on new OfferEvents.
+	 * events and sets the ticksSinceFirstOffer field correctly on new OfferEvents. This method is also responsible
+	 * for broadcasting the event to any components that need it, such as the slot panel, the slot timer widgets, etc.
 	 *
 	 * @param newOfferEvent event that just occurred
 	 * @return an optional containing an OfferEvent.
 	 */
 	public Optional<OfferEvent> screenOfferEvent(OfferEvent newOfferEvent)
 	{
+		slotsPanel.update(newOfferEvent);
 		Map<Integer, OfferEvent> lastOfferEventForEachSlot = dataHandler.getAccountData(currentlyLoggedInAccount).getLastOffers();
 
 		if (newOfferEvent.isCausedByEmptySlot())

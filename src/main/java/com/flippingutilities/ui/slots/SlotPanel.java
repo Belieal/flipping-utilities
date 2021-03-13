@@ -81,7 +81,7 @@ public class SlotPanel extends JPanel {
     }
 
     public void updateTimer(String timeString) {
-        if (offerEvent == null || offerEvent.isCausedByEmptySlot()) {
+        if (offerEvent == null || offerEvent.isCausedByEmptySlot() || timeString == null) {
             return;
         }
         timer.setText(timeString);
@@ -92,7 +92,6 @@ public class SlotPanel extends JPanel {
     }
 
     public void update(BufferedImage itemImage, String name, OfferEvent newOfferEvent) {
-        System.out.println("updating slot");
         if (newOfferEvent.isCausedByEmptySlot()) {
             setVisible(false);
             verticalGap.setVisible(false);
