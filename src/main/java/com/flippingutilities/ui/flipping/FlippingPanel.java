@@ -114,7 +114,7 @@ public class FlippingPanel extends JPanel
 
 		//Holds all the item panels
 		flippingItemsPanel.setLayout(new BoxLayout(flippingItemsPanel, BoxLayout.Y_AXIS));
-		flippingItemsPanel.setBorder((new EmptyBorder(0, 5, 0, 3)));
+		flippingItemsPanel.setBorder((new EmptyBorder(0, 9, 0, 7)));
 		flippingItemsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		JPanel wrapper = new JPanel(new BorderLayout());
@@ -123,7 +123,7 @@ public class FlippingPanel extends JPanel
 
 		JScrollPane scrollWrapper = new JScrollPane(wrapper);
 		scrollWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(5, 0));
+		scrollWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(2, 0));
 		scrollWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(0, 0, 0, 0));
 
 		//Contains the main content panel and top panel
@@ -188,7 +188,7 @@ public class FlippingPanel extends JPanel
 
 		flippingItemContainer.add(scrollWrapper, ITEMS_PANEL);
 		flippingItemContainer.add(welcomeWrapper, WELCOME_PANEL);
-		flippingItemContainer.setBorder(new EmptyBorder(5, 0, 0, 0));
+		flippingItemContainer.setBorder(new EmptyBorder(0, 0, 0, 0));
 
 		final JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
@@ -233,14 +233,16 @@ public class FlippingPanel extends JPanel
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
-			int vGap = 6;
+			int vGap = 8;
 			cardLayout.show(flippingItemContainer, ITEMS_PANEL);
 			List<FlippingItem> sortedItems = sortTradeList(flippingItems);
 			List<FlippingItem> itemsThatShouldHavePanels = sortedItems.stream().filter(item -> item.getValidFlippingPanelItem()).collect(Collectors.toList());
 			paginator.updateTotalPages(itemsThatShouldHavePanels.size());
 			List<FlippingItem> itemsOnCurrentPage = paginator.getCurrentPageItems(itemsThatShouldHavePanels);
 			List<FlippingItemPanel> newPanels = itemsOnCurrentPage.stream().map(item -> new FlippingItemPanel(plugin, itemManager.getImage(item.getItemId()), item)).collect(Collectors.toList());
+			flippingItemsPanel.add(Box.createVerticalStrut(vGap));
 			UIUtilities.stackPanelsVertically((List) newPanels, flippingItemsPanel, vGap);
+			flippingItemsPanel.add(Box.createVerticalStrut(vGap));
 			activePanels.addAll(newPanels);
 
 			if (isItemHighlighted()) {

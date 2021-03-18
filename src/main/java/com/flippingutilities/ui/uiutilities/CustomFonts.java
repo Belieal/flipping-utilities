@@ -17,11 +17,6 @@ public class CustomFonts {
 
         try
         {
-            Font font = Font.createFont(Font.TRUETYPE_FONT,
-                    FontManager.class.getResourceAsStream("runescape.ttf"))
-                    .deriveFont(Font.PLAIN, 16);
-            ge.registerFont(font);
-
             Font boldFont = Font.createFont(Font.TRUETYPE_FONT,
                     FontManager.class.getResourceAsStream("runescape_bold.ttf"))
                     .deriveFont(Font.BOLD, 16);

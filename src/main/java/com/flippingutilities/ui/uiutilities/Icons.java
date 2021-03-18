@@ -85,6 +85,9 @@ public class Icons {
     public static final ImageIcon SEARCH;
     public static final ImageIcon SEARCH_HOVER;
 
+    public static final ImageIcon REFRESH;
+    public static final ImageIcon REFRESH_HOVER;
+
     static
     {
         final BufferedImage openIcon = ImageUtil
@@ -201,5 +204,11 @@ public class Icons {
 
         final BufferedImage searchIconHover = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/search.png");
         SEARCH_HOVER = new ImageIcon(ImageUtil.alphaOffset(searchIconHover,.53f).getScaledInstance(12,12,Image.SCALE_SMOOTH));
+
+        final BufferedImage refreshIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/refresh.png");
+        REFRESH = new ImageIcon(refreshIcon.getScaledInstance(12,12,Image.SCALE_SMOOTH));
+
+        final BufferedImage refreshIconHover = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/refresh.png");
+        REFRESH_HOVER = new ImageIcon(ImageUtil.alphaOffset(refreshIconHover,.53f).getScaledInstance(12,12,Image.SCALE_SMOOTH));
     }
 }
