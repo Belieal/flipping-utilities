@@ -32,14 +32,18 @@ import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.ui.uiutilities.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Item;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
+import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -102,6 +106,7 @@ public class FlippingItemPanel extends JPanel
 		flippingItem.validateGeProperties();
 		setBackground(CustomColors.DARK_GRAY);
 		setLayout(new BorderLayout());
+		setBorder(new MatteBorder(0, 0, 3, 3, ColorScheme.DARKER_GRAY_COLOR.darker()));
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
 		setDescriptionLabels();
@@ -191,15 +196,15 @@ public class FlippingItemPanel extends JPanel
 	private JPanel createBottomPanel() {
 		JPanel bottomPanel = new JPanel(new BorderLayout());
 		bottomPanel.setBorder(new EmptyBorder(3,21,3,8));
-		bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		bottomPanel.setBackground(CustomColors.DARK_GRAY);
 
 		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
-		searchIconLabel.setToolTipText("Click to search item on platinumtokens or osrs ge!");
-		JPopupMenu popupMenu = ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem);
+		searchIconLabel.setToolTipText("Click to search realtime prices for this item!");
 		searchIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				popupMenu.show(searchIconLabel, e.getX(), e.getY());
+				log.info(UIUtilities.buildWikiLink(flippingItem.getItemId()));
+				LinkBrowser.browse(UIUtilities.buildWikiLink(flippingItem.getItemId()));
 			}
 
 			@Override

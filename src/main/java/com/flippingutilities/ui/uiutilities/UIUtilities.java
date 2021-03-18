@@ -150,6 +150,11 @@ public class UIUtilities
 		return String.format("<span style='color:%s;'>%s</span>",ColorUtil.colorToHexCode(color), s);
 	}
 
+	public static String buildWikiLink(int itemId) {
+		//https://prices.runescape.wiki/osrs/item/2970
+		return "https://prices.runescape.wiki/osrs/item/" + itemId;
+	}
+
 	public static IconTextField createSearchBar(ScheduledExecutorService executor, Runnable onSearch) {
 		final Future<?>[] runningRequest = {null};
 		IconTextField searchBar = new IconTextField();
