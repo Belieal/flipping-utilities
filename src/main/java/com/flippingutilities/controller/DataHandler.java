@@ -131,7 +131,7 @@ public class DataHandler {
         catch (IOException e) {
             log.info("error while loading data, setting accountwidedata and accountspecific to defaults", e);
             accountWideData = new AccountWideData();
-            accountWideData.prepare();
+            accountWideData.setDefaults();
             accountSpecificData = new HashMap<>();
             accountWideDataChanged = true;
         }
@@ -151,17 +151,15 @@ public class DataHandler {
         try {
             log.info("loading account wide data");
             AccountWideData accountWideData = TradePersister.loadAccountWideData();
-            if (accountWideData.getOptions().isEmpty()) {
-                accountWideData.prepare();
-                accountWideDataChanged = true;
-            }
+            boolean didActuallySetDefaults = accountWideData.setDefaults();
+            accountWideDataChanged = didActuallySetDefaults;
             log.info("successfully loaded account wide data");
             return accountWideData;
         }
         catch (IOException e) {
             log.info("couldn't load accountwide data", e);
             AccountWideData accountWideData = new AccountWideData();
-            accountWideData.prepare();
+            accountWideData.setDefaults();
             accountWideDataChanged = true;
             return accountWideData;
         }
