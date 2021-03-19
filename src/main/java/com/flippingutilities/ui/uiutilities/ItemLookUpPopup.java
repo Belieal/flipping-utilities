@@ -44,6 +44,30 @@ public class ItemLookUpPopup {
     }
 
     /**
+     * Builds the url required for opening the Prices Runescaape wiki page for the item.
+     * <p>
+     * Example of a lobster's URL:
+     * https://prices.runescape.wiki/osrs/item/379
+     *
+     * @param itemId The item to be opened on the Exchange.
+     * @return Returns the full URL for opening in the browser.
+     */
+    private static String buildPricesRunescapeWiki(int itemId)
+    {
+        String url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("prices.runescape.wiki")
+                .addPathSegment("osrs")
+                .addPathSegment("item")
+                .addPathSegment(String.valueOf(itemId))
+                .build()
+                .toString();
+
+        log.info("Opening Prices Runescape Wiki: " + url);
+        return url;
+    }
+
+    /**
      * This method builds the https://platinumtokens.com (PT) url from the given itemName.
      * PT takes a slugged (Dragon dagger(p++) -> dragon-dagger-p-plus-plus) as its item query parameter.
      * This method therefore also slugs the item's name, however it's not perfect. There are some continuity errors
@@ -112,10 +136,15 @@ public class ItemLookUpPopup {
         final JMenuItem openPlatinumTokens = new JMenuItem("Open in PlatinumTokens.com");
         openPlatinumTokens.addActionListener(e -> LinkBrowser.browse(ItemLookUpPopup.buildPlatinumTokensUrl(flippingItem.getItemName())));
 
+        //Opens the item's on Prices Runescape Wiki
+        final JMenuItem openPricesRunescapeWiki = new JMenuItem("Open in prices.runescape.wiki.com");
+        openPricesRunescapeWiki.addActionListener(e -> LinkBrowser.browse(ItemLookUpPopup.buildPricesRunescapeWiki(flippingItem.getItemID())));
+
         final JPopupMenu popupMenu = new JPopupMenu();
         popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
         popupMenu.add(openOsrsGe);
         popupMenu.add(openPlatinumTokens);
+        popupMenu.add(openPricesRunescapeWiki);
 
         return popupMenu;
     }
