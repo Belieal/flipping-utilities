@@ -118,10 +118,8 @@ public class FlippingItemPanel extends JPanel
 		setValueLabels();
 		updateTimerDisplays();
 
-		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(), createItemNameLabel(), createFavoriteIcon());
+		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createItemNameLabel(), createFavoriteIcon());
 		itemInfo = createItemInfoPanel();
-//		timeInfoPanel = createTimeInfoPanel();
-//		timeInfoPanel.setVisible(false);
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
 		add(createBottomPanel(), BorderLayout.SOUTH);
@@ -169,7 +167,7 @@ public class FlippingItemPanel extends JPanel
 		JPanel sectionPanel = new JPanel(new BorderLayout());
 		sectionPanel.setBackground(getBackground());
 
-		JLabel arrowIconLabel = new JLabel(Icons.OPEN_ICON);
+		JLabel arrowIconLabel = new JLabel(section.isDefaultExpanded()? Icons.OPEN_ICON : Icons.CLOSE_ICON);
 		arrowIconLabel.setVerticalAlignment(JLabel.NORTH);
 		arrowIconLabel.setFont(FontManager.getRunescapeBoldFont());
 		arrowIconLabel.setBorder(new EmptyBorder(0,0,0,5));
@@ -564,7 +562,7 @@ public class FlippingItemPanel extends JPanel
 	 * @param favoriteButton
 	 * @return
 	 */
-	private JPanel createTitlePanel(JLabel itemIcon, JButton deleteButton, JLabel itemNameLabel, JLabel favoriteButton)
+	private JPanel createTitlePanel(JLabel itemIcon, JLabel itemNameLabel, JLabel favoriteButton)
 	{
 		JLabel customizeLabel = new JLabel("customize", JLabel.CENTER);
 		customizeLabel.setFont(FontManager.getRunescapeSmallFont());
@@ -573,33 +571,12 @@ public class FlippingItemPanel extends JPanel
 		UIUtilities.makeLabelUnderlined(customizeLabel);
 		customizeLabel.setHorizontalAlignment(JLabel.CENTER);
 
-		JPanel itemClearPanel = new JPanel(new BorderLayout());
-		itemClearPanel.setBackground(getBackground());
-		itemClearPanel.add(itemIcon, BorderLayout.WEST);
-		itemClearPanel.add(deleteButton, BorderLayout.EAST);
-
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setBackground(getBackground());
-		titlePanel.add(itemClearPanel, BorderLayout.WEST);
+		titlePanel.add(itemIcon, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
 		titlePanel.add(favoriteButton, BorderLayout.EAST);
 		titlePanel.add(customizeLabel, BorderLayout.SOUTH);
-		titlePanel.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				itemIcon.setVisible(false);
-				deleteButton.setVisible(true);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				deleteButton.setVisible(false);
-				itemIcon.setVisible(true);
-			}
-		});
 		return titlePanel;
 	}
 
@@ -618,47 +595,33 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JLabel createItemIcon(AsyncBufferedImage itemImage)
 	{
-		JLabel itemIcon = new JLabel();
-		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-		itemIcon.setPreferredSize(Icons.ICON_SIZE);
-		if (itemImage != null)
-		{
-			itemImage.addTo(itemIcon);
-		}
-		return itemIcon;
-	}
+		Icon itemIcon = new ImageIcon(itemImage);
+		JLabel itemIconLabel = new JLabel(itemIcon);
+		itemIconLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		itemIconLabel.setPreferredSize(Icons.ICON_SIZE);
 
-	/**
-	 * Creates the delete button located on the title panel which shows up when you hover over the image icon.
-	 *
-	 * @return
-	 */
-	private JButton createDeleteButton()
-	{
-		JButton clearButton = new JButton(Icons.DELETE_ICON);
-		clearButton.setPreferredSize(Icons.ICON_SIZE);
-		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		clearButton.setBorder(null);
-		clearButton.setBorderPainted(false);
-		clearButton.setContentAreaFilled(false);
-		clearButton.setVisible(false);
-		clearButton.setToolTipText("Delete item");
-		clearButton.addMouseListener(new MouseAdapter()
-		{
+		itemIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseClicked(MouseEvent e)
-			{
-				if (e.getButton() == MouseEvent.BUTTON1)
-				{
-					flippingItem.setValidFlippingPanelItem(false);
-					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
-					}
-					plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
+			public void mousePressed(MouseEvent e) {
+				flippingItem.setValidFlippingPanelItem(false);
+				if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 				}
+				plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				itemIconLabel.setIcon(Icons.DELETE_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				itemIconLabel.setIcon(itemIcon);
 			}
 		});
-		return clearButton;
+
+		return itemIconLabel;
 	}
 
 	/**
