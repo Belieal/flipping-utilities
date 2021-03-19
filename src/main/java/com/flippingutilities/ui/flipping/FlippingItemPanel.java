@@ -240,22 +240,22 @@ public class FlippingItemPanel extends JPanel
 			case Section.PRICE_CHECK_BUY_PRICE:
 				descriptionLabel = priceCheckBuyText;
 				valueLabel = priceCheckBuyVal;
-				makePropertyPanelEditable(panel, priceCheckBuyVal);
+				makePropertyPanelEditable(panel, priceCheckBuyVal, priceCheckBuyText);
 				break;
 			case Section.PRICE_CHECK_SELL_PRICE:
 				descriptionLabel = priceCheckSellText;
 				valueLabel = priceCheckSellVal;
-				makePropertyPanelEditable(panel, priceCheckSellVal);
+				makePropertyPanelEditable(panel, priceCheckSellVal, priceCheckSellText);
 				break;
 			case Section.LATEST_BUY_PRICE:
 				descriptionLabel = latestBuyPriceText;
 				valueLabel = latestBuyPriceVal;
-				makePropertyPanelEditable(panel, latestBuyPriceVal);
+				makePropertyPanelEditable(panel, latestBuyPriceVal, latestBuyPriceText);
 				break;
 			case Section.LATEST_SELL_PRICE:
 				descriptionLabel = latestSellPriceText;
 				valueLabel = latestSellPriceVal;
-				makePropertyPanelEditable(panel, latestSellPriceVal);
+				makePropertyPanelEditable(panel, latestSellPriceVal, latestSellPriceText);
 				break;
 			case Section.PROFIT_EACH:
 				descriptionLabel = profitEachText;
@@ -410,7 +410,7 @@ public class FlippingItemPanel extends JPanel
 		return bottomPanel;
 	}
 
-	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel) {
+	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel, JLabel descriptionLabel) {
 		final boolean[] isHighlighted = {false};
 		TextField textField = new TextField(10);
 		textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -455,8 +455,7 @@ public class FlippingItemPanel extends JPanel
 			revalidate();
 			repaint();
 		}));
-
-		propertyPanel.addMouseListener(new MouseAdapter() {
+		MouseAdapter m = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (isHighlighted[0]) {
@@ -482,9 +481,10 @@ public class FlippingItemPanel extends JPanel
 			public void mouseExited(MouseEvent e) {
 				propertyPanel.setBackground(CustomColors.DARK_GRAY);
 			}
-		});
+		};
+		propertyPanel.addMouseListener(m);
+		descriptionLabel.addMouseListener(m);
 	}
-
 
 	private JPanel createGeTimerPanel() {
 		JPanel geRefreshTimePanel = new JPanel(new DynamicGridLayout(2,1,0, 2));
@@ -494,7 +494,6 @@ public class FlippingItemPanel extends JPanel
 		geRefreshTimePanel.add(geRefreshAtLabel);
 		return geRefreshTimePanel;
 	}
-
 
 	private void setValueLabels() {
 		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
@@ -506,8 +505,8 @@ public class FlippingItemPanel extends JPanel
 
 		latestBuyPriceVal.setForeground(Color.white);
 		latestSellPriceVal.setForeground(Color.white);
-		latestBuyPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
-		latestSellPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
+		latestBuyPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+		latestSellPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
 
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
