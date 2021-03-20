@@ -33,6 +33,7 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
+import net.runelite.client.util.SwingUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -115,7 +116,6 @@ public class UIUtilities
 	public static JDialog createModalFromPanel(Component parent, JPanel panel)
 	{
 		JDialog modal = new JDialog();
-		modal.setSize(new Dimension(panel.getSize()));
 		modal.add(panel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
@@ -188,5 +188,12 @@ public class UIUtilities
 		label.setFont(font.deriveFont(attributes));
 	}
 
-
+	public static JToggleButton createToggleButton() {
+		JToggleButton toggleButton = new JToggleButton(Icons.TOGGLE_OFF);
+		toggleButton.setSelectedIcon(Icons.TOGGLE_ON);
+		SwingUtil.removeButtonDecorations(toggleButton);
+		toggleButton.setPreferredSize(new Dimension(25, 0));
+		SwingUtil.addModalTooltip(toggleButton, "Turn off", "Turn on");
+		return toggleButton;
+	}
 }

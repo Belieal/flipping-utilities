@@ -248,9 +248,6 @@ public class FlippingPanel extends JPanel
 			if (isItemHighlighted()) {
 				offerEditorContainerPanel = new OfferEditorContainerPanel(plugin);
 				offerEditorContainerPanel.selectPriceEditor();
-				if (!activePanels.isEmpty()) {
-					flippingItemsPanel.add(Box.createVerticalStrut(vGap));
-				}
 				flippingItemsPanel.add(offerEditorContainerPanel);
 				flippingItemsPanel.add(Box.createVerticalStrut(vGap));
 			}

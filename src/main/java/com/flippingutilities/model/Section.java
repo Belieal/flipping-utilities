@@ -34,6 +34,13 @@ public class Section {
         }
     }
 
+    public boolean isShowingLabel(String labelName) {
+        if (labels.containsKey(labelName)) {
+            return labels.get(labelName);
+        }
+        return false;
+    }
+
     public void showLabel(String labelName) {
         if (labels.containsKey(labelName)) {
             labels.put(labelName, true);

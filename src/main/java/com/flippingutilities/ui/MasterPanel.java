@@ -98,6 +98,7 @@ public class MasterPanel extends PluginPanel
 		{
 			modal.setVisible(true);
 			settingsPanel.rebuild();
+			modal.pack();
 		});
 
 		tabGroup = tabSelector(mainDisplay, flippingPanel, statPanel, slotsPanel);

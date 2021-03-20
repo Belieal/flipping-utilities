@@ -1,6 +1,7 @@
 package com.flippingutilities.ui.uiutilities;
 
 import com.flippingutilities.controller.FlippingPlugin;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
 
 import javax.swing.*;
@@ -87,6 +88,9 @@ public class Icons {
 
     public static final ImageIcon REFRESH;
     public static final ImageIcon REFRESH_HOVER;
+
+    public static final ImageIcon TOGGLE_ON;
+    public static final ImageIcon TOGGLE_OFF;
 
     static
     {
@@ -210,5 +214,17 @@ public class Icons {
 
         final BufferedImage refreshIconHover = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/refresh.png");
         REFRESH_HOVER = new ImageIcon(ImageUtil.alphaOffset(refreshIconHover,.53f).getScaledInstance(12,12,Image.SCALE_SMOOTH));
+
+        final BufferedImage toggleOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/toggle_on.png");
+        TOGGLE_ON = new ImageIcon(toggleOn);
+
+        TOGGLE_OFF = new ImageIcon(ImageUtil.flipImage(
+                ImageUtil.luminanceScale(
+                        ImageUtil.grayscaleImage(toggleOn),
+                        0.61f
+                ),
+                true,
+                false
+        ));
     }
 }

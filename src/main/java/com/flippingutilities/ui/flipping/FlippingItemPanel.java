@@ -503,10 +503,10 @@ public class FlippingItemPanel extends JPanel
 					label.setFont(plugin.getFont());
 				});
 
-		latestBuyPriceVal.setForeground(Color.white);
-		latestSellPriceVal.setForeground(Color.white);
-		latestBuyPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
-		latestSellPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+//		latestBuyPriceVal.setForeground(Color.white);
+//		latestSellPriceVal.setForeground(Color.white);
+//		latestBuyPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+//		latestSellPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
 
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
@@ -556,19 +556,41 @@ public class FlippingItemPanel extends JPanel
 	 * the item name label, and the favorite button.
 	 *
 	 * @param itemIcon
-	 * @param deleteButton
 	 * @param itemNameLabel
 	 * @param favoriteButton
 	 * @return
 	 */
 	private JPanel createTitlePanel(JLabel itemIcon, JLabel itemNameLabel, JLabel favoriteButton)
 	{
+		CustomizationPanel customizationPanel = new CustomizationPanel(plugin);
+		JDialog customizationModal = UIUtilities.createModalFromPanel(this, customizationPanel);
+
 		JLabel customizeLabel = new JLabel("customize", JLabel.CENTER);
+		Color c = customizeLabel.getForeground();
 		customizeLabel.setFont(FontManager.getRunescapeSmallFont());
 		Font font=new Font(customizeLabel.getFont().getName(),Font.ITALIC,customizeLabel.getFont().getSize());
 		customizeLabel.setFont(font);
 		UIUtilities.makeLabelUnderlined(customizeLabel);
 		customizeLabel.setHorizontalAlignment(JLabel.CENTER);
+		customizeLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getSections());
+				customizationModal.setVisible(true);
+				customizationModal.pack();
+				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - 20);
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				customizeLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				customizeLabel.setForeground(c);
+			}
+		});
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setBackground(getBackground());
@@ -577,13 +599,6 @@ public class FlippingItemPanel extends JPanel
 		titlePanel.add(favoriteButton, BorderLayout.EAST);
 		titlePanel.add(customizeLabel, BorderLayout.SOUTH);
 		return titlePanel;
-	}
-
-	private JPanel createCustomizationPanel() {
-		JPanel customizationPanel = new JPanel(new BorderLayout());
-		customizationPanel.setBorder(new EmptyBorder(5,5,5,5));
-		customizationPanel.add(new JLabel("Customize the flipping item cards", JLabel.CENTER), BorderLayout.NORTH);
-		return customizationPanel;
 	}
 
 	/**
