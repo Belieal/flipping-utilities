@@ -192,7 +192,7 @@ public class UIUtilities
 		JToggleButton toggleButton = new JToggleButton(Icons.TOGGLE_OFF);
 		toggleButton.setSelectedIcon(Icons.TOGGLE_ON);
 		SwingUtil.removeButtonDecorations(toggleButton);
-		toggleButton.setPreferredSize(new Dimension(25, 0));
+		//toggleButton.setPreferredSize(new Dimension(25, 0));
 		SwingUtil.addModalTooltip(toggleButton, "Turn off", "Turn on");
 		return toggleButton;
 	}

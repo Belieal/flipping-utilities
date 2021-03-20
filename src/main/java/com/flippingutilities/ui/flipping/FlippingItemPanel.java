@@ -578,7 +578,7 @@ public class FlippingItemPanel extends JPanel
 				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getSections());
 				customizationModal.setVisible(true);
 				customizationModal.pack();
-				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - 20);
+				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - customizationModal.getHeight()/2);
 			}
 
 			@Override
