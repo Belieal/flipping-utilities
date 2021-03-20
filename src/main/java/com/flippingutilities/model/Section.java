@@ -41,15 +41,9 @@ public class Section {
         return false;
     }
 
-    public void showLabel(String labelName) {
+    public void showLabel(String labelName, boolean shouldShow) {
         if (labels.containsKey(labelName)) {
-            labels.put(labelName, true);
-        }
-    }
-
-    public void hideLabel(String labelName) {
-        if (labels.containsKey(labelName)) {
-            labels.put(labelName, false);
+            labels.put(labelName, shouldShow);
         }
     }
 }

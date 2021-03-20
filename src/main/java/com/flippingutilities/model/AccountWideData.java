@@ -41,16 +41,16 @@ public class AccountWideData {
         Section otherSection = new Section("Other");
 
         importantSection.defaultExpanded = true;
-        importantSection.showLabel(Section.LATEST_BUY_PRICE);
-        importantSection.showLabel(Section.LATEST_SELL_PRICE);
-        importantSection.showLabel(Section.PRICE_CHECK_BUY_PRICE);
-        importantSection.showLabel(Section.PRICE_CHECK_SELL_PRICE);
+        importantSection.showLabel(Section.LATEST_BUY_PRICE, true);
+        importantSection.showLabel(Section.LATEST_SELL_PRICE, true);
+        importantSection.showLabel(Section.PRICE_CHECK_BUY_PRICE, true);
+        importantSection.showLabel(Section.PRICE_CHECK_SELL_PRICE, true);
 
-        otherSection.showLabel(Section.PROFIT_EACH);
-        otherSection.showLabel(Section.POTENTIAL_PROFIT);
-        otherSection.showLabel(Section.REMAINING_GE_LIMIT);
-        otherSection.showLabel(Section.ROI);
-        otherSection.showLabel(Section.GE_LIMIT_REFRESH_TIMER);
+        otherSection.showLabel(Section.PROFIT_EACH, true);
+        otherSection.showLabel(Section.POTENTIAL_PROFIT, true);
+        otherSection.showLabel(Section.REMAINING_GE_LIMIT, true);
+        otherSection.showLabel(Section.ROI, true);
+        otherSection.showLabel(Section.GE_LIMIT_REFRESH_TIMER, true);
 
         sections.add(importantSection);
         sections.add(otherSection);
