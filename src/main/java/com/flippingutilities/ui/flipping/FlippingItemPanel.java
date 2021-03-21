@@ -67,6 +67,8 @@ public class FlippingItemPanel extends JPanel
 	private FlippingPlugin plugin;
 
 	//All the labels that hold the actual values for these properties.
+	JLabel wikiBuyVal = new JLabel();
+	JLabel wikiSellVal = new JLabel();
 	JLabel priceCheckBuyVal = new JLabel();
 	JLabel priceCheckSellVal = new JLabel();
 	JLabel latestBuyPriceVal = new JLabel();
@@ -75,19 +77,13 @@ public class FlippingItemPanel extends JPanel
 	JLabel potentialProfitVal = new JLabel();
 	JLabel roiLabelVal = new JLabel();
 	JLabel geLimitVal = new JLabel();
-	//how long since the offer was completed
-	JLabel priceCheckBuyTimeVal = new JLabel();
-	JLabel priceCheckSellTimeVal = new JLabel();
-	JLabel latestBuyTimeVal = new JLabel();
-	JLabel latestSellTimeVal = new JLabel();
 	JLabel geRefreshCountdownLabel = new JLabel();
-	//when the offer was completed like 3:50 pm
+	//local time the ge limit will reset
 	JLabel geRefreshAtLabel = new JLabel();
-	JLabel latestPcBuyAt = new JLabel();
-	JLabel latestPcSellAt = new JLabel();
-	JLabel latestBoughtAt = new JLabel();
-	JLabel latestSoldAt = new JLabel();
 
+	//description labels
+	JLabel wikiBuyText = new JLabel("wiki margin buy: ");
+	JLabel wikiSellText = new JLabel("wiki margin sell: ");
 	JLabel priceCheckBuyText = new JLabel("Last margin buy: ");
 	JLabel priceCheckSellText = new JLabel("Last margin sell: ");
 	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
@@ -98,7 +94,6 @@ public class FlippingItemPanel extends JPanel
 	JLabel geLimitText = new JLabel("GE limit:",JLabel.CENTER);
 
 	JPanel itemInfo;
-	JPanel timeInfoPanel;
 
 	JLabel searchCodeLabel;
 
@@ -114,7 +109,7 @@ public class FlippingItemPanel extends JPanel
 				new MatteBorder(0, 0, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker())));
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
-		setDescriptionLabels();
+		styleDescriptionLabels();
 		setValueLabels();
 		updateTimerDisplays();
 
@@ -237,6 +232,16 @@ public class FlippingItemPanel extends JPanel
 		JLabel descriptionLabel;
 		JLabel valueLabel;
 		switch (labelName) {
+			case Section.WIKI_BUY_PRICE:
+				descriptionLabel = wikiBuyText;
+				valueLabel = wikiBuyVal;
+				makePropertyPanelEditable(panel, wikiBuyVal, wikiBuyText);
+				break;
+			case Section.WIKI_SELL_PRICE:
+				descriptionLabel = wikiSellText;
+				valueLabel = wikiSellVal;
+				makePropertyPanelEditable(panel, wikiSellVal, wikiSellText);
+				break;
 			case Section.PRICE_CHECK_BUY_PRICE:
 				descriptionLabel = priceCheckBuyText;
 				valueLabel = priceCheckBuyVal;
@@ -391,6 +396,7 @@ public class FlippingItemPanel extends JPanel
 		refreshIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
+				plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), (wikiRequest -> log.info("{}", wikiRequest)));
 			}
 
 			@Override
@@ -503,11 +509,6 @@ public class FlippingItemPanel extends JPanel
 					label.setFont(plugin.getFont());
 				});
 
-//		latestBuyPriceVal.setForeground(Color.white);
-//		latestSellPriceVal.setForeground(Color.white);
-//		latestBuyPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
-//		latestSellPriceVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
-
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
@@ -526,10 +527,12 @@ public class FlippingItemPanel extends JPanel
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
+		wikiBuyVal.setText("N/A");
+		wikiSellVal.setText("N/A");
 		refreshProperties();
 	}
 
-	private void setDescriptionLabels() {
+	private void styleDescriptionLabels() {
 		Arrays.asList(latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, potentialProfitText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
@@ -790,11 +793,6 @@ public class FlippingItemPanel extends JPanel
 		//Color gradient red-yellow-green depending on ROI.
 		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
-		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
-		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
-		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
-		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
-
 		if (flippingItem.getTotalGELimit() > 0) {
 			geLimitVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
@@ -819,25 +817,9 @@ public class FlippingItemPanel extends JPanel
 		}
 
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
-
-		setTimeString(flippingItem.getLatestMarginCheckBuy(), priceCheckBuyTimeVal);
-		setTimeString(flippingItem.getLatestMarginCheckSell(), priceCheckSellTimeVal);
-		setTimeString(flippingItem.getLatestBuy(), latestBuyTimeVal);
-		setTimeString(flippingItem.getLatestSell(), latestSellTimeVal);
 	}
 
-	private void setTimeString(Optional<OfferEvent> offerEvent, JLabel timeLabel) {
-		if (!offerEvent.isPresent()) {
-			timeLabel.setText("N/A");
-		}
-		else {
-			//if difference is more than a day don't show it as HH:MM:SS
-			if (Instant.now().getEpochSecond() - offerEvent.get().getTime().getEpochSecond() > 86400) {
-				timeLabel.setText(TimeFormatters.formatDurationTruncated(offerEvent.get().getTime()));
-			}
-			else {
-				timeLabel.setText(TimeFormatters.formatDuration(offerEvent.get().getTime()));
-			}
-		}
+	public void updateWikiMargins(int buyPrice, int sellPrice) {
+		return;
 	}
 }

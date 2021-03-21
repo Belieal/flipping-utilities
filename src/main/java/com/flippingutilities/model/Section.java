@@ -12,6 +12,8 @@ import java.util.*;
 @Data
 public class Section {
     String name;
+    public static final String WIKI_BUY_PRICE = "wiki buy price";
+    public static final String WIKI_SELL_PRICE = "wiki sell price";
     public static final String PRICE_CHECK_BUY_PRICE = "price check buy price";
     public static final String PRICE_CHECK_SELL_PRICE = "price check sell price";
     public static final String LATEST_BUY_PRICE = "latest buy price";
@@ -21,7 +23,7 @@ public class Section {
     public static final String ROI = "roi";
     public static final String REMAINING_GE_LIMIT = "remaining ge limit";
     public static final String GE_LIMIT_REFRESH_TIMER = "ge limit refresh timer";
-    public static final List<String> possibleLabels = Arrays.asList(PRICE_CHECK_BUY_PRICE, PRICE_CHECK_SELL_PRICE, LATEST_BUY_PRICE,
+    public static final List<String> possibleLabels = Arrays.asList(WIKI_BUY_PRICE, WIKI_SELL_PRICE, PRICE_CHECK_BUY_PRICE, PRICE_CHECK_SELL_PRICE, LATEST_BUY_PRICE,
             LATEST_SELL_PRICE, PROFIT_EACH, POTENTIAL_PROFIT, ROI, REMAINING_GE_LIMIT, GE_LIMIT_REFRESH_TIMER);
     Map<String, Boolean> labels;
     boolean defaultExpanded;
