@@ -31,6 +31,8 @@ import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
 import com.flippingutilities.model.Section;
 import com.flippingutilities.ui.uiutilities.*;
+import com.flippingutilities.utilities.WikiItemMargins;
+import com.flippingutilities.utilities.WikiRequest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
@@ -69,6 +71,8 @@ public class FlippingItemPanel extends JPanel
 	//All the labels that hold the actual values for these properties.
 	JLabel wikiBuyVal = new JLabel();
 	JLabel wikiSellVal = new JLabel();
+	JLabel wikiBuyTimeVal = new JLabel();
+	JLabel wikiSellTimeVal = new JLabel();
 	JLabel priceCheckBuyVal = new JLabel();
 	JLabel priceCheckSellVal = new JLabel();
 	JLabel latestBuyPriceVal = new JLabel();
@@ -82,10 +86,12 @@ public class FlippingItemPanel extends JPanel
 	JLabel geRefreshAtLabel = new JLabel();
 
 	//description labels
-	JLabel wikiBuyText = new JLabel("wiki margin buy: ");
-	JLabel wikiSellText = new JLabel("wiki margin sell: ");
-	JLabel priceCheckBuyText = new JLabel("Last margin buy: ");
-	JLabel priceCheckSellText = new JLabel("Last margin sell: ");
+	JLabel wikiBuyText = new JLabel("Wiki insta buy: ");
+	JLabel wikiSellText = new JLabel("Wiki insta sell: ");
+	JLabel wikiBuyTimeText = new JLabel("Wiki insta buy age: ");
+	JLabel wikiSellTimeText = new JLabel("Wiki insta sell age: ");
+	JLabel priceCheckBuyText = new JLabel("Last insta buy: ");
+	JLabel priceCheckSellText = new JLabel("Last insta sell: ");
 	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
 	JLabel latestSellPriceText = new JLabel("Last sell price: ");
 	JLabel profitEachText = new JLabel("Profit each: ");
@@ -96,6 +102,8 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 
 	JLabel searchCodeLabel;
+
+	WikiRequest wikiRequest;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -110,7 +118,9 @@ public class FlippingItemPanel extends JPanel
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
 		styleDescriptionLabels();
-		setValueLabels();
+		styleValueLabels();
+		plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), this::updateWikiInfoLabels);
+		setValueLabelsForFlippingItemProperties();
 		updateTimerDisplays();
 
 		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createItemNameLabel(), createFavoriteIcon());
@@ -235,12 +245,10 @@ public class FlippingItemPanel extends JPanel
 			case Section.WIKI_BUY_PRICE:
 				descriptionLabel = wikiBuyText;
 				valueLabel = wikiBuyVal;
-				makePropertyPanelEditable(panel, wikiBuyVal, wikiBuyText);
 				break;
 			case Section.WIKI_SELL_PRICE:
 				descriptionLabel = wikiSellText;
 				valueLabel = wikiSellVal;
-				makePropertyPanelEditable(panel, wikiSellVal, wikiSellText);
 				break;
 			case Section.PRICE_CHECK_BUY_PRICE:
 				descriptionLabel = priceCheckBuyText;
@@ -318,8 +326,9 @@ public class FlippingItemPanel extends JPanel
 		TextField searchCodeTextField = new TextField(10);
 
 		JPanel searchCodePanel = new JPanel();
+		searchCodePanel.setBorder(new EmptyBorder(0,0,0,4));
 		searchCodePanel.setBackground(CustomColors.DARK_GRAY);
-
+		searchCodePanel.setPreferredSize(new Dimension(0,20));
 		searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
 		if (flippingItem.isFavorite()) {
 			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
@@ -391,12 +400,17 @@ public class FlippingItemPanel extends JPanel
 		});
 
 
+
+		JPanel refreshIconPanel = new JPanel();
+		refreshIconPanel.setLayout(new BoxLayout(refreshIconPanel, BoxLayout.X_AXIS));
+		refreshIconPanel.setBackground(getBackground());
+
 		JLabel refreshIconLabel = new JLabel(Icons.REFRESH);
 		refreshIconLabel.setToolTipText("Click to refresh realtime wiki prices!");
 		refreshIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), (wikiRequest -> log.info("{}", wikiRequest)));
+				plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), (wikiRequest -> updateWikiInfoLabels(wikiRequest)));
 			}
 
 			@Override
@@ -410,7 +424,14 @@ public class FlippingItemPanel extends JPanel
 			}
 		});
 
-		bottomPanel.add(refreshIconLabel, BorderLayout.WEST);
+		refreshIconPanel.add(refreshIconLabel);
+		refreshIconPanel.add(Box.createHorizontalStrut(2));
+		JLabel requestCountDownTimer = new JLabel("60");
+		requestCountDownTimer.setAlignmentY(JLabel.TOP);
+		requestCountDownTimer.setFont(new Font(Font.SERIF, Font.PLAIN, 9));
+		refreshIconPanel.add(requestCountDownTimer);
+
+		bottomPanel.add(refreshIconPanel, BorderLayout.WEST);
 		bottomPanel.add(searchIconLabel, BorderLayout.EAST);
 		bottomPanel.add(searchCodePanel, BorderLayout.CENTER);
 		return bottomPanel;
@@ -450,7 +471,7 @@ public class FlippingItemPanel extends JPanel
 					flippingItem.setLatestSell(Optional.of(dummyOffer));
 				}
 
-				refreshProperties();
+				setValueLabelsForFlippingItemProperties();
 			}
 			catch (NumberFormatException e) {
 				JOptionPane.showMessageDialog(this, "You need to input a number");
@@ -501,7 +522,7 @@ public class FlippingItemPanel extends JPanel
 		return geRefreshTimePanel;
 	}
 
-	private void setValueLabels() {
+	private void styleValueLabels() {
 		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
 				roiLabelVal, geLimitVal).
 				forEach(label -> {
@@ -527,13 +548,19 @@ public class FlippingItemPanel extends JPanel
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
-		wikiBuyVal.setText("N/A");
-		wikiSellVal.setText("N/A");
-		refreshProperties();
+		wikiBuyVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+		wikiBuyVal.setForeground(Color.WHITE);
+		wikiSellVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+		wikiSellVal.setForeground(Color.WHITE);
+
+		JPopupMenu popup = new JPopupMenu();
+		popup.add(createWikiTimePanel());
+		UIUtilities.addPopupOnHover(wikiBuyVal, popup);
+		UIUtilities.addPopupOnHover(wikiSellVal, popup);
 	}
 
 	private void styleDescriptionLabels() {
-		Arrays.asList(latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, potentialProfitText, geLimitText, roiText).
+		Arrays.asList(wikiBuyText, wikiSellText, latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, potentialProfitText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 					label.setFont(plugin.getFont());
@@ -768,7 +795,7 @@ public class FlippingItemPanel extends JPanel
 		return !itemInfo.isVisible();
 	}
 
-	public void refreshProperties() {
+	public void setValueLabelsForFlippingItemProperties() {
 		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
 		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
 
@@ -819,7 +846,60 @@ public class FlippingItemPanel extends JPanel
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
 	}
 
-	public void updateWikiMargins(int buyPrice, int sellPrice) {
-		return;
+	public void updateWikiInfoLabels(WikiRequest wikiRequest) {
+		this.wikiRequest = wikiRequest;
+		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		wikiBuyVal.setText(wikiItemInfo.getHigh()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getHigh()) + " gp");
+		wikiSellVal.setText(wikiItemInfo.getLow()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getLow()) + " gp");
+		updateWikiTimeLabels(wikiRequest);
 	}
+
+	private void updateWikiTimeLabels(WikiRequest wikiRequest) {
+		//can be called before wikiRequest is set cause it is called on hover over the wiki labels.
+		if (wikiRequest == null) {
+			return;
+		}
+		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		if (wikiItemInfo.getHighTime() == 0) {
+			wikiBuyTimeVal.setText("No data");
+		}
+		else {
+			wikiBuyTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getHighTime())));
+		}
+		if (wikiItemInfo.getLowTime() == 0) {
+			wikiSellTimeVal.setText("No data");
+		}
+		else {
+			wikiSellTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getLowTime())));
+		}
+	}
+
+	private JPanel createWikiTimePanel() {
+		wikiBuyTimeText.setFont(FontManager.getRunescapeSmallFont());
+		wikiBuyTimeText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		wikiSellTimeText.setFont(FontManager.getRunescapeSmallFont());
+		wikiSellTimeText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+
+		wikiSellTimeVal.setFont(FontManager.getRunescapeSmallFont());
+		wikiBuyTimeVal.setFont(FontManager.getRunescapeSmallFont());
+
+		JPanel wikiTimePanel = new JPanel();
+		wikiTimePanel.setLayout(new BoxLayout(wikiTimePanel, BoxLayout.Y_AXIS));
+		wikiTimePanel.setBorder(new EmptyBorder(5,5,5,5));
+
+		JPanel buyTimePanel = new JPanel(new BorderLayout());
+		buyTimePanel.add(wikiBuyTimeText, BorderLayout.WEST);
+		buyTimePanel.add(wikiBuyTimeVal, BorderLayout.EAST);
+
+		JPanel sellTimePanel = new JPanel(new BorderLayout());
+		sellTimePanel.add(wikiSellTimeText, BorderLayout.WEST);
+		sellTimePanel.add(wikiSellTimeVal, BorderLayout.EAST);
+
+		wikiTimePanel.add(buyTimePanel);
+		wikiTimePanel.add(Box.createVerticalStrut(5));
+		wikiTimePanel.add(sellTimePanel);
+
+		return wikiTimePanel;
+	}
+
 }

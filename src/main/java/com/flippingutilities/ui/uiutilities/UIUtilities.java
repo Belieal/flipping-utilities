@@ -39,6 +39,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -195,5 +197,21 @@ public class UIUtilities
 		//toggleButton.setPreferredSize(new Dimension(25, 0));
 		SwingUtil.addModalTooltip(toggleButton, "Turn off", "Turn on");
 		return toggleButton;
+	}
+
+	public static void addPopupOnHover(JComponent component, JPopupMenu popup) {
+		component.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				Point location  = component.getLocationOnScreen();
+				popup.setLocation(location.x, location.y - popup.getHeight());
+				popup.setVisible(true);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				popup.setVisible(false);
+			}
+		});
 	}
 }
