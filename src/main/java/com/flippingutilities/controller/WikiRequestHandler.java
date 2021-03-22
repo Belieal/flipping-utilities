@@ -15,6 +15,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -42,10 +43,11 @@ public class WikiRequestHandler {
         return false;
     }
 
-    public void fetchWikiData(int itemId, Consumer<WikiRequest> callback) {
+    public void fetchWikiData(int itemId, BiConsumer<WikiRequest, Instant> callback) {
         if (requestedLessThanGivenSecondsAgo(itemId, 60)) {
             WikiRequest oldRequest = pastRequests.get(itemId).getValue();
-            callback.accept(oldRequest);
+            Instant oldRequestCompletionTime = pastRequests.get(itemId).getKey();
+            callback.accept(oldRequest, oldRequestCompletionTime);
             return;
         }
         Request request = new Request.Builder().
@@ -69,8 +71,9 @@ public class WikiRequestHandler {
                         Gson gson = new Gson();
                         WikiRequest wikiRequest = gson.fromJson(responseBody.string(), WikiRequest.class);
                         //WikiRequest wikiRequest = gson.fromJson("{\"data\":{\"1221\":{\"high\":null,\"highTime\":null,\"low\":370,\"lowTime\":1615818058}}}", WikiRequest.class);
-                        pastRequests.put(itemId, new Pair<>(Instant.now(), wikiRequest));
-                        callback.accept(wikiRequest);
+                        Instant requestCompletionTime = Instant.now();
+                        pastRequests.put(itemId, new Pair<>(requestCompletionTime, wikiRequest));
+                        callback.accept(wikiRequest, requestCompletionTime);
                     }
                     catch (JsonSyntaxException e) {
                         return;

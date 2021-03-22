@@ -82,6 +82,7 @@ public class FlippingItemPanel extends JPanel
 	JLabel roiLabelVal = new JLabel();
 	JLabel geLimitVal = new JLabel();
 	JLabel geRefreshCountdownLabel = new JLabel();
+	JLabel wikiRequestCountDownTimer = new JLabel();
 	//local time the ge limit will reset
 	JLabel geRefreshAtLabel = new JLabel();
 
@@ -102,8 +103,11 @@ public class FlippingItemPanel extends JPanel
 	JPanel itemInfo;
 
 	JLabel searchCodeLabel;
+	JLabel refreshIconLabel = new JLabel();
 
 	WikiRequest wikiRequest;
+	Instant timeOfRequestCompletion;
+	boolean requestInFlight;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -119,7 +123,7 @@ public class FlippingItemPanel extends JPanel
 
 		styleDescriptionLabels();
 		styleValueLabels();
-		plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), this::updateWikiInfoLabels);
+		updateWikiInfo();
 		setValueLabelsForFlippingItemProperties();
 		updateTimerDisplays();
 
@@ -399,18 +403,21 @@ public class FlippingItemPanel extends JPanel
 			revalidate();
 		});
 
-
-
 		JPanel refreshIconPanel = new JPanel();
 		refreshIconPanel.setLayout(new BoxLayout(refreshIconPanel, BoxLayout.X_AXIS));
 		refreshIconPanel.setBackground(getBackground());
 
-		JLabel refreshIconLabel = new JLabel(Icons.REFRESH);
+		refreshIconLabel.setIcon(Icons.REFRESH);
 		refreshIconLabel.setToolTipText("Click to refresh realtime wiki prices!");
+		refreshIconLabel.setDisabledIcon(Icons.REFRESH_HOVER);
 		refreshIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), (wikiRequest -> updateWikiInfoLabels(wikiRequest)));
+				if (!refreshIconLabel.isEnabled()) {
+					return;
+				}
+				refreshIconLabel.setEnabled(false);
+				updateWikiInfo();
 			}
 
 			@Override
@@ -426,10 +433,7 @@ public class FlippingItemPanel extends JPanel
 
 		refreshIconPanel.add(refreshIconLabel);
 		refreshIconPanel.add(Box.createHorizontalStrut(2));
-		JLabel requestCountDownTimer = new JLabel("60");
-		requestCountDownTimer.setAlignmentY(JLabel.TOP);
-		requestCountDownTimer.setFont(new Font(Font.SERIF, Font.PLAIN, 9));
-		refreshIconPanel.add(requestCountDownTimer);
+		refreshIconPanel.add(wikiRequestCountDownTimer);
 
 		bottomPanel.add(refreshIconPanel, BorderLayout.WEST);
 		bottomPanel.add(searchIconLabel, BorderLayout.EAST);
@@ -553,8 +557,11 @@ public class FlippingItemPanel extends JPanel
 		wikiSellVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
 		wikiSellVal.setForeground(Color.WHITE);
 
+		wikiRequestCountDownTimer.setAlignmentY(JLabel.TOP);
+		wikiRequestCountDownTimer.setFont(new Font(Font.SERIF, Font.PLAIN, 9));
+
 		JPopupMenu popup = new JPopupMenu();
-		popup.add(createWikiTimePanel());
+		popup.add(createWikiHoverTimePanel());
 		UIUtilities.addPopupOnHover(wikiBuyVal, popup);
 		UIUtilities.addPopupOnHover(wikiSellVal, popup);
 	}
@@ -846,19 +853,45 @@ public class FlippingItemPanel extends JPanel
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
 	}
 
-	public void updateWikiInfoLabels(WikiRequest wikiRequest) {
-		this.wikiRequest = wikiRequest;
+	public void updateWikiInfo() {
+		if (!requestInFlight) {
+			requestInFlight = true;
+			plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), this::updateWikiPriceLabels);
+		}
+	}
+
+	public void updateWikiPriceLabels(WikiRequest wr, Instant requestCompletionTime) {
+		requestInFlight = false;
+		timeOfRequestCompletion = requestCompletionTime;
+		wikiRequest = wr;
 		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
 		wikiBuyVal.setText(wikiItemInfo.getHigh()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getHigh()) + " gp");
 		wikiSellVal.setText(wikiItemInfo.getLow()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getLow()) + " gp");
-		updateWikiTimeLabels(wikiRequest);
 	}
 
-	private void updateWikiTimeLabels(WikiRequest wikiRequest) {
-		//can be called before wikiRequest is set cause it is called on hover over the wiki labels.
+	public void updateWikiTimeLabels() {
+		//can be called before wikiRequest is set cause is is called in the repeating task which can start before the
+		//request is completed
 		if (wikiRequest == null) {
+			wikiBuyTimeVal.setText("Request not made yet");
+			wikiSellTimeVal.setText("Request not made yet");
+			wikiRequestCountDownTimer.setText("N/A");
 			return;
 		}
+		//probably don't need this. Should always be non null if wikiRequest is not null
+		if (timeOfRequestCompletion != null) {
+			long secondsSinceLastRequestCompleted = Instant.now().getEpochSecond() - timeOfRequestCompletion.getEpochSecond();
+			if (secondsSinceLastRequestCompleted >= 60) {
+				updateWikiInfo();
+				wikiRequestCountDownTimer.setText("0");
+				refreshIconLabel.setEnabled(true);
+			}
+			else {
+				refreshIconLabel.setEnabled(false);
+				wikiRequestCountDownTimer.setText(String.valueOf(60 - secondsSinceLastRequestCompleted));
+			}
+		}
+
 		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
 		if (wikiItemInfo.getHighTime() == 0) {
 			wikiBuyTimeVal.setText("No data");
@@ -867,14 +900,15 @@ public class FlippingItemPanel extends JPanel
 			wikiBuyTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getHighTime())));
 		}
 		if (wikiItemInfo.getLowTime() == 0) {
-			wikiSellTimeVal.setText("No data");
+			wikiBuyTimeVal.setText("No data");
 		}
 		else {
 			wikiSellTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getLowTime())));
 		}
 	}
 
-	private JPanel createWikiTimePanel() {
+	//panel that is shown when someone hovers over the wiki buy/sell value labels
+	private JPanel createWikiHoverTimePanel() {
 		wikiBuyTimeText.setFont(FontManager.getRunescapeSmallFont());
 		wikiBuyTimeText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		wikiSellTimeText.setFont(FontManager.getRunescapeSmallFont());

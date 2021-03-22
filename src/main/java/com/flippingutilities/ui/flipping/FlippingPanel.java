@@ -378,6 +378,7 @@ public class FlippingPanel extends JPanel
 		for (FlippingItemPanel activePanel : activePanels)
 		{
 			activePanel.updateTimerDisplays();
+			activePanel.updateWikiTimeLabels();
 		}
 	}
 
