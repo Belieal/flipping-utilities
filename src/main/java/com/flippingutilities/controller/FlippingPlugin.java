@@ -37,9 +37,11 @@ import com.flippingutilities.ui.slots.SlotsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.ui.widgets.TradeActivityTimer;
-import com.flippingutilities.utilities.CacheUpdater;
+import com.flippingutilities.jobs.CacheUpdaterJob;
 import com.flippingutilities.utilities.GeHistoryTabExtractor;
 import com.flippingutilities.utilities.InvalidOptionException;
+import com.flippingutilities.jobs.WikiDataFetcherJob;
+import com.flippingutilities.utilities.WikiRequest;
 import com.google.common.primitives.Shorts;
 import com.google.inject.Provides;
 import lombok.Getter;
@@ -126,6 +128,7 @@ public class FlippingPlugin extends Plugin
 	private KeyManager keyManager;
 
 	@Inject
+	@Getter
 	private OkHttpClient httpClient;
 
 	@Getter
@@ -162,7 +165,7 @@ public class FlippingPlugin extends Plugin
 	List<FlippingItem> prevBuiltAccountWideList;
 
 	//updates the cache by monitoring the directory and loading a file's contents into the cache if it has been changed
-	private CacheUpdater cacheUpdater;
+	private CacheUpdaterJob cacheUpdaterJob;
 
 	private ScheduledFuture slotTimersTask;
 	private Instant startUpTime = Instant.now();
@@ -178,14 +181,18 @@ public class FlippingPlugin extends Plugin
 	@Getter
 	private DataHandler dataHandler;
 	@Getter
-	private WikiRequestHandler wikiRequestHandler;
+	private WikiDataFetcherJob wikiDataFetcherJob;
+
+	@Getter
+	private WikiRequest lastWikiRequest;
+	@Getter
+	private Instant timeOfLastWikiRequest;
 
 	@Override
 	protected void startUp()
 	{
 		optionHandler = new OptionHandler(this);
 		dataHandler = new DataHandler(this);
-		wikiRequestHandler = new WikiRequestHandler(httpClient);
 
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager, executor);
@@ -213,13 +220,8 @@ public class FlippingPlugin extends Plugin
 			}
 
 			dataHandler.loadData();
-
 			setupAccSelectorDropdown();
-
-			cacheUpdater = new CacheUpdater();
-			cacheUpdater.registerCallback(this::onDirectoryUpdate);
-			cacheUpdater.start();
-
+			startJobs();
 			generalRepeatingTasks = setupRepeatingTasks(1000);
 
 			//this is only relevant if the user downloads/enables the plugin after they login.
@@ -259,8 +261,9 @@ public class FlippingPlugin extends Plugin
 			slotTimersTask.cancel(true);
 			slotTimersTask = null;
 		}
-		cacheUpdater.stop();
 		dataHandler.storeData();
+		cacheUpdaterJob.stop();
+		wikiDataFetcherJob.stop();
 	}
 
 	@Subscribe
@@ -809,6 +812,24 @@ public class FlippingPlugin extends Plugin
 		accountCurrentlyViewed = selectedName;
 		statPanel.rebuild(tradesListToDisplay);
 		flippingPanel.rebuild(tradesListToDisplay);
+	}
+
+	//jobs related stuff, should probably add another class to the controller
+
+	private void startJobs() {
+		cacheUpdaterJob = new CacheUpdaterJob();
+		cacheUpdaterJob.subscribe(this::onDirectoryUpdate);
+		cacheUpdaterJob.start();
+
+		wikiDataFetcherJob = new WikiDataFetcherJob(httpClient);
+		wikiDataFetcherJob.subscribe(this::onWikiFetch);
+		wikiDataFetcherJob.start();
+	}
+
+	private void onWikiFetch(WikiRequest wikiRequest, Instant timeOfRequestCompletion) {
+		lastWikiRequest = wikiRequest;
+		timeOfLastWikiRequest = timeOfRequestCompletion;
+		flippingPanel.updateWikiDisplays(wikiRequest, timeOfRequestCompletion);
 	}
 
 	/**

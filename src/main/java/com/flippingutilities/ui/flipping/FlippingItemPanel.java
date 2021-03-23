@@ -107,7 +107,6 @@ public class FlippingItemPanel extends JPanel
 
 	WikiRequest wikiRequest;
 	Instant timeOfRequestCompletion;
-	boolean requestInFlight;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -123,8 +122,7 @@ public class FlippingItemPanel extends JPanel
 
 		styleDescriptionLabels();
 		styleValueLabels();
-		updateWikiInfo();
-		setValueLabelsForFlippingItemProperties();
+		setValueLabels();
 		updateTimerDisplays();
 
 		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createItemNameLabel(), createFavoriteIcon());
@@ -408,28 +406,7 @@ public class FlippingItemPanel extends JPanel
 		refreshIconPanel.setBackground(getBackground());
 
 		refreshIconLabel.setIcon(Icons.REFRESH);
-		refreshIconLabel.setToolTipText("Click to refresh realtime wiki prices!");
 		refreshIconLabel.setDisabledIcon(Icons.REFRESH_HOVER);
-		refreshIconLabel.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent e) {
-				if (!refreshIconLabel.isEnabled()) {
-					return;
-				}
-				refreshIconLabel.setEnabled(false);
-				updateWikiInfo();
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				refreshIconLabel.setIcon(Icons.REFRESH_HOVER);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				refreshIconLabel.setIcon(Icons.REFRESH);
-			}
-		});
 
 		refreshIconPanel.add(refreshIconLabel);
 		refreshIconPanel.add(Box.createHorizontalStrut(2));
@@ -475,7 +452,7 @@ public class FlippingItemPanel extends JPanel
 					flippingItem.setLatestSell(Optional.of(dummyOffer));
 				}
 
-				setValueLabelsForFlippingItemProperties();
+				setValueLabels();
 			}
 			catch (NumberFormatException e) {
 				JOptionPane.showMessageDialog(this, "You need to input a number");
@@ -804,7 +781,7 @@ public class FlippingItemPanel extends JPanel
 		return !itemInfo.isVisible();
 	}
 
-	public void setValueLabelsForFlippingItemProperties() {
+	public void setValueLabels() {
 		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
 		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
 
@@ -836,6 +813,7 @@ public class FlippingItemPanel extends JPanel
 			//can't have potential profit if the limit is unknown
 			potentialProfitVal.setText("N/A");
 		}
+		updateWikiLabels(plugin.getLastWikiRequest(), plugin.getTimeOfLastWikiRequest());
 	}
 
 	public void updateTimerDisplays() {
@@ -855,20 +833,20 @@ public class FlippingItemPanel extends JPanel
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
 	}
 
-	public void updateWikiInfo() {
-		if (!requestInFlight) {
-			requestInFlight = true;
-			plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), this::updateWikiPriceLabels);
-		}
-	}
-
-	public void updateWikiPriceLabels(WikiRequest wr, Instant requestCompletionTime) {
-		requestInFlight = false;
+	public void updateWikiLabels(WikiRequest wr, Instant requestCompletionTime) {
 		timeOfRequestCompletion = requestCompletionTime;
 		wikiRequest = wr;
+
+		if (wikiRequest == null) {
+			wikiBuyVal.setText("N/A");
+			wikiSellVal.setText("N/A");
+			return;
+		}
+
 		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
 		wikiBuyVal.setText(wikiItemInfo.getHigh()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getHigh()) + " gp");
 		wikiSellVal.setText(wikiItemInfo.getLow()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getLow()) + " gp");
+		updateWikiTimeLabels();
 	}
 
 	public void updateWikiTimeLabels() {
@@ -884,9 +862,6 @@ public class FlippingItemPanel extends JPanel
 		if (timeOfRequestCompletion != null) {
 			long secondsSinceLastRequestCompleted = Instant.now().getEpochSecond() - timeOfRequestCompletion.getEpochSecond();
 			if (secondsSinceLastRequestCompleted >= 60) {
-				if (plugin.getConfig().wikiAutoRefresh()) {
-					updateWikiInfo();
-				}
 				wikiRequestCountDownTimer.setText("0");
 				refreshIconLabel.setEnabled(true);
 			}

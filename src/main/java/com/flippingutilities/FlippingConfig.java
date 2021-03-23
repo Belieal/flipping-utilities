@@ -127,13 +127,4 @@ public interface FlippingConfig extends Config
 	default Color slotTimerSellColor() {
 		return CustomColors.VIBRANT_YELLOW;
 	}
-
-	@ConfigItem(
-			keyName = "wikiAutoRefresh",
-			name = "wiki data auto refresh",
-			description = "make the wiki data auto refresh"
-	)
-	default boolean wikiAutoRefresh() {
-		return true;
-	}
 }
