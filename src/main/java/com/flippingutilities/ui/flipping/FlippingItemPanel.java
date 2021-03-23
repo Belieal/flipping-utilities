@@ -882,7 +882,9 @@ public class FlippingItemPanel extends JPanel
 		if (timeOfRequestCompletion != null) {
 			long secondsSinceLastRequestCompleted = Instant.now().getEpochSecond() - timeOfRequestCompletion.getEpochSecond();
 			if (secondsSinceLastRequestCompleted >= 60) {
-				updateWikiInfo();
+				if (plugin.getConfig().wikiAutoRefresh()) {
+					updateWikiInfo();
+				}
 				wikiRequestCountDownTimer.setText("0");
 				refreshIconLabel.setEnabled(true);
 			}

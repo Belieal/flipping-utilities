@@ -183,7 +183,7 @@ public class FlippingPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-		optionHandler = new OptionHandler(itemManager, client);
+		optionHandler = new OptionHandler(this);
 		dataHandler = new DataHandler(this);
 		wikiRequestHandler = new WikiRequestHandler(httpClient);
 
