@@ -73,8 +73,8 @@ public class FlippingItemPanel extends JPanel
 	JLabel wikiSellVal = new JLabel();
 	JLabel wikiBuyTimeVal = new JLabel();
 	JLabel wikiSellTimeVal = new JLabel();
-	JLabel priceCheckBuyVal = new JLabel();
-	JLabel priceCheckSellVal = new JLabel();
+	JLabel instaSellVal = new JLabel();
+	JLabel instaBuyVal = new JLabel();
 	JLabel latestBuyPriceVal = new JLabel();
 	JLabel latestSellPriceVal = new JLabel();
 	JLabel profitEachVal = new JLabel();
@@ -91,8 +91,8 @@ public class FlippingItemPanel extends JPanel
 	JLabel wikiSellText = new JLabel("Wiki insta sell: ");
 	JLabel wikiBuyTimeText = new JLabel("Wiki insta buy age: ");
 	JLabel wikiSellTimeText = new JLabel("Wiki insta sell age: ");
-	JLabel priceCheckBuyText = new JLabel("Last insta buy: ");
-	JLabel priceCheckSellText = new JLabel("Last insta sell: ");
+	JLabel instaSellText = new JLabel("Last insta sell: ");
+	JLabel instaBuyText = new JLabel("Last insta buy: ");
 	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
 	JLabel latestSellPriceText = new JLabel("Last sell price: ");
 	JLabel profitEachText = new JLabel("Profit each: ");
@@ -253,14 +253,14 @@ public class FlippingItemPanel extends JPanel
 				valueLabel = wikiSellVal;
 				break;
 			case Section.PRICE_CHECK_BUY_PRICE:
-				descriptionLabel = priceCheckBuyText;
-				valueLabel = priceCheckBuyVal;
-				makePropertyPanelEditable(panel, priceCheckBuyVal, priceCheckBuyText);
+				descriptionLabel = instaSellText;
+				valueLabel = instaSellVal;
+				makePropertyPanelEditable(panel, instaSellVal, instaSellText);
 				break;
 			case Section.PRICE_CHECK_SELL_PRICE:
-				descriptionLabel = priceCheckSellText;
-				valueLabel = priceCheckSellVal;
-				makePropertyPanelEditable(panel, priceCheckSellVal, priceCheckSellText);
+				descriptionLabel = instaBuyText;
+				valueLabel = instaBuyVal;
+				makePropertyPanelEditable(panel, instaBuyVal, instaBuyText);
 				break;
 			case Section.LATEST_BUY_PRICE:
 				descriptionLabel = latestBuyPriceText;
@@ -435,11 +435,11 @@ public class FlippingItemPanel extends JPanel
 				}
 				valueLabel.setText(String.format(NUM_FORMAT, num) + " gp");
 				OfferEvent dummyOffer;
-				if (valueLabel == priceCheckBuyVal) {
+				if (valueLabel == instaSellVal) {
 					dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
 					flippingItem.setLatestMarginCheckSell(Optional.of(dummyOffer));
 				}
-				else if (valueLabel == priceCheckSellVal){
+				else if (valueLabel == instaBuyVal){
 					dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
 					flippingItem.setLatestMarginCheckBuy(Optional.of(dummyOffer));
 				}
@@ -504,15 +504,15 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	private void styleValueLabels() {
-		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
+		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, instaSellVal, instaBuyVal, profitEachVal, potentialProfitVal,
 				roiLabelVal, geLimitVal).
 				forEach(label -> {
 					label.setHorizontalAlignment(JLabel.RIGHT);
 					label.setFont(plugin.getFont());
 				});
 
-		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
-		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		instaSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
+		instaBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 
 		profitEachVal.setForeground(CustomColors.PROFIT_COLOR);
 		potentialProfitVal.setForeground(CustomColors.PROFIT_COLOR);
@@ -546,15 +546,15 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	private void styleDescriptionLabels() {
-		Arrays.asList(wikiBuyText, wikiSellText, latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, potentialProfitText, geLimitText, roiText).
+		Arrays.asList(wikiBuyText, wikiSellText, latestBuyPriceText, latestSellPriceText, instaSellText, instaBuyText, profitEachText, potentialProfitText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 					label.setFont(plugin.getFont());
 				});
 
 		/* Tooltips */
-		priceCheckBuyText.setToolTipText("The buy price according to your latest margin check. This is the price you insta sold the item for");
-		priceCheckSellText.setToolTipText("The sell price according to your latest margin check. This is the price you insta bought the item for");
+		instaSellText.setToolTipText("The buy price according to your latest margin check. This is the price you insta sold the item for");
+		instaBuyText.setToolTipText("The sell price according to your latest margin check. This is the price you insta bought the item for");
 		latestBuyPriceText.setToolTipText("The last price you bought this item for");
 		latestSellPriceText.setToolTipText("The last price you sold this item for");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
@@ -793,8 +793,8 @@ public class FlippingItemPanel extends JPanel
 
 		Optional<Float> roi =  flippingItem.getCurrentRoi();
 
-		priceCheckBuyVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
-		priceCheckSellVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
+		instaSellVal.setText(latestMarginCheckSell.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckSell.get().getPrice()) + " gp":"N/A");
+		instaBuyVal.setText(latestMarginCheckBuy.isPresent() ? String.format(NUM_FORMAT, latestMarginCheckBuy.get().getPrice()) + " gp" : "N/A");
 
 		latestBuyPriceVal.setText(latestBuy.isPresent() ? String.format(NUM_FORMAT, latestBuy.get().getPrice()) + " gp" : "N/A");
 		latestSellPriceVal.setText(latestSell.isPresent() ? String.format(NUM_FORMAT, latestSell.get().getPrice()) + " gp" : "N/A");
