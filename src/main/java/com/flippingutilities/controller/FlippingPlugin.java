@@ -63,6 +63,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.item.ItemStats;
+import okhttp3.*;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -124,6 +125,9 @@ public class FlippingPlugin extends Plugin
 	@Inject
 	private KeyManager keyManager;
 
+	@Inject
+	private OkHttpClient httpClient;
+
 	@Getter
 	private FlippingPanel flippingPanel;
 	@Getter
@@ -173,12 +177,15 @@ public class FlippingPlugin extends Plugin
 	private OptionHandler optionHandler;
 	@Getter
 	private DataHandler dataHandler;
+	@Getter
+	private WikiRequestHandler wikiRequestHandler;
 
 	@Override
 	protected void startUp()
 	{
-		optionHandler = new OptionHandler(itemManager, client);
+		optionHandler = new OptionHandler(this);
 		dataHandler = new DataHandler(this);
+		wikiRequestHandler = new WikiRequestHandler(httpClient);
 
 		flippingPanel = new FlippingPanel(this, itemManager, executor);
 		statPanel = new StatsPanel(this, itemManager, executor);

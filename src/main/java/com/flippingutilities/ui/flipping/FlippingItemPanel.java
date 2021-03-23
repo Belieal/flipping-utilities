@@ -29,17 +29,23 @@ package com.flippingutilities.ui.flipping;
 import com.flippingutilities.controller.FlippingPlugin;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.OfferEvent;
+import com.flippingutilities.model.Section;
 import com.flippingutilities.ui.uiutilities.*;
+import com.flippingutilities.utilities.WikiItemMargins;
+import com.flippingutilities.utilities.WikiRequest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
+import net.runelite.client.util.LinkBrowser;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -47,6 +53,7 @@ import java.awt.event.MouseListener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 
 /**
  * Represents an instance of one of the many panels on the FlippingPanel. It is used to display information such as
@@ -62,6 +69,10 @@ public class FlippingItemPanel extends JPanel
 	private FlippingPlugin plugin;
 
 	//All the labels that hold the actual values for these properties.
+	JLabel wikiBuyVal = new JLabel();
+	JLabel wikiSellVal = new JLabel();
+	JLabel wikiBuyTimeVal = new JLabel();
+	JLabel wikiSellTimeVal = new JLabel();
 	JLabel priceCheckBuyVal = new JLabel();
 	JLabel priceCheckSellVal = new JLabel();
 	JLabel latestBuyPriceVal = new JLabel();
@@ -69,31 +80,34 @@ public class FlippingItemPanel extends JPanel
 	JLabel profitEachVal = new JLabel();
 	JLabel potentialProfitVal = new JLabel();
 	JLabel roiLabelVal = new JLabel();
-	JLabel limitLabelVal = new JLabel();
-	JLabel priceCheckBuyTimeVal = new JLabel();
-	JLabel priceCheckSellTimeVal = new JLabel();
-	JLabel latestBuyTimeVal = new JLabel();
-	JLabel latestSellTimeVal = new JLabel();
-	JLabel geRefreshLabel = new JLabel();
+	JLabel geLimitVal = new JLabel();
+	JLabel geRefreshCountdownLabel = new JLabel();
+	JLabel wikiRequestCountDownTimer = new JLabel();
+	//local time the ge limit will reset
 	JLabel geRefreshAtLabel = new JLabel();
-	JLabel latestPcBuyAt = new JLabel();
-	JLabel latestPcSellAt = new JLabel();
-	JLabel latestBoughtAt = new JLabel();
-	JLabel latestSoldAt = new JLabel();
 
-	JLabel priceCheckBuyText = new JLabel("Last margin buy: ");
-	JLabel priceCheckSellText = new JLabel("Last margin sell: ");
+	//description labels
+	JLabel wikiBuyText = new JLabel("Wiki insta buy: ");
+	JLabel wikiSellText = new JLabel("Wiki insta sell: ");
+	JLabel wikiBuyTimeText = new JLabel("Wiki insta buy age: ");
+	JLabel wikiSellTimeText = new JLabel("Wiki insta sell age: ");
+	JLabel priceCheckBuyText = new JLabel("Last insta buy: ");
+	JLabel priceCheckSellText = new JLabel("Last insta sell: ");
 	JLabel latestBuyPriceText = new JLabel("Last buy price: ");
 	JLabel latestSellPriceText = new JLabel("Last sell price: ");
 	JLabel profitEachText = new JLabel("Profit each: ");
-	JLabel profitTotalText = new JLabel("Potential profit: ");
+	JLabel potentialProfitText = new JLabel("Potential profit: ");
 	JLabel roiText = new JLabel("ROI:", JLabel.CENTER);
 	JLabel geLimitText = new JLabel("GE limit:",JLabel.CENTER);
 
 	JPanel itemInfo;
-	JPanel timeInfoPanel;
 
 	JLabel searchCodeLabel;
+	JLabel refreshIconLabel = new JLabel();
+
+	WikiRequest wikiRequest;
+	Instant timeOfRequestCompletion;
+	boolean requestInFlight;
 
 	FlippingItemPanel(final FlippingPlugin plugin, AsyncBufferedImage itemImage, final FlippingItem flippingItem)
 	{
@@ -102,19 +116,22 @@ public class FlippingItemPanel extends JPanel
 		flippingItem.validateGeProperties();
 		setBackground(CustomColors.DARK_GRAY);
 		setLayout(new BorderLayout());
+		setBorder(new CompoundBorder(
+				new EmptyBorder(5,5,0,0),
+				new MatteBorder(0, 0, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker())));
 		setToolTipText("Flipped by " + flippingItem.getFlippedBy());
 
-		setDescriptionLabels();
-		setValueLabels();
+		styleDescriptionLabels();
+		styleValueLabels();
+		updateWikiInfo();
+		setValueLabelsForFlippingItemProperties();
 		updateTimerDisplays();
 
-		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createDeleteButton(), createItemNameLabel(), createFavoriteIcon());
+		JPanel titlePanel = createTitlePanel(createItemIcon(itemImage), createItemNameLabel(), createFavoriteIcon());
 		itemInfo = createItemInfoPanel();
-		timeInfoPanel = createTimeInfoPanel();
-		timeInfoPanel.setVisible(false);
 		add(titlePanel, BorderLayout.NORTH);
 		add(itemInfo, BorderLayout.CENTER);
-		add(timeInfoPanel, BorderLayout.SOUTH);
+		add(createBottomPanel(), BorderLayout.SOUTH);
 
 		//if it is enabled, the itemInfo panel is visible by default so no reason to check it
 		if (!plugin.getConfig().verboseViewEnabled())
@@ -143,63 +160,160 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JPanel createItemInfoPanel()
 	{
-		JPanel itemInfo = new JPanel(new DynamicGridLayout(9, 1));
+		JPanel itemInfo = new JPanel();
+		itemInfo.setLayout(new BoxLayout(itemInfo, BoxLayout.Y_AXIS));
 		itemInfo.setBackground(getBackground());
+		itemInfo.setBorder(new EmptyBorder(20,6,8,8));
+		List<Section> sections = plugin.getDataHandler().viewAccountWideData().getSections();
+		for (Section section : sections) {
+			itemInfo.add(createSectionPanel(section));
+			itemInfo.add(Box.createVerticalStrut(5));
+		}
+		return itemInfo;
+	}
 
-		JPanel priceCheckBuyPanel = new JPanel(new BorderLayout());
-		JPanel priceCheckSellPanel = new JPanel(new BorderLayout());
-		JPanel latestBuyPanel = new JPanel(new BorderLayout());
-		JPanel latestSellPanel = new JPanel(new BorderLayout());
-		JPanel profitEachPanel = new JPanel(new BorderLayout());
-		JPanel potentialProfitPanel = new JPanel(new BorderLayout());
+	private JPanel createSectionPanel(Section section) {
+		JPanel sectionPanel = new JPanel(new BorderLayout());
+		sectionPanel.setBackground(getBackground());
 
-		makePropertyPanelEditable(priceCheckBuyPanel, priceCheckBuyVal);
-		makePropertyPanelEditable(priceCheckSellPanel, priceCheckSellVal);
-		makePropertyPanelEditable(latestBuyPanel, latestBuyPriceVal);
-		makePropertyPanelEditable(latestSellPanel, latestSellPriceVal);
+		JLabel arrowIconLabel = new JLabel(section.isDefaultExpanded()? Icons.OPEN_ICON : Icons.CLOSE_ICON);
+		arrowIconLabel.setVerticalAlignment(JLabel.NORTH);
+		arrowIconLabel.setFont(FontManager.getRunescapeBoldFont());
+		arrowIconLabel.setBorder(new EmptyBorder(0,0,0,5));
 
-		JPanel[] panels = {latestBuyPanel, latestSellPanel, priceCheckBuyPanel, priceCheckSellPanel, profitEachPanel, potentialProfitPanel};
-		JLabel[] descriptionLabels = {latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText};
-		JLabel[] valueLabels = {latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal};
+		sectionPanel.add(arrowIconLabel, BorderLayout.WEST);
 
-		boolean isFirstInPair = true;
-
-		for (int i=0;i<panels.length;i++) {
-			panels[i].setBackground(CustomColors.DARK_GRAY);
-			if (isFirstInPair) {
-				panels[i].setBorder(new EmptyBorder(6,8,3,8));
-			}
-			else {
-				panels[i].setBorder(new EmptyBorder(2,8,8,8));
-			}
-
-			isFirstInPair = !isFirstInPair;
-			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
-			panels[i].add(valueLabels[i], BorderLayout.EAST);
-			itemInfo.add(panels[i]);
-			if (i == panels.length-1) {
-				panels[i].setBorder(new EmptyBorder(2,8,3,8));
-			}
+		JPanel sectionItemsPanel = new JPanel();
+		sectionItemsPanel.setLayout(new BoxLayout(sectionItemsPanel, BoxLayout.Y_AXIS));
+		sectionItemsPanel.setBackground(getBackground());
+		if (!section.isDefaultExpanded()) {
+			arrowIconLabel.setText(section.getName());
+			sectionItemsPanel.setVisible(false);
 		}
 
-		itemInfo.add(createGeLimitRefreshTimeAndRoiPanel());
-		itemInfo.add(createBottomPanel());
+		sectionPanel.add(sectionItemsPanel, BorderLayout.CENTER);
+		arrowIconLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (sectionItemsPanel.isVisible()) {
+					sectionItemsPanel.setVisible(false);
+					arrowIconLabel.setIcon(Icons.CLOSE_ICON);
+					arrowIconLabel.setText(section.getName());
+				}
+				else {
+					sectionItemsPanel.setVisible(true);
+					arrowIconLabel.setIcon(Icons.OPEN_ICON);
+					arrowIconLabel.setText("");
+				}
+			}
 
-		return itemInfo;
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				super.mouseEntered(e);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				super.mouseExited(e);
+			}
+		});
+
+		List<String> labelsToShow = new ArrayList<>();
+		for (String labelName: section.getLabels().keySet()) {
+			if (section.getLabels().get(labelName)) {
+				labelsToShow.add(labelName);
+			}
+		}
+		boolean isFirstInPair = true;
+		for (String labelName : labelsToShow) {
+			JPanel panel = createPanelForSectionLabel(labelName);
+			if (isFirstInPair) {
+				panel.setBorder(new EmptyBorder(6,0,3,0));
+			}
+			else {
+				panel.setBorder(new EmptyBorder(2,0,8,0));
+			}
+			isFirstInPair = !isFirstInPair;
+			sectionItemsPanel.add(panel);
+		}
+
+		return sectionPanel;
+	}
+
+	private JPanel createPanelForSectionLabel(String labelName) {
+		JPanel panel = new JPanel(new BorderLayout());
+		panel.setBackground(getBackground());
+		JLabel descriptionLabel;
+		JLabel valueLabel;
+		switch (labelName) {
+			case Section.WIKI_BUY_PRICE:
+				descriptionLabel = wikiBuyText;
+				valueLabel = wikiBuyVal;
+				break;
+			case Section.WIKI_SELL_PRICE:
+				descriptionLabel = wikiSellText;
+				valueLabel = wikiSellVal;
+				break;
+			case Section.PRICE_CHECK_BUY_PRICE:
+				descriptionLabel = priceCheckBuyText;
+				valueLabel = priceCheckBuyVal;
+				makePropertyPanelEditable(panel, priceCheckBuyVal, priceCheckBuyText);
+				break;
+			case Section.PRICE_CHECK_SELL_PRICE:
+				descriptionLabel = priceCheckSellText;
+				valueLabel = priceCheckSellVal;
+				makePropertyPanelEditable(panel, priceCheckSellVal, priceCheckSellText);
+				break;
+			case Section.LATEST_BUY_PRICE:
+				descriptionLabel = latestBuyPriceText;
+				valueLabel = latestBuyPriceVal;
+				makePropertyPanelEditable(panel, latestBuyPriceVal, latestBuyPriceText);
+				break;
+			case Section.LATEST_SELL_PRICE:
+				descriptionLabel = latestSellPriceText;
+				valueLabel = latestSellPriceVal;
+				makePropertyPanelEditable(panel, latestSellPriceVal, latestSellPriceText);
+				break;
+			case Section.PROFIT_EACH:
+				descriptionLabel = profitEachText;
+				valueLabel = profitEachVal;
+				break;
+			case Section.POTENTIAL_PROFIT:
+				descriptionLabel = potentialProfitText;
+				valueLabel = potentialProfitVal;
+				break;
+			case Section.ROI:
+				descriptionLabel = roiText;
+				valueLabel = roiLabelVal;
+				break;
+			case Section.REMAINING_GE_LIMIT:
+				descriptionLabel = geLimitText;
+				valueLabel = geLimitVal;
+				break;
+			case Section.GE_LIMIT_REFRESH_TIMER:
+				//no description or value label for this. The timer is a panel itself.
+				return createGeTimerPanel();
+			default:
+				//this should never be reached
+				return new JPanel();
+		}
+		panel.add(descriptionLabel, BorderLayout.WEST);
+		panel.add(valueLabel, BorderLayout.EAST);
+		return panel;
 	}
 
 	private JPanel createBottomPanel() {
 		JPanel bottomPanel = new JPanel(new BorderLayout());
-		bottomPanel.setBorder(new EmptyBorder(3,21,3,8));
-		bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		bottomPanel.setBackground(CustomColors.DARK_GRAY);
+		bottomPanel.setBorder(new EmptyBorder(8,8,8,8));
 
 		JLabel searchIconLabel = new JLabel(Icons.SEARCH);
-		searchIconLabel.setToolTipText("Click to search item on platinumtokens or osrs ge!");
-		JPopupMenu popupMenu = ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem);
+		searchIconLabel.setToolTipText("Click to search realtime prices for this item!");
 		searchIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				popupMenu.show(searchIconLabel, e.getX(), e.getY());
+				log.info(UIUtilities.buildWikiLink(flippingItem.getItemId()));
+				LinkBrowser.browse(UIUtilities.buildWikiLink(flippingItem.getItemId()));
 			}
 
 			@Override
@@ -216,8 +330,9 @@ public class FlippingItemPanel extends JPanel
 		TextField searchCodeTextField = new TextField(10);
 
 		JPanel searchCodePanel = new JPanel();
-		searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-
+		searchCodePanel.setBorder(new EmptyBorder(0,0,0,4));
+		searchCodePanel.setBackground(CustomColors.DARK_GRAY);
+		searchCodePanel.setPreferredSize(new Dimension(0,20));
 		searchCodeLabel = new JLabel("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), CustomColors.VIBRANT_YELLOW) + "</html>", JLabel.CENTER);
 		if (flippingItem.isFavorite()) {
 			searchCodeLabel.setText("<html> quick search code: " + UIUtilities.colorText(flippingItem.getFavoriteCode(), ColorScheme.GRAND_EXCHANGE_PRICE) + "</html>");
@@ -261,7 +376,7 @@ public class FlippingItemPanel extends JPanel
 
 			@Override
 			public void mouseExited(MouseEvent e) {
-				searchCodePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+				searchCodePanel.setBackground(getBackground());
 			}
 		};
 		searchCodePanel.addMouseListener(l);
@@ -288,12 +403,45 @@ public class FlippingItemPanel extends JPanel
 			revalidate();
 		});
 
+		JPanel refreshIconPanel = new JPanel();
+		refreshIconPanel.setLayout(new BoxLayout(refreshIconPanel, BoxLayout.X_AXIS));
+		refreshIconPanel.setBackground(getBackground());
+
+		refreshIconLabel.setIcon(Icons.REFRESH);
+		refreshIconLabel.setToolTipText("Click to refresh realtime wiki prices!");
+		refreshIconLabel.setDisabledIcon(Icons.REFRESH_HOVER);
+		refreshIconLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (!refreshIconLabel.isEnabled()) {
+					return;
+				}
+				refreshIconLabel.setEnabled(false);
+				updateWikiInfo();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				refreshIconLabel.setIcon(Icons.REFRESH_HOVER);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				refreshIconLabel.setIcon(Icons.REFRESH);
+			}
+		});
+
+		refreshIconPanel.add(refreshIconLabel);
+		refreshIconPanel.add(Box.createHorizontalStrut(2));
+		refreshIconPanel.add(wikiRequestCountDownTimer);
+
+		bottomPanel.add(refreshIconPanel, BorderLayout.WEST);
 		bottomPanel.add(searchIconLabel, BorderLayout.EAST);
 		bottomPanel.add(searchCodePanel, BorderLayout.CENTER);
 		return bottomPanel;
 	}
 
-	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel) {
+	private void makePropertyPanelEditable(JPanel propertyPanel, JLabel valueLabel, JLabel descriptionLabel) {
 		final boolean[] isHighlighted = {false};
 		TextField textField = new TextField(10);
 		textField.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -327,7 +475,7 @@ public class FlippingItemPanel extends JPanel
 					flippingItem.setLatestSell(Optional.of(dummyOffer));
 				}
 
-				refreshProperties();
+				setValueLabelsForFlippingItemProperties();
 			}
 			catch (NumberFormatException e) {
 				JOptionPane.showMessageDialog(this, "You need to input a number");
@@ -338,8 +486,7 @@ public class FlippingItemPanel extends JPanel
 			revalidate();
 			repaint();
 		}));
-
-		propertyPanel.addMouseListener(new MouseAdapter() {
+		MouseAdapter m = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (isHighlighted[0]) {
@@ -365,165 +512,27 @@ public class FlippingItemPanel extends JPanel
 			public void mouseExited(MouseEvent e) {
 				propertyPanel.setBackground(CustomColors.DARK_GRAY);
 			}
-		});
-	}
-
-
-	/**
-	 * holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
-	 * @return
-	 */
-	private JPanel createGeLimitRefreshTimeAndRoiPanel() {
-		JPanel geLimitPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
-		geLimitPanel.setBorder(new EmptyBorder(0,0,0,10));
-		geLimitPanel.setBackground(CustomColors.DARK_GRAY);
-		geLimitPanel.add(geLimitText);
-		geLimitPanel.add(limitLabelVal);
-
-		geLimitPanel.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent e) {
-				int result = JOptionPane.showConfirmDialog(FlippingItemPanel.this, "Reset ge limit?");
-				if (result == 0) {
-					flippingItem.resetGeLimit();
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				geLimitPanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				geLimitPanel.setBackground(CustomColors.DARK_GRAY);
-			}
-		});
-
-		JPanel roiPanel = new JPanel(new DynamicGridLayout(2,1,0,5));
-		roiPanel.setBackground(CustomColors.DARK_GRAY);
-		roiPanel.setBorder(new EmptyBorder(0,15,0,0));
-		roiPanel.add(roiText);
-		roiPanel.add(roiLabelVal);
-
-		//hold the ge limit timer and the text that shows the local time the limit will refresh at
-		JPanel geRefreshTimePanel = new JPanel(new DynamicGridLayout(2,1,0, 2));
-		geRefreshTimePanel.setBorder(new EmptyBorder(5,0,5,0));
-		geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		geRefreshTimePanel.add(geRefreshLabel);
-		geRefreshTimePanel.add(geRefreshAtLabel);
-
-		//holds the ge limit remaining on the left, the ge refresh timer in the center, and the roi on the right.
-		JPanel geLimitRefreshTimeAndRoiPanel = new JPanel(new BorderLayout());
-		geLimitRefreshTimeAndRoiPanel.setBorder(new EmptyBorder(10,8,6,8));
-		geLimitRefreshTimeAndRoiPanel.setBackground(CustomColors.DARK_GRAY);
-		geLimitRefreshTimeAndRoiPanel.add(geRefreshTimePanel, BorderLayout.CENTER);
-		geLimitRefreshTimeAndRoiPanel.add(geLimitPanel, BorderLayout.WEST);
-		geLimitRefreshTimeAndRoiPanel.add(roiPanel, BorderLayout.EAST);
-
-		MouseAdapter geRefreshLabelsListener = new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent e) {
-				if (timeInfoPanel.isVisible()) {
-					timeInfoPanel.setVisible(false);
-				}
-				else {
-					timeInfoPanel.setVisible(true);
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				if (!timeInfoPanel.isVisible()) {
-					geRefreshTimePanel.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-				}
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				if (!timeInfoPanel.isVisible()) {
-					geRefreshTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-				}
-			}
 		};
-
-		//i have to attach it to everything cause otherwise it only listens to the specific area not covered by some other component.
-		geRefreshTimePanel.addMouseListener(geRefreshLabelsListener);
-		geRefreshLabel.addMouseListener(geRefreshLabelsListener);
-		geRefreshAtLabel.addMouseListener(geRefreshLabelsListener);
-
-		return geLimitRefreshTimeAndRoiPanel;
+		propertyPanel.addMouseListener(m);
+		descriptionLabel.addMouseListener(m);
 	}
 
-	private JPanel createTimeInfoPanel() {
-		JPanel timeInfoPanel = new JPanel(new DynamicGridLayout(5, 1));
-		timeInfoPanel.setBackground(getBackground());
-
-		JPanel priceCheckBuyTimePanel = new JPanel(new BorderLayout());
-		JPanel priceCheckSellTimePanel = new JPanel(new BorderLayout());
-		JPanel latestBuyTimePanel = new JPanel(new BorderLayout());
-		JPanel latestSellTimePanel = new JPanel(new BorderLayout());
-
-		JLabel priceCheckBuyTimeText = new JLabel("Time since PC buy: ");
-		JLabel priceCheckSellTimeText = new JLabel("Time since PC sell: ");
-		JLabel latestBuyTimeText = new JLabel("Time since last buy: ");
-		JLabel latestSellTimeText = new JLabel("Time since last sell: ");
-
-		JPanel[] panels = {priceCheckBuyTimePanel, priceCheckSellTimePanel, latestBuyTimePanel, latestSellTimePanel};
-		JLabel[] descriptionLabels = {priceCheckBuyTimeText, priceCheckSellTimeText, latestBuyTimeText, latestSellTimeText};
-		JLabel[] timerValueLabels = {priceCheckBuyTimeVal,priceCheckSellTimeVal,latestBuyTimeVal,latestSellTimeVal};
-		JLabel[] dateLabels = {latestPcBuyAt, latestPcSellAt, latestBoughtAt, latestSoldAt};
-
-		for (int i=0;i<panels.length;i++) {
-			descriptionLabels[i].setFont(plugin.getFont());
-			descriptionLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			timerValueLabels[i].setHorizontalAlignment(JLabel.CENTER);
-			dateLabels[i].setHorizontalAlignment(JLabel.CENTER);
-			dateLabels[i].setFont(plugin.getFont());
-			dateLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			timerValueLabels[i].setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-			timerValueLabels[i].setFont(FontManager.getRunescapeBoldFont());
-			timerValueLabels[i].setOpaque(true);
-			timerValueLabels[i].setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-			panels[i].setBackground(CustomColors.DARK_GRAY);
-			panels[i].setBorder(new EmptyBorder(4,8,8,8));
-			panels[i].add(descriptionLabels[i], BorderLayout.WEST);
-			panels[i].add(createTimerAndDatePanel(timerValueLabels[i], dateLabels[i]), BorderLayout.EAST);
-			timeInfoPanel.add(panels[i]);
-		}
-		return timeInfoPanel;
+	private JPanel createGeTimerPanel() {
+		JPanel geRefreshTimePanel = new JPanel(new DynamicGridLayout(2,1,0, 2));
+		geRefreshTimePanel.setBorder(new EmptyBorder(8,0,5,30));
+		geRefreshTimePanel.setBackground(CustomColors.DARK_GRAY);
+		geRefreshTimePanel.add(geRefreshCountdownLabel);
+		geRefreshTimePanel.add(geRefreshAtLabel);
+		return geRefreshTimePanel;
 	}
 
-	private JPanel createTimerAndDatePanel(JLabel timerLabel, JLabel dateLabel) {
-		JPanel timerAndDatePanel = new JPanel(new DynamicGridLayout(2,1,0,2));
-		timerAndDatePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		timerAndDatePanel.setBorder(new EmptyBorder(5,5,5,5));
-		timerAndDatePanel.add(timerLabel);
-		timerAndDatePanel.add(dateLabel);
-		return timerAndDatePanel;
-	}
-
-
-
-	private void setValueLabels() {
+	private void styleValueLabels() {
 		Arrays.asList(latestBuyPriceVal, latestSellPriceVal, priceCheckBuyVal, priceCheckSellVal, profitEachVal, potentialProfitVal,
-				roiLabelVal, limitLabelVal).
+				roiLabelVal, geLimitVal).
 				forEach(label -> {
 					label.setHorizontalAlignment(JLabel.RIGHT);
 					label.setFont(plugin.getFont());
-					if (label == limitLabelVal) {
-						limitLabelVal.setHorizontalAlignment(JLabel.CENTER);
-						label.setForeground(ColorScheme.GRAND_EXCHANGE_LIMIT);
-					}
-					if (label == roiLabelVal) {
-						roiLabelVal.setHorizontalAlignment(JLabel.CENTER);
-					}
 				});
-
-		latestBuyPriceVal.setForeground(Color.white);
-		latestSellPriceVal.setForeground(Color.white);
-		latestBuyPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
-		latestSellPriceVal.setFont(CustomFonts.RUNESCAPE_BOLD_FONT);
 
 		priceCheckBuyVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
 		priceCheckSellVal.setForeground(ColorScheme.GRAND_EXCHANGE_ALCH);
@@ -531,23 +540,36 @@ public class FlippingItemPanel extends JPanel
 		profitEachVal.setForeground(CustomColors.PROFIT_COLOR);
 		potentialProfitVal.setForeground(CustomColors.PROFIT_COLOR);
 
-		geRefreshLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
-		geRefreshLabel.setFont(FontManager.getRunescapeBoldFont());
-		geRefreshLabel.setHorizontalAlignment(JLabel.CENTER);
-		geRefreshLabel.setToolTipText("This is a timer displaying how much time is left before the GE limit refreshes for this item");
+		geRefreshCountdownLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		geRefreshCountdownLabel.setFont(FontManager.getRunescapeBoldFont());
+		geRefreshCountdownLabel.setHorizontalAlignment(JLabel.CENTER);
+		geRefreshCountdownLabel.setToolTipText("This is a timer displaying how much time is left before the GE limit refreshes for this item");
+		geRefreshCountdownLabel.setBorder(new EmptyBorder(0,0,0,20));
 
 		geRefreshAtLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		geRefreshAtLabel.setFont(FontManager.getRunescapeSmallFont());
 		geRefreshAtLabel.setHorizontalAlignment(JLabel.CENTER);
 		geRefreshAtLabel.setToolTipText("This shows the local time when the ge limit will refresh");
+		geRefreshAtLabel.setBorder(new EmptyBorder(0,0,0,20));
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
-		refreshProperties();
+		wikiBuyVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+		wikiBuyVal.setForeground(Color.WHITE);
+		wikiSellVal.setFont(CustomFonts.SMALLER_RS_BOLD_FONT);
+		wikiSellVal.setForeground(Color.WHITE);
+
+		wikiRequestCountDownTimer.setAlignmentY(JLabel.TOP);
+		wikiRequestCountDownTimer.setFont(new Font(Font.SERIF, Font.PLAIN, 9));
+
+		JPopupMenu popup = new JPopupMenu();
+		popup.add(createWikiHoverTimePanel());
+		UIUtilities.addPopupOnHover(wikiBuyVal, popup);
+		UIUtilities.addPopupOnHover(wikiSellVal, popup);
 	}
 
-	private void setDescriptionLabels() {
-		Arrays.asList(latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, profitTotalText, geLimitText, roiText).
+	private void styleDescriptionLabels() {
+		Arrays.asList(wikiBuyText, wikiSellText, latestBuyPriceText, latestSellPriceText, priceCheckBuyText, priceCheckSellText, profitEachText, potentialProfitText, geLimitText, roiText).
 				forEach(label -> {
 					label.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 					label.setFont(plugin.getFont());
@@ -559,7 +581,7 @@ public class FlippingItemPanel extends JPanel
 		latestBuyPriceText.setToolTipText("The last price you bought this item for");
 		latestSellPriceText.setToolTipText("The last price you sold this item for");
 		profitEachText.setToolTipText("The profit margin according to your latest margin check");
-		profitTotalText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
+		potentialProfitText.setToolTipText("The potential profit according to your latest margin check and GE 4-hour limit");
 		geLimitText.setToolTipText("Remaining ge limit");
 
 		if (flippingItem.getTotalGELimit() <= 0) {
@@ -573,40 +595,48 @@ public class FlippingItemPanel extends JPanel
 	 * the item name label, and the favorite button.
 	 *
 	 * @param itemIcon
-	 * @param deleteButton
 	 * @param itemNameLabel
 	 * @param favoriteButton
 	 * @return
 	 */
-	private JPanel createTitlePanel(JLabel itemIcon, JButton deleteButton, JLabel itemNameLabel, JLabel favoriteButton)
+	private JPanel createTitlePanel(JLabel itemIcon, JLabel itemNameLabel, JLabel favoriteButton)
 	{
-		JPanel itemClearPanel = new JPanel(new BorderLayout());
-		itemClearPanel.setBackground(getBackground());
-		itemClearPanel.add(itemIcon, BorderLayout.WEST);
-		itemClearPanel.add(deleteButton, BorderLayout.EAST);
+		CustomizationPanel customizationPanel = new CustomizationPanel(plugin);
+		JDialog customizationModal = UIUtilities.createModalFromPanel(this, customizationPanel);
+
+		JLabel customizeLabel = new JLabel("customize look", JLabel.CENTER);
+		Color c = customizeLabel.getForeground();
+		customizeLabel.setFont(FontManager.getRunescapeSmallFont());
+		Font font=new Font(customizeLabel.getFont().getName(),Font.ITALIC,customizeLabel.getFont().getSize());
+		customizeLabel.setFont(font);
+		UIUtilities.makeLabelUnderlined(customizeLabel);
+		customizeLabel.setHorizontalAlignment(JLabel.CENTER);
+		customizeLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getSections());
+				customizationModal.setVisible(true);
+				customizationModal.pack();
+				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - customizationModal.getHeight()/2);
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				customizeLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				customizeLabel.setForeground(c);
+			}
+		});
 
 		JPanel titlePanel = new JPanel(new BorderLayout());
 		titlePanel.setBackground(getBackground());
-		titlePanel.add(itemClearPanel, BorderLayout.WEST);
+		titlePanel.add(itemIcon, BorderLayout.WEST);
 		titlePanel.add(itemNameLabel, BorderLayout.CENTER);
 		titlePanel.add(favoriteButton, BorderLayout.EAST);
-		titlePanel.setBorder(new EmptyBorder(2, 1, 2, 1));
-		titlePanel.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				itemIcon.setVisible(false);
-				deleteButton.setVisible(true);
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				deleteButton.setVisible(false);
-				itemIcon.setVisible(true);
-			}
-		});
+		titlePanel.add(customizeLabel, BorderLayout.SOUTH);
 		return titlePanel;
 	}
 
@@ -618,47 +648,33 @@ public class FlippingItemPanel extends JPanel
 	 */
 	private JLabel createItemIcon(AsyncBufferedImage itemImage)
 	{
-		JLabel itemIcon = new JLabel();
-		itemIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
-		itemIcon.setPreferredSize(Icons.ICON_SIZE);
-		if (itemImage != null)
-		{
-			itemImage.addTo(itemIcon);
-		}
-		return itemIcon;
-	}
+		Icon itemIcon = new ImageIcon(itemImage);
+		JLabel itemIconLabel = new JLabel(itemIcon);
+		itemIconLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		itemIconLabel.setPreferredSize(Icons.ICON_SIZE);
 
-	/**
-	 * Creates the delete button located on the title panel which shows up when you hover over the image icon.
-	 *
-	 * @return
-	 */
-	private JButton createDeleteButton()
-	{
-		JButton clearButton = new JButton(Icons.DELETE_ICON);
-		clearButton.setPreferredSize(Icons.ICON_SIZE);
-		clearButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		clearButton.setBorder(null);
-		clearButton.setBorderPainted(false);
-		clearButton.setContentAreaFilled(false);
-		clearButton.setVisible(false);
-		clearButton.setToolTipText("Delete item");
-		clearButton.addMouseListener(new MouseAdapter()
-		{
+		itemIconLabel.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseClicked(MouseEvent e)
-			{
-				if (e.getButton() == MouseEvent.BUTTON1)
-				{
-					flippingItem.setValidFlippingPanelItem(false);
-					if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
-						plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
-					}
-					plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
+			public void mousePressed(MouseEvent e) {
+				flippingItem.setValidFlippingPanelItem(false);
+				if (!plugin.getAccountCurrentlyViewed().equals(FlippingPlugin.ACCOUNT_WIDE)) {
+					plugin.markAccountTradesAsHavingChanged(plugin.getAccountCurrentlyViewed());
 				}
+				plugin.getFlippingPanel().rebuild(plugin.viewTradesForCurrentView());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				itemIconLabel.setIcon(Icons.DELETE_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				itemIconLabel.setIcon(itemIcon);
 			}
 		});
-		return clearButton;
+
+		return itemIconLabel;
 	}
 
 	/**
@@ -788,7 +804,7 @@ public class FlippingItemPanel extends JPanel
 		return !itemInfo.isVisible();
 	}
 
-	public void refreshProperties() {
+	public void setValueLabelsForFlippingItemProperties() {
 		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
 		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
 
@@ -813,15 +829,10 @@ public class FlippingItemPanel extends JPanel
 		//Color gradient red-yellow-green depending on ROI.
 		roiLabelVal.setForeground(UIUtilities.gradiatePercentage(roi.orElse(0F), plugin.getConfig().roiGradientMax()));
 
-		latestPcBuyAt.setText(latestMarginCheckBuy.isPresent()? TimeFormatters.formatTime(latestMarginCheckBuy.get().getTime(), true, true):"N/A");
-		latestPcSellAt.setText(latestMarginCheckSell.isPresent()? TimeFormatters.formatTime(latestMarginCheckSell.get().getTime(), true, true):"N/A");
-		latestBoughtAt.setText(latestBuy.isPresent()? TimeFormatters.formatTime(latestBuy.get().getTime(), true, true):"N/A");
-		latestSoldAt.setText(latestSell.isPresent()? TimeFormatters.formatTime(latestSell.get().getTime(), true, true):"N/A");
-
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			geLimitVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
+			geLimitVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 			//can't have potential profit if the limit is unknown
 			potentialProfitVal.setText("N/A");
 		}
@@ -830,38 +841,103 @@ public class FlippingItemPanel extends JPanel
 	public void updateTimerDisplays() {
 		flippingItem.validateGeProperties();
 
-		geRefreshLabel.setText(flippingItem.getGeLimitResetTime() == null?
+		geRefreshCountdownLabel.setText(flippingItem.getGeLimitResetTime() == null?
 				TimeFormatters.formatDuration(Duration.ZERO):
 				TimeFormatters.formatDuration(Instant.now(), flippingItem.getGeLimitResetTime()));
 
 		//need to update this so it can be reset when the timer runs down.
 		if (flippingItem.getTotalGELimit() > 0) {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
+			geLimitVal.setText(String.format(NUM_FORMAT, flippingItem.getRemainingGeLimit()));
 		} else {
-			limitLabelVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
+			geLimitVal.setText(String.format(NUM_FORMAT, flippingItem.getItemsBoughtThisLimitWindow()));
 		}
 
 		geRefreshAtLabel.setText(flippingItem.getGeLimitResetTime() == null? "Now": TimeFormatters.formatTime(flippingItem.getGeLimitResetTime(), true, false));
-
-		setTimeString(flippingItem.getLatestMarginCheckBuy(), priceCheckBuyTimeVal);
-		setTimeString(flippingItem.getLatestMarginCheckSell(), priceCheckSellTimeVal);
-		setTimeString(flippingItem.getLatestBuy(), latestBuyTimeVal);
-		setTimeString(flippingItem.getLatestSell(), latestSellTimeVal);
 	}
 
-	private void setTimeString(Optional<OfferEvent> offerEvent, JLabel timeLabel) {
-		if (!offerEvent.isPresent()) {
-			timeLabel.setText("N/A");
+	public void updateWikiInfo() {
+		if (!requestInFlight) {
+			requestInFlight = true;
+			plugin.getWikiRequestHandler().fetchWikiData(flippingItem.getItemId(), this::updateWikiPriceLabels);
 		}
-		else {
-			//if difference is more than a day don't show it as HH:MM:SS
-			if (Instant.now().getEpochSecond() - offerEvent.get().getTime().getEpochSecond() > 86400) {
-				timeLabel.setText(TimeFormatters.formatDurationTruncated(offerEvent.get().getTime()));
+	}
+
+	public void updateWikiPriceLabels(WikiRequest wr, Instant requestCompletionTime) {
+		requestInFlight = false;
+		timeOfRequestCompletion = requestCompletionTime;
+		wikiRequest = wr;
+		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		wikiBuyVal.setText(wikiItemInfo.getHigh()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getHigh()) + " gp");
+		wikiSellVal.setText(wikiItemInfo.getLow()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getLow()) + " gp");
+	}
+
+	public void updateWikiTimeLabels() {
+		//can be called before wikiRequest is set cause is is called in the repeating task which can start before the
+		//request is completed
+		if (wikiRequest == null) {
+			wikiBuyTimeVal.setText("Request not made yet");
+			wikiSellTimeVal.setText("Request not made yet");
+			wikiRequestCountDownTimer.setText("N/A");
+			return;
+		}
+		//probably don't need this. Should always be non null if wikiRequest is not null
+		if (timeOfRequestCompletion != null) {
+			long secondsSinceLastRequestCompleted = Instant.now().getEpochSecond() - timeOfRequestCompletion.getEpochSecond();
+			if (secondsSinceLastRequestCompleted >= 60) {
+				if (plugin.getConfig().wikiAutoRefresh()) {
+					updateWikiInfo();
+				}
+				wikiRequestCountDownTimer.setText("0");
+				refreshIconLabel.setEnabled(true);
 			}
 			else {
-				timeLabel.setText(TimeFormatters.formatDuration(offerEvent.get().getTime()));
+				refreshIconLabel.setEnabled(false);
+				wikiRequestCountDownTimer.setText(String.valueOf(60 - secondsSinceLastRequestCompleted));
 			}
 		}
+
+		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		if (wikiItemInfo.getHighTime() == 0) {
+			wikiBuyTimeVal.setText("No data");
+		}
+		else {
+			wikiBuyTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getHighTime())));
+		}
+		if (wikiItemInfo.getLowTime() == 0) {
+			wikiBuyTimeVal.setText("No data");
+		}
+		else {
+			wikiSellTimeVal.setText(TimeFormatters.formatDuration(Instant.ofEpochSecond(wikiItemInfo.getLowTime())));
+		}
+	}
+
+	//panel that is shown when someone hovers over the wiki buy/sell value labels
+	private JPanel createWikiHoverTimePanel() {
+		wikiBuyTimeText.setFont(FontManager.getRunescapeSmallFont());
+		wikiBuyTimeText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+		wikiSellTimeText.setFont(FontManager.getRunescapeSmallFont());
+		wikiSellTimeText.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
+
+		wikiSellTimeVal.setFont(FontManager.getRunescapeSmallFont());
+		wikiBuyTimeVal.setFont(FontManager.getRunescapeSmallFont());
+
+		JPanel wikiTimePanel = new JPanel();
+		wikiTimePanel.setLayout(new BoxLayout(wikiTimePanel, BoxLayout.Y_AXIS));
+		wikiTimePanel.setBorder(new EmptyBorder(5,5,5,5));
+
+		JPanel buyTimePanel = new JPanel(new BorderLayout());
+		buyTimePanel.add(wikiBuyTimeText, BorderLayout.WEST);
+		buyTimePanel.add(wikiBuyTimeVal, BorderLayout.EAST);
+
+		JPanel sellTimePanel = new JPanel(new BorderLayout());
+		sellTimePanel.add(wikiSellTimeText, BorderLayout.WEST);
+		sellTimePanel.add(wikiSellTimeVal, BorderLayout.EAST);
+
+		wikiTimePanel.add(buyTimePanel);
+		wikiTimePanel.add(Box.createVerticalStrut(5));
+		wikiTimePanel.add(sellTimePanel);
+
+		return wikiTimePanel;
 	}
 
 }

@@ -13,12 +13,10 @@ import net.runelite.http.api.item.ItemStats;
 import java.util.Optional;
 
 public class OptionHandler {
-    ItemManager itemManager;
-    Client client;
+    FlippingPlugin plugin;
 
-    public OptionHandler(ItemManager itemManager, Client client) {
-        this.itemManager = itemManager;
-        this.client = client;
+    public OptionHandler(FlippingPlugin plugin) {
+        this.plugin = plugin;
     }
 
     public int calculateOptionValue(Option option, Optional<FlippingItem> highlightedItem, int highlightedItemId) throws InvalidOptionException {
@@ -56,7 +54,7 @@ public class OptionHandler {
     }
 
     private int remainingGeLimitCalculation(Optional<FlippingItem> item, int itemId) throws InvalidOptionException {
-        ItemStats itemStats = itemManager.getItemStats(itemId, false);
+        ItemStats itemStats = plugin.getItemManager().getItemStats(itemId, false);
         int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
         int totalGeLimit = item.map(FlippingItem::getTotalGELimit).orElse(geLimit);
         if (totalGeLimit <= 0) {
@@ -66,7 +64,7 @@ public class OptionHandler {
     }
 
     private int geLimitCalculation(Optional<FlippingItem> item, int itemId) throws InvalidOptionException {
-        ItemStats itemStats = itemManager.getItemStats(itemId, false);
+        ItemStats itemStats = plugin.getItemManager().getItemStats(itemId, false);
         int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
         int totalGeLimit = item.map(FlippingItem::getTotalGELimit).orElse(geLimit);
         if (totalGeLimit <= 0) {
@@ -82,7 +80,7 @@ public class OptionHandler {
         if (item.isPresent() && item.get().getLatestBuy().isPresent()) {
             return getCashStackInInv() / item.get().getLatestBuy().get().getPrice();
         } else {
-            int price = itemManager.getItemPrice(itemId);
+            int price = plugin.getItemManager().getItemPrice(itemId);
             if (price <= 0) {
                 throw new InvalidOptionException("Cannot resolve item's price");
             }
@@ -175,7 +173,7 @@ public class OptionHandler {
     }
 
     private int getCashStackInInv() {
-        ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
+        ItemContainer inventory = plugin.getClient().getItemContainer(InventoryID.INVENTORY);
         Item[] inventoryItems = inventory.getItems();
         for (Item item : inventoryItems) {
             if (item.getId() == 995) {

@@ -47,9 +47,6 @@ import java.util.Set;
  */
 public class SettingsPanel extends JPanel
 {
-	int WIDTH = 700;
-
-	int HEIGHT = 520;
 
 	int ACCOUNT_LABEL_HEIGHT = 45;
 
@@ -68,7 +65,6 @@ public class SettingsPanel extends JPanel
 	{
 		this.plugin = plugin;
 		setLayout(new BorderLayout());
-		setSize(WIDTH, HEIGHT);
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 		accountSelectionPanel = accountSelectionPanel();
@@ -92,7 +88,6 @@ public class SettingsPanel extends JPanel
 		JPanel accountSelectionPanel = new JPanel();
 		accountSelectionPanel.setLayout(new BoxLayout(accountSelectionPanel, BoxLayout.Y_AXIS));
 		accountSelectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		accountSelectionPanel.setPreferredSize(new Dimension(170, 120));
 		return accountSelectionPanel;
 	}
 
@@ -143,26 +138,21 @@ public class SettingsPanel extends JPanel
 
 	public void rebuild()
 	{
-		SwingUtilities.invokeLater(() ->
-		{
-			accountSelectionPanel.removeAll();
-			settingsBasePanel.removeAll();
-			accountLabels.clear();
-			Set<String> accountsWithHistory = new HashSet<>(plugin.getCurrentDisplayNames());
-			for (String name : accountsWithHistory)
-			{
-				JLabel accountLabel = accountLabel(name);
-				accountLabels.add(accountLabel);
-				accountSelectionPanel.add(accountLabel);
-				accountSelectionPanel.add(Box.createRigidArea(new Dimension(0, 2)));
-			}
-			if (!accountLabels.isEmpty())
-			{
-				setSelectedAccountLabel(accountLabels.get(0));
-			}
-			repaint();
-			revalidate();
-		});
+        accountSelectionPanel.removeAll();
+        settingsBasePanel.removeAll();
+        accountLabels.clear();
+        Set<String> accountsWithHistory = new HashSet<>(plugin.getCurrentDisplayNames());
+        for (String name : accountsWithHistory) {
+            JLabel accountLabel = accountLabel(name);
+            accountLabels.add(accountLabel);
+            accountSelectionPanel.add(accountLabel);
+            accountSelectionPanel.add(Box.createRigidArea(new Dimension(0, 2)));
+        }
+        if (!accountLabels.isEmpty()) {
+            setSelectedAccountLabel(accountLabels.get(0));
+        }
+        repaint();
+        revalidate();
 	}
 
 	private void setSelectedAccountLabel(JLabel accountLabel)
@@ -253,7 +243,6 @@ public class SettingsPanel extends JPanel
 
 		JPanel optionBody = new JPanel();
 		optionBody.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		optionBody.setPreferredSize(new Dimension(500, 400));
 
 		basePanel.add(title, BorderLayout.NORTH);
 		basePanel.add(optionBody, BorderLayout.CENTER);

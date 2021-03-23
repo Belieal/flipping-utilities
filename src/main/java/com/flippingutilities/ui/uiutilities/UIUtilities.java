@@ -33,16 +33,21 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
+import net.runelite.client.util.SwingUtil;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.font.TextAttribute;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -113,7 +118,6 @@ public class UIUtilities
 	public static JDialog createModalFromPanel(Component parent, JPanel panel)
 	{
 		JDialog modal = new JDialog();
-		modal.setSize(new Dimension(panel.getSize()));
 		modal.add(panel);
 		modal.setLocationRelativeTo(parent);
 		return modal;
@@ -150,6 +154,11 @@ public class UIUtilities
 		return String.format("<span style='color:%s;'>%s</span>",ColorUtil.colorToHexCode(color), s);
 	}
 
+	public static String buildWikiLink(int itemId) {
+		//https://prices.runescape.wiki/osrs/item/2970
+		return "https://prices.runescape.wiki/osrs/item/" + itemId;
+	}
+
 	public static IconTextField createSearchBar(ScheduledExecutorService executor, Runnable onSearch) {
 		final Future<?>[] runningRequest = {null};
 		IconTextField searchBar = new IconTextField();
@@ -172,5 +181,37 @@ public class UIUtilities
 			}
 		});
 		return searchBar;
+	}
+
+	public static void makeLabelUnderlined(JLabel label) {
+		Font font = label.getFont();
+		Map attributes = font.getAttributes();
+		attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
+		label.setFont(font.deriveFont(attributes));
+	}
+
+	public static JToggleButton createToggleButton() {
+		JToggleButton toggleButton = new JToggleButton(Icons.TOGGLE_OFF);
+		toggleButton.setSelectedIcon(Icons.TOGGLE_ON);
+		SwingUtil.removeButtonDecorations(toggleButton);
+		//toggleButton.setPreferredSize(new Dimension(25, 0));
+		SwingUtil.addModalTooltip(toggleButton, "Turn off", "Turn on");
+		return toggleButton;
+	}
+
+	public static void addPopupOnHover(JComponent component, JPopupMenu popup) {
+		component.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				Point location  = component.getLocationOnScreen();
+				popup.setLocation(location.x, location.y - popup.getHeight());
+				popup.setVisible(true);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				popup.setVisible(false);
+			}
+		});
 	}
 }

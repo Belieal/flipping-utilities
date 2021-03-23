@@ -226,7 +226,6 @@ public class StatItemPanel extends JPanel
 	private JPanel titlePanel(JPanel itemIconPanel, JPanel nameAndProfitPanel, JLabel collapseIcon)
 	{
 		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setComponentPopupMenu(ItemLookUpPopup.createGeTrackerLinksPopup(flippingItem));
 		titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		titlePanel.setBorder(new EmptyBorder(2, 2, 2, 2));
 

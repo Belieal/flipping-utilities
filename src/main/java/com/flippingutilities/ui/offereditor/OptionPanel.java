@@ -37,8 +37,6 @@ public class OptionPanel extends JPanel {
         setBackground(CustomColors.DARK_GRAY);
         setBorder(new EmptyBorder(5, 0, 5, 5));
 
-        //setResultingValuePanel();
-
         resultingValueLabel = new JLabel("", JLabel.CENTER);
         resultingValueLabel.setFont(FontManager.getRunescapeSmallFont());
 
