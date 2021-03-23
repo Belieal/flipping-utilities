@@ -41,6 +41,8 @@ public class AccountWideData {
         Section otherSection = new Section("Other");
 
         importantSection.defaultExpanded = true;
+        importantSection.showLabel(Section.WIKI_BUY_PRICE, true);
+        importantSection.showLabel(Section.WIKI_SELL_PRICE, true);
         importantSection.showLabel(Section.LATEST_BUY_PRICE, true);
         importantSection.showLabel(Section.LATEST_SELL_PRICE, true);
         importantSection.showLabel(Section.PRICE_CHECK_BUY_PRICE, true);

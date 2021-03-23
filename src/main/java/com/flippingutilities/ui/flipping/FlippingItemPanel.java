@@ -544,11 +544,13 @@ public class FlippingItemPanel extends JPanel
 		geRefreshCountdownLabel.setFont(FontManager.getRunescapeBoldFont());
 		geRefreshCountdownLabel.setHorizontalAlignment(JLabel.CENTER);
 		geRefreshCountdownLabel.setToolTipText("This is a timer displaying how much time is left before the GE limit refreshes for this item");
+		geRefreshCountdownLabel.setBorder(new EmptyBorder(0,0,0,20));
 
 		geRefreshAtLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		geRefreshAtLabel.setFont(FontManager.getRunescapeSmallFont());
 		geRefreshAtLabel.setHorizontalAlignment(JLabel.CENTER);
 		geRefreshAtLabel.setToolTipText("This shows the local time when the ge limit will refresh");
+		geRefreshAtLabel.setBorder(new EmptyBorder(0,0,0,20));
 
 		roiLabelVal.setToolTipText("<html>Return on investment:<br>Percentage of profit relative to gp invested</html>");
 
@@ -602,7 +604,7 @@ public class FlippingItemPanel extends JPanel
 		CustomizationPanel customizationPanel = new CustomizationPanel(plugin);
 		JDialog customizationModal = UIUtilities.createModalFromPanel(this, customizationPanel);
 
-		JLabel customizeLabel = new JLabel("customize", JLabel.CENTER);
+		JLabel customizeLabel = new JLabel("customize look", JLabel.CENTER);
 		Color c = customizeLabel.getForeground();
 		customizeLabel.setFont(FontManager.getRunescapeSmallFont());
 		Font font=new Font(customizeLabel.getFont().getName(),Font.ITALIC,customizeLabel.getFont().getSize());
