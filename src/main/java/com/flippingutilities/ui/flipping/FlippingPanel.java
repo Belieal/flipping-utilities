@@ -32,6 +32,7 @@ import com.flippingutilities.ui.offereditor.OfferEditorContainerPanel;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.Paginator;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
+import com.flippingutilities.utilities.WikiRequest;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
@@ -382,6 +383,10 @@ public class FlippingPanel extends JPanel
 		}
 	}
 
+	public void updateWikiDisplays(WikiRequest wikiRequest, Instant timeOfRequestCompletion) {
+		activePanels.forEach(panel -> panel.updateWikiLabels(wikiRequest, timeOfRequestCompletion));
+	}
+
 	/**
 	 * Searches the active item panels for matching item names.
 	 */
@@ -426,7 +431,7 @@ public class FlippingPanel extends JPanel
 	public void refreshPricesForFlippingItemPanel(int itemId) {
 		for (FlippingItemPanel panel:activePanels) {
 			if (panel.getFlippingItem().getItemId() == itemId) {
-				panel.setValueLabelsForFlippingItemProperties();
+				panel.setValueLabels();
 			}
 		}
 	}

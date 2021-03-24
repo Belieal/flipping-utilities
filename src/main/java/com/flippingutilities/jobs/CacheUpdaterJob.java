@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.flippingutilities.utilities;
+package com.flippingutilities.jobs;
 
 import com.flippingutilities.db.TradePersister;
 import lombok.extern.slf4j.Slf4j;
@@ -49,12 +49,11 @@ import java.util.function.Consumer;
  * when a file for an account is changed.
  */
 @Slf4j
-public class CacheUpdater
+public class CacheUpdaterJob
 {
-
 	ScheduledExecutorService executor;
 
-	List<Consumer<String>> callbacks = new ArrayList<>();
+	List<Consumer<String>> subscribers = new ArrayList<>();
 
 	boolean isBeingShutdownByClient = false;
 
@@ -67,14 +66,14 @@ public class CacheUpdater
 	int failureThreshold = 2;
 
 
-	public CacheUpdater()
+	public CacheUpdaterJob()
 	{
 		this.executor = Executors.newSingleThreadScheduledExecutor();
 	}
 
-	public void registerCallback(Consumer<String> callback)
+	public void subscribe(Consumer<String> callback)
 	{
-		callbacks.add(callback);
+		subscribers.add(callback);
 	}
 
 	public void start()
@@ -92,7 +91,7 @@ public class CacheUpdater
 	{
 		try
 		{
-			log.info("monitoring directory for changes!");
+			log.info("starting cache updator job!");
 			WatchService watchService = FileSystems.getDefault().newWatchService();
 
 			Path path = TradePersister.PARENT_DIRECTORY.toPath();
@@ -108,7 +107,7 @@ public class CacheUpdater
 					if (!isDuplicateEvent(event.context().toString()))
 					{
 						log.info("not duplicate event, firing callbacks");
-						callbacks.forEach(callback -> callback.accept(event.context().toString()));
+						subscribers.forEach(subscriber -> subscriber.accept(event.context().toString()));
 					}
 					else
 					{
