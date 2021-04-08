@@ -293,17 +293,17 @@ public class FlippingPanel extends JPanel
 					{
 						return -1;
 					}
-					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
+					if ((item1.getLatestInstaBuy().isPresent() && item1.getLatestInstaSell().isPresent()) && (!item2.getLatestInstaSell().isPresent() || !item2.getLatestInstaBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
+					if ((item2.getLatestInstaBuy().isPresent() && item2.getLatestInstaSell().isPresent()) && (!item1.getLatestInstaSell().isPresent() || !item1.getLatestInstaBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
+					if ((!item2.getLatestInstaBuy().isPresent() || !item2.getLatestInstaSell().isPresent()) && (!item1.getLatestInstaSell().isPresent() || !item1.getLatestInstaBuy().isPresent()))
 					{
 						return 0;
 					}
@@ -315,26 +315,26 @@ public class FlippingPanel extends JPanel
 				break;
 			case "roi":
 				result.sort((item1, item2) -> {
-					if ((item1.getLatestMarginCheckBuy().isPresent() && item1.getLatestMarginCheckSell().isPresent()) && (!item2.getLatestMarginCheckSell().isPresent() || !item2.getLatestMarginCheckBuy().isPresent()))
+					if ((item1.getLatestInstaBuy().isPresent() && item1.getLatestInstaSell().isPresent()) && (!item2.getLatestInstaSell().isPresent() || !item2.getLatestInstaBuy().isPresent()))
 					{
 						return -1;
 					}
 
-					if ((item2.getLatestMarginCheckBuy().isPresent() && item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
+					if ((item2.getLatestInstaBuy().isPresent() && item2.getLatestInstaSell().isPresent()) && (!item1.getLatestInstaSell().isPresent() || !item1.getLatestInstaBuy().isPresent()))
 					{
 						return 1;
 					}
 
-					if ((!item2.getLatestMarginCheckBuy().isPresent() || !item2.getLatestMarginCheckSell().isPresent()) && (!item1.getLatestMarginCheckSell().isPresent() || !item1.getLatestMarginCheckBuy().isPresent()))
+					if ((!item2.getLatestInstaBuy().isPresent() || !item2.getLatestInstaSell().isPresent()) && (!item1.getLatestInstaSell().isPresent() || !item1.getLatestInstaBuy().isPresent()))
 					{
 						return 0;
 					}
 
-					int item1ProfitEach = item1.getLatestMarginCheckSell().get().getPrice() - item1.getLatestMarginCheckBuy().get().getPrice();
-					int item2ProfitEach = item2.getLatestMarginCheckSell().get().getPrice() - item2.getLatestMarginCheckBuy().get().getPrice();
+					int item1ProfitEach = item1.getLatestInstaSell().get().getPrice() - item1.getLatestInstaBuy().get().getPrice();
+					int item2ProfitEach = item2.getLatestInstaSell().get().getPrice() - item2.getLatestInstaBuy().get().getPrice();
 
-					float item1roi = (float) item1ProfitEach / item1.getLatestMarginCheckBuy().get().getPrice() * 100;
-					float item2roi = (float) item2ProfitEach / item2.getLatestMarginCheckBuy().get().getPrice() * 100;
+					float item1roi = (float) item1ProfitEach / item1.getLatestInstaBuy().get().getPrice() * 100;
+					float item2roi = (float) item2ProfitEach / item2.getLatestInstaBuy().get().getPrice() * 100;
 
 					return Float.compare(item1roi, item2roi);
 				});

@@ -63,7 +63,7 @@ public class OptionPanel extends JPanel {
         keyInputField.setToolTipText("Press enter after inputting a key to save your changes");
 
 
-        JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT, Option.CASHSTACK}:new String[]{Option.MARGIN_BUY, Option.MARGIN_SELL, Option.LAST_BUY, Option.LAST_SELL});
+        JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? Option.QUANTITY_OPTIONS: Option.PRICE_OPTIONS);
         propertiesSelector.setPreferredSize(new Dimension(88, 25));
         propertiesSelector.setSelectedItem(option.getProperty());
         propertiesSelector.addActionListener(e -> {

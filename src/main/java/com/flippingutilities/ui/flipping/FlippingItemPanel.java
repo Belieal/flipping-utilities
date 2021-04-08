@@ -162,7 +162,7 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.setLayout(new BoxLayout(itemInfo, BoxLayout.Y_AXIS));
 		itemInfo.setBackground(getBackground());
 		itemInfo.setBorder(new EmptyBorder(20,6,8,8));
-		List<Section> sections = plugin.getDataHandler().viewAccountWideData().getSections();
+		List<Section> sections = plugin.getDataHandler().viewAccountWideData().getFlippingItemPanelSections();
 		for (Section section : sections) {
 			itemInfo.add(createSectionPanel(section));
 			itemInfo.add(Box.createVerticalStrut(5));
@@ -437,11 +437,11 @@ public class FlippingItemPanel extends JPanel
 				OfferEvent dummyOffer;
 				if (valueLabel == instaSellVal) {
 					dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					flippingItem.setLatestMarginCheckSell(Optional.of(dummyOffer));
+					flippingItem.setLatestInstaSell(Optional.of(dummyOffer));
 				}
 				else if (valueLabel == instaBuyVal){
 					dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					flippingItem.setLatestMarginCheckBuy(Optional.of(dummyOffer));
+					flippingItem.setLatestInstaBuy(Optional.of(dummyOffer));
 				}
 				else if (valueLabel == latestBuyPriceVal){
 					dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
@@ -591,7 +591,7 @@ public class FlippingItemPanel extends JPanel
 		customizeLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getSections());
+				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getFlippingItemPanelSections());
 				customizationModal.setVisible(true);
 				customizationModal.pack();
 				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - customizationModal.getHeight()/2);
@@ -782,8 +782,8 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	public void setValueLabels() {
-		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
-		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
+		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestInstaBuy();
+		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestInstaSell();
 
 		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
 		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();
