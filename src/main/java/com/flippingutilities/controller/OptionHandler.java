@@ -115,7 +115,7 @@ public class OptionHandler {
             if (item.get().getLatestInstaBuy().isPresent()) {
                 return item.get().getLatestInstaBuy().get().getPrice();
             } else {
-                throw new InvalidOptionException("item does not have a margin check sell price");
+                throw new InvalidOptionException("item does not have an insta buy price");
             }
         }
     }
@@ -127,7 +127,7 @@ public class OptionHandler {
             if (item.get().getLatestInstaSell().isPresent()) {
                 return item.get().getLatestInstaSell().get().getPrice();
             } else {
-                throw new InvalidOptionException("item does not have a margin check buy price");
+                throw new InvalidOptionException("item does not have an insta sell price");
             }
         }
     }
