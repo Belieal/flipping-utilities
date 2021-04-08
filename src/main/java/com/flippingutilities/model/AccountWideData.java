@@ -14,28 +14,28 @@ public class AccountWideData {
     boolean shouldMakeNewAdditions = true;
 
     public boolean setDefaults() {
-        boolean changedData = changeOldPropertyNames();
+        boolean didChangeData = changeOldPropertyNames();
 
         if (options.isEmpty()) {
             setDefaultOptions();
             shouldMakeNewAdditions = false;
-            changedData = true;
+            didChangeData = true;
         }
         //adding wiki options to users' existing options only once and making sure that its not added again by setting shouldMakeNewAdditions.
         //i need to use that flag so i don't add it multiple times in case a user deletes those options.
-        boolean missingWikiOptions = options.stream().anyMatch(o -> o.getProperty().equals(Option.WIKI_BUY) || o.getProperty().equals(Option.WIKI_SELL));
-        if (shouldMakeNewAdditions && missingWikiOptions) {
+        boolean alreadyHasWikiOptions = options.stream().anyMatch(o -> o.getProperty().equals(Option.WIKI_BUY) || o.getProperty().equals(Option.WIKI_SELL));
+        if (shouldMakeNewAdditions && !alreadyHasWikiOptions) {
             options.add(0, new Option("n", Option.WIKI_SELL, "+0", false));
             options.add(0, new Option("j", Option.WIKI_BUY, "+0", false));
             shouldMakeNewAdditions = false;
-            changedData = true;
+            didChangeData = true;
         }
 
         if (flippingItemPanelSections.isEmpty()) {
-            changedData = true;
+            didChangeData = true;
             setDefaultFlippingItemPanelSections();
         }
-        return changedData;
+        return didChangeData;
     }
 
     private boolean changeOldPropertyNames() {
