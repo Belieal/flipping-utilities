@@ -136,6 +136,7 @@ public class FlippingPlugin extends Plugin
 	@Getter
 	private StatsPanel statPanel;
 	private SlotsPanel slotsPanel;
+	@Getter
 	private MasterPanel masterPanel;
 	private GeHistoryTabPanel geHistoryTabPanel;
 	private SettingsPanel settingsPanel;
@@ -821,7 +822,7 @@ public class FlippingPlugin extends Plugin
 		cacheUpdaterJob.subscribe(this::onDirectoryUpdate);
 		cacheUpdaterJob.start();
 
-		wikiDataFetcherJob = new WikiDataFetcherJob(httpClient);
+		wikiDataFetcherJob = new WikiDataFetcherJob(this, httpClient);
 		wikiDataFetcherJob.subscribe(this::onWikiFetch);
 		wikiDataFetcherJob.start();
 	}
