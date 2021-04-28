@@ -10,7 +10,7 @@ import java.util.List;
 @Slf4j
 public class AccountWideData {
     List<Option> options = new ArrayList<>();
-    List<Section> flippingItemPanelSections = new ArrayList<>();
+    List<Section> sections = new ArrayList<>();
     boolean shouldMakeNewAdditions = true;
 
     public boolean setDefaults() {
@@ -31,7 +31,7 @@ public class AccountWideData {
             didChangeData = true;
         }
 
-        if (flippingItemPanelSections.isEmpty()) {
+        if (sections.isEmpty()) {
             didChangeData = true;
             setDefaultFlippingItemPanelSections();
         }
@@ -85,8 +85,8 @@ public class AccountWideData {
         otherSection.showLabel(Section.ROI, true);
         otherSection.showLabel(Section.GE_LIMIT_REFRESH_TIMER, true);
 
-        flippingItemPanelSections.add(importantSection);
-        flippingItemPanelSections.add(otherSection);
+        sections.add(importantSection);
+        sections.add(otherSection);
     }
 
 }

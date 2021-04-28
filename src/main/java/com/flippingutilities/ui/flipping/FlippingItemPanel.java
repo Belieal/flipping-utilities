@@ -162,7 +162,7 @@ public class FlippingItemPanel extends JPanel
 		itemInfo.setLayout(new BoxLayout(itemInfo, BoxLayout.Y_AXIS));
 		itemInfo.setBackground(getBackground());
 		itemInfo.setBorder(new EmptyBorder(20,6,8,8));
-		List<Section> sections = plugin.getDataHandler().viewAccountWideData().getFlippingItemPanelSections();
+		List<Section> sections = plugin.getDataHandler().viewAccountWideData().getSections();
 		for (Section section : sections) {
 			itemInfo.add(createSectionPanel(section));
 			itemInfo.add(Box.createVerticalStrut(5));
@@ -591,7 +591,7 @@ public class FlippingItemPanel extends JPanel
 		customizeLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getFlippingItemPanelSections());
+				customizationPanel.rebuild(plugin.getDataHandler().viewAccountWideData().getSections());
 				customizationModal.setVisible(true);
 				customizationModal.pack();
 				customizationModal.setLocation(getLocationOnScreen().x - customizationModal.getWidth() - 10 , getLocationOnScreen().y - customizationModal.getHeight()/2);
