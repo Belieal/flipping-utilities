@@ -305,4 +305,24 @@ public class MasterPanel extends PluginPanel
 	public void revertToSafeDisplay() {
 		tabGroup.revertToSafeDisplay();
 	}
+
+	/**
+	 * sets up the account selector dropdown that lets you change which account's trade list you
+	 * are looking at.
+	 */
+	public void setupAccSelectorDropdown(Set<String> currentAccounts) {
+		//adding an item causes the event listener (changeView) to fire which causes stat panel
+		//and flipping panel to rebuild. I think this only happens on the first item you add.
+		accountSelector.addItem(FlippingPlugin.ACCOUNT_WIDE);
+
+		currentAccounts.forEach(displayName -> accountSelector.addItem(displayName));
+
+		//sets the account selector dropdown to visible or not depending on whether the config option has been
+		//selected and there are > 1 accounts.
+		if (currentAccounts.size() > 1) {
+			accountSelector.setVisible(true);
+		} else {
+			accountSelector.setVisible(false);
+		}
+	}
 }

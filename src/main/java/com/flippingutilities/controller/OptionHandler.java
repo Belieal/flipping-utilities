@@ -3,11 +3,11 @@ package com.flippingutilities.controller;
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.model.Option;
 import com.flippingutilities.utilities.InvalidOptionException;
-import net.runelite.api.Client;
+import com.flippingutilities.utilities.WikiItemMargins;
+import com.flippingutilities.utilities.WikiRequest;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
-import net.runelite.client.game.ItemManager;
 import net.runelite.http.api.item.ItemStats;
 
 import java.util.Optional;
@@ -32,17 +32,23 @@ public class OptionHandler {
             case Option.CASHSTACK:
                 val = cashStackCalculation(highlightedItem, highlightedItemId);
                 break;
-            case Option.MARGIN_BUY:
-                val = marginBuyCalculation(highlightedItem);
+            case Option.INSTA_SELL:
+                val = instaSellCalculation(highlightedItem);
                 break;
-            case Option.MARGIN_SELL:
-                val = marginSellCalculation(highlightedItem);
+            case Option.INSTA_BUY:
+                val = instaBuyCalculation(highlightedItem);
                 break;
             case Option.LAST_BUY:
                 val = latestBuyCalculation(highlightedItem);
                 break;
             case Option.LAST_SELL:
                 val = latestSellCalculation(highlightedItem);
+                break;
+            case Option.WIKI_BUY:
+                val = wikiPriceCalculation(highlightedItemId, true);
+                break;
+            case Option.WIKI_SELL:
+                val = wikiPriceCalculation(highlightedItemId, false);
                 break;
         }
 
@@ -51,6 +57,20 @@ public class OptionHandler {
             throw new InvalidOptionException("resulting value was negative");
         }
         return finalValue;
+    }
+
+    private int wikiPriceCalculation(int itemId, boolean getBuyPrice) throws InvalidOptionException {
+        if (plugin.getLastWikiRequest() != null) {
+            WikiRequest wr = plugin.getLastWikiRequest();
+            WikiItemMargins wikiItemMargins = wr.getData().get(itemId);
+            int wikiPrice = getBuyPrice ? wikiItemMargins.getHigh() : wikiItemMargins.getLow();
+            if (wikiPrice == 0) {
+                throw new InvalidOptionException(String.format("no insta %s data for this item", getBuyPrice ? "buy" : "sell"));
+            }
+            return wikiPrice;
+        } else {
+            throw new InvalidOptionException("wiki request has not been made yet");
+        }
     }
 
     private int remainingGeLimitCalculation(Optional<FlippingItem> item, int itemId) throws InvalidOptionException {
@@ -88,30 +108,26 @@ public class OptionHandler {
         }
     }
 
-    private int marginSellCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
+    private int instaBuyCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
         if (!item.isPresent()) {
             throw new InvalidOptionException("item was not bought or sold");
-        }
-        else {
-            if (item.get().getLatestMarginCheckBuy().isPresent()) {
-                return item.get().getLatestMarginCheckBuy().get().getPrice();
-            }
-            else {
-                throw new InvalidOptionException("item does not have a margin check sell price");
+        } else {
+            if (item.get().getLatestInstaBuy().isPresent()) {
+                return item.get().getLatestInstaBuy().get().getPrice();
+            } else {
+                throw new InvalidOptionException("item does not have an insta buy price");
             }
         }
     }
 
-    private int marginBuyCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
+    private int instaSellCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
         if (!item.isPresent()) {
             throw new InvalidOptionException("item was not bought or sold");
-        }
-        else {
-            if (item.get().getLatestMarginCheckSell().isPresent()) {
-                return item.get().getLatestMarginCheckSell().get().getPrice();
-            }
-            else {
-                throw new InvalidOptionException("item does not have a margin check buy price");
+        } else {
+            if (item.get().getLatestInstaSell().isPresent()) {
+                return item.get().getLatestInstaSell().get().getPrice();
+            } else {
+                throw new InvalidOptionException("item does not have an insta sell price");
             }
         }
     }
@@ -119,12 +135,10 @@ public class OptionHandler {
     private int latestSellCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
         if (!item.isPresent()) {
             throw new InvalidOptionException("item was not bought or sold");
-        }
-        else {
+        } else {
             if (item.get().getLatestSell().isPresent()) {
                 return item.get().getLatestSell().get().getPrice();
-            }
-            else {
+            } else {
                 throw new InvalidOptionException("item does not have a sell");
             }
         }
@@ -133,12 +147,10 @@ public class OptionHandler {
     private int latestBuyCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
         if (!item.isPresent()) {
             throw new InvalidOptionException("item was not bought or sold");
-        }
-        else {
+        } else {
             if (item.get().getLatestBuy().isPresent()) {
                 return item.get().getLatestBuy().get().getPrice();
-            }
-            else {
+            } else {
                 throw new InvalidOptionException("item does not have a buy");
             }
         }
@@ -174,6 +186,9 @@ public class OptionHandler {
 
     private int getCashStackInInv() {
         ItemContainer inventory = plugin.getClient().getItemContainer(InventoryID.INVENTORY);
+        if (inventory == null) {
+            return 0;
+        }
         Item[] inventoryItems = inventory.getItems();
         for (Item item : inventoryItems) {
             if (item.getId() == 995) {

@@ -93,7 +93,7 @@ public class DataHandler {
         return accountSpecificData.get(displayName);
     }
 
-    public Set<String> currentAccounts() {
+    public Set<String> getCurrentAccounts() {
         return accountSpecificData.keySet();
     }
 

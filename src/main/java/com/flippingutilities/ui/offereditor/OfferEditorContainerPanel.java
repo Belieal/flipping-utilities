@@ -5,10 +5,13 @@ import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.FastTabGroup;
 import com.flippingutilities.ui.uiutilities.Icons;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -24,6 +27,9 @@ public class OfferEditorContainerPanel extends JPanel {
 
     public OfferEditorContainerPanel(FlippingPlugin plugin) {
         setLayout(new BorderLayout());
+        setBorder(new CompoundBorder(
+                new EmptyBorder(0,0,0,0),
+                new MatteBorder(0, 0, 5, 5, ColorScheme.DARKER_GRAY_COLOR.darker())));
         JPanel mainDisplay = new JPanel();
 
         quantityEditorPanel = new QuantityEditorPanel(plugin);
