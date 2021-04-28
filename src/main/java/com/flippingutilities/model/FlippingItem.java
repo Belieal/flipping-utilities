@@ -94,11 +94,11 @@ public class FlippingItem
 	//non persisted fields start here.
 	@Setter
 	@Getter
-	private transient Optional<OfferEvent> latestMarginCheckBuy;
+	private transient Optional<OfferEvent> latestInstaBuy;
 
 	@Setter
 	@Getter
-	private transient Optional<OfferEvent> latestMarginCheckSell;
+	private transient Optional<OfferEvent> latestInstaSell;
 
 	@Setter
 	@Getter
@@ -119,8 +119,8 @@ public class FlippingItem
 
 	public FlippingItem(int itemId, String itemName, int totalGeLimit, String flippedBy)
 	{
-		this.latestMarginCheckBuy = Optional.empty();
-		this.latestMarginCheckSell = Optional.empty();
+		this.latestInstaBuy = Optional.empty();
+		this.latestInstaSell = Optional.empty();
 		this.latestBuy = Optional.empty();
 		this.latestSell = Optional.empty();
 		this.itemName = itemName;
@@ -140,8 +140,8 @@ public class FlippingItem
 				validFlippingPanelItem,
 				favorite,
 				favoriteCode,
-				latestMarginCheckBuy,
-				latestMarginCheckSell,
+				latestInstaBuy,
+				latestInstaSell,
 				latestBuy,
 				latestSell,
 				latestActivityTime,
@@ -172,7 +172,7 @@ public class FlippingItem
 		{
 			if (newOffer.isMarginCheck())
 			{
-				latestMarginCheckBuy = Optional.of(newOffer);
+				latestInstaBuy = Optional.of(newOffer);
 			}
 			latestBuy = Optional.of(newOffer);
 		}
@@ -180,7 +180,7 @@ public class FlippingItem
 		{
 			if (newOffer.isMarginCheck())
 			{
-				latestMarginCheckSell = Optional.of(newOffer);
+				latestInstaSell = Optional.of(newOffer);
 			}
 			latestSell = Optional.of(newOffer);
 		}
@@ -284,8 +284,8 @@ public class FlippingItem
 		validFlippingPanelItem = isValid;
 		if (!isValid)
 		{
-			latestMarginCheckBuy = Optional.empty();
-			latestMarginCheckSell = Optional.empty();
+			latestInstaBuy = Optional.empty();
+			latestInstaSell = Optional.empty();
 			latestBuy = Optional.empty();
 			latestSell = Optional.empty();
 		}
@@ -293,7 +293,7 @@ public class FlippingItem
 
 	public Optional<Integer> getPotentialProfit(boolean includeMarginCheck, boolean shouldUseRemainingGeLimit)
 	{
-		if (!getLatestMarginCheckBuy().isPresent() || !getLatestMarginCheckSell().isPresent()) {
+		if (!getLatestInstaBuy().isPresent() || !getLatestInstaSell().isPresent()) {
 			return Optional.empty();
 		}
 
@@ -315,12 +315,12 @@ public class FlippingItem
 
 	public Optional<Float> getCurrentRoi() {
 		return getCurrentProfitEach().isPresent()?
-				Optional.of((float)getCurrentProfitEach().get() / getLatestMarginCheckSell().get().getPrice() * 100) : Optional.empty();
+				Optional.of((float)getCurrentProfitEach().get() / getLatestInstaSell().get().getPrice() * 100) : Optional.empty();
 	}
 
 	public Optional<Integer> getCurrentProfitEach() {
-		return getLatestMarginCheckBuy().isPresent() && getLatestMarginCheckSell().isPresent()?
-				Optional.of(getLatestMarginCheckBuy().get().getPrice() - getLatestMarginCheckSell().get().getPrice()) : Optional.empty();
+		return getLatestInstaBuy().isPresent() && getLatestInstaSell().isPresent()?
+				Optional.of(getLatestInstaBuy().get().getPrice() - getLatestInstaSell().get().getPrice()) : Optional.empty();
 	}
 
 	/**
@@ -332,8 +332,8 @@ public class FlippingItem
 	public void syncState() {
 		latestBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy());
 		latestSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy());
-		latestMarginCheckBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
-		latestMarginCheckSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
+		latestInstaBuy = history.getLatestOfferThatMatchesPredicate(offer -> offer.isBuy() & offer.isMarginCheck());
+		latestInstaSell = history.getLatestOfferThatMatchesPredicate(offer -> !offer.isBuy() & offer.isMarginCheck());
 		latestActivityTime = history.getCompressedOfferEvents().size() == 0? Instant.now() : history.getCompressedOfferEvents().get(history.getCompressedOfferEvents().size()-1).getTime();
 	}
 

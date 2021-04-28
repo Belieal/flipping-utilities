@@ -53,7 +53,7 @@ public class OptionPanel extends JPanel {
         body.setBackground(CustomColors.DARK_GRAY);
 
         JTextField keyInputField = new JTextField(2);
-        keyInputField.setPreferredSize(new Dimension(30, 25));
+        //keyInputField.setPreferredSize(new Dimension(30, 25));
         keyInputField.setText(option.getKey());
         keyInputField.addActionListener(e -> {
             plugin.markAccountTradesAsHavingChanged(FlippingPlugin.ACCOUNT_WIDE);
@@ -62,8 +62,7 @@ public class OptionPanel extends JPanel {
         });
         keyInputField.setToolTipText("Press enter after inputting a key to save your changes");
 
-
-        JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? new String[]{Option.REMAINING_LIMIT, Option.GE_LIMIT, Option.CASHSTACK}:new String[]{Option.MARGIN_BUY, Option.MARGIN_SELL, Option.LAST_BUY, Option.LAST_SELL});
+        JComboBox propertiesSelector = new JComboBox(option.isQuantityOption()? Option.QUANTITY_OPTIONS: Option.PRICE_OPTIONS);
         propertiesSelector.setPreferredSize(new Dimension(88, 25));
         propertiesSelector.setSelectedItem(option.getProperty());
         propertiesSelector.addActionListener(e -> {
@@ -75,7 +74,7 @@ public class OptionPanel extends JPanel {
         });
 
         JTextField optionalEditor = new JTextField(5);
-        optionalEditor.setPreferredSize(new Dimension(30, 25));
+        //optionalEditor.setPreferredSize(new Dimension(30, 25));
         optionalEditor.setText(option.getModifier());
         optionalEditor.addActionListener(e -> {
             plugin.markAccountTradesAsHavingChanged(FlippingPlugin.ACCOUNT_WIDE);
@@ -102,7 +101,7 @@ public class OptionPanel extends JPanel {
     private JLabel createDotIcon() {
         dotIcon = new JLabel(Icons.GRAY_DOT);
         lastIcon = dotIcon.getIcon();
-        dotIcon.setBorder(new EmptyBorder(8, 15, 0, 0));
+        dotIcon.setBorder(new EmptyBorder(8, 12, 0, 0));
         dotIcon.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {

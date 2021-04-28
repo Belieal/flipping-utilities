@@ -11,23 +11,54 @@ import java.util.List;
 public class AccountWideData {
     List<Option> options = new ArrayList<>();
     List<Section> sections = new ArrayList<>();
+    boolean shouldMakeNewAdditions = true;
 
     public boolean setDefaults() {
-        boolean setDefaults = false;
+        boolean didChangeData = changeOldPropertyNames();
+
         if (options.isEmpty()) {
-            setDefaults = true;
             setDefaultOptions();
+            shouldMakeNewAdditions = false;
+            didChangeData = true;
         }
+        //adding wiki options to users' existing options only once and making sure that its not added again by setting shouldMakeNewAdditions.
+        //i need to use that flag so i don't add it multiple times in case a user deletes those options.
+        boolean alreadyHasWikiOptions = options.stream().anyMatch(o -> o.getProperty().equals(Option.WIKI_BUY) || o.getProperty().equals(Option.WIKI_SELL));
+        if (shouldMakeNewAdditions && !alreadyHasWikiOptions) {
+            options.add(0, new Option("n", Option.WIKI_SELL, "+0", false));
+            options.add(0, new Option("j", Option.WIKI_BUY, "+0", false));
+            shouldMakeNewAdditions = false;
+            didChangeData = true;
+        }
+
         if (sections.isEmpty()) {
-            setDefaults = true;
+            didChangeData = true;
             setDefaultFlippingItemPanelSections();
         }
-        return setDefaults;
+        return didChangeData;
+    }
+
+    private boolean changeOldPropertyNames() {
+        boolean changedOldNames = false;
+        for (Option o : options) {
+            if (o.getProperty().equals("marg sell")) {
+                o.setProperty(Option.INSTA_BUY);
+                changedOldNames = true;
+            }
+            if (o.getProperty().equals("marg buy")) {
+                o.setProperty(Option.INSTA_SELL);
+                changedOldNames = true;
+            }
+        }
+
+        return changedOldNames;
     }
 
     private void setDefaultOptions() {
-        options.add(new Option("p", Option.MARGIN_SELL, "+0", false));
-        options.add(new Option("l", Option.MARGIN_BUY, "+0", false));
+        options.add(new Option("n", Option.WIKI_SELL, "+0", false));
+        options.add(new Option("j", Option.WIKI_BUY, "+0", false));
+        options.add(new Option("p", Option.INSTA_BUY, "+0", false));
+        options.add(new Option("l", Option.INSTA_SELL, "+0", false));
         options.add(new Option("o", Option.LAST_BUY, "+0", false));
         options.add(new Option("u", Option.LAST_SELL, "+0", false));
 

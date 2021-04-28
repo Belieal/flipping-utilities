@@ -31,44 +31,41 @@ import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientStr;
 import net.runelite.api.widgets.*;
+import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
 
-public class OfferEditor
-{
+public class OfferEditor {
     private final Client client;
-    private Widget text;
-    private Widget buttonText;
+    private Widget bottomText;
+    private Widget nonWikiText;
+    private Widget wikiText;
 
-    public OfferEditor(Widget parent, Client client)
-    {
+    public OfferEditor(Widget parent, Client client) {
         this.client = client;
 
-        if (parent == null)
-        {
+        if (parent == null) {
             return;
         }
 
-        text = parent.createChild(-1, WidgetType.TEXT);
-        buttonText = parent.createChild(-1, WidgetType.TEXT);
+        bottomText = parent.createChild(-1, WidgetType.TEXT);
+        nonWikiText = parent.createChild(-1, WidgetType.TEXT);
+        wikiText = parent.createChild(-1, WidgetType.TEXT);
 
-        prepareTextWidget(buttonText, WidgetPositionMode.ABSOLUTE_TOP, 5);
-        prepareTextWidget(text, WidgetPositionMode.ABSOLUTE_BOTTOM, 15);
-
-        buttonText.setFontId(FontID.QUILL_8);
+        prepareTextWidget(nonWikiText, WidgetTextAlignment.LEFT, WidgetPositionMode.ABSOLUTE_TOP, 5, 10);
+        prepareTextWidget(wikiText, WidgetTextAlignment.LEFT, WidgetPositionMode.ABSOLUTE_TOP, 20, 10);
+        prepareTextWidget(bottomText, WidgetTextAlignment.CENTER, WidgetPositionMode.ABSOLUTE_BOTTOM, 5, 0);
     }
 
 
-    private void prepareTextWidget(Widget widget, int yMode, int originalY) {
+    private void prepareTextWidget(Widget widget, int xAlignment, int yMode, int yOffset, int xOffset) {
         widget.setTextColor(0x800000);
         widget.setFontId(FontID.VERDANA_11_BOLD);
-        widget.setXPositionMode(WidgetPositionMode.ABSOLUTE_CENTER);
-        widget.setOriginalX(0);
         widget.setYPositionMode(yMode);
-        widget.setOriginalY(originalY);
+        widget.setOriginalX(xOffset);
+        widget.setOriginalY(yOffset);
         widget.setOriginalHeight(20);
-        widget.setXTextAlignment(WidgetTextAlignment.CENTER);
-        widget.setYTextAlignment(WidgetTextAlignment.CENTER);
+        widget.setXTextAlignment(xAlignment);
         widget.setWidthMode(WidgetSizeMode.MINUS);
         widget.setHasListener(true);
         widget.setOnMouseRepeatListener((JavaScriptCallback) ev -> widget.setTextColor(0xFFFFFF));
@@ -76,68 +73,90 @@ public class OfferEditor
         widget.revalidate();
     }
 
-    public void update(String mode, int value)
-    {
-        switch (mode)
+    public void showQuantityWidgets(int quantity) {
+        bottomText.setText("OR click this to use the quantity editor hotkeys!");
+        bottomText.setAction(1, "pic");
+        bottomText.setOnOpListener((JavaScriptCallback) ev -> {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null, Icons.QUANTITY_EDITOR_PIC);
+            });
+        });
+
+        nonWikiText.setText("set to remaining GE limit: " + quantity);
+        nonWikiText.setAction(1, "Set quantity");
+        nonWikiText.setOnOpListener((JavaScriptCallback) ev ->
         {
-            case ("quantity"):
-                text.setText("OR click this to use the quantity editor hotkeys!");
-                text.setAction(1, "pic");
-                text.setOnOpListener((JavaScriptCallback) ev -> {
-                    SwingUtilities.invokeLater(()-> {
-                        JOptionPane.showMessageDialog(null, Icons.QUANTITY_EDITOR_PIC);
-                    });
-                });
+            client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(quantity + "*");
+            client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(quantity));
+        });
+    }
 
-                buttonText.setText("click this to set to remaining GE limit: " + value);
-                buttonText.setAction(1, "Set quantity");
-                buttonText.setOnOpListener((JavaScriptCallback) ev ->
-                {
-                    client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-                    client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-                });
-                break;
-            case ("setSellPrice"):
-                text.setText("OR click this to use the price editor hotkeys!");
-                text.setAction(1, "pic");
-                text.setOnOpListener((JavaScriptCallback) ev -> {
-                    SwingUtilities.invokeLater(()-> {
-                        JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
-                    });
-                });
+    public void showInstaSellPrices(int instaSellPrice, int wikiInstaSellPrice) {
+        bottomText.setText("OR click this to use the price editor hotkeys!");
+        bottomText.setAction(1, "pic");
+        bottomText.setOnOpListener((JavaScriptCallback) ev -> {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
+            });
+        });
 
-                if (value != 0) {
-                    buttonText.setText("click this to set to latest margin sell price: " + String.format("%,d", value) + " gp");
-                    buttonText.setAction(1, "Set price");
-                    buttonText.setOnOpListener((JavaScriptCallback) ev ->
-                    {
-                        client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-                        client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-                    });
-                }
+        if (instaSellPrice != 0) {
+            nonWikiText.setText("set to insta sell: " + String.format("%,d", instaSellPrice) + " gp");
+            nonWikiText.setAction(0, "Set price");
+            nonWikiText.setOnOpListener((JavaScriptCallback) ev ->
+            {
+                client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(instaSellPrice + "*");
+                client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(instaSellPrice));
+            });
+        } else {
+            nonWikiText.setText("no sell tracked");
+        }
 
-                break;
-            case ("setBuyPrice"):
-                text.setText("OR click this to use the price editor hotkeys!");
-                text.setAction(1, "pic");
-                text.setOnOpListener((JavaScriptCallback) ev -> {
-                    SwingUtilities.invokeLater(()-> {
-                        JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
-                    });
-                });
-                if (value != 0) {
-                    buttonText.setText("click this to set to latest margin buy price: " + String.format("%,d", value) + " gp");
-                    buttonText.setAction(1, "Set price");
-                    buttonText.setOnOpListener((JavaScriptCallback) ev ->
-                    {
-                        client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(value + "*");
-                        client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(value));
-                    });
-                }
-
-                break;
-            case ("reset"):
-                text.setText("");
+        if (wikiInstaSellPrice != 0) {
+            wikiText.setText("set to wiki insta sell: " + String.format("%,d", wikiInstaSellPrice) + " gp");
+            wikiText.setAction(1, "Set wiki price");
+            wikiText.setOnOpListener((JavaScriptCallback) ev ->
+            {
+                client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(wikiInstaSellPrice + "*");
+                client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(wikiInstaSellPrice));
+            });
+        } else {
+            wikiText.setText("No wiki data");
         }
     }
+
+    public void showInstaBuyPrices(int instaBuyPrice, int wikiInstaBuyPrice) {
+        bottomText.setText("OR click this to use the price editor hotkeys!");
+        bottomText.setAction(1, "pic");
+        bottomText.setOnOpListener((JavaScriptCallback) ev -> {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null, Icons.PRICE_EDITOR_PIC);
+            });
+        });
+
+        if (instaBuyPrice != 0) {
+            nonWikiText.setText("set to insta buy: " + String.format("%,d", instaBuyPrice) + " gp");
+            nonWikiText.setAction(0, "Set price");
+            nonWikiText.setOnOpListener((JavaScriptCallback) ev ->
+            {
+                client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(instaBuyPrice + "*");
+                client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(instaBuyPrice));
+            });
+        } else {
+            nonWikiText.setText("no buy tracked");
+        }
+
+        if (wikiInstaBuyPrice != 0) {
+            wikiText.setText("set to wiki insta buy: " + String.format("%,d", wikiInstaBuyPrice) + " gp");
+            wikiText.setAction(1, "Set wiki price");
+            wikiText.setOnOpListener((JavaScriptCallback) ev ->
+            {
+                client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT).setText(wikiInstaBuyPrice + "*");
+                client.setVar(VarClientStr.INPUT_TEXT, String.valueOf(wikiInstaBuyPrice));
+            });
+        } else {
+            wikiText.setText("No wiki data");
+        }
+    }
+
 }

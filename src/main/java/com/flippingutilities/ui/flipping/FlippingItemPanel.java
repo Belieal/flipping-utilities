@@ -437,11 +437,11 @@ public class FlippingItemPanel extends JPanel
 				OfferEvent dummyOffer;
 				if (valueLabel == instaSellVal) {
 					dummyOffer = OfferEvent.dummyOffer(false, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					flippingItem.setLatestMarginCheckSell(Optional.of(dummyOffer));
+					flippingItem.setLatestInstaSell(Optional.of(dummyOffer));
 				}
 				else if (valueLabel == instaBuyVal){
 					dummyOffer = OfferEvent.dummyOffer(true, true, num, flippingItem.getItemId(), flippingItem.getItemName());
-					flippingItem.setLatestMarginCheckBuy(Optional.of(dummyOffer));
+					flippingItem.setLatestInstaBuy(Optional.of(dummyOffer));
 				}
 				else if (valueLabel == latestBuyPriceVal){
 					dummyOffer = OfferEvent.dummyOffer(true, false, num, flippingItem.getItemId(), flippingItem.getItemName());
@@ -782,8 +782,8 @@ public class FlippingItemPanel extends JPanel
 	}
 
 	public void setValueLabels() {
-		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestMarginCheckBuy();
-		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestMarginCheckSell();
+		Optional<OfferEvent> latestMarginCheckBuy = flippingItem.getLatestInstaBuy();
+		Optional<OfferEvent> latestMarginCheckSell = flippingItem.getLatestInstaSell();
 
 		Optional<OfferEvent> latestBuy = flippingItem.getLatestBuy();
 		Optional<OfferEvent> latestSell = flippingItem.getLatestSell();

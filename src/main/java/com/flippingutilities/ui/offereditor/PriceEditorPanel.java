@@ -25,9 +25,11 @@ public class PriceEditorPanel extends AbstractOfferEditorPanel{
     @Override
     public void onTemplateClicked() {
         List<Option> options = plugin.getDataHandler().getAccountWideData().getOptions();
+        options.add(new Option("n", Option.WIKI_SELL, "+0", false));
+        options.add(new Option("j", Option.WIKI_BUY, "+0", false));
         options.add(new Option("u", Option.LAST_SELL, "+0", false));
         options.add(new Option("o", Option.LAST_BUY, "+0", false));
-        options.add(new Option("l", Option.MARGIN_BUY, "+0", false));
-        options.add(new Option("p", Option.MARGIN_SELL, "+0", false));
+        options.add(new Option("l", Option.INSTA_SELL, "+0", false));
+        options.add(new Option("p", Option.INSTA_BUY, "+0", false));
     }
 }
