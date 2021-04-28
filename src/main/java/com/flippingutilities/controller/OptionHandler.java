@@ -186,6 +186,9 @@ public class OptionHandler {
 
     private int getCashStackInInv() {
         ItemContainer inventory = plugin.getClient().getItemContainer(InventoryID.INVENTORY);
+        if (inventory == null) {
+            return 0;
+        }
         Item[] inventoryItems = inventory.getItems();
         for (Item item : inventoryItems) {
             if (item.getId() == 995) {

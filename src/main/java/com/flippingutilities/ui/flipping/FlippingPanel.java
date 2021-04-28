@@ -41,6 +41,8 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
+import net.runelite.http.api.item.ItemPrice;
+import net.runelite.http.api.item.ItemStats;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -50,10 +52,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
@@ -128,7 +128,7 @@ public class FlippingPanel extends JPanel
 		container.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		//Search bar beneath the tab manager.
-		searchBar = UIUtilities.createSearchBar(executor, this::updateSearch);
+		searchBar = UIUtilities.createSearchBar(executor, () -> plugin.getClientThread().invoke(this::updateSearch));
 
 		//Contains a greeting message when the items panel is empty.
 		JPanel welcomeWrapper = new JPanel(new BorderLayout());
@@ -217,15 +217,12 @@ public class FlippingPanel extends JPanel
 	 */
 	public void rebuild(List<FlippingItem> flippingItems)
 	{
-		activePanels.clear();
-
 		SwingUtilities.invokeLater(() ->
 		{
-			Instant rebuildStart = Instant.now();
+			activePanels.clear();
 			flippingItemsPanel.removeAll();
 			if (flippingItems == null)
 			{
-				//Show the welcome panel if there are no valid flipping items in the list
 				cardLayout.show(flippingItemContainer, WELCOME_PANEL);
 				return;
 			}
@@ -255,11 +252,10 @@ public class FlippingPanel extends JPanel
 
 			revalidate();
 			repaint();
-
-			//log.info("flipping panel rebuild took {}", Duration.between(rebuildStart, Instant.now()).toMillis());
 		});
 
 	}
+
 
 	public List<FlippingItem> sortTradeList(List<FlippingItem> tradeList)
 	{
@@ -344,17 +340,12 @@ public class FlippingPanel extends JPanel
 	}
 
 	//Clears all other items, if the item in the offer setup slot is presently available on the panel
-	public void highlightItem(Optional<FlippingItem> item)
+	public void highlightItem(FlippingItem item)
 	{
 		SwingUtilities.invokeLater(() -> {
 			paginator.setPageNumber(1);
 			itemHighlighted = true;
-			if (item.isPresent()) {
-				rebuild(Collections.singletonList(item.get()));
-			}
-			else {
-				rebuild(new ArrayList<>());
-			}
+			rebuild(Collections.singletonList(item));
 		});
 	}
 
@@ -387,11 +378,10 @@ public class FlippingPanel extends JPanel
 		activePanels.forEach(panel -> panel.updateWikiLabels(wikiRequest, timeOfRequestCompletion));
 	}
 
-	/**
-	 * Searches the active item panels for matching item names.
-	 */
+
 	private void updateSearch()
 	{
+
 		String lookup = searchBar.getText().toLowerCase();
 
 		//Just so we don't mess with the highlight.
@@ -407,17 +397,27 @@ public class FlippingPanel extends JPanel
 			return;
 		}
 
-		ArrayList<FlippingItem> result = new ArrayList<>();
-		for (FlippingItem item : plugin.viewTradesForCurrentView())
-		{
-			//Contains makes it a little more forgiving when searching.
-			if (item.getItemName().toLowerCase().contains(lookup))
-			{
-				result.add(item);
+		Map<Integer, FlippingItem> currentFlippingItems = plugin.viewTradesForCurrentView().stream().collect(Collectors.toMap(f -> f.getItemId(), f -> f));
+		List<FlippingItem> matchesInHistory = new ArrayList<>();
+		List<FlippingItem> matchesNotInHistory = new ArrayList<>();
+		for (ItemPrice itemInfo:  itemManager.search(lookup)) {
+			if (currentFlippingItems.containsKey(itemInfo.getId())) {
+				matchesInHistory.add(currentFlippingItems.get(itemInfo.getId()));
+			}
+			else {
+				ItemStats itemStats = plugin.getItemManager().getItemStats(itemInfo.getId(), false);
+				int geLimit = itemStats != null ? itemStats.getGeLimit() : 0;
+				FlippingItem dummyFlippingItem = new FlippingItem(itemInfo.getId(), itemInfo.getName(), geLimit, "NA");
+				dummyFlippingItem.setValidFlippingPanelItem(true);
+				matchesNotInHistory.add(dummyFlippingItem);
 			}
 		}
 
-		if (result.isEmpty())
+		List<FlippingItem> allMatches = new ArrayList<>();
+
+		allMatches.addAll(matchesInHistory);
+		allMatches.addAll(matchesNotInHistory);
+		if (allMatches.isEmpty())
 		{
 			searchBar.setIcon(IconTextField.Icon.ERROR);
 			rebuild(plugin.viewTradesForCurrentView());
@@ -425,7 +425,7 @@ public class FlippingPanel extends JPanel
 		}
 
 		searchBar.setIcon(IconTextField.Icon.SEARCH);
-		rebuild(result);
+		rebuild(allMatches);
 	}
 
 	public void refreshPricesForFlippingItemPanel(int itemId) {
