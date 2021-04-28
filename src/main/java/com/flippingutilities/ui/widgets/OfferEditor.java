@@ -74,7 +74,7 @@ public class OfferEditor {
     }
 
     public void showQuantityWidgets(int quantity) {
-        bottomText.setText("OR click this to use the quantity editor hotkeys!");
+        bottomText.setText("OR click this to use the price editor hotkeys for more flexibility!");
         bottomText.setAction(1, "pic");
         bottomText.setOnOpListener((JavaScriptCallback) ev -> {
             SwingUtilities.invokeLater(() -> {
@@ -92,7 +92,7 @@ public class OfferEditor {
     }
 
     public void showInstaSellPrices(int instaSellPrice, int wikiInstaSellPrice) {
-        bottomText.setText("OR click this to use the price editor hotkeys!");
+        bottomText.setText("OR click this to use the price editor hotkeys for more flexibility!");
         bottomText.setAction(1, "pic");
         bottomText.setOnOpListener((JavaScriptCallback) ev -> {
             SwingUtilities.invokeLater(() -> {
@@ -101,7 +101,7 @@ public class OfferEditor {
         });
 
         if (instaSellPrice != 0) {
-            nonWikiText.setText("set to insta sell: " + String.format("%,d", instaSellPrice) + " gp");
+            nonWikiText.setText("set to your insta sell: " + String.format("%,d", instaSellPrice) + " gp");
             nonWikiText.setAction(0, "Set price");
             nonWikiText.setOnOpListener((JavaScriptCallback) ev ->
             {
@@ -126,7 +126,7 @@ public class OfferEditor {
     }
 
     public void showInstaBuyPrices(int instaBuyPrice, int wikiInstaBuyPrice) {
-        bottomText.setText("OR click this to use the price editor hotkeys!");
+        bottomText.setText("OR click this to use the price editor hotkeys for more flexibility!");
         bottomText.setAction(1, "pic");
         bottomText.setOnOpListener((JavaScriptCallback) ev -> {
             SwingUtilities.invokeLater(() -> {
@@ -135,7 +135,7 @@ public class OfferEditor {
         });
 
         if (instaBuyPrice != 0) {
-            nonWikiText.setText("set to insta buy: " + String.format("%,d", instaBuyPrice) + " gp");
+            nonWikiText.setText("set to your insta buy: " + String.format("%,d", instaBuyPrice) + " gp");
             nonWikiText.setAction(0, "Set price");
             nonWikiText.setOnOpListener((JavaScriptCallback) ev ->
             {
