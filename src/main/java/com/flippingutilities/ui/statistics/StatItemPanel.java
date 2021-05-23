@@ -197,7 +197,7 @@ public class StatItemPanel extends JPanel
 			List<OfferEvent> reversedHistory = new ArrayList<>(tradeHistory);
 			Collections.reverse(reversedHistory);
 			List<OfferEvent> offersOnCurrentPage = offerPaginator.getCurrentPageItems(reversedHistory);
-			offerPanels = offersOnCurrentPage.stream().map(OfferPanel::new).collect(Collectors.toList());
+			offerPanels = offersOnCurrentPage.stream().map(offerEvent -> new OfferPanel(offerEvent, flippingItem, plugin)).collect(Collectors.toList());
 			List<JPanel> panels = new ArrayList<>();
 			panels.add(offerPaginator);
 			panels.addAll(offerPanels);
@@ -309,15 +309,26 @@ public class StatItemPanel extends JPanel
 	private JPanel tradeHistoryPanel(JPanel offersPanel, JPanel flipsPanel)
 	{
 		boolean shouldExpandTradeHistory = statsPanel.getExpandedTradeHistories().contains(flippingItem.getItemName());
-
+		boolean shouldSelectOffersTab = statsPanel.getItemsWithOffersTabSelected().contains(flippingItem.getItemId());
 		JPanel tradeHistoryTitlePanel = new JPanel(new BorderLayout());
 		tradeHistoryTitlePanel.setBorder(TRADE_HISTORY_BORDER);
 
 		JPanel mainDisplay = new JPanel();
 		MaterialTabGroup tabGroup = new MaterialTabGroup(mainDisplay);
 		MaterialTab offersTab = new MaterialTab("Buys/Sells", tabGroup, offersPanel);
+		offersTab.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				statsPanel.getItemsWithOffersTabSelected().add(flippingItem.getItemId());
+			}
+		});
 		MaterialTab flipsTab = new MaterialTab("Flips", tabGroup, flipsPanel);
-
+		flipsTab.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				statsPanel.getItemsWithOffersTabSelected().remove(flippingItem.getItemId());
+			}
+		});
 		Arrays.asList(offersPanel, flipsPanel).forEach(panel -> {
 			panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 			panel.setBorder(ITEM_HISTORY_BORDER);
@@ -327,7 +338,7 @@ public class StatItemPanel extends JPanel
 		tabGroup.addTab(offersTab);
 		tabGroup.addTab(flipsTab);
 
-		tabGroup.select(flipsTab);
+		tabGroup.select(shouldSelectOffersTab? offersTab: flipsTab);
 		mainDisplay.setVisible(shouldExpandTradeHistory);
 		tabGroup.setVisible(shouldExpandTradeHistory);
 

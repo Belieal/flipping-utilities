@@ -274,7 +274,7 @@ public class FlippingItem
 		return history.hasValidOffers();
 	}
 
-	public void invalidateOffers(ArrayList<OfferEvent> offerList)
+	public void invalidateOffers(List<OfferEvent> offerList)
 	{
 		history.invalidateOffers(offerList);
 	}

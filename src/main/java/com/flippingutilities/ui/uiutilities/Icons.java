@@ -92,6 +92,9 @@ public class Icons {
     public static final ImageIcon TOGGLE_ON;
     public static final ImageIcon TOGGLE_OFF;
 
+    public static final ImageIcon TRASH_CAN_ON;
+    public static final ImageIcon TRASH_CAN_OFF;
+
     static
     {
         final BufferedImage openIcon = ImageUtil
@@ -226,5 +229,9 @@ public class Icons {
                 true,
                 false
         ));
+
+        final BufferedImage trashCanIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/trashicon.png");
+        TRASH_CAN_ON = new ImageIcon(trashCanIcon.getScaledInstance(10,10,Image.SCALE_SMOOTH));
+        TRASH_CAN_OFF = new ImageIcon(ImageUtil.alphaOffset(trashCanIcon, 0.53f).getScaledInstance(10,10, Image.SCALE_SMOOTH));
     }
 }
