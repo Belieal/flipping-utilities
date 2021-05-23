@@ -150,6 +150,8 @@ public class StatsPanel extends JPanel
 	private Set<String> expandedItems = new HashSet<>();
 	@Getter
 	private Set<String> expandedTradeHistories = new HashSet<>();
+	@Getter
+	private Set<Integer> itemsWithOffersTabSelected = new HashSet<>();
 
 	private Paginator paginator;
 
