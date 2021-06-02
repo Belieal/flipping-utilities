@@ -2,8 +2,11 @@ package com.flippingutilities.controller;
 
 import com.flippingutilities.model.FlippingItem;
 import com.flippingutilities.ui.flipping.FlippingPanel;
+import com.flippingutilities.ui.offereditor.AbstractOfferEditorPanel;
+import com.flippingutilities.ui.offereditor.OfferEditorContainerPanel;
 import com.flippingutilities.ui.widgets.OfferEditor;
 import com.flippingutilities.utilities.WikiRequest;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.VarClientInt;
@@ -23,6 +26,7 @@ import static net.runelite.api.VarPlayer.CURRENT_GE_ITEM;
  * this class should detect when the chatbox gets opened, when the ge history box opens, when the user is in the
  * ge offer setup screen, etc and trigger appropriate logic in those cases.
  */
+@Slf4j
 public class GameUiChangesHandler {
     private static final int GE_OFFER_INIT_STATE_CHILD_ID = 18;
     private static final int GE_HISTORY_TAB_WIDGET_ID = 149;
@@ -132,6 +136,13 @@ public class GameUiChangesHandler {
     public void onVarbitChanged(VarbitChanged event) {
         Client client = plugin.getClient();
         FlippingPanel flippingPanel = plugin.getFlippingPanel();
+        OfferEditorContainerPanel offerEditorContainerPanel = flippingPanel.getOfferEditorContainerPanel();
+        //this is the varbit with id 4398
+        if (event.getIndex() == 1043 && offerEditorContainerPanel != null) {
+            AbstractOfferEditorPanel quantityEditorPanel = offerEditorContainerPanel.quantityEditorPanel;
+            quantityEditorPanel.rebuild(quantityEditorPanel.getOptions());
+        }
+
         if (event.getIndex() == CURRENT_GE_ITEM.getId() && client.getVar(CURRENT_GE_ITEM) != -1 && client.getVar(CURRENT_GE_ITEM) != 0) {
             highlightOffer();
         }
