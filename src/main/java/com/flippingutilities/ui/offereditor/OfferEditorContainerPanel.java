@@ -5,6 +5,7 @@ import com.flippingutilities.model.Option;
 import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.FastTabGroup;
 import com.flippingutilities.ui.uiutilities.Icons;
+import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 
@@ -19,8 +20,8 @@ import java.awt.event.MouseEvent;
 public class OfferEditorContainerPanel extends JPanel {
     public static final String QUANTITY_EDITOR = "quantity";
     public static final String PRICE_EDITOR = "price";
-    AbstractOfferEditorPanel quantityEditorPanel;
-    AbstractOfferEditorPanel priceEditorPanel;
+    public AbstractOfferEditorPanel quantityEditorPanel;
+    public AbstractOfferEditorPanel priceEditorPanel;
     FastTabGroup tabGroup;
     MaterialTab quantityEditorTab;
     MaterialTab priceEditorTab;
