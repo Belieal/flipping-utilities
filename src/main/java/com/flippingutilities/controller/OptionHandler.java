@@ -96,16 +96,16 @@ public class OptionHandler {
     private int cashStackCalculation(Optional<FlippingItem> item, int itemId) throws InvalidOptionException {
         if (getCashStackInInv() == 0) {
             throw new InvalidOptionException("Player has no cash in inventory");
+        } else if (!item.isPresent()) {
+            throw new InvalidOptionException("Item missing");
         }
-        if (item.isPresent() && item.get().getLatestBuy().isPresent()) {
-            return getCashStackInInv() / item.get().getLatestBuy().get().getPrice();
-        } else {
-            int price = plugin.getItemManager().getItemPrice(itemId);
-            if (price <= 0) {
-                throw new InvalidOptionException("Cannot resolve item's price");
-            }
-            return getCashStackInInv() / price;
+        
+        int offerPrice = plugin.getClient().getVarbitValue(4398);
+        if (offerPrice <= 0) {
+            throw new InvalidOptionException("Item offer price missing");
         }
+
+        return getCashStackInInv() / offerPrice;
     }
 
     private int instaBuyCalculation(Optional<FlippingItem> item) throws InvalidOptionException {
