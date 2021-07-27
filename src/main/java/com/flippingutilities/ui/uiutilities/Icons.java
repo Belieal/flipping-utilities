@@ -67,6 +67,9 @@ public class Icons {
     public static final ImageIcon DISCORD_ICON;
     public static final ImageIcon DISCORD_ICON_ON;
 
+    public static final ImageIcon TWITTER_ICON;
+    public static final ImageIcon TWITTER_ICON_ON;
+
     public static final ImageIcon PLUS_ICON;
     public static final ImageIcon PLUS_ICON_OFF;
 
@@ -173,6 +176,11 @@ public class Icons {
         final BufferedImage githubIconOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/githubon.png");
         GITHUB_ICON = new ImageIcon(githubIcon);
         GITHUB_ICON_ON = new ImageIcon(githubIconOn);
+
+        final BufferedImage twitterIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/twitter.png");
+        final BufferedImage twitterIconOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/twitteron.png");
+        TWITTER_ICON = new ImageIcon(twitterIcon);
+        TWITTER_ICON_ON = new ImageIcon(twitterIconOn);
 
         final BufferedImage discordIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/discord.png");
         final BufferedImage discordIconOn = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/discordon.png");
