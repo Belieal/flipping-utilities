@@ -31,6 +31,7 @@ import com.flippingutilities.ui.flipping.FlippingPanel;
 import com.flippingutilities.ui.settings.SettingsPanel;
 import com.flippingutilities.ui.slots.SlotsPanel;
 import com.flippingutilities.ui.statistics.StatsPanel;
+import com.flippingutilities.ui.uiutilities.CustomColors;
 import com.flippingutilities.ui.uiutilities.FastTabGroup;
 import com.flippingutilities.ui.uiutilities.Icons;
 import com.flippingutilities.ui.uiutilities.UIUtilities;
@@ -141,9 +142,15 @@ public class MasterPanel extends PluginPanel
 	}
 
 	private JPanel communityPanel() {
-		JLabel text = new JLabel("Join the community -> ");
-		text.setFont(FontManager.getRunescapeSmallFont());
-		text.setToolTipText("click on the icons");
+		JPanel communityPanel = new JPanel(new BorderLayout());
+		communityPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel topLabel = new JLabel("Join discord to be alerted of bot dumps!", JLabel.CENTER);
+		topLabel.setForeground(CustomColors.VIBRANT_YELLOW);
+		topLabel.setFont(FontManager.getRunescapeSmallFont());
+		topLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JPanel centerPanel = new JPanel();
 
 		JLabel githubIcon = new JLabel(Icons.GITHUB_ICON);
 		githubIcon.setToolTipText("Click to go to Flipping Utilities github");
@@ -183,13 +190,34 @@ public class MasterPanel extends PluginPanel
 			}
 		});
 
-		JPanel communityPanel = new JPanel();
-		communityPanel.setBorder(new EmptyBorder(0,6,0,0));
-		communityPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-		communityPanel.add(text);
-		communityPanel.add(discordIcon);
-		communityPanel.add(githubIcon);
+		JLabel twitterIcon = new JLabel(Icons.TWITTER_ICON);
+		twitterIcon.setToolTipText("Click to go to Flipping Utilities twitter");
+		twitterIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				LinkBrowser.browse("https://twitter.com/flippingutils");
+			}
 
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				twitterIcon.setIcon(Icons.TWITTER_ICON_ON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				twitterIcon.setIcon(Icons.TWITTER_ICON);
+			}
+		});
+
+
+		centerPanel.setBorder(new EmptyBorder(4,0,0,0));
+		centerPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+		centerPanel.add(discordIcon);
+		centerPanel.add(twitterIcon);
+		centerPanel.add(githubIcon);
+
+		communityPanel.add(topLabel, BorderLayout.NORTH);
+		communityPanel.add(centerPanel, BorderLayout.CENTER);
 		return communityPanel;
 	}
 
