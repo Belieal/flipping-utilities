@@ -145,10 +145,22 @@ public class MasterPanel extends PluginPanel
 		JPanel communityPanel = new JPanel(new BorderLayout());
 		communityPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		JLabel topLabel = new JLabel("Join discord to be alerted of bot dumps!", JLabel.CENTER);
+		JPanel topPanel = new JPanel();
+		topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel topLabel = new JLabel("Join discord for bot dump alerts!", JLabel.CENTER);
 		topLabel.setForeground(CustomColors.VIBRANT_YELLOW);
 		topLabel.setFont(FontManager.getRunescapeSmallFont());
 		topLabel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
+
+		JLabel questionMarkLabel = new JLabel(Icons.QUESTION_MARK);
+		JPopupMenu popup = new JPopupMenu();
+		//popup.setPreferredSize(new Dimension(100,100));
+		popup.add(new JLabel(Icons.DUMP_ALERT_PIC));
+		UIUtilities.addPopupOnHover(questionMarkLabel, popup, false);
+
+		topPanel.add(topLabel);
+		topPanel.add(questionMarkLabel);
 
 		JPanel centerPanel = new JPanel();
 
@@ -210,13 +222,13 @@ public class MasterPanel extends PluginPanel
 		});
 
 
-		centerPanel.setBorder(new EmptyBorder(4,0,0,0));
+		//centerPanel.setBorder(new EmptyBorder(4,0,0,0));
 		centerPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 		centerPanel.add(discordIcon);
 		centerPanel.add(twitterIcon);
 		centerPanel.add(githubIcon);
 
-		communityPanel.add(topLabel, BorderLayout.NORTH);
+		communityPanel.add(topPanel, BorderLayout.NORTH);
 		communityPanel.add(centerPanel, BorderLayout.CENTER);
 		return communityPanel;
 	}

@@ -199,12 +199,13 @@ public class UIUtilities
 		return toggleButton;
 	}
 
-	public static void addPopupOnHover(JComponent component, JPopupMenu popup) {
+	public static void addPopupOnHover(JComponent component, JPopupMenu popup, boolean above) {
 		component.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseEntered(MouseEvent e) {
 				Point location  = component.getLocationOnScreen();
-				popup.setLocation(location.x, location.y - popup.getHeight());
+				int y = above? location.y - popup.getHeight(): location.y + component.getHeight();
+				popup.setLocation(location.x, y);
 				popup.setVisible(true);
 			}
 
