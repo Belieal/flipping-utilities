@@ -541,8 +541,8 @@ public class FlippingItemPanel extends JPanel
 
 		JPopupMenu popup = new JPopupMenu();
 		popup.add(createWikiHoverTimePanel());
-		UIUtilities.addPopupOnHover(wikiBuyVal, popup);
-		UIUtilities.addPopupOnHover(wikiSellVal, popup);
+		UIUtilities.addPopupOnHover(wikiBuyVal, popup, true);
+		UIUtilities.addPopupOnHover(wikiSellVal, popup, true);
 	}
 
 	private void styleDescriptionLabels() {

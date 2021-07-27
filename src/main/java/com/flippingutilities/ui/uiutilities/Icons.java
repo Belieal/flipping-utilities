@@ -98,6 +98,10 @@ public class Icons {
     public static final ImageIcon TRASH_CAN_ON;
     public static final ImageIcon TRASH_CAN_OFF;
 
+    public static final ImageIcon DUMP_ALERT_PIC;
+
+    public static final ImageIcon QUESTION_MARK;
+
     static
     {
         final BufferedImage openIcon = ImageUtil
@@ -241,5 +245,11 @@ public class Icons {
         final BufferedImage trashCanIcon = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/trashicon.png");
         TRASH_CAN_ON = new ImageIcon(trashCanIcon.getScaledInstance(10,10,Image.SCALE_SMOOTH));
         TRASH_CAN_OFF = new ImageIcon(ImageUtil.alphaOffset(trashCanIcon, 0.53f).getScaledInstance(10,10, Image.SCALE_SMOOTH));
+
+        final BufferedImage dumpPic = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/dumpwithprofit.png");
+        DUMP_ALERT_PIC = new ImageIcon(dumpPic.getScaledInstance(450, 300, Image.SCALE_SMOOTH));
+
+        final BufferedImage questionMark = ImageUtil.getResourceStreamFromClass(FlippingPlugin.class, "/questionmark.png");
+        QUESTION_MARK = new ImageIcon(questionMark);
     }
 }
