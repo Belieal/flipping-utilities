@@ -844,6 +844,9 @@ public class FlippingItemPanel extends JPanel
 		}
 
 		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		if (wikiItemInfo == null) {
+			return;
+		}
 		wikiBuyVal.setText(wikiItemInfo.getHigh()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getHigh()) + " gp");
 		wikiSellVal.setText(wikiItemInfo.getLow()==0? "No data":QuantityFormatter.formatNumber(wikiItemInfo.getLow()) + " gp");
 		updateWikiTimeLabels();
@@ -872,6 +875,9 @@ public class FlippingItemPanel extends JPanel
 		}
 
 		WikiItemMargins wikiItemInfo = wikiRequest.getData().get(flippingItem.getItemId());
+		if (wikiItemInfo == null) {
+			return;
+		}
 		if (wikiItemInfo.getHighTime() == 0) {
 			wikiBuyTimeVal.setText("No data");
 		}
