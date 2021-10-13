@@ -158,8 +158,9 @@ public class OptionHandler {
             throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
         }
 
+        float num = 0;
         try {
-            int num = Integer.parseInt(modifier.substring(1));
+            num = Float.parseFloat(modifier.substring(1));
             if (num < 0) {
                 throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
             }
@@ -167,15 +168,14 @@ public class OptionHandler {
             throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
         }
 
-        String operator = String.valueOf(modifier.charAt(0));
-        int num = Integer.parseInt(modifier.substring(1));
+        char operator = modifier.charAt(0);
         switch (operator) {
-            case "-":
-                return value - num;
-            case "+":
-                return value + num;
-            case "*":
-                return value * num;
+            case '-':
+                return Math.round(value - num);
+            case '+':
+                return Math.round(value + num);
+            case '*':
+                return Math.round(value * num);
             default:
                 throw new InvalidOptionException("Modifier has to be one of +,-,*, followed by a positive number. Example: +2, -5, *9");
         }
