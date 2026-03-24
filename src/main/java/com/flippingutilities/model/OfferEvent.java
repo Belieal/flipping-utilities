@@ -83,8 +83,10 @@ public class OfferEvent
 	private transient boolean beforeLogin;
 	//only used in theGeHistoryTabOfferPanel cause i don't want to pass the itemmanager down that far just to resolve item name from an id.
 	private transient String itemName;
-	//used in the live slot view to show what price something was listed at
-	private transient int listedPrice;
+	//used in the live slot view to show what price something was listed at.
+	//persisted so external tools can see the offer price for unfilled slots.
+	@SerializedName("lp")
+	private int listedPrice;
 
 	/**
 	 * Returns a boolean representing that the offer is a complete offer. A complete offer signifies
